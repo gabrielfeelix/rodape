@@ -313,9 +313,10 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
         return repository.getCommentsForChapterFlow(chapterId, clubId)
     }
 
-    fun getSavedQuotesForBook(bookId: String): Flow<List<SavedQuote>> {
-        return repository.getSavedQuotesForBookFlow(currentUserId.value ?: "user_voce", bookId)
-    }
+    fun getSavedQuotesForBook(bookId: String): Flow<List<SavedQuote>> =
+        currentUserId.flatMapLatest { userId ->
+            repository.getSavedQuotesForBookFlow(userId ?: "user_voce", bookId)
+        }
 
     fun sendComment(chapterId: String, content: String) {
         viewModelScope.launch {

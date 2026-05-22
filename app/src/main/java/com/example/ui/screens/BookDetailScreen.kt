@@ -72,6 +72,7 @@ fun BookDetailScreen(
     // --- Quote dialog state ---
     var showQuoteDialog by remember { mutableStateOf(false) }
     var quoteText by remember { mutableStateOf("") }
+    var quoteRef by remember { mutableStateOf("") }
 
     // --- Quotes flow ---
     val quotesFlow = remember(bookId) { viewModel.getSavedQuotesForBook(bookId) }
@@ -161,7 +162,7 @@ fun BookDetailScreen(
             contentAlignment = Alignment.Center
         ) {
             Text(
-                text = "Tu leu este livro com o clube.",
+                text = "Este livro está na estante do clube.",
                 style = MaterialTheme.typography.bodyMedium.copy(
                     fontFamily = InterFontFamily,
                     fontWeight = FontWeight.Medium,
@@ -373,6 +374,7 @@ fun BookDetailScreen(
             onDismissRequest = {
                 showQuoteDialog = false
                 quoteText = ""
+                quoteRef = ""
             },
             title = {
                 Text(
@@ -384,23 +386,34 @@ fun BookDetailScreen(
                 )
             },
             text = {
-                OutlinedTextField(
-                    value = quoteText,
-                    onValueChange = { quoteText = it },
-                    label = { Text("Frase do livro") },
-                    placeholder = { Text("Escreve a frase aqui…") },
-                    minLines = 3,
-                    modifier = Modifier.fillMaxWidth()
-                )
+                Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
+                    OutlinedTextField(
+                        value = quoteText,
+                        onValueChange = { quoteText = it },
+                        label = { Text("Frase do livro") },
+                        placeholder = { Text("Escreve a frase aqui…") },
+                        minLines = 3,
+                        modifier = Modifier.fillMaxWidth()
+                    )
+                    OutlinedTextField(
+                        value = quoteRef,
+                        onValueChange = { quoteRef = it },
+                        label = { Text("Capítulo (opcional)") },
+                        placeholder = { Text("Ex: Cap. 5") },
+                        singleLine = true,
+                        modifier = Modifier.fillMaxWidth()
+                    )
+                }
             },
             confirmButton = {
                 TextButton(
                     onClick = {
                         if (quoteText.isNotBlank()) {
-                            viewModel.saveQuote(bookId, quoteText, "Cap.")
+                            viewModel.saveQuote(bookId, quoteText, quoteRef.ifBlank { "Cap." })
                         }
                         showQuoteDialog = false
                         quoteText = ""
+                        quoteRef = ""
                     }
                 ) {
                     Text(
@@ -415,6 +428,7 @@ fun BookDetailScreen(
                     onClick = {
                         showQuoteDialog = false
                         quoteText = ""
+                        quoteRef = ""
                     }
                 ) {
                     Text(
