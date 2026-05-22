@@ -132,6 +132,11 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
         if (userId != null) repository.getNotificationsFlow(userId) else flowOf(emptyList())
     }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
 
+    // Saved Quotes
+    val savedQuotes: StateFlow<List<SavedQuote>> = currentUserId.flatMapLatest { userId ->
+        if (userId != null) repository.getSavedQuotesForUserFlow(userId) else flowOf(emptyList())
+    }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
+
     // Books search results from Open Library
     private val _searchResults = MutableStateFlow<List<OpenLibraryDoc>>(emptyList())
     val searchResults: StateFlow<List<OpenLibraryDoc>> = _searchResults.asStateFlow()
@@ -308,6 +313,10 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
         return repository.getCommentsForChapterFlow(chapterId, clubId)
     }
 
+    fun getSavedQuotesForBook(bookId: String): Flow<List<SavedQuote>> {
+        return repository.getSavedQuotesForBookFlow(currentUserId.value ?: "user_voce", bookId)
+    }
+
     fun sendComment(chapterId: String, content: String) {
         viewModelScope.launch {
             val userId = currentUserId.value ?: "user_voce"
@@ -434,6 +443,29 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
     fun markNotificationAsRead(notifId: String) {
         viewModelScope.launch {
             repository.markNotificationAsRead(notifId)
+        }
+    }
+
+    // --- Saved Quotes actions ---
+    fun saveQuote(bookId: String, texto: String, capituloRef: String) {
+        viewModelScope.launch {
+            if (texto.isBlank()) return@launch
+            val quote = SavedQuote(
+                id = "quote_${UUID.randomUUID()}",
+                userId = currentUserId.value ?: "user_voce",
+                clubId = activeClubId.value ?: "",
+                bookId = bookId,
+                texto = texto.trim(),
+                capituloRef = capituloRef,
+                criadoEm = System.currentTimeMillis()
+            )
+            repository.insertSavedQuote(quote)
+        }
+    }
+
+    fun deleteQuote(quote: SavedQuote) {
+        viewModelScope.launch {
+            repository.deleteSavedQuote(quote)
         }
     }
 }
