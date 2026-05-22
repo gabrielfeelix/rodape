@@ -283,26 +283,11 @@ fun BookDetailScreen(
                         )
                     } else {
                         quotes.forEach { quote ->
-                            TramabookCard(modifier = Modifier.fillMaxWidth()) {
-                                Text(
-                                    text = "“${quote.texto}”",
-                                    style = MaterialTheme.typography.bodyLarge.copy(
-                                        fontFamily = LiterataFontFamily,
-                                        fontStyle = FontStyle.Italic,
-                                        fontSize = 16.sp,
-                                        color = InkSoft,
-                                        lineHeight = 24.sp
-                                    )
-                                )
-                                Spacer(modifier = Modifier.height(8.dp))
-                                Text(
-                                    text = quote.capituloRef,
-                                    style = MaterialTheme.typography.bodySmall.copy(
-                                        fontFamily = InterFontFamily,
-                                        color = Muted
-                                    )
-                                )
-                            }
+                            QuoteCard(
+                                texto = quote.texto,
+                                ref = quote.capituloRef,
+                                onDelete = { viewModel.deleteQuote(quote) }
+                            )
                             Spacer(modifier = Modifier.height(12.dp))
                         }
                     }
