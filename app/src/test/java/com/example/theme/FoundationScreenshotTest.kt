@@ -29,7 +29,7 @@ import org.robolectric.annotation.GraphicsMode
 
 @RunWith(RobolectricTestRunner::class)
 @GraphicsMode(GraphicsMode.Mode.NATIVE)
-@Config(qualifiers = RobolectricDeviceQualifiers.Pixel8, sdk = [34])
+@Config(qualifiers = RobolectricDeviceQualifiers.Pixel8, sdk = [36])
 class FoundationScreenshotTest {
 
     @get:Rule val composeTestRule = createComposeRule()
