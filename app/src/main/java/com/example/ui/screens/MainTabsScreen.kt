@@ -48,6 +48,7 @@ import com.example.ui.theme.Cream
 import com.example.ui.theme.CardSoft
 import com.example.ui.theme.CardSurface
 import com.example.ui.theme.Divider
+import com.example.ui.theme.TertiarySoft
 import com.example.ui.theme.Ink
 import com.example.ui.theme.Muted
 import com.example.ui.theme.DividerSoft
@@ -213,7 +214,7 @@ fun MainTabsScreen(
                         .align(Alignment.CenterHorizontally)
                         .padding(bottom = 16.dp)
                         .size(width = 32.dp, height = 4.dp)
-                        .background(Color.LightGray)
+                        .background(TertiarySoft)
                         .clip(CircleShape)
                 )
 
@@ -315,25 +316,13 @@ fun MainTabsScreen(
 
                 Spacer(modifier = Modifier.height(16.dp))
 
-                OutlinedButton(
-                    onClick = {
-                        showBottomSheet = false
-                        onNavigateToJoinClub()
-                    },
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(vertical = 8.dp),
-                    border = BorderStroke(1.dp, Terracota),
-                    colors = ButtonDefaults.outlinedButtonColors(contentColor = Terracota)
-                ) {
-                    Text(
-                        text = "+ Entrar em outro clube",
-                        style = MaterialTheme.typography.bodyMedium.copy(
-                            fontFamily = InterFontFamily,
-                            fontWeight = FontWeight.Medium
-                        )
-                    )
-                }
+                TbButton(
+                    text = "+ Entrar em outro clube",
+                    onClick = { showBottomSheet = false; onNavigateToJoinClub() },
+                    variant = TbButtonVariant.Outline,
+                    size = TbButtonSize.Md,
+                    modifier = Modifier.fillMaxWidth().padding(vertical = 8.dp),
+                )
             }
         }
     }

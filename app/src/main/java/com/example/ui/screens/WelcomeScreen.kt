@@ -14,9 +14,6 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.ui.res.painterResource
 import com.example.R
 import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.grid.GridCells
-import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
-import androidx.compose.foundation.lazy.grid.items
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardOptions
@@ -434,6 +431,7 @@ fun LoginScreen(
 
                     Spacer(modifier = Modifier.height(24.dp))
 
+                    // dev-only: botão com ícone, mantido fora do TbButton de propósito
                     Button(
                         onClick = { onLoginSuccess("Você", "voce@tramabook.com") },
                         modifier = Modifier
@@ -460,6 +458,7 @@ fun LoginScreen(
 
                     Spacer(modifier = Modifier.height(12.dp))
 
+                    // dev-only: botão com ícone, mantido fora do TbButton de propósito
                     OutlinedButton(
                         onClick = { onLoginSuccess("Convidado Google", "demo@google.com") },
                         modifier = Modifier
