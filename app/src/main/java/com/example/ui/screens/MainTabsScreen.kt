@@ -78,7 +78,9 @@ fun MainTabsScreen(
     onNavigateToDiscussion: (String, String) -> Unit,
     onNavigateToSuggestBook: () -> Unit,
     onNavigateToJoinClub: () -> Unit,
-    onLogoutCompleted: () -> Unit
+    onLogoutCompleted: () -> Unit,
+    onNavigateToBookDetail: (String) -> Unit = {},
+    onNavigateToFrases: () -> Unit = {},
 ) {
     var selectedTab by remember { mutableStateOf("home") }
     var showBottomSheet by remember { mutableStateOf(false) }
@@ -184,13 +186,15 @@ fun MainTabsScreen(
                 )
                 "next" -> NextTabScreen(
                     viewModel = viewModel,
-                    onNavigateToSuggestBook = onNavigateToSuggestBook
+                    onNavigateToSuggestBook = onNavigateToSuggestBook,
+                    onNavigateToBookDetail = onNavigateToBookDetail
                 )
                 "profile" -> ProfileScreenTab(
                     viewModel = viewModel,
                     onLogoutCompleted = onLogoutCompleted,
                     onNavigateToTab = { selectedTab = it },
-                    onNavigateToJoinClub = onNavigateToJoinClub
+                    onNavigateToJoinClub = onNavigateToJoinClub,
+                    onNavigateToFrases = onNavigateToFrases
                 )
             }
         }
@@ -1431,13 +1435,15 @@ fun ProfileScreenTab(
     viewModel: MainViewModel,
     onLogoutCompleted: () -> Unit,
     onNavigateToTab: (String) -> Unit,
-    onNavigateToJoinClub: () -> Unit
+    onNavigateToJoinClub: () -> Unit,
+    onNavigateToFrases: () -> Unit
 ) {
     val name by viewModel.userName.collectAsState()
     val email by viewModel.userEmail.collectAsState()
     val currentUser by viewModel.currentUser.collectAsState()
     val allClubs by viewModel.allClubs.collectAsState()
     val activeClub by viewModel.activeClub.collectAsState()
+    val savedQuotes by viewModel.savedQuotes.collectAsState()
 
     var isEditingProfile by remember { mutableStateOf(false) }
     var showLogoutDialog by remember { mutableStateOf(false) }
@@ -1561,7 +1567,9 @@ fun ProfileScreenTab(
 
                     // Card 3: Frases guardadas (Oliva background, Cream text)
                     Card(
-                        modifier = Modifier.weight(1f),
+                        modifier = Modifier
+                            .weight(1f)
+                            .clickable { onNavigateToFrases() },
                         shape = RoundedCornerShape(20.dp),
                         colors = CardDefaults.cardColors(containerColor = Oliva, contentColor = Cream),
                         elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
@@ -1572,7 +1580,7 @@ fun ProfileScreenTab(
                                 .padding(14.dp)
                         ) {
                             Text(
-                                text = "42",
+                                text = savedQuotes.size.toString(),
                                 style = MaterialTheme.typography.displaySmall.copy(
                                     fontFamily = LiterataFontFamily,
                                     fontSize = 28.sp,

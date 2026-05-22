@@ -32,7 +32,8 @@ import com.example.ui.viewmodel.MainViewModel
 @Composable
 fun NextTabScreen(
     viewModel: MainViewModel,
-    onNavigateToSuggestBook: () -> Unit
+    onNavigateToSuggestBook: () -> Unit,
+    onNavigateToBookDetail: (String) -> Unit = {}
 ) {
     var subTab by remember { mutableStateOf("encontro") }
 
@@ -113,7 +114,7 @@ fun NextTabScreen(
             when (subTab) {
                 "encontro" -> EncontroTab(viewModel = viewModel)
                 "votacao" -> VotacaoTab(viewModel = viewModel, onNavigateToSuggestBook = onNavigateToSuggestBook)
-                "estante" -> EstanteTab(viewModel = viewModel)
+                "estante" -> EstanteTab(viewModel = viewModel, onNavigateToBookDetail = onNavigateToBookDetail)
             }
         }
     }
@@ -713,7 +714,10 @@ fun VotacaoTab(
 
 // --- SUB-TAB 3: ESTANTE (Lidos) ---
 @Composable
-fun EstanteTab(viewModel: MainViewModel) {
+fun EstanteTab(
+    viewModel: MainViewModel,
+    onNavigateToBookDetail: (String) -> Unit = {}
+) {
     val finishedBooks by viewModel.finishedBooks.collectAsState()
     var filterBy by remember { mutableStateOf("Todos") }
 
@@ -776,7 +780,9 @@ fun EstanteTab(viewModel: MainViewModel) {
                 items(displayedBooks) { book ->
                     val rating = getBookRating(book)
                     TramabookCard(
-                        modifier = Modifier.fillMaxWidth(),
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .clickable { onNavigateToBookDetail(book.id) },
                         contentPadding = PaddingValues(12.dp)
                     ) {
                         Column(

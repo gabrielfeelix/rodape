@@ -149,4 +149,17 @@ interface TramabookDao {
 
     @Query("SELECT * FROM notifications WHERE userId = :userId ORDER BY criadoEm DESC")
     fun getNotificationsFlow(userId: String): Flow<List<DbNotification>>
+
+    // --- Saved Quotes ---
+    @Insert(onConflict = OnConflictStrategy.REPLACE)
+    suspend fun insertSavedQuote(quote: SavedQuote)
+
+    @Delete
+    suspend fun deleteSavedQuote(quote: SavedQuote)
+
+    @Query("SELECT * FROM saved_quotes WHERE userId = :userId ORDER BY criadoEm DESC")
+    fun getSavedQuotesForUserFlow(userId: String): Flow<List<SavedQuote>>
+
+    @Query("SELECT * FROM saved_quotes WHERE userId = :userId AND bookId = :bookId ORDER BY criadoEm DESC")
+    fun getSavedQuotesForBookFlow(userId: String, bookId: String): Flow<List<SavedQuote>>
 }
