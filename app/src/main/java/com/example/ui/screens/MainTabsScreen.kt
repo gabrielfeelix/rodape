@@ -40,12 +40,12 @@ import com.example.data.model.*
 import com.example.ui.components.*
 import com.example.ui.theme.Terracota
 import com.example.ui.theme.TerracotaSoft
-import com.example.ui.theme.VerdeMusgo
 import com.example.ui.theme.OlivaDeep
 import com.example.ui.theme.Oliva
 import com.example.ui.theme.OlivaSoft
 import com.example.ui.theme.OlivaMid
 import com.example.ui.theme.Cream
+import com.example.ui.theme.CardSoft
 import com.example.ui.theme.CardSurface
 import com.example.ui.theme.Divider
 import com.example.ui.theme.Ink
@@ -1448,7 +1448,6 @@ fun ProfileScreenTab(
     val name by viewModel.userName.collectAsState()
     val email by viewModel.userEmail.collectAsState()
     val currentUser by viewModel.currentUser.collectAsState()
-    val themeMode by viewModel.themeMode.collectAsState()
     val allClubs by viewModel.allClubs.collectAsState()
     val activeClub by viewModel.activeClub.collectAsState()
 
@@ -1473,8 +1472,9 @@ fun ProfileScreenTab(
             modifier = Modifier
                 .fillMaxSize()
                 .padding(horizontal = 24.dp),
-            verticalArrangement = Arrangement.spacedBy(24.dp)
+            verticalArrangement = Arrangement.spacedBy(20.dp)
         ) {
+            // ── Profile header ──────────────────────────────────────────
             item {
                 Spacer(modifier = Modifier.height(8.dp))
                 Row(
@@ -1487,17 +1487,23 @@ fun ProfileScreenTab(
                         horizontalArrangement = Arrangement.spacedBy(16.dp),
                         modifier = Modifier.weight(1f)
                     ) {
-                        // Large circular avatar profile
-                        MemberAvatar(name = name ?: "Você", avatarUrl = currentUser?.avatarUrl ?: "", size = 72.dp)
-                        Column {
+                        Avatar(
+                            name = name ?: "Você",
+                            avatarUrl = currentUser?.avatarUrl ?: "",
+                            size = 72.dp
+                        )
+                        Column(verticalArrangement = Arrangement.spacedBy(2.dp)) {
                             Text(
                                 text = name ?: "Usuário",
-                                style = MaterialTheme.typography.displayLarge.copy(fontSize = 24.sp)
+                                style = MaterialTheme.typography.displaySmall.copy(
+                                    fontFamily = LiterataFontFamily,
+                                    fontWeight = FontWeight.SemiBold,
+                                    color = Ink
+                                )
                             )
                             Text(
                                 text = email ?: "contato@tramabook.com",
-                                style = MaterialTheme.typography.bodyLarge,
-                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                                style = MaterialTheme.typography.bodyLarge.copy(color = Muted)
                             )
                         }
                     }
@@ -1511,76 +1517,87 @@ fun ProfileScreenTab(
                 }
             }
 
-            // Stat Cards side-by-side
+            // ── Stat Cards (3 side-by-side) ─────────────────────────────
             item {
                 Row(
                     modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.spacedBy(12.dp)
+                    horizontalArrangement = Arrangement.spacedBy(8.dp)
                 ) {
-                    val darkTheme = androidx.compose.foundation.isSystemInDarkTheme()
-                    val statsBg = if (darkTheme) Color(0xFF2A2520) else Color(0xFFFBF7EE)
-
                     // Card 1: Livros lidos
-                    Card(
-                        modifier = Modifier
-                            .weight(1f)
-                            .shadow(elevation = 1.dp, shape = RoundedCornerShape(16.dp)),
-                        shape = RoundedCornerShape(16.dp),
-                        colors = CardDefaults.cardColors(containerColor = statsBg),
-                        border = BorderStroke(1.dp, MaterialTheme.colorScheme.onSurface.copy(alpha = 0.04f))
+                    TramabookCard(
+                        modifier = Modifier.weight(1f),
+                        contentPadding = PaddingValues(14.dp)
                     ) {
-                        Column(
-                            modifier = Modifier.padding(20.dp),
-                            verticalArrangement = Arrangement.spacedBy(4.dp)
-                        ) {
-                            Text(
-                                text = "24",
-                                style = MaterialTheme.typography.displayLarge.copy(
-                                    fontFamily = FrauncesFontFamily,
-                                    fontSize = 28.sp,
-                                    fontWeight = FontWeight.Medium,
-                                    color = Terracota
-                                )
+                        Text(
+                            text = "24",
+                            style = MaterialTheme.typography.displaySmall.copy(
+                                fontFamily = LiterataFontFamily,
+                                fontSize = 28.sp,
+                                fontWeight = FontWeight.SemiBold,
+                                color = Ink
                             )
-                            Text(
-                                text = "livros lidos",
-                                style = MaterialTheme.typography.bodyMedium.copy(
-                                    fontFamily = InterFontFamily,
-                                    fontSize = 13.sp,
-                                    color = MaterialTheme.colorScheme.onSurfaceVariant
-                                )
+                        )
+                        Spacer(modifier = Modifier.height(4.dp))
+                        Text(
+                            text = "livros\nlidos",
+                            style = MaterialTheme.typography.bodySmall.copy(
+                                fontFamily = InterFontFamily,
+                                color = Muted
                             )
-                        }
+                        )
                     }
 
                     // Card 2: Clubes ativos
+                    TramabookCard(
+                        modifier = Modifier.weight(1f),
+                        contentPadding = PaddingValues(14.dp)
+                    ) {
+                        Text(
+                            text = "${allClubs.size}",
+                            style = MaterialTheme.typography.displaySmall.copy(
+                                fontFamily = LiterataFontFamily,
+                                fontSize = 28.sp,
+                                fontWeight = FontWeight.SemiBold,
+                                color = Ink
+                            )
+                        )
+                        Spacer(modifier = Modifier.height(4.dp))
+                        Text(
+                            text = "clubes\nativos",
+                            style = MaterialTheme.typography.bodySmall.copy(
+                                fontFamily = InterFontFamily,
+                                color = Muted
+                            )
+                        )
+                    }
+
+                    // Card 3: Frases guardadas (Oliva background, Cream text)
                     Card(
-                        modifier = Modifier
-                            .weight(1f)
-                            .shadow(elevation = 1.dp, shape = RoundedCornerShape(16.dp)),
-                        shape = RoundedCornerShape(16.dp),
-                        colors = CardDefaults.cardColors(containerColor = statsBg),
-                        border = BorderStroke(1.dp, MaterialTheme.colorScheme.onSurface.copy(alpha = 0.04f))
+                        modifier = Modifier.weight(1f),
+                        shape = RoundedCornerShape(20.dp),
+                        colors = CardDefaults.cardColors(containerColor = Oliva, contentColor = Cream),
+                        elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
                     ) {
                         Column(
-                            modifier = Modifier.padding(20.dp),
-                            verticalArrangement = Arrangement.spacedBy(4.dp)
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(14.dp)
                         ) {
                             Text(
-                                text = "3",
-                                style = MaterialTheme.typography.displayLarge.copy(
-                                    fontFamily = FrauncesFontFamily,
+                                text = "42",
+                                style = MaterialTheme.typography.displaySmall.copy(
+                                    fontFamily = LiterataFontFamily,
                                     fontSize = 28.sp,
-                                    fontWeight = FontWeight.Medium,
-                                    color = Terracota
+                                    fontWeight = FontWeight.SemiBold,
+                                    color = Cream
                                 )
                             )
+                            Spacer(modifier = Modifier.height(4.dp))
                             Text(
-                                text = "clubes ativos",
-                                style = MaterialTheme.typography.bodyMedium.copy(
+                                text = "frases\nguardadas",
+                                style = MaterialTheme.typography.bodySmall.copy(
                                     fontFamily = InterFontFamily,
-                                    fontSize = 13.sp,
-                                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                                    color = Cream.copy(alpha = 0.85f)
                                 )
                             )
                         }
@@ -1588,16 +1605,17 @@ fun ProfileScreenTab(
                 }
             }
 
-            // Teus Clubes Section
+            // ── Teus Clubes ─────────────────────────────────────────────
             item {
-                SectionHeader(title = "Teus clubes")
-                Spacer(modifier = Modifier.height(4.dp))
+                TbSectionHeader(title = "Teus clubes")
+                Spacer(modifier = Modifier.height(12.dp))
                 Column(
-                    verticalArrangement = Arrangement.spacedBy(12.dp),
+                    verticalArrangement = Arrangement.spacedBy(8.dp),
                     modifier = Modifier.fillMaxWidth()
                 ) {
                     allClubs.forEach { club ->
                         val isActive = club.id == activeClub?.id
+                        val clubColor = clubColorFor(club.cor)
                         val clubReadingText = if (club.id == "club_tramabook") {
                             "Lendo: A Metamorfose"
                         } else if (club.id == "club_filosofia") {
@@ -1606,196 +1624,130 @@ fun ProfileScreenTab(
                             "Sem livro atual"
                         }
 
-                        val avatarColor = remember(club.id) {
-                            val hash = club.id.hashCode()
-                            when (kotlin.math.abs(hash) % 3) {
-                                0 -> VerdeMusgo
-                                1 -> Terracota
-                                else -> Color(0xFFD4A373)
-                            }
-                        }
-
-                        StandardCard(
+                        Card(
                             onClick = {
                                 viewModel.selectActiveClub(club.id)
                                 onNavigateToTab("home")
-                            }
+                            },
+                            shape = RoundedCornerShape(16.dp),
+                            colors = CardDefaults.cardColors(containerColor = Cream, contentColor = Ink),
+                            border = BorderStroke(
+                                1.dp,
+                                if (isActive) Oliva else Divider
+                            ),
+                            elevation = CardDefaults.cardElevation(defaultElevation = 0.dp)
                         ) {
                             Row(
-                                modifier = Modifier.fillMaxWidth(),
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .padding(horizontal = 14.dp, vertical = 12.dp),
                                 horizontalArrangement = Arrangement.SpaceBetween,
                                 verticalAlignment = Alignment.CenterVertically
-                              ) {
+                            ) {
                                 Row(
                                     verticalAlignment = Alignment.CenterVertically,
-                                    horizontalArrangement = Arrangement.spacedBy(16.dp),
+                                    horizontalArrangement = Arrangement.spacedBy(14.dp),
                                     modifier = Modifier.weight(1f)
                                 ) {
                                     Box(
                                         modifier = Modifier
                                             .size(40.dp)
-                                            .background(avatarColor, CircleShape),
+                                            .background(clubColor.bg, CircleShape),
                                         contentAlignment = Alignment.Center
                                     ) {
                                         Text(
                                             text = club.nome.take(1).uppercase(),
-                                            color = Color.White,
-                                            style = MaterialTheme.typography.bodyLarge.copy(fontWeight = FontWeight.Bold)
-                                        )
-                                    }
-
-                                    Column {
-                                        Text(
-                                            text = club.nome,
-                                            style = MaterialTheme.typography.titleMedium.copy(
-                                                fontFamily = FrauncesFontFamily,
-                                                fontWeight = FontWeight.Medium,
-                                                fontSize = 16.sp,
-                                                color = MaterialTheme.colorScheme.onSurface
-                                            )
-                                        )
-                                        Text(
-                                            text = clubReadingText,
-                                            style = MaterialTheme.typography.bodyMedium.copy(
-                                                fontFamily = InterFontFamily,
-                                                fontSize = 13.sp,
-                                                color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.7f)
+                                            color = clubColor.ink,
+                                            style = MaterialTheme.typography.bodyLarge.copy(
+                                                fontFamily = LiterataFontFamily,
+                                                fontWeight = FontWeight.SemiBold,
+                                                fontSize = 18.sp
                                             )
                                         )
                                     }
-                                }
-
-                                Row(
-                                    verticalAlignment = Alignment.CenterVertically,
-                                    horizontalArrangement = Arrangement.spacedBy(8.dp)
-                                ) {
-                                    if (isActive) {
-                                        Box(
-                                            modifier = Modifier
-                                                .background(VerdeMusgo.copy(alpha = 0.12f), RoundedCornerShape(12.dp))
-                                                .padding(horizontal = 10.dp, vertical = 4.dp)
+                                    Column(verticalArrangement = Arrangement.spacedBy(2.dp)) {
+                                        Row(
+                                            verticalAlignment = Alignment.CenterVertically,
+                                            horizontalArrangement = Arrangement.spacedBy(6.dp)
                                         ) {
                                             Text(
-                                                text = "atual",
-                                                style = MaterialTheme.typography.labelSmall.copy(
-                                                    color = VerdeMusgo,
-                                                    fontWeight = FontWeight.Bold
+                                                text = club.nome,
+                                                style = MaterialTheme.typography.bodyLarge.copy(
+                                                    fontFamily = LiterataFontFamily,
+                                                    fontWeight = FontWeight.SemiBold,
+                                                    fontSize = 15.sp,
+                                                    color = Ink
                                                 )
                                             )
+                                            if (isActive) {
+                                                Pill(text = "Atual", variant = PillVariant.Terra)
+                                            }
                                         }
+                                        Text(
+                                            text = clubReadingText,
+                                            style = MaterialTheme.typography.bodySmall.copy(
+                                                fontFamily = InterFontFamily,
+                                                color = Muted
+                                            )
+                                        )
                                     }
-                                    Icon(
-                                        imageVector = Icons.Outlined.KeyboardArrowRight,
-                                        contentDescription = "Selecionar",
-                                        tint = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.6f),
-                                        modifier = Modifier.size(20.dp)
-                                    )
                                 }
-                            }
-                        }
-                    }
-
-                    Spacer(modifier = Modifier.height(4.dp))
-
-                    // Join other club outlined button
-                    OutlinedButton(
-                        onClick = onNavigateToJoinClub,
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .height(52.dp),
-                        shape = RoundedCornerShape(26.dp),
-                        border = BorderStroke(1.5.dp, Terracota)
-                    ) {
-                        Icon(
-                            imageVector = Icons.Outlined.Add,
-                            contentDescription = "Entrar em outro clube",
-                            tint = Terracota,
-                            modifier = Modifier.size(20.dp)
-                        )
-                        Spacer(modifier = Modifier.width(8.dp))
-                        Text(
-                            "Entrar em outro clube",
-                            style = MaterialTheme.typography.bodyLarge.copy(
-                                fontWeight = FontWeight.Bold,
-                                color = Terracota
-                            )
-                        )
-                    }
-                }
-            }
-
-            item {
-                SectionHeader(title = "Tema e preferências")
-                StandardCard {
-                    Text(
-                        text = "Aparência",
-                        style = MaterialTheme.typography.bodyMedium.copy(fontWeight = FontWeight.Bold)
-                    )
-                    Spacer(modifier = Modifier.height(12.dp))
-
-                    // Custom segmented control for Theme selector
-                    Row(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .height(48.dp)
-                            .background(
-                                MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.05f),
-                                RoundedCornerShape(24.dp)
-                            )
-                            .border(
-                                0.5.dp,
-                                MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.1f),
-                                RoundedCornerShape(24.dp)
-                            )
-                            .padding(4.dp),
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        val themeModes = listOf("system" to "Sistema", "light" to "Claro", "dark" to "Escuro")
-                        themeModes.forEach { (mode, label) ->
-                            val isSelected = themeMode == mode
-                            Box(
-                                modifier = Modifier
-                                    .weight(1f)
-                                    .fillMaxHeight()
-                                    .background(
-                                        if (isSelected) Terracota else Color.Transparent,
-                                        RoundedCornerShape(20.dp)
-                                    )
-                                    .clickable { viewModel.updateThemeMode(mode) },
-                                contentAlignment = Alignment.Center
-                            ) {
-                                Text(
-                                    label,
-                                    color = if (isSelected) Color.White else MaterialTheme.colorScheme.onSurfaceVariant,
-                                    style = MaterialTheme.typography.bodyMedium.copy(fontWeight = FontWeight.Medium)
+                                Icon(
+                                    imageVector = Icons.Outlined.KeyboardArrowRight,
+                                    contentDescription = "Selecionar",
+                                    tint = Muted,
+                                    modifier = Modifier.size(18.dp)
                                 )
                             }
                         }
                     }
+
+                    // "+ Entrar em outro clube" — dashed outline button
+                    Box(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .clip(RoundedCornerShape(16.dp))
+                            .border(
+                                BorderStroke(1.5.dp, Divider),
+                                shape = RoundedCornerShape(16.dp)
+                            )
+                            .clickable { onNavigateToJoinClub() }
+                            .padding(vertical = 14.dp),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Row(
+                            horizontalArrangement = Arrangement.spacedBy(8.dp),
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Icon(
+                                imageVector = Icons.Outlined.Add,
+                                contentDescription = null,
+                                tint = Muted,
+                                modifier = Modifier.size(16.dp)
+                            )
+                            Text(
+                                text = "Entrar em outro clube",
+                                style = MaterialTheme.typography.bodyMedium.copy(
+                                    fontFamily = InterFontFamily,
+                                    fontWeight = FontWeight.SemiBold,
+                                    color = Muted
+                                )
+                            )
+                        }
+                    }
                 }
             }
 
+            // ── Sair da conta ────────────────────────────────────────────
             item {
-                Spacer(modifier = Modifier.height(16.dp))
-                OutlinedButton(
+                Spacer(modifier = Modifier.height(4.dp))
+                TbButton(
+                    text = "Sair da conta",
                     onClick = { showLogoutDialog = true },
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .height(52.dp),
-                    shape = RoundedCornerShape(26.dp),
-                    border = BorderStroke(1.dp, Terracota)
-                ) {
-                    Icon(
-                        imageVector = Icons.Outlined.ExitToApp,
-                        contentDescription = "Sair",
-                        tint = Terracota
-                    )
-                    Spacer(modifier = Modifier.width(12.dp))
-                    Text(
-                        "Sair da conta",
-                        style = MaterialTheme.typography.bodyLarge.copy(fontWeight = FontWeight.Medium, color = Terracota)
-                    )
-                }
+                    variant = TbButtonVariant.Outline,
+                    size = TbButtonSize.Lg,
+                    modifier = Modifier.fillMaxWidth()
+                )
                 Spacer(modifier = Modifier.height(40.dp))
             }
         }
@@ -1804,39 +1756,40 @@ fun ProfileScreenTab(
     if (showLogoutDialog) {
         AlertDialog(
             onDismissRequest = { showLogoutDialog = false },
+            containerColor = Cream,
             title = {
                 Text(
                     "Deseja sair?",
                     style = MaterialTheme.typography.titleMedium.copy(
-                        fontFamily = FrauncesFontFamily,
+                        fontFamily = LiterataFontFamily,
                         fontSize = 18.sp,
-                        fontWeight = FontWeight.Bold
+                        fontWeight = FontWeight.Bold,
+                        color = Ink
                     )
                 )
             },
             text = {
                 Text(
                     "Tem certeza que deseja desconectar da sua conta?",
-                    style = MaterialTheme.typography.bodyMedium
+                    style = MaterialTheme.typography.bodyMedium.copy(color = Muted)
                 )
             },
             confirmButton = {
-                Button(
+                TbButton(
+                    text = "Sair",
                     onClick = {
                         showLogoutDialog = false
-                        viewModel.logout {
-                            onLogoutCompleted()
-                        }
+                        viewModel.logout { onLogoutCompleted() }
                     },
-                    colors = ButtonDefaults.buttonColors(containerColor = Terracota)
-                ) {
-                    Text("Sair", color = Color.White, fontWeight = FontWeight.Bold)
-                }
+                    variant = TbButtonVariant.Terra
+                )
             },
             dismissButton = {
-                TextButton(onClick = { showLogoutDialog = false }) {
-                    Text("Cancelar", color = MaterialTheme.colorScheme.onSurfaceVariant)
-                }
+                TbButton(
+                    text = "Cancelar",
+                    onClick = { showLogoutDialog = false },
+                    variant = TbButtonVariant.Outline
+                )
             }
         )
     }
@@ -1854,157 +1807,179 @@ fun EditProfileView(
     var email by remember { mutableStateOf(initialEmail) }
     var avatarUrl by remember { mutableStateOf(initialAvatarUrl) }
 
-    val avatars = listOf(
-        "https://lh3.googleusercontent.com/aida-public/AB6AXuCVScro7b5L7FyxSBjNpeqetGOxXZcJe5_EViRuBb5j15OIqZzjjFE8AD5HxgnDcV__koM3NJtsawXA84KY9YNkGFN7fhPvCmJozzDXIkaDWzjObrvzqA2QOSHYCkvK6No2M6UEtsJXEoOaqY7O0WDiVtrhyaKZIqMxGEdP732KB_qtc7_tWeZHNZ9WEOJp6PTJnWMO-kidNZ_0LEvCMirIjMy140n059Elt4YwhfPZbjqKivR3NRgIsXyLxp8THGS41Y3roxiIJS8",
-        "https://images.unsplash.com/photo-1544005313-94ddf0286df2?auto=format&fit=crop&q=80&w=120",
-        "https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&q=80&w=120",
-        "https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?auto=format&fit=crop&q=80&w=120",
-        "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?auto=format&fit=crop&q=80&w=120",
-        "https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?auto=format&fit=crop&q=80&w=120"
-    )
+    // Preset avatar names (initials-based, matching react prototype)
+    val presetNames = listOf("Bia", "Marina", "Rafael", "Júlia", "Leo", "Helena")
 
     LazyColumn(
         modifier = Modifier
             .fillMaxSize()
-            .padding(horizontal = 24.dp),
+            .background(CardSoft)
+            .padding(horizontal = 28.dp),
         verticalArrangement = Arrangement.spacedBy(20.dp),
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
         item {
             Spacer(modifier = Modifier.height(16.dp))
             Text(
-                text = "Alterar dados do perfil",
+                text = "Editar perfil",
                 style = MaterialTheme.typography.titleLarge.copy(
-                    fontWeight = FontWeight.Bold,
-                    fontFamily = androidx.compose.ui.text.font.FontFamily.Serif,
+                    fontFamily = LiterataFontFamily,
+                    fontWeight = FontWeight.SemiBold,
                     fontSize = 22.sp,
-                    color = MaterialTheme.colorScheme.onBackground
+                    color = Ink
                 ),
-                textAlign = TextAlign.Center
+                textAlign = TextAlign.Center,
+                modifier = Modifier.fillMaxWidth()
             )
         }
 
+        // ── Large avatar preview with edit badge ──
         item {
             Box(
-                modifier = Modifier.size(96.dp),
+                modifier = Modifier.size(100.dp),
                 contentAlignment = Alignment.BottomEnd
             ) {
-                MemberAvatar(name = name.ifEmpty { "Você" }, avatarUrl = avatarUrl, size = 96.dp)
+                Avatar(
+                    name = name.ifEmpty { "Você" },
+                    avatarUrl = avatarUrl,
+                    size = 100.dp
+                )
                 Box(
                     modifier = Modifier
-                        .size(28.dp)
-                        .background(Terracota, CircleShape)
-                        .padding(4.dp),
+                        .size(32.dp)
+                        .background(Oliva, CircleShape)
+                        .border(3.dp, CardSoft, CircleShape),
                     contentAlignment = Alignment.Center
                 ) {
                     Icon(
                         imageVector = Icons.Outlined.Edit,
-                        contentDescription = "Selecionar Foto",
-                        tint = Color.White,
+                        contentDescription = "Selecionar avatar",
+                        tint = Cream,
                         modifier = Modifier.size(14.dp)
                     )
                 }
             }
         }
 
+        // ── Preset avatar grid ──
         item {
             Text(
-                text = "Escolha um avatar",
-                style = MaterialTheme.typography.bodyMedium.copy(fontWeight = FontWeight.Bold),
+                text = "ESCOLHER UM AVATAR",
+                style = MaterialTheme.typography.labelMedium.copy(
+                    fontFamily = InterFontFamily,
+                    fontWeight = FontWeight.SemiBold,
+                    color = Muted
+                ),
                 modifier = Modifier.fillMaxWidth()
             )
-            Spacer(modifier = Modifier.height(8.dp))
+            Spacer(modifier = Modifier.height(10.dp))
             Row(
                 modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.spacedBy(10.dp, Alignment.CenterHorizontally)
+                horizontalArrangement = Arrangement.SpaceBetween
             ) {
-                avatars.forEach { url ->
-                    val isSelected = avatarUrl == url
+                presetNames.forEach { preset ->
+                    val isSelected = avatarUrl == preset
                     Box(
                         modifier = Modifier
-                            .size(48.dp)
-                            .border(
-                                width = if (isSelected) 3.dp else 0.dp,
-                                color = if (isSelected) Terracota else Color.Transparent,
-                                shape = CircleShape
-                            )
-                            .clip(CircleShape)
-                            .clickable { avatarUrl = url }
+                            .size(44.dp)
+                            .clickable { avatarUrl = preset }
                     ) {
-                        MemberAvatar(name = "User", avatarUrl = url, size = 48.dp)
+                        Avatar(
+                            name = preset,
+                            avatarUrl = "",
+                            size = 44.dp,
+                            ring = if (isSelected) Ink else null
+                        )
                     }
                 }
             }
         }
 
+        // ── Nome field ──
         item {
-            OutlinedTextField(
-                value = name,
-                onValueChange = { name = it },
-                label = { Text("Nome", color = Terracota) },
-                placeholder = { Text("Seu nome de leitor") },
-                modifier = Modifier.fillMaxWidth(),
-                shape = RoundedCornerShape(12.dp),
-                singleLine = true,
-                colors = OutlinedTextFieldDefaults.colors(
-                    focusedBorderColor = Terracota,
-                    focusedLabelColor = Terracota,
-                    unfocusedBorderColor = MaterialTheme.colorScheme.outline.copy(alpha = 0.3f)
+            Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
+                Text(
+                    text = "NOME",
+                    style = MaterialTheme.typography.labelMedium.copy(
+                        fontFamily = InterFontFamily,
+                        fontWeight = FontWeight.SemiBold,
+                        color = Muted
+                    )
                 )
-            )
+                OutlinedTextField(
+                    value = name,
+                    onValueChange = { name = it },
+                    placeholder = { Text("Seu nome de leitor", color = Muted) },
+                    modifier = Modifier.fillMaxWidth(),
+                    shape = RoundedCornerShape(14.dp),
+                    singleLine = true,
+                    colors = OutlinedTextFieldDefaults.colors(
+                        focusedBorderColor = Terracota,
+                        unfocusedBorderColor = Divider,
+                        focusedContainerColor = Cream,
+                        unfocusedContainerColor = Cream,
+                        focusedTextColor = Ink,
+                        unfocusedTextColor = Ink
+                    )
+                )
+            }
         }
 
+        // ── E-mail field ──
         item {
-            OutlinedTextField(
-                value = email,
-                onValueChange = { email = it },
-                label = { Text("E-mail", color = Terracota) },
-                placeholder = { Text("exemplo@email.com") },
-                modifier = Modifier.fillMaxWidth(),
-                shape = RoundedCornerShape(12.dp),
-                singleLine = true,
-                colors = OutlinedTextFieldDefaults.colors(
-                    focusedBorderColor = Terracota,
-                    focusedLabelColor = Terracota,
-                    unfocusedBorderColor = MaterialTheme.colorScheme.outline.copy(alpha = 0.3f)
+            Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
+                Text(
+                    text = "EMAIL",
+                    style = MaterialTheme.typography.labelMedium.copy(
+                        fontFamily = InterFontFamily,
+                        fontWeight = FontWeight.SemiBold,
+                        color = Muted
+                    )
                 )
-            )
+                OutlinedTextField(
+                    value = email,
+                    onValueChange = { email = it },
+                    placeholder = { Text("exemplo@email.com", color = Muted) },
+                    modifier = Modifier.fillMaxWidth(),
+                    shape = RoundedCornerShape(14.dp),
+                    singleLine = true,
+                    colors = OutlinedTextFieldDefaults.colors(
+                        focusedBorderColor = Terracota,
+                        unfocusedBorderColor = Divider,
+                        focusedContainerColor = Cream,
+                        unfocusedContainerColor = Cream,
+                        focusedTextColor = Ink,
+                        unfocusedTextColor = Ink
+                    )
+                )
+            }
         }
 
+        // ── Cancelar / Salvar buttons ──
         item {
-            Spacer(modifier = Modifier.height(8.dp))
+            Spacer(modifier = Modifier.height(4.dp))
             Row(
                 modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.spacedBy(16.dp)
+                horizontalArrangement = Arrangement.spacedBy(10.dp)
             ) {
-                OutlinedButton(
+                TbButton(
+                    text = "Cancelar",
                     onClick = onCancel,
-                    modifier = Modifier
-                        .weight(1f)
-                        .height(52.dp),
-                    shape = RoundedCornerShape(26.dp),
-                    border = BorderStroke(1.dp, Terracota)
-                ) {
-                    Text("Cancelar", color = Terracota, style = MaterialTheme.typography.bodyLarge.copy(fontWeight = FontWeight.Bold))
-                }
-
-                Button(
+                    variant = TbButtonVariant.Outline,
+                    size = TbButtonSize.Lg,
+                    modifier = Modifier.weight(1f)
+                )
+                TbButton(
+                    text = "Salvar",
                     onClick = {
                         if (name.isNotBlank() && email.isNotBlank()) {
                             onSave(name, email, avatarUrl)
                         }
                     },
-                    modifier = Modifier
-                        .weight(1f)
-                        .height(52.dp),
-                    shape = RoundedCornerShape(26.dp),
-                    colors = ButtonDefaults.buttonColors(
-                        containerColor = Terracota,
-                        contentColor = Color.White
-                    )
-                ) {
-                    Text("Salvar", style = MaterialTheme.typography.bodyLarge.copy(fontWeight = FontWeight.Bold))
-                }
+                    variant = TbButtonVariant.Terra,
+                    size = TbButtonSize.Lg,
+                    modifier = Modifier.weight(1f)
+                )
             }
             Spacer(modifier = Modifier.height(32.dp))
         }
