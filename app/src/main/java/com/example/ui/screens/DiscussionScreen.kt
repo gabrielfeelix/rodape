@@ -7,33 +7,42 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.ui.draw.clip
-import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.outlined.ArrowBack
-import androidx.compose.material.icons.outlined.Send
-import androidx.compose.material.icons.outlined.MoreVert
 import androidx.compose.material.icons.outlined.CheckCircle
+import androidx.compose.material.icons.outlined.MoreVert
+import androidx.compose.material.icons.outlined.Send
 import androidx.compose.material.icons.outlined.Warning
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import androidx.compose.foundation.shape.CircleShape
-import androidx.compose.ui.text.style.TextOverflow
-import com.example.ui.theme.VerdeMusgo
-import com.example.ui.theme.FrauncesFontFamily
-import com.example.ui.theme.InterFontFamily
 import com.example.data.model.Comment
-import com.example.ui.components.MemberAvatar
-import com.example.ui.components.PillButton
-import com.example.ui.components.StandardCard
+import com.example.ui.components.Avatar
+import com.example.ui.components.TbButton
+import com.example.ui.components.TbButtonVariant
+import com.example.ui.components.TramabookCard
+import com.example.ui.theme.CardSoft
+import com.example.ui.theme.Cream
+import com.example.ui.theme.Divider
+import com.example.ui.theme.InterFontFamily
+import com.example.ui.theme.LiterataFontFamily
+import com.example.ui.theme.Oliva
+import com.example.ui.theme.OlivaDark
+import com.example.ui.theme.OlivaSoft
+import com.example.ui.theme.Paper
 import com.example.ui.theme.Terracota
+import com.example.ui.theme.TerracotaDark
+import com.example.ui.theme.TerracotaSoft
+import com.example.ui.theme.Tertiary
 import com.example.ui.viewmodel.MainViewModel
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -64,17 +73,21 @@ fun DiscussionScreen(
         topBar = {
             TopAppBar(
                 title = {
-                    Text(
-                        text = "Capítulo $chapterNum · $chapterTitle",
-                        style = MaterialTheme.typography.titleMedium.copy(
-                            fontFamily = FrauncesFontFamily,
-                            fontSize = 18.sp,
-                            fontWeight = FontWeight.Medium,
-                            color = MaterialTheme.colorScheme.onSurface
-                        ),
-                        maxLines = 1,
-                        overflow = TextOverflow.Ellipsis
-                    )
+                    Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                        Text(
+                            text = "CAPÍTULO $chapterNum",
+                            style = MaterialTheme.typography.labelMedium.copy(
+                                color = Tertiary,
+                                letterSpacing = 0.6.sp
+                            )
+                        )
+                        Text(
+                            text = chapterTitle,
+                            style = MaterialTheme.typography.titleLarge,
+                            maxLines = 1,
+                            overflow = TextOverflow.Ellipsis
+                        )
+                    }
                 },
                 navigationIcon = {
                     IconButton(onClick = onNavigateBack) {
@@ -94,10 +107,10 @@ fun DiscussionScreen(
                         )
                     }
                 },
-                colors = TopAppBarDefaults.topAppBarColors(containerColor = MaterialTheme.colorScheme.background)
+                colors = TopAppBarDefaults.topAppBarColors(containerColor = Paper)
             )
         },
-        containerColor = MaterialTheme.colorScheme.background
+        containerColor = Paper
     ) { padding ->
         if (isAheadOfProgress && !forceRevealDebate) {
             // Visual Spoiler Barrier
@@ -108,7 +121,7 @@ fun DiscussionScreen(
                     .padding(24.dp),
                 contentAlignment = Alignment.Center
             ) {
-                StandardCard {
+                TramabookCard {
                     Column(
                         horizontalAlignment = Alignment.CenterHorizontally,
                         verticalArrangement = Arrangement.spacedBy(16.dp),
@@ -116,7 +129,10 @@ fun DiscussionScreen(
                     ) {
                         Text(
                             text = "Atenção: possível spoiler",
-                            style = MaterialTheme.typography.headlineLarge.copy(color = Terracota, textAlign = TextAlign.Center)
+                            style = MaterialTheme.typography.headlineLarge.copy(
+                                color = Terracota,
+                                textAlign = TextAlign.Center
+                            )
                         )
 
                         Text(
@@ -128,9 +144,10 @@ fun DiscussionScreen(
 
                         Spacer(modifier = Modifier.height(8.dp))
 
-                        PillButton(
+                        TbButton(
                             text = "Revelar debate mesmo assim",
-                            onClick = { forceRevealDebate = true }
+                            onClick = { forceRevealDebate = true },
+                            variant = TbButtonVariant.TerraSoft
                         )
 
                         TextButton(onClick = onNavigateBack) {
@@ -146,96 +163,79 @@ fun DiscussionScreen(
                     .fillMaxSize()
                     .padding(padding)
             ) {
-                // Redesigned Spoiler Pill (A2)
+                // Spoiler clearance / warning banner
                 val isLido = chapterNum <= currentProgNum
                 Box(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .padding(horizontal = 16.dp, vertical = 8.dp),
-                    contentAlignment = Alignment.Center
+                        .padding(horizontal = 16.dp, vertical = 8.dp)
                 ) {
                     if (isLido) {
+                        // "Tu já passou daqui. Tá liberado." — olive card per design
                         Row(
                             modifier = Modifier
-                                .background(VerdeMusgo.copy(alpha = 0.12f), RoundedCornerShape(24.dp))
-                                .padding(vertical = 12.dp, horizontal = 20.dp),
+                                .fillMaxWidth()
+                                .background(OlivaSoft, RoundedCornerShape(14.dp))
+                                .padding(horizontal = 16.dp, vertical = 12.dp),
                             verticalAlignment = Alignment.CenterVertically,
-                            horizontalArrangement = Arrangement.Center
+                            horizontalArrangement = Arrangement.spacedBy(10.dp)
                         ) {
-                            Icon(
-                                imageVector = Icons.Outlined.CheckCircle,
-                                contentDescription = null,
-                                tint = VerdeMusgo,
-                                modifier = Modifier.size(18.dp)
-                            )
-                            Spacer(modifier = Modifier.width(8.dp))
-                            Text(
-                                text = "Tu já passou daqui. Tá liberado.",
-                                style = MaterialTheme.typography.bodyMedium.copy(
-                                    fontFamily = InterFontFamily,
-                                    fontSize = 14.sp,
-                                    fontWeight = FontWeight.Medium,
-                                    color = VerdeMusgo
+                            Box(
+                                modifier = Modifier
+                                    .size(28.dp)
+                                    .background(Oliva, CircleShape),
+                                contentAlignment = Alignment.Center
+                            ) {
+                                Icon(
+                                    imageVector = Icons.Outlined.CheckCircle,
+                                    contentDescription = null,
+                                    tint = Cream,
+                                    modifier = Modifier.size(18.dp)
                                 )
-                            )
+                            }
+                            Column {
+                                Text(
+                                    text = "Tu já passou daqui.",
+                                    style = MaterialTheme.typography.bodyMedium.copy(
+                                        fontFamily = LiterataFontFamily,
+                                        fontWeight = FontWeight.SemiBold,
+                                        color = OlivaDark
+                                    )
+                                )
+                                Text(
+                                    text = "Tá liberado.",
+                                    style = MaterialTheme.typography.bodySmall.copy(
+                                        fontFamily = InterFontFamily,
+                                        color = OlivaDark
+                                    )
+                                )
+                            }
                         }
                     } else {
                         Row(
                             modifier = Modifier
-                                .background(Terracota.copy(alpha = 0.12f), RoundedCornerShape(24.dp))
-                                .padding(vertical = 12.dp, horizontal = 20.dp),
+                                .fillMaxWidth()
+                                .background(TerracotaSoft, RoundedCornerShape(14.dp))
+                                .padding(horizontal = 16.dp, vertical = 12.dp),
                             verticalAlignment = Alignment.CenterVertically,
-                            horizontalArrangement = Arrangement.Center
+                            horizontalArrangement = Arrangement.spacedBy(10.dp)
                         ) {
                             Icon(
                                 imageVector = Icons.Outlined.Warning,
                                 contentDescription = null,
                                 tint = Terracota,
-                                modifier = Modifier.size(18.dp)
+                                modifier = Modifier.size(20.dp)
                             )
-                            Spacer(modifier = Modifier.width(8.dp))
                             Text(
                                 text = "não lido – cuidado com o spoiler!",
                                 style = MaterialTheme.typography.bodyMedium.copy(
                                     fontFamily = InterFontFamily,
-                                    fontSize = 14.sp,
                                     fontWeight = FontWeight.Medium,
-                                    color = Terracota
+                                    color = TerracotaDark
                                 )
                             )
                         }
                     }
-                }
-
-                // Editorial Title (B4)
-                Column(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(horizontal = 24.dp, vertical = 8.dp),
-                    horizontalAlignment = Alignment.CenterHorizontally
-                ) {
-                    Text(
-                        text = "CAPÍTULO $chapterNum",
-                        style = MaterialTheme.typography.bodySmall.copy(
-                            fontFamily = InterFontFamily,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.5f),
-                            fontWeight = FontWeight.Medium,
-                            fontSize = 12.sp,
-                            letterSpacing = 1.5.sp
-                        ),
-                        textAlign = TextAlign.Center
-                    )
-                    Spacer(modifier = Modifier.height(4.dp))
-                    Text(
-                        text = chapterTitle,
-                        style = MaterialTheme.typography.titleLarge.copy(
-                            fontFamily = FrauncesFontFamily,
-                            color = MaterialTheme.colorScheme.onSurface,
-                            fontWeight = FontWeight.Medium,
-                            fontSize = 22.sp
-                        ),
-                        textAlign = TextAlign.Center
-                    )
                 }
 
                 if (comments.isEmpty()) {
@@ -257,47 +257,71 @@ fun DiscussionScreen(
                         modifier = Modifier
                             .fillMaxWidth()
                             .weight(1f),
-                        contentPadding = PaddingValues(horizontal = 24.dp, vertical = 8.dp),
-                        verticalArrangement = Arrangement.spacedBy(16.dp)
+                        contentPadding = PaddingValues(horizontal = 18.dp, vertical = 14.dp),
+                        verticalArrangement = Arrangement.spacedBy(14.dp)
                     ) {
                         items(comments) { comment ->
                             val userObj = members.find { it.id == comment.userId }
                             val userNameVal = if (comment.userId == "user_voce") "Você" else userObj?.nome ?: "Iniciante"
                             val commentReactions = reactions.filter { it.commentId == comment.id }
+                            val isOwn = comment.userId == "user_voce"
 
                             Row(
                                 modifier = Modifier.fillMaxWidth(),
-                                horizontalArrangement = Arrangement.spacedBy(12.dp)
+                                horizontalArrangement = Arrangement.spacedBy(10.dp)
                             ) {
-                                MemberAvatar(name = userNameVal, avatarUrl = userObj?.avatarUrl ?: "")
+                                Avatar(
+                                    name = userNameVal,
+                                    avatarUrl = userObj?.avatarUrl ?: "",
+                                    size = 36.dp
+                                )
 
-                                Column(
-                                    modifier = Modifier.weight(1f)
-                                ) {
-                                    StandardCard(
-                                        modifier = Modifier.fillMaxWidth().clickable {
-                                            selectedCommentToReact = comment
-                                        }
+                                Column(modifier = Modifier.weight(1f)) {
+                                    // Comment bubble
+                                    Box(
+                                        modifier = Modifier
+                                            .fillMaxWidth()
+                                            .background(
+                                                color = if (isOwn) TerracotaSoft else Cream,
+                                                shape = RoundedCornerShape(14.dp)
+                                            )
+                                            .then(
+                                                if (!isOwn) Modifier.border(
+                                                    width = 0.5.dp,
+                                                    color = Divider,
+                                                    shape = RoundedCornerShape(14.dp)
+                                                ) else Modifier
+                                            )
+                                            .clip(RoundedCornerShape(14.dp))
+                                            .clickable { selectedCommentToReact = comment }
+                                            .padding(horizontal = 14.dp, vertical = 10.dp)
                                     ) {
-                                        Column(
-                                            verticalArrangement = Arrangement.spacedBy(4.dp)
-                                        ) {
+                                        Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
                                             Text(
-                                                text = userNameVal,
-                                                style = MaterialTheme.typography.bodyMedium.copy(fontWeight = FontWeight.Bold, color = Terracota)
+                                                text = if (isOwn) "Tu" else userNameVal,
+                                                style = MaterialTheme.typography.bodyMedium.copy(
+                                                    fontFamily = InterFontFamily,
+                                                    fontWeight = FontWeight.SemiBold,
+                                                    color = if (isOwn) TerracotaDark else MaterialTheme.colorScheme.onSurface
+                                                )
                                             )
                                             Text(
                                                 text = comment.texto,
-                                                style = MaterialTheme.typography.bodyLarge
+                                                style = MaterialTheme.typography.bodyMedium.copy(
+                                                    fontFamily = LiterataFontFamily,
+                                                    fontSize = 14.5.sp,
+                                                    lineHeight = 21.sp,
+                                                    color = MaterialTheme.colorScheme.onSurface
+                                                )
                                             )
                                         }
                                     }
 
-                                    // Render refined and responsive comment reactions (B9)
+                                    // Reaction chips
                                     if (commentReactions.isNotEmpty()) {
                                         Spacer(modifier = Modifier.height(6.dp))
                                         Row(
-                                            horizontalArrangement = Arrangement.spacedBy(8.dp),
+                                            horizontalArrangement = Arrangement.spacedBy(6.dp),
                                             verticalAlignment = Alignment.CenterVertically
                                         ) {
                                             val emojiGroups = commentReactions.groupBy { it.emoji }
@@ -305,39 +329,35 @@ fun DiscussionScreen(
                                                 val count = list.size
                                                 val hasUserReacted = list.any { it.userId == "user_voce" }
 
-                                                val darkTheme = androidx.compose.foundation.isSystemInDarkTheme()
-                                                val reactedBg = Terracota.copy(alpha = 0.08f)
-                                                val normalBg = if (darkTheme) Color(0xFF2E2A24) else Color(0xFFFBF7EE)
-
-                                                val borderStroke = if (hasUserReacted) {
+                                                val chipBg = if (hasUserReacted) TerracotaSoft else CardSoft
+                                                val chipBorder = if (hasUserReacted) {
                                                     BorderStroke(1.dp, Terracota)
                                                 } else {
-                                                    BorderStroke(1.dp, Color.Transparent)
+                                                    BorderStroke(1.dp, Divider)
                                                 }
 
                                                 Box(
                                                     modifier = Modifier
-                                                        .background(if (hasUserReacted) reactedBg else normalBg, RoundedCornerShape(14.dp))
-                                                        .border(borderStroke, RoundedCornerShape(14.dp))
-                                                        .clip(RoundedCornerShape(14.dp))
+                                                        .background(chipBg, RoundedCornerShape(999.dp))
+                                                        .border(chipBorder, RoundedCornerShape(999.dp))
+                                                        .clip(RoundedCornerShape(999.dp))
                                                         .clickable { viewModel.toggleReaction(comment.id, emoji) }
-                                                        .padding(horizontal = 8.dp, vertical = 4.dp)
+                                                        .padding(horizontal = 8.dp, vertical = 3.dp)
                                                 ) {
                                                     Row(
                                                         verticalAlignment = Alignment.CenterVertically,
-                                                        horizontalArrangement = Arrangement.spacedBy(6.dp)
+                                                        horizontalArrangement = Arrangement.spacedBy(4.dp)
                                                     ) {
                                                         Text(
                                                             text = emoji,
-                                                            fontSize = 16.sp
+                                                            fontSize = 12.sp
                                                         )
                                                         Text(
                                                             text = count.toString(),
                                                             style = MaterialTheme.typography.bodySmall.copy(
                                                                 fontFamily = InterFontFamily,
-                                                                fontSize = 13.sp,
-                                                                fontWeight = FontWeight.Medium,
-                                                                color = if (hasUserReacted) Terracota else MaterialTheme.colorScheme.onSurfaceVariant
+                                                                fontWeight = FontWeight.SemiBold,
+                                                                color = if (hasUserReacted) TerracotaDark else Tertiary
                                                             )
                                                         )
                                                     }
@@ -351,42 +371,73 @@ fun DiscussionScreen(
                     }
                 }
 
-                // Comment input box
+                // Comment input footer
                 Surface(
                     modifier = Modifier.fillMaxWidth(),
-                    border = BorderStroke(0.5.dp, MaterialTheme.colorScheme.outline.copy(alpha = 0.3f)),
-                    color = MaterialTheme.colorScheme.background
+                    color = Cream,
+                    border = BorderStroke(0.5.dp, Divider)
                 ) {
                     Row(
                         modifier = Modifier
                             .fillMaxWidth()
-                            .padding(16.dp),
+                            .padding(horizontal = 14.dp, vertical = 10.dp),
                         verticalAlignment = Alignment.CenterVertically,
-                        horizontalArrangement = Arrangement.spacedBy(12.dp)
+                        horizontalArrangement = Arrangement.spacedBy(8.dp)
                     ) {
-                        OutlinedTextField(
-                            value = commentText,
-                            onValueChange = { commentText = it },
-                            placeholder = { Text("Comenta esse capítulo...") },
-                            modifier = Modifier.weight(1f),
-                            shape = RoundedCornerShape(24.dp),
-                            maxLines = 4
-                        )
+                        // Rounded text field with Cream background and Divider border
+                        Box(
+                            modifier = Modifier
+                                .weight(1f)
+                                .background(Paper, RoundedCornerShape(999.dp))
+                                .border(1.dp, Divider, RoundedCornerShape(999.dp))
+                                .clip(RoundedCornerShape(999.dp))
+                        ) {
+                            OutlinedTextField(
+                                value = commentText,
+                                onValueChange = { commentText = it },
+                                placeholder = {
+                                    Text(
+                                        text = "Comenta esse capítulo...",
+                                        style = MaterialTheme.typography.bodyMedium.copy(
+                                            fontFamily = InterFontFamily,
+                                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                                        )
+                                    )
+                                },
+                                modifier = Modifier.fillMaxWidth(),
+                                shape = RoundedCornerShape(999.dp),
+                                maxLines = 4,
+                                colors = OutlinedTextFieldDefaults.colors(
+                                    focusedBorderColor = Oliva,
+                                    unfocusedBorderColor = Divider,
+                                    focusedContainerColor = Paper,
+                                    unfocusedContainerColor = Paper
+                                )
+                            )
+                        }
 
-                        IconButton(
-                            onClick = {
-                                if (commentText.trim().isNotEmpty()) {
-                                    viewModel.sendComment(chapterId, commentText)
-                                    commentText = ""
-                                }
-                            },
-                            enabled = commentText.trim().isNotEmpty(),
-                            colors = IconButtonDefaults.iconButtonColors(contentColor = Terracota)
+                        // Circular send button — Terracota when active
+                        Box(
+                            modifier = Modifier
+                                .size(44.dp)
+                                .background(
+                                    color = if (commentText.trim().isNotEmpty()) Terracota else CardSoft,
+                                    shape = CircleShape
+                                )
+                                .clip(CircleShape)
+                                .clickable(enabled = commentText.trim().isNotEmpty()) {
+                                    if (commentText.trim().isNotEmpty()) {
+                                        viewModel.sendComment(chapterId, commentText)
+                                        commentText = ""
+                                    }
+                                },
+                            contentAlignment = Alignment.Center
                         ) {
                             Icon(
                                 imageVector = Icons.Outlined.Send,
                                 contentDescription = "Enviar",
-                                tint = if (commentText.trim().isNotEmpty()) Terracota else MaterialTheme.colorScheme.onSurfaceVariant
+                                tint = if (commentText.trim().isNotEmpty()) Cream else MaterialTheme.colorScheme.onSurfaceVariant,
+                                modifier = Modifier.size(20.dp)
                             )
                         }
                     }

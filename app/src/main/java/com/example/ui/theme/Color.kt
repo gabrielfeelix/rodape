@@ -33,7 +33,3 @@ val Cream = Color(0xFFFBFAF4)
 val Divider = Color(0xFFE9E7DD)
 val DividerSoft = Color(0xFFF1EFE6)
 val DisabledSurface = Color(0xFFD8C9B8)
-
-// Compat: nomes antigos ainda referenciados pelas telas atuais.
-// Serão removidos quando as telas forem re-skinadas nas fases seguintes.
-val VerdeMusgo = Oliva

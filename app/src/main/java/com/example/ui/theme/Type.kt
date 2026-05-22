@@ -38,10 +38,6 @@ val InterFontFamily = FontFamily(
     Font(googleFont = InterFont, fontProvider = fontProvider, weight = FontWeight.Bold),
 )
 
-// Alias de compatibilidade: telas atuais importam FrauncesFontFamily.
-// Aponta para Literata para não quebrar a compilação; removido no re-skin.
-val FrauncesFontFamily = LiterataFontFamily
-
 val Typography = Typography(
     displayLarge = TextStyle(
         fontFamily = LiterataFontFamily, fontWeight = FontWeight.SemiBold,

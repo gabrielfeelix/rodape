@@ -39,11 +39,30 @@ import androidx.compose.ui.unit.sp
 import com.example.data.model.*
 import com.example.ui.components.*
 import com.example.ui.theme.Terracota
-import com.example.ui.theme.VerdeMusgo
+import com.example.ui.theme.TerracotaSoft
+import com.example.ui.theme.OlivaDeep
+import com.example.ui.theme.Oliva
+import com.example.ui.theme.OlivaSoft
+import com.example.ui.theme.OlivaMid
+import com.example.ui.theme.Cream
+import com.example.ui.theme.CardSoft
+import com.example.ui.theme.CardSurface
+import com.example.ui.theme.Divider
+import com.example.ui.theme.TertiarySoft
+import com.example.ui.theme.Ink
+import com.example.ui.theme.Muted
+import com.example.ui.theme.DividerSoft
+import com.example.ui.theme.LiterataFontFamily
+import com.example.ui.theme.clubColorFor
 import com.example.ui.viewmodel.MainViewModel
+import com.example.ui.components.Cover
+import com.example.ui.components.Pill
+import com.example.ui.components.PillVariant
+import com.example.ui.components.ProgressBar
+import com.example.ui.components.TramabookCard
+import com.example.ui.components.TbSectionHeader
 
 import androidx.compose.foundation.lazy.LazyRow
-import com.example.ui.theme.FrauncesFontFamily
 import com.example.ui.theme.InterFontFamily
 import androidx.compose.ui.text.buildAnnotatedString
 import androidx.compose.ui.text.withStyle
@@ -76,7 +95,7 @@ fun MainTabsScreen(
             CenterAlignedTopAppBar(
                 navigationIcon = {
                     Box(modifier = Modifier.padding(start = 16.dp)) {
-                        MemberAvatar(
+                        Avatar(
                             name = currentUser?.nome ?: "Você",
                             avatarUrl = currentUser?.avatarUrl ?: "",
                             size = 40.dp,
@@ -101,7 +120,7 @@ fun MainTabsScreen(
                             style = MaterialTheme.typography.titleLarge.copy(
                                 fontWeight = FontWeight.Medium,
                                 color = Terracota,
-                                fontFamily = FrauncesFontFamily,
+                                fontFamily = LiterataFontFamily,
                                 fontSize = 22.sp
                             )
                         )
@@ -195,14 +214,14 @@ fun MainTabsScreen(
                         .align(Alignment.CenterHorizontally)
                         .padding(bottom = 16.dp)
                         .size(width = 32.dp, height = 4.dp)
-                        .background(Color.LightGray)
+                        .background(TertiarySoft)
                         .clip(CircleShape)
                 )
 
                 Text(
                     text = "Trocar de clube",
                     style = MaterialTheme.typography.titleMedium.copy(
-                        fontFamily = FrauncesFontFamily,
+                        fontFamily = LiterataFontFamily,
                         fontSize = 18.sp,
                         fontWeight = FontWeight.Medium
                     ),
@@ -219,20 +238,13 @@ fun MainTabsScreen(
                     allClubs.forEach { club ->
                         val isActive = club.id == activeClub?.id
                         val lastActivity = currentBooks[club.id] ?: "Sem livro atual"
-                        val clubColor = when (club.cor) {
-                            "0" -> Color(0xFF8C4027)
-                            "1" -> Color(0xFF4C663D)
-                            "2" -> Color(0xFF5A5852)
-                            "3" -> Color(0xFFFDE1D8)
-                            "4" -> Color(0xFF7A7973)
-                            else -> try { Color(android.graphics.Color.parseColor(club.cor)) } catch (e: Exception) { Terracota }
-                        }
+                        val resolvedClubColor = clubColorFor(club.cor)
 
                         Row(
                             modifier = Modifier
                                 .fillMaxWidth()
                                 .clip(RoundedCornerShape(16.dp))
-                                .background(if (isActive) MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.3f) else Color.Transparent)
+                                .background(if (isActive) OlivaSoft.copy(alpha = 0.35f) else Color.Transparent)
                                 .border(
                                     width = 1.dp,
                                     color = if (isActive) Terracota else MaterialTheme.colorScheme.outline.copy(alpha = 0.5f),
@@ -248,12 +260,12 @@ fun MainTabsScreen(
                             Box(
                                 modifier = Modifier
                                     .size(40.dp)
-                                    .background(clubColor, CircleShape),
+                                    .background(resolvedClubColor.bg, CircleShape),
                                 contentAlignment = Alignment.Center
                             ) {
                                 Text(
                                     text = club.nome.take(1).uppercase(),
-                                    color = Color.White,
+                                    color = resolvedClubColor.ink,
                                     fontWeight = FontWeight.Bold,
                                     fontSize = 16.sp
                                 )
@@ -265,7 +277,7 @@ fun MainTabsScreen(
                                 Text(
                                     text = club.nome,
                                     style = MaterialTheme.typography.bodyLarge.copy(
-                                        fontFamily = FrauncesFontFamily,
+                                        fontFamily = LiterataFontFamily,
                                         fontSize = 16.sp,
                                         fontWeight = FontWeight.Medium
                                     )
@@ -283,13 +295,13 @@ fun MainTabsScreen(
                             if (isActive) {
                                 Surface(
                                     shape = RoundedCornerShape(8.dp),
-                                    color = VerdeMusgo.copy(alpha = 0.15f),
+                                    color = OlivaSoft,
                                     modifier = Modifier.padding(start = 8.dp)
                                 ) {
                                     Text(
                                         text = "atual",
                                         style = MaterialTheme.typography.labelSmall.copy(
-                                            color = VerdeMusgo,
+                                            color = Oliva,
                                             fontFamily = InterFontFamily,
                                             fontSize = 11.sp,
                                             fontWeight = FontWeight.Bold
@@ -304,25 +316,13 @@ fun MainTabsScreen(
 
                 Spacer(modifier = Modifier.height(16.dp))
 
-                OutlinedButton(
-                    onClick = {
-                        showBottomSheet = false
-                        onNavigateToJoinClub()
-                    },
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(vertical = 8.dp),
-                    border = BorderStroke(1.dp, Terracota),
-                    colors = ButtonDefaults.outlinedButtonColors(contentColor = Terracota)
-                ) {
-                    Text(
-                        text = "+ Entrar em outro clube",
-                        style = MaterialTheme.typography.bodyMedium.copy(
-                            fontFamily = InterFontFamily,
-                            fontWeight = FontWeight.Medium
-                        )
-                    )
-                }
+                TbButton(
+                    text = "+ Entrar em outro clube",
+                    onClick = { showBottomSheet = false; onNavigateToJoinClub() },
+                    variant = TbButtonVariant.Outline,
+                    size = TbButtonSize.Md,
+                    modifier = Modifier.fillMaxWidth().padding(vertical = 8.dp),
+                )
             }
         }
     }
@@ -341,16 +341,15 @@ fun CustomBottomBar(
         contentAlignment = Alignment.Center
     ) {
         Surface(
-            modifier = Modifier
-                .fillMaxWidth()
-                .height(68.dp),
-            shape = RoundedCornerShape(24.dp),
-            color = MaterialTheme.colorScheme.surface,
-            shadowElevation = 8.dp,
-            border = BorderStroke(1.dp, Terracota.copy(alpha = 0.15f))
+            modifier = Modifier.fillMaxWidth(),
+            shape = RoundedCornerShape(999.dp),
+            color = OlivaDeep,
+            shadowElevation = 8.dp
         ) {
             Row(
-                modifier = Modifier.fillMaxSize().padding(horizontal = 8.dp),
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(6.dp),
                 horizontalArrangement = Arrangement.SpaceAround,
                 verticalAlignment = Alignment.CenterVertically
             ) {
@@ -390,45 +389,54 @@ fun BottomBarItem(
     selected: Boolean,
     onClick: () -> Unit
 ) {
-    val activeColor = Color.White
-    val inactiveColor = MaterialTheme.colorScheme.onSurfaceVariant
-    val iconColor = if (selected) activeColor else inactiveColor
-    val textColor = if (selected) Terracota else inactiveColor
-
-    Column(
-        modifier = Modifier
-            .fillMaxHeight()
-            .clickable(
-                interactionSource = remember { MutableInteractionSource() },
-                indication = ripple(bounded = false, radius = 28.dp),
-                onClick = onClick
+    if (selected) {
+        Row(
+            modifier = Modifier
+                .clip(RoundedCornerShape(999.dp))
+                .background(Terracota)
+                .clickable(
+                    interactionSource = remember { MutableInteractionSource() },
+                    indication = ripple(bounded = true),
+                    onClick = onClick
+                )
+                .padding(horizontal = 16.dp, vertical = 10.dp),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(6.dp)
+        ) {
+            Icon(
+                imageVector = icon,
+                contentDescription = label,
+                tint = Cream,
+                modifier = Modifier.size(20.dp)
             )
-            .padding(horizontal = 4.dp),
-        verticalArrangement = Arrangement.Center,
-        horizontalAlignment = Alignment.CenterHorizontally
-    ) {
+            Text(
+                text = label,
+                style = MaterialTheme.typography.labelLarge.copy(
+                    color = Cream,
+                    fontFamily = InterFontFamily,
+                    fontWeight = FontWeight.SemiBold
+                )
+            )
+        }
+    } else {
         Box(
             modifier = Modifier
-                .width(48.dp)
-                .height(28.dp)
-                .clip(RoundedCornerShape(14.dp))
-                .background(if (selected) Terracota else Color.Transparent),
+                .clip(RoundedCornerShape(999.dp))
+                .clickable(
+                    interactionSource = remember { MutableInteractionSource() },
+                    indication = ripple(bounded = true),
+                    onClick = onClick
+                )
+                .padding(horizontal = 12.dp, vertical = 10.dp),
             contentAlignment = Alignment.Center
         ) {
             Icon(
                 imageVector = icon,
                 contentDescription = label,
-                tint = iconColor,
-                modifier = Modifier.size(18.dp)
+                tint = Cream.copy(alpha = 0.65f),
+                modifier = Modifier.size(20.dp)
             )
         }
-        Spacer(modifier = Modifier.height(2.dp))
-        Text(
-            text = label,
-            fontSize = 11.sp,
-            fontWeight = if (selected) FontWeight.Bold else FontWeight.Medium,
-            color = textColor
-        )
     }
 }
 
@@ -480,16 +488,19 @@ fun HomeScreenTab(
             Spacer(modifier = Modifier.height(4.dp))
             Text(
                 text = buildAnnotatedString {
-                    append("A galera tá ")
+                    withStyle(SpanStyle(color = Ink)) {
+                        append("A galera tá ")
+                    }
                     withStyle(SpanStyle(
                         fontStyle = FontStyle.Italic,
-                        fontFamily = FrauncesFontFamily,
-                        color = VerdeMusgo
+                        fontFamily = LiterataFontFamily,
+                        color = Oliva
                     )) {
                         append("esperando.")
                     }
                 },
                 style = MaterialTheme.typography.displayMedium.copy(
+                    fontFamily = LiterataFontFamily,
                     fontWeight = FontWeight.Bold,
                     fontSize = 32.sp,
                     lineHeight = 38.sp
@@ -554,7 +565,7 @@ fun HomeScreenTab(
                     modifier = Modifier
                         .fillMaxWidth()
                         .clip(RoundedCornerShape(24.dp))
-                        .background(Color(0xFF1B221B))
+                        .background(OlivaDeep)
                         .padding(20.dp)
                 ) {
                     Column {
@@ -572,7 +583,7 @@ fun HomeScreenTab(
                                     text = dayNameStr,
                                     style = MaterialTheme.typography.labelMedium.copy(
                                         fontWeight = FontWeight.Bold,
-                                        color = Color.White.copy(alpha = 0.5f),
+                                        color = Cream.copy(alpha = 0.5f),
                                         letterSpacing = 0.5.sp
                                     )
                                 )
@@ -582,8 +593,9 @@ fun HomeScreenTab(
                                     style = MaterialTheme.typography.displayMedium.copy(
                                         fontSize = 38.sp,
                                         fontWeight = FontWeight.Bold,
-                                        color = Color.White,
-                                        fontFamily = FrauncesFontFamily
+                                        color = Cream,
+                                        fontFamily = LiterataFontFamily,
+                                        fontStyle = FontStyle.Italic
                                     )
                                 )
                                 Spacer(modifier = Modifier.height(2.dp))
@@ -591,7 +603,7 @@ fun HomeScreenTab(
                                     text = finalMonthLabel,
                                     style = MaterialTheme.typography.bodySmall.copy(
                                         fontSize = 11.sp,
-                                        color = Color.White.copy(alpha = 0.4f)
+                                        color = Cream.copy(alpha = 0.4f)
                                     )
                                 )
                             }
@@ -601,7 +613,7 @@ fun HomeScreenTab(
                                 modifier = Modifier
                                     .width(1.dp)
                                     .height(84.dp)
-                                    .background(Color.White.copy(alpha = 0.15f))
+                                    .background(Cream.copy(alpha = 0.15f))
                             )
 
                             // Detail Column
@@ -613,21 +625,8 @@ fun HomeScreenTab(
                                     horizontalArrangement = Arrangement.SpaceBetween,
                                     verticalAlignment = Alignment.CenterVertically
                                 ) {
-                                    // "em 3 dias" pill
-                                    Box(
-                                        modifier = Modifier
-                                            .background(Color(0xFFF1E9DB), RoundedCornerShape(12.dp))
-                                            .padding(horizontal = 8.dp, vertical = 2.dp)
-                                    ) {
-                                        Text(
-                                            "em 3 dias",
-                                            style = MaterialTheme.typography.labelSmall.copy(
-                                                fontSize = 10.sp,
-                                                fontWeight = FontWeight.Bold,
-                                                color = Color(0xFF1B221B)
-                                            )
-                                        )
-                                    }
+                                    // "em 3 dias" countdown pill
+                                    Pill(text = "em 3 dias", variant = PillVariant.Default)
                                 }
 
                                 Spacer(modifier = Modifier.height(4.dp))
@@ -635,10 +634,10 @@ fun HomeScreenTab(
                                 Text(
                                     text = meeting?.agenda?.ifEmpty { "Discussão: A Hora da Estrela" } ?: "Discussão: A Hora da Estrela",
                                     style = MaterialTheme.typography.titleMedium.copy(
-                                        fontFamily = FrauncesFontFamily,
+                                        fontFamily = LiterataFontFamily,
                                         fontSize = 18.sp,
                                         fontWeight = FontWeight.SemiBold,
-                                        color = Color.White
+                                        color = Cream
                                     ),
                                     maxLines = 2,
                                     overflow = TextOverflow.Ellipsis
@@ -653,13 +652,13 @@ fun HomeScreenTab(
                                     Icon(
                                         imageVector = Icons.Outlined.DateRange,
                                         contentDescription = null,
-                                        tint = Color.White.copy(alpha = 0.6f),
+                                        tint = Cream.copy(alpha = 0.6f),
                                         modifier = Modifier.size(14.dp)
                                     )
                                     Text(
                                         text = meeting?.hora ?: "19:00 — 21:00",
                                         style = MaterialTheme.typography.bodySmall,
-                                        color = Color.White.copy(alpha = 0.6f)
+                                        color = Cream.copy(alpha = 0.6f)
                                     )
                                 }
 
@@ -672,13 +671,13 @@ fun HomeScreenTab(
                                     Icon(
                                         imageVector = Icons.Outlined.Place,
                                         contentDescription = null,
-                                        tint = Color.White.copy(alpha = 0.6f),
+                                        tint = Cream.copy(alpha = 0.6f),
                                         modifier = Modifier.size(14.dp)
                                     )
                                     Text(
                                         text = meeting?.local ?: "Café Lispector, Vila Madalena",
                                         style = MaterialTheme.typography.bodySmall,
-                                        color = Color.White.copy(alpha = 0.6f),
+                                        color = Cream.copy(alpha = 0.6f),
                                         maxLines = 1,
                                         overflow = TextOverflow.Ellipsis
                                     )
@@ -693,7 +692,7 @@ fun HomeScreenTab(
                             modifier = Modifier
                                 .fillMaxWidth()
                                 .height(0.5.dp)
-                                .background(Color.White.copy(alpha = 0.12f))
+                                .background(Cream.copy(alpha = 0.12f))
                         )
 
                         Spacer(modifier = Modifier.height(16.dp))
@@ -709,19 +708,20 @@ fun HomeScreenTab(
                                 horizontalArrangement = Arrangement.spacedBy((-8).dp)
                             ) {
                                 confirmedUsers.take(3).forEach { u ->
-                                    MemberAvatar(
+                                    Avatar(
                                         name = u.nome,
-                                        avatarUrl = u.avatarUrl,
+                                        avatarUrl = u.avatarUrl ?: "",
                                         size = 28.dp,
-                                        modifier = Modifier.border(1.5.dp, Color(0xFF1B221B), CircleShape)
+                                        ring = OlivaDeep,
+                                        modifier = Modifier
                                     )
                                 }
                                 if (confirmedUsers.size > 3) {
                                     Box(
                                         modifier = Modifier
                                             .size(28.dp)
-                                            .background(Color.White.copy(alpha = 0.15f), CircleShape)
-                                            .border(1.5.dp, Color(0xFF1B221B), CircleShape),
+                                            .background(OlivaMid.copy(alpha = 0.4f), CircleShape)
+                                            .border(1.5.dp, OlivaDeep, CircleShape),
                                         contentAlignment = Alignment.Center
                                     ) {
                                         Text(
@@ -729,7 +729,7 @@ fun HomeScreenTab(
                                             style = MaterialTheme.typography.labelSmall.copy(
                                                 fontSize = 11.sp,
                                                 fontWeight = FontWeight.Bold,
-                                                color = Color.White
+                                                color = Cream
                                             )
                                         )
                                     }
@@ -738,17 +738,17 @@ fun HomeScreenTab(
                                 Text(
                                     text = if (confirmedUsers.isEmpty()) "Ninguém confirmado" else "${confirmedUsers.size} confirmaram",
                                     style = MaterialTheme.typography.bodySmall.copy(
-                                        color = Color.White.copy(alpha = 0.6f)
+                                        color = Cream.copy(alpha = 0.6f)
                                     )
                                 )
                             }
 
-                            // RSVP Toggle box interaction "Eu vou >"
+                            // RSVP Toggle — pill-style button
                             val isParticipating = rsvps.any { it.userId == (viewModel.currentUserId.value ?: "user_voce") && it.status == "Vou" }
                             Box(
                                 modifier = Modifier
                                     .clip(RoundedCornerShape(16.dp))
-                                    .background(if (isParticipating) VerdeMusgo else Color.White)
+                                    .background(if (isParticipating) Oliva else Cream)
                                     .clickable {
                                         val nextStatus = if (isParticipating) "Não vou" else "Vou"
                                         meeting?.let { m -> viewModel.rsvpMeeting(m.id, nextStatus) }
@@ -759,7 +759,7 @@ fun HomeScreenTab(
                                 Text(
                                     text = if (isParticipating) "Confirmado ✓" else "Eu vou >",
                                     style = MaterialTheme.typography.labelSmall.copy(
-                                        color = if (isParticipating) Color.White else Color(0xFF1B221B),
+                                        color = if (isParticipating) Cream else OlivaDeep,
                                         fontWeight = FontWeight.Bold
                                     )
                                 )
@@ -772,25 +772,20 @@ fun HomeScreenTab(
 
         // Section: Tua Leitura Row Card (Image 1 Left Card 2)
         item {
-            Card(
+            TramabookCard(
                 modifier = Modifier
                     .fillMaxWidth()
                     .clickable { onNavigateToTab("book") },
-                shape = RoundedCornerShape(16.dp),
-                colors = CardDefaults.cardColors(
-                    containerColor = MaterialTheme.colorScheme.surface
-                ),
-                border = BorderStroke(1.dp, MaterialTheme.colorScheme.onSurface.copy(alpha = 0.08f)),
-                elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
+                contentPadding = PaddingValues(16.dp)
             ) {
                 Row(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(16.dp),
+                    modifier = Modifier.fillMaxWidth(),
                     verticalAlignment = Alignment.CenterVertically,
                     horizontalArrangement = Arrangement.spacedBy(16.dp)
                 ) {
-                    BookCover(
+                    Cover(
+                        title = currentBook?.title ?: "A Hora da Estrela",
+                        author = currentBook?.author ?: "",
                         coverUrl = currentBook?.coverUrl ?: "",
                         width = 48.dp,
                         height = 72.dp
@@ -819,7 +814,7 @@ fun HomeScreenTab(
                         Text(
                             text = bookTitle,
                             style = MaterialTheme.typography.titleMedium.copy(
-                                fontFamily = FrauncesFontFamily,
+                                fontFamily = LiterataFontFamily,
                                 fontWeight = FontWeight.SemiBold
                             ),
                             maxLines = 1,
@@ -833,20 +828,16 @@ fun HomeScreenTab(
                             verticalAlignment = Alignment.CenterVertically,
                             horizontalArrangement = Arrangement.spacedBy(8.dp)
                         ) {
-                            LinearProgressIndicator(
-                                progress = { visualPct },
-                                modifier = Modifier
-                                    .weight(1f)
-                                    .height(6.dp)
-                                    .clip(RoundedCornerShape(3.dp)),
+                            ProgressBar(
+                                value = visualPct,
                                 color = Terracota,
-                                trackColor = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.12f)
+                                modifier = Modifier.weight(1f)
                             )
                             Text(
                                 text = "${(visualPct * 100).toInt()}%",
                                 style = MaterialTheme.typography.labelSmall.copy(
                                     fontWeight = FontWeight.Medium,
-                                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                                    color = Muted
                                 )
                             )
                         }
@@ -855,7 +846,7 @@ fun HomeScreenTab(
                     Icon(
                         imageVector = Icons.AutoMirrored.Outlined.KeyboardArrowRight,
                         contentDescription = "Ver livro",
-                        tint = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.35f),
+                        tint = Muted.copy(alpha = 0.5f),
                         modifier = Modifier.size(20.dp)
                     )
                 }
@@ -874,7 +865,7 @@ fun HomeScreenTab(
                 Text(
                     text = "Onde a galera tá",
                     style = MaterialTheme.typography.titleMedium.copy(
-                        fontFamily = FrauncesFontFamily,
+                        fontFamily = LiterataFontFamily,
                         fontWeight = FontWeight.SemiBold,
                         fontSize = 18.sp
                     )
@@ -907,14 +898,7 @@ fun HomeScreenTab(
                     val isCurrentUser = member.id == currentUserId
                     val displayName = if (isCurrentUser) "Você" else member.nome.substringBefore(" ")
 
-                    val (badgeText, badgeBg, badgeColor) = when {
-                        memChap >= totalChaps -> {
-                            Triple("Terminou", VerdeMusgo.copy(alpha = 0.12f), VerdeMusgo)
-                        }
-                        else -> {
-                            Triple("Cap. $memChap", MaterialTheme.colorScheme.surfaceVariant, MaterialTheme.colorScheme.onSurfaceVariant)
-                        }
-                    }
+                    val finished = memChap >= totalChaps
 
                     Column(
                         horizontalAlignment = Alignment.CenterHorizontally,
@@ -923,32 +907,20 @@ fun HomeScreenTab(
                     ) {
                         Box(
                             contentAlignment = Alignment.BottomCenter,
-                            modifier = Modifier.padding(bottom = 6.dp)
+                            modifier = Modifier.padding(bottom = 10.dp)
                         ) {
-                            MemberAvatar(
+                            Avatar(
                                 name = member.nome,
-                                avatarUrl = member.avatarUrl,
+                                avatarUrl = member.avatarUrl ?: "",
                                 size = 56.dp,
-                                modifier = Modifier
-                                    .border(1.5.dp, if (isCurrentUser) Terracota else Color.Transparent, CircleShape)
+                                ring = if (isCurrentUser) Terracota else null
                             )
 
-                            // Small popped-up progress badge cropped over the bottom of the avatar
-                            Box(
-                                modifier = Modifier
-                                    .offset(y = 8.dp)
-                                    .background(Color.White, RoundedCornerShape(10.dp))
-                                    .border(0.5.dp, MaterialTheme.colorScheme.outline.copy(alpha = 0.25f), RoundedCornerShape(10.dp))
-                                    .background(badgeBg, RoundedCornerShape(10.dp))
-                                    .padding(horizontal = 6.dp, vertical = 2.dp)
-                            ) {
-                                Text(
-                                    text = badgeText,
-                                    style = MaterialTheme.typography.labelSmall.copy(
-                                        fontSize = 10.sp,
-                                        fontWeight = FontWeight.Bold,
-                                        color = badgeColor
-                                    )
+                            // Small progress badge below avatar
+                            Box(modifier = Modifier.offset(y = 10.dp)) {
+                                Pill(
+                                    text = if (finished) "Terminou" else "Cap. $memChap",
+                                    variant = if (finished) PillVariant.OliveDeep else PillVariant.Default
                                 )
                             }
                         }
@@ -959,7 +931,7 @@ fun HomeScreenTab(
                             text = displayName,
                             style = MaterialTheme.typography.bodySmall.copy(
                                 fontWeight = FontWeight.Medium,
-                                color = MaterialTheme.colorScheme.onSurface
+                                color = Ink
                             ),
                             maxLines = 1,
                             overflow = TextOverflow.Ellipsis
@@ -993,11 +965,11 @@ fun HomeScreenTab(
         }
 
         item {
-            StandardCard {
+            TramabookCard(modifier = Modifier.fillMaxWidth()) {
                 Text(
                     text = activeClub?.descricao ?: "Um clubinho clássico de leitura íntima para tomar vinho e conversar livremente sobre livros excelentes.",
                     style = MaterialTheme.typography.bodyMedium,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                    color = Muted
                 )
             }
         }
@@ -1040,151 +1012,223 @@ fun BookDetailScreenTab(
             )
         }
     } else {
+        val totalChapters = chapters.size
+        val pct = if (totalChapters > 0) {
+            (currentChapIndex.toFloat() / totalChapters.toFloat()).coerceIn(0f, 1f)
+        } else 0f
+        val pctInt = (pct * 100).toInt()
+
         LazyColumn(
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(horizontal = 24.dp),
-            verticalArrangement = Arrangement.spacedBy(16.dp),
+            modifier = Modifier.fillMaxSize(),
+            verticalArrangement = Arrangement.spacedBy(0.dp),
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
+            // ── OLIVE HERO ──────────────────────────────────────────────────
             item {
-                Spacer(modifier = Modifier.height(16.dp))
-
-                // Beautiful Book Header Info - Center Aligned Cover with brown backdrop
                 Box(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .wrapContentWidth(Alignment.CenterHorizontally)
-                        .padding(bottom = 16.dp)
+                        .background(
+                            color = OlivaDeep,
+                            shape = RoundedCornerShape(bottomStart = 36.dp, bottomEnd = 36.dp)
+                        )
+                        .padding(start = 22.dp, end = 22.dp, top = 20.dp, bottom = 80.dp)
                 ) {
-                    Surface(
-                        modifier = Modifier
-                            .width(220.dp)
-                            .height(290.dp),
-                        shape = RoundedCornerShape(20.dp),
-                        color = Terracota,
-                        shadowElevation = 6.dp
-                    ) {
-                        Box(
-                            modifier = Modifier.fillMaxSize(),
-                            contentAlignment = Alignment.Center
-                        ) {
-                            BookCover(
-                                coverUrl = currentBook?.coverUrl ?: "",
-                                width = 160.dp,
-                                height = 240.dp,
-                                modifier = Modifier.clip(RoundedCornerShape(8.dp))
-                            )
-                        }
-                    }
-                }
+                    // Label row
+                    Text(
+                        text = "Livro atual",
+                        style = MaterialTheme.typography.labelSmall.copy(
+                            fontWeight = FontWeight.Bold,
+                            letterSpacing = 1.2.sp,
+                            color = Cream.copy(alpha = 0.70f)
+                        ),
+                        modifier = Modifier.padding(bottom = 14.dp)
+                    )
 
-                // Title
-                Text(
-                    text = currentBook!!.title,
-                    style = MaterialTheme.typography.titleLarge.copy(
-                        fontWeight = FontWeight.Bold,
-                        fontFamily = androidx.compose.ui.text.font.FontFamily.Serif,
-                        fontSize = 28.sp,
-                        color = MaterialTheme.colorScheme.onBackground
-                    ),
-                    textAlign = TextAlign.Center,
-                    modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp)
-                )
-                
-                Spacer(modifier = Modifier.height(4.dp))
-                
-                // Author
-                Text(
-                    text = currentBook!!.author,
-                    style = MaterialTheme.typography.bodyLarge.copy(
-                        color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.8f),
-                        fontSize = 18.sp
-                    ),
-                    textAlign = TextAlign.Center,
-                    modifier = Modifier.fillMaxWidth()
-                )
-
-                // Extra tagline statistics
-                val currentChap = currentChapIndex
-                val totalChapters = chapters.size
-                Text(
-                    text = "$currentChap de $totalChapters capítulos  •  ★ 4.5 do clube  •  8 leitores",
-                    style = MaterialTheme.typography.bodyMedium.copy(
-                        color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.6f),
-                        fontSize = 13.sp
-                    ),
-                    textAlign = TextAlign.Center,
-                    modifier = Modifier.fillMaxWidth().padding(vertical = 12.dp)
-                )
-
-                Spacer(modifier = Modifier.height(8.dp))
-
-                // Marcar progresso Button
-                Button(
-                    onClick = {
-                        val nextChap = currentChapIndex + 1
-                        if (nextChap <= chapters.size) {
-                            viewModel.updateBookProgress(currentBook!!.id, nextChap)
-                        }
-                    },
-                    colors = ButtonDefaults.buttonColors(
-                        containerColor = Terracota,
-                        contentColor = Color.White
-                    ),
-                    shape = RoundedCornerShape(26.dp),
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .height(52.dp)
-                        .padding(horizontal = 8.dp)
-                ) {
+                    // Cover + info row
                     Row(
-                        verticalAlignment = Alignment.CenterVertically,
-                        horizontalArrangement = Arrangement.Center
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(top = 28.dp),
+                        horizontalArrangement = Arrangement.spacedBy(18.dp),
+                        verticalAlignment = Alignment.Top
                     ) {
-                        Icon(
-                            imageVector = Icons.Outlined.Check,
-                            contentDescription = null,
-                            modifier = Modifier.size(20.dp)
+                        Cover(
+                            title = currentBook!!.title,
+                            author = currentBook!!.author,
+                            coverUrl = currentBook?.coverUrl ?: "",
+                            width = 108.dp,
+                            height = 162.dp
                         )
-                        Spacer(modifier = Modifier.width(8.dp))
-                        Text(
-                            "Marcar progresso",
-                            style = MaterialTheme.typography.bodyLarge.copy(
-                                fontWeight = FontWeight.Bold,
-                                fontSize = 16.sp
+
+                        Column(
+                            modifier = Modifier
+                                .weight(1f)
+                                .padding(top = 6.dp),
+                            verticalArrangement = Arrangement.spacedBy(6.dp)
+                        ) {
+                            Text(
+                                text = currentBook!!.title,
+                                style = MaterialTheme.typography.headlineLarge.copy(
+                                    fontWeight = FontWeight.SemiBold,
+                                    color = Cream,
+                                    lineHeight = 30.sp
+                                ),
+                                maxLines = 4,
+                                overflow = TextOverflow.Ellipsis
                             )
-                        )
+                            Text(
+                                text = currentBook!!.author,
+                                style = MaterialTheme.typography.bodyMedium.copy(
+                                    color = Cream.copy(alpha = 0.70f)
+                                )
+                            )
+                            Spacer(modifier = Modifier.height(4.dp))
+                            Text(
+                                text = "★ 4.5  ·  $totalChapters capítulos  ·  8 lendo",
+                                style = MaterialTheme.typography.bodySmall.copy(
+                                    color = Cream.copy(alpha = 0.80f)
+                                )
+                            )
+                        }
                     }
                 }
-
-                Spacer(modifier = Modifier.height(16.dp))
             }
 
+            // ── PROGRESS CARD (overlaps hero curve) ─────────────────────────
             item {
-                Text(
-                    text = "Capítulos",
-                    style = MaterialTheme.typography.titleMedium.copy(
-                        fontWeight = FontWeight.Bold,
-                        color = MaterialTheme.colorScheme.onBackground
-                    ),
-                    modifier = Modifier.fillMaxWidth().padding(vertical = 4.dp)
-                )
-
-                // List of Chapters nested inside a single gorgeous white Card/Surface
-                Surface(
-                    modifier = Modifier.fillMaxWidth(),
-                    shape = RoundedCornerShape(24.dp),
-                    color = MaterialTheme.colorScheme.surface,
-                    border = BorderStroke(1.dp, MaterialTheme.colorScheme.onSurface.copy(alpha = 0.04f)),
-                    shadowElevation = 1.dp
+                Box(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .offset(y = (-54).dp)
+                        .padding(horizontal = 22.dp)
                 ) {
-                    Column(
-                        modifier = Modifier.padding(vertical = 8.dp)
+                    TramabookCard(
+                        modifier = Modifier.fillMaxWidth(),
+                        contentPadding = PaddingValues(16.dp)
                     ) {
-                        chapters.forEachIndexed { index, chapter ->
+                        // Reading info row
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.SpaceBetween,
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Column {
+                                Text(
+                                    text = "Tua leitura",
+                                    style = MaterialTheme.typography.labelSmall.copy(
+                                        fontWeight = FontWeight.Bold,
+                                        letterSpacing = 0.6.sp,
+                                        color = Muted
+                                    )
+                                )
+                                Spacer(modifier = Modifier.height(2.dp))
+                                Text(
+                                    text = buildAnnotatedString {
+                                        withStyle(SpanStyle(fontWeight = FontWeight.SemiBold, color = Ink)) {
+                                            append("Cap. $currentChapIndex")
+                                        }
+                                        withStyle(SpanStyle(color = Muted, fontWeight = FontWeight.Normal)) {
+                                            append(" de $totalChapters")
+                                        }
+                                    },
+                                    style = MaterialTheme.typography.titleLarge
+                                )
+                            }
+
+                            // Circular ring progress indicator
+                            Box(
+                                modifier = Modifier
+                                    .size(56.dp)
+                                    .drawBehind {
+                                        val stroke = 5.dp.toPx()
+                                        val radius = (size.minDimension - stroke) / 2f
+                                        val cx = size.width / 2f
+                                        val cy = size.height / 2f
+                                        // track arc
+                                        drawArc(
+                                            color = DividerSoft,
+                                            startAngle = -90f,
+                                            sweepAngle = 360f,
+                                            useCenter = false,
+                                            style = androidx.compose.ui.graphics.drawscope.Stroke(
+                                                width = stroke
+                                            )
+                                        )
+                                        // progress arc
+                                        drawArc(
+                                            color = Terracota,
+                                            startAngle = -90f,
+                                            sweepAngle = 360f * pct,
+                                            useCenter = false,
+                                            style = androidx.compose.ui.graphics.drawscope.Stroke(
+                                                width = stroke
+                                            )
+                                        )
+                                    },
+                                contentAlignment = Alignment.Center
+                            ) {
+                                Text(
+                                    text = "$pctInt%",
+                                    style = MaterialTheme.typography.labelSmall.copy(
+                                        fontWeight = FontWeight.SemiBold,
+                                        color = Ink
+                                    )
+                                )
+                            }
+                        }
+
+                        Spacer(modifier = Modifier.height(12.dp))
+
+                        TbButton(
+                            text = "Marcar progresso",
+                            onClick = {
+                                val nextChap = currentChapIndex + 1
+                                if (nextChap <= chapters.size) {
+                                    viewModel.updateBookProgress(currentBook!!.id, nextChap)
+                                }
+                            },
+                            variant = TbButtonVariant.Terra,
+                            size = TbButtonSize.Lg,
+                            modifier = Modifier.fillMaxWidth()
+                        )
+                    }
+                }
+            }
+
+            // ── CHAPTER LIST ────────────────────────────────────────────────
+            item {
+                Column(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .offset(y = (-38).dp)
+                        .padding(horizontal = 22.dp),
+                    verticalArrangement = Arrangement.spacedBy(0.dp)
+                ) {
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(bottom = 14.dp),
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Text(
+                            text = "Capítulos",
+                            style = MaterialTheme.typography.titleLarge.copy(
+                                fontWeight = FontWeight.SemiBold,
+                                color = Ink
+                            )
+                        )
+                        val readCount = chapters.count { it.numero < currentChapIndex }
+                        Text(
+                            text = "$readCount lidos",
+                            style = MaterialTheme.typography.bodySmall.copy(color = Muted)
+                        )
+                    }
+
+                    Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                        chapters.forEach { chapter ->
                             val chapNumber = chapter.numero
-                            
                             val isCompleted = chapNumber < currentChapIndex
                             val isCurrent = chapNumber == currentChapIndex
                             val isLocked = chapNumber > currentChapIndex
@@ -1195,131 +1239,106 @@ fun BookDetailScreenTab(
                             val chapterComments by commentsFlow.collectAsState(initial = emptyList())
                             val commentsCount = chapterComments.size
 
-                            Box(
+                            // Chapter row card
+                            Surface(
                                 modifier = Modifier
                                     .fillMaxWidth()
                                     .clickable(enabled = !isLocked) {
                                         onNavigateToDiscussion(chapter.id, chapter.titulo)
-                                    }
+                                    },
+                                shape = RoundedCornerShape(16.dp),
+                                color = if (isCurrent) Cream else CardSurface,
+                                border = BorderStroke(
+                                    width = if (isCurrent) 1.5.dp else 0.5.dp,
+                                    color = if (isCurrent) Terracota else Divider
+                                )
                             ) {
-                                if (index > 0) {
-                                    HorizontalDivider(
-                                        modifier = Modifier.padding(horizontal = 24.dp),
-                                        color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.06f)
-                                    )
-                                }
-
                                 Row(
                                     modifier = Modifier
                                         .fillMaxWidth()
-                                        .then(
-                                            if (isCurrent) {
-                                                Modifier
-                                                    .background(Terracota.copy(alpha = 0.06f))
-                                                    .drawBehind {
-                                                        drawRect(
-                                                            color = Terracota,
-                                                            size = androidx.compose.ui.geometry.Size(4.dp.toPx(), size.height)
-                                                        )
-                                                    }
-                                            } else {
-                                                Modifier
-                                            }
-                                        )
-                                        .padding(horizontal = 24.dp, vertical = 20.dp),
+                                        .padding(horizontal = 14.dp, vertical = 12.dp),
                                     verticalAlignment = Alignment.CenterVertically,
-                                    horizontalArrangement = Arrangement.SpaceBetween
+                                    horizontalArrangement = Arrangement.spacedBy(14.dp)
                                 ) {
-                                    Row(
-                                        verticalAlignment = Alignment.CenterVertically,
-                                        horizontalArrangement = Arrangement.spacedBy(16.dp),
-                                        modifier = Modifier.weight(1f)
+                                    // Status indicator circle
+                                    Box(
+                                        modifier = Modifier
+                                            .size(36.dp)
+                                            .background(
+                                                color = when {
+                                                    isLocked -> DividerSoft
+                                                    isCurrent -> Terracota
+                                                    else -> OlivaSoft
+                                                },
+                                                shape = CircleShape
+                                            ),
+                                        contentAlignment = Alignment.Center
                                     ) {
-                                        if (isCompleted) {
-                                            Box(
-                                                modifier = Modifier
-                                                    .size(24.dp)
-                                                    .background(VerdeMusgo, CircleShape),
-                                                contentAlignment = Alignment.Center
-                                            ) {
-                                                Icon(
-                                                    imageVector = Icons.Outlined.Check,
-                                                    contentDescription = "Concluído",
-                                                    tint = Color.White,
-                                                    modifier = Modifier.size(14.dp)
-                                                )
-                                            }
-                                        } else if (isCurrent) {
-                                            Box(
-                                                modifier = Modifier
-                                                    .size(24.dp)
-                                                    .border(1.5.dp, Terracota, CircleShape),
-                                                contentAlignment = Alignment.Center
-                                            ) {
-                                                // Empty inner circle
-                                            }
-                                        } else {
-                                            Box(
-                                                modifier = Modifier
-                                                    .size(24.dp)
-                                                    .background(MaterialTheme.colorScheme.onSurface.copy(alpha = 0.05f), CircleShape),
-                                                contentAlignment = Alignment.Center
-                                            ) {
-                                                Icon(
-                                                    imageVector = Icons.Outlined.Lock,
-                                                    contentDescription = "Bloqueado",
-                                                    tint = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.3f),
-                                                    modifier = Modifier.size(12.dp)
-                                                )
-                                            }
-                                        }
-
-                                        Column {
-                                            Text(
-                                                text = "Capítulo $chapNumber",
-                                                style = MaterialTheme.typography.titleMedium.copy(
-                                                    fontWeight = FontWeight.Bold,
-                                                    color = if (isLocked) {
-                                                        MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.4f)
-                                                    } else {
-                                                        MaterialTheme.colorScheme.onSurface
-                                                    }
-                                                )
+                                        when {
+                                            isLocked -> Icon(
+                                                imageVector = Icons.Outlined.Lock,
+                                                contentDescription = "Bloqueado",
+                                                tint = Muted,
+                                                modifier = Modifier.size(16.dp)
                                             )
-                                            Text(
-                                                text = if (isLocked) "Chega aqui pra liberar" else chapter.titulo,
-                                                style = MaterialTheme.typography.bodyMedium.copy(
-                                                    color = if (isLocked) {
-                                                        MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.4f)
-                                                    } else {
-                                                        MaterialTheme.colorScheme.onSurfaceVariant
-                                                    }
-                                                )
+                                            isCurrent -> Icon(
+                                                imageVector = Icons.Outlined.Edit,
+                                                contentDescription = "Capítulo atual",
+                                                tint = Cream,
+                                                modifier = Modifier.size(18.dp)
+                                            )
+                                            else -> Icon(
+                                                imageVector = Icons.Outlined.Check,
+                                                contentDescription = "Concluído",
+                                                tint = OlivaDeep,
+                                                modifier = Modifier.size(18.dp)
                                             )
                                         }
                                     }
 
-                                    if (isCurrent) {
-                                        Box(
-                                            modifier = Modifier
-                                                .background(Color(0xFFFDE1D8), RoundedCornerShape(12.dp))
-                                                .padding(horizontal = 10.dp, vertical = 4.dp)
+                                    // Chapter info
+                                    Column(modifier = Modifier.weight(1f)) {
+                                        Row(
+                                            verticalAlignment = Alignment.CenterVertically,
+                                            horizontalArrangement = Arrangement.spacedBy(8.dp)
                                         ) {
                                             Text(
-                                                text = "Atual",
+                                                text = "Cap. $chapNumber".uppercase(),
                                                 style = MaterialTheme.typography.labelSmall.copy(
-                                                    color = Terracota,
-                                                    fontWeight = FontWeight.Bold
+                                                    fontWeight = FontWeight.SemiBold,
+                                                    letterSpacing = 0.4.sp,
+                                                    color = Muted
                                                 )
                                             )
+                                            if (isCurrent) {
+                                                Pill(
+                                                    text = "Atual",
+                                                    variant = PillVariant.Terra
+                                                )
+                                            }
                                         }
-                                    } else if (isCompleted) {
                                         Text(
-                                            text = if (commentsCount > 0) "$commentsCount comentários" else "—",
+                                            text = if (isLocked) "Chega aqui pra liberar" else chapter.titulo,
                                             style = MaterialTheme.typography.bodyMedium.copy(
-                                                color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.5f),
-                                                fontSize = 13.sp
-                                            )
+                                                fontWeight = FontWeight.Medium,
+                                                color = if (isLocked) Muted else Ink
+                                            ),
+                                            maxLines = 1,
+                                            overflow = TextOverflow.Ellipsis
+                                        )
+                                    }
+
+                                    // Right side info
+                                    if (!isLocked) {
+                                        Text(
+                                            text = if (commentsCount == 1) "1 comentário"
+                                                   else if (commentsCount > 1) "$commentsCount comentários"
+                                                   else "—",
+                                            style = MaterialTheme.typography.bodySmall.copy(
+                                                color = Muted,
+                                                fontWeight = FontWeight.Medium
+                                            ),
+                                            textAlign = TextAlign.End
                                         )
                                     }
                                 }
@@ -1329,82 +1348,78 @@ fun BookDetailScreenTab(
                 }
             }
 
+            // ── STATISTICS CARD ─────────────────────────────────────────────
             item {
-                Spacer(modifier = Modifier.height(8.dp))
-                Text(
-                    text = "Estatísticas",
-                    style = MaterialTheme.typography.titleMedium.copy(
-                        fontWeight = FontWeight.Bold,
-                        color = MaterialTheme.colorScheme.onBackground
-                    ),
-                    modifier = Modifier.fillMaxWidth().padding(vertical = 4.dp)
-                )
-
-                Surface(
-                    modifier = Modifier.fillMaxWidth(),
-                    shape = RoundedCornerShape(24.dp),
-                    color = MaterialTheme.colorScheme.surface,
-                    border = BorderStroke(1.dp, MaterialTheme.colorScheme.onSurface.copy(alpha = 0.04f)),
-                    shadowElevation = 1.dp
+                Column(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .offset(y = (-30).dp)
+                        .padding(horizontal = 22.dp)
                 ) {
-                    Row(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(24.dp),
-                        verticalAlignment = Alignment.CenterVertically
+                    Text(
+                        text = "Estatísticas",
+                        style = MaterialTheme.typography.titleLarge.copy(
+                            fontWeight = FontWeight.SemiBold,
+                            color = Ink
+                        ),
+                        modifier = Modifier.padding(bottom = 14.dp)
+                    )
+
+                    TramabookCard(
+                        modifier = Modifier.fillMaxWidth(),
+                        contentPadding = PaddingValues(24.dp)
                     ) {
-                        Column(
-                            modifier = Modifier.weight(1f)
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            verticalAlignment = Alignment.CenterVertically
                         ) {
-                            Text(
-                                text = "Tempo de leitura",
-                                style = MaterialTheme.typography.bodySmall.copy(
-                                    color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.6f),
-                                    fontWeight = FontWeight.Medium
+                            Column(modifier = Modifier.weight(1f)) {
+                                Text(
+                                    text = "Tempo de leitura",
+                                    style = MaterialTheme.typography.bodySmall.copy(
+                                        color = Muted,
+                                        fontWeight = FontWeight.Medium
+                                    )
                                 )
-                            )
-                            Spacer(modifier = Modifier.height(4.dp))
-                            Text(
-                                text = "1h 45m",
-                                style = MaterialTheme.typography.titleLarge.copy(
-                                    fontWeight = FontWeight.Bold,
-                                    fontSize = 20.sp
+                                Spacer(modifier = Modifier.height(4.dp))
+                                Text(
+                                    text = "1h 45m",
+                                    style = MaterialTheme.typography.titleLarge.copy(
+                                        fontWeight = FontWeight.Bold
+                                    )
                                 )
-                            )
-                        }
+                            }
 
-                        Box(
-                            modifier = Modifier
-                                .width(1.dp)
-                                .height(40.dp)
-                                .background(MaterialTheme.colorScheme.onSurface.copy(alpha = 0.08f))
-                        )
-
-                        Spacer(modifier = Modifier.width(24.dp))
-
-                        Column(
-                            modifier = Modifier.weight(1f)
-                        ) {
-                            Text(
-                                text = "Velocidade média",
-                                style = MaterialTheme.typography.bodySmall.copy(
-                                    color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.6f),
-                                    fontWeight = FontWeight.Medium
-                                )
+                            Box(
+                                modifier = Modifier
+                                    .width(1.dp)
+                                    .height(40.dp)
+                                    .background(Divider)
                             )
-                            Spacer(modifier = Modifier.height(4.dp))
-                            Text(
-                                text = "25 pág/h",
-                                style = MaterialTheme.typography.titleLarge.copy(
-                                    fontWeight = FontWeight.Bold,
-                                    fontSize = 20.sp
+
+                            Spacer(modifier = Modifier.width(24.dp))
+
+                            Column(modifier = Modifier.weight(1f)) {
+                                Text(
+                                    text = "Velocidade média",
+                                    style = MaterialTheme.typography.bodySmall.copy(
+                                        color = Muted,
+                                        fontWeight = FontWeight.Medium
+                                    )
                                 )
-                            )
+                                Spacer(modifier = Modifier.height(4.dp))
+                                Text(
+                                    text = "25 pág/h",
+                                    style = MaterialTheme.typography.titleLarge.copy(
+                                        fontWeight = FontWeight.Bold
+                                    )
+                                )
+                            }
                         }
                     }
-                }
 
-                Spacer(modifier = Modifier.height(32.dp))
+                    Spacer(modifier = Modifier.height(32.dp))
+                }
             }
         }
     }
@@ -1421,7 +1436,6 @@ fun ProfileScreenTab(
     val name by viewModel.userName.collectAsState()
     val email by viewModel.userEmail.collectAsState()
     val currentUser by viewModel.currentUser.collectAsState()
-    val themeMode by viewModel.themeMode.collectAsState()
     val allClubs by viewModel.allClubs.collectAsState()
     val activeClub by viewModel.activeClub.collectAsState()
 
@@ -1446,8 +1460,9 @@ fun ProfileScreenTab(
             modifier = Modifier
                 .fillMaxSize()
                 .padding(horizontal = 24.dp),
-            verticalArrangement = Arrangement.spacedBy(24.dp)
+            verticalArrangement = Arrangement.spacedBy(20.dp)
         ) {
+            // ── Profile header ──────────────────────────────────────────
             item {
                 Spacer(modifier = Modifier.height(8.dp))
                 Row(
@@ -1460,17 +1475,23 @@ fun ProfileScreenTab(
                         horizontalArrangement = Arrangement.spacedBy(16.dp),
                         modifier = Modifier.weight(1f)
                     ) {
-                        // Large circular avatar profile
-                        MemberAvatar(name = name ?: "Você", avatarUrl = currentUser?.avatarUrl ?: "", size = 72.dp)
-                        Column {
+                        Avatar(
+                            name = name ?: "Você",
+                            avatarUrl = currentUser?.avatarUrl ?: "",
+                            size = 72.dp
+                        )
+                        Column(verticalArrangement = Arrangement.spacedBy(2.dp)) {
                             Text(
                                 text = name ?: "Usuário",
-                                style = MaterialTheme.typography.displayLarge.copy(fontSize = 24.sp)
+                                style = MaterialTheme.typography.displaySmall.copy(
+                                    fontFamily = LiterataFontFamily,
+                                    fontWeight = FontWeight.SemiBold,
+                                    color = Ink
+                                )
                             )
                             Text(
                                 text = email ?: "contato@tramabook.com",
-                                style = MaterialTheme.typography.bodyLarge,
-                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                                style = MaterialTheme.typography.bodyLarge.copy(color = Muted)
                             )
                         }
                     }
@@ -1484,76 +1505,87 @@ fun ProfileScreenTab(
                 }
             }
 
-            // Stat Cards side-by-side
+            // ── Stat Cards (3 side-by-side) ─────────────────────────────
             item {
                 Row(
                     modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.spacedBy(12.dp)
+                    horizontalArrangement = Arrangement.spacedBy(8.dp)
                 ) {
-                    val darkTheme = androidx.compose.foundation.isSystemInDarkTheme()
-                    val statsBg = if (darkTheme) Color(0xFF2A2520) else Color(0xFFFBF7EE)
-
                     // Card 1: Livros lidos
-                    Card(
-                        modifier = Modifier
-                            .weight(1f)
-                            .shadow(elevation = 1.dp, shape = RoundedCornerShape(16.dp)),
-                        shape = RoundedCornerShape(16.dp),
-                        colors = CardDefaults.cardColors(containerColor = statsBg),
-                        border = BorderStroke(1.dp, MaterialTheme.colorScheme.onSurface.copy(alpha = 0.04f))
+                    TramabookCard(
+                        modifier = Modifier.weight(1f),
+                        contentPadding = PaddingValues(14.dp)
                     ) {
-                        Column(
-                            modifier = Modifier.padding(20.dp),
-                            verticalArrangement = Arrangement.spacedBy(4.dp)
-                        ) {
-                            Text(
-                                text = "24",
-                                style = MaterialTheme.typography.displayLarge.copy(
-                                    fontFamily = FrauncesFontFamily,
-                                    fontSize = 28.sp,
-                                    fontWeight = FontWeight.Medium,
-                                    color = Terracota
-                                )
+                        Text(
+                            text = "24",
+                            style = MaterialTheme.typography.displaySmall.copy(
+                                fontFamily = LiterataFontFamily,
+                                fontSize = 28.sp,
+                                fontWeight = FontWeight.SemiBold,
+                                color = Ink
                             )
-                            Text(
-                                text = "livros lidos",
-                                style = MaterialTheme.typography.bodyMedium.copy(
-                                    fontFamily = InterFontFamily,
-                                    fontSize = 13.sp,
-                                    color = MaterialTheme.colorScheme.onSurfaceVariant
-                                )
+                        )
+                        Spacer(modifier = Modifier.height(4.dp))
+                        Text(
+                            text = "livros\nlidos",
+                            style = MaterialTheme.typography.bodySmall.copy(
+                                fontFamily = InterFontFamily,
+                                color = Muted
                             )
-                        }
+                        )
                     }
 
                     // Card 2: Clubes ativos
+                    TramabookCard(
+                        modifier = Modifier.weight(1f),
+                        contentPadding = PaddingValues(14.dp)
+                    ) {
+                        Text(
+                            text = "${allClubs.size}",
+                            style = MaterialTheme.typography.displaySmall.copy(
+                                fontFamily = LiterataFontFamily,
+                                fontSize = 28.sp,
+                                fontWeight = FontWeight.SemiBold,
+                                color = Ink
+                            )
+                        )
+                        Spacer(modifier = Modifier.height(4.dp))
+                        Text(
+                            text = "clubes\nativos",
+                            style = MaterialTheme.typography.bodySmall.copy(
+                                fontFamily = InterFontFamily,
+                                color = Muted
+                            )
+                        )
+                    }
+
+                    // Card 3: Frases guardadas (Oliva background, Cream text)
                     Card(
-                        modifier = Modifier
-                            .weight(1f)
-                            .shadow(elevation = 1.dp, shape = RoundedCornerShape(16.dp)),
-                        shape = RoundedCornerShape(16.dp),
-                        colors = CardDefaults.cardColors(containerColor = statsBg),
-                        border = BorderStroke(1.dp, MaterialTheme.colorScheme.onSurface.copy(alpha = 0.04f))
+                        modifier = Modifier.weight(1f),
+                        shape = RoundedCornerShape(20.dp),
+                        colors = CardDefaults.cardColors(containerColor = Oliva, contentColor = Cream),
+                        elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
                     ) {
                         Column(
-                            modifier = Modifier.padding(20.dp),
-                            verticalArrangement = Arrangement.spacedBy(4.dp)
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(14.dp)
                         ) {
                             Text(
-                                text = "3",
-                                style = MaterialTheme.typography.displayLarge.copy(
-                                    fontFamily = FrauncesFontFamily,
+                                text = "42",
+                                style = MaterialTheme.typography.displaySmall.copy(
+                                    fontFamily = LiterataFontFamily,
                                     fontSize = 28.sp,
-                                    fontWeight = FontWeight.Medium,
-                                    color = Terracota
+                                    fontWeight = FontWeight.SemiBold,
+                                    color = Cream
                                 )
                             )
+                            Spacer(modifier = Modifier.height(4.dp))
                             Text(
-                                text = "clubes ativos",
-                                style = MaterialTheme.typography.bodyMedium.copy(
+                                text = "frases\nguardadas",
+                                style = MaterialTheme.typography.bodySmall.copy(
                                     fontFamily = InterFontFamily,
-                                    fontSize = 13.sp,
-                                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                                    color = Cream.copy(alpha = 0.85f)
                                 )
                             )
                         }
@@ -1561,16 +1593,17 @@ fun ProfileScreenTab(
                 }
             }
 
-            // Teus Clubes Section
+            // ── Teus Clubes ─────────────────────────────────────────────
             item {
-                SectionHeader(title = "Teus clubes")
-                Spacer(modifier = Modifier.height(4.dp))
+                TbSectionHeader(title = "Teus clubes")
+                Spacer(modifier = Modifier.height(12.dp))
                 Column(
-                    verticalArrangement = Arrangement.spacedBy(12.dp),
+                    verticalArrangement = Arrangement.spacedBy(8.dp),
                     modifier = Modifier.fillMaxWidth()
                 ) {
                     allClubs.forEach { club ->
                         val isActive = club.id == activeClub?.id
+                        val clubColor = clubColorFor(club.cor)
                         val clubReadingText = if (club.id == "club_tramabook") {
                             "Lendo: A Metamorfose"
                         } else if (club.id == "club_filosofia") {
@@ -1579,196 +1612,130 @@ fun ProfileScreenTab(
                             "Sem livro atual"
                         }
 
-                        val avatarColor = remember(club.id) {
-                            val hash = club.id.hashCode()
-                            when (kotlin.math.abs(hash) % 3) {
-                                0 -> VerdeMusgo
-                                1 -> Terracota
-                                else -> Color(0xFFD4A373)
-                            }
-                        }
-
-                        StandardCard(
+                        Card(
                             onClick = {
                                 viewModel.selectActiveClub(club.id)
                                 onNavigateToTab("home")
-                            }
+                            },
+                            shape = RoundedCornerShape(16.dp),
+                            colors = CardDefaults.cardColors(containerColor = Cream, contentColor = Ink),
+                            border = BorderStroke(
+                                1.dp,
+                                if (isActive) Oliva else Divider
+                            ),
+                            elevation = CardDefaults.cardElevation(defaultElevation = 0.dp)
                         ) {
                             Row(
-                                modifier = Modifier.fillMaxWidth(),
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .padding(horizontal = 14.dp, vertical = 12.dp),
                                 horizontalArrangement = Arrangement.SpaceBetween,
                                 verticalAlignment = Alignment.CenterVertically
-                              ) {
+                            ) {
                                 Row(
                                     verticalAlignment = Alignment.CenterVertically,
-                                    horizontalArrangement = Arrangement.spacedBy(16.dp),
+                                    horizontalArrangement = Arrangement.spacedBy(14.dp),
                                     modifier = Modifier.weight(1f)
                                 ) {
                                     Box(
                                         modifier = Modifier
                                             .size(40.dp)
-                                            .background(avatarColor, CircleShape),
+                                            .background(clubColor.bg, CircleShape),
                                         contentAlignment = Alignment.Center
                                     ) {
                                         Text(
                                             text = club.nome.take(1).uppercase(),
-                                            color = Color.White,
-                                            style = MaterialTheme.typography.bodyLarge.copy(fontWeight = FontWeight.Bold)
-                                        )
-                                    }
-
-                                    Column {
-                                        Text(
-                                            text = club.nome,
-                                            style = MaterialTheme.typography.titleMedium.copy(
-                                                fontFamily = FrauncesFontFamily,
-                                                fontWeight = FontWeight.Medium,
-                                                fontSize = 16.sp,
-                                                color = MaterialTheme.colorScheme.onSurface
-                                            )
-                                        )
-                                        Text(
-                                            text = clubReadingText,
-                                            style = MaterialTheme.typography.bodyMedium.copy(
-                                                fontFamily = InterFontFamily,
-                                                fontSize = 13.sp,
-                                                color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.7f)
+                                            color = clubColor.ink,
+                                            style = MaterialTheme.typography.bodyLarge.copy(
+                                                fontFamily = LiterataFontFamily,
+                                                fontWeight = FontWeight.SemiBold,
+                                                fontSize = 18.sp
                                             )
                                         )
                                     }
-                                }
-
-                                Row(
-                                    verticalAlignment = Alignment.CenterVertically,
-                                    horizontalArrangement = Arrangement.spacedBy(8.dp)
-                                ) {
-                                    if (isActive) {
-                                        Box(
-                                            modifier = Modifier
-                                                .background(VerdeMusgo.copy(alpha = 0.12f), RoundedCornerShape(12.dp))
-                                                .padding(horizontal = 10.dp, vertical = 4.dp)
+                                    Column(verticalArrangement = Arrangement.spacedBy(2.dp)) {
+                                        Row(
+                                            verticalAlignment = Alignment.CenterVertically,
+                                            horizontalArrangement = Arrangement.spacedBy(6.dp)
                                         ) {
                                             Text(
-                                                text = "atual",
-                                                style = MaterialTheme.typography.labelSmall.copy(
-                                                    color = VerdeMusgo,
-                                                    fontWeight = FontWeight.Bold
+                                                text = club.nome,
+                                                style = MaterialTheme.typography.bodyLarge.copy(
+                                                    fontFamily = LiterataFontFamily,
+                                                    fontWeight = FontWeight.SemiBold,
+                                                    fontSize = 15.sp,
+                                                    color = Ink
                                                 )
                                             )
+                                            if (isActive) {
+                                                Pill(text = "Atual", variant = PillVariant.Terra)
+                                            }
                                         }
+                                        Text(
+                                            text = clubReadingText,
+                                            style = MaterialTheme.typography.bodySmall.copy(
+                                                fontFamily = InterFontFamily,
+                                                color = Muted
+                                            )
+                                        )
                                     }
-                                    Icon(
-                                        imageVector = Icons.Outlined.KeyboardArrowRight,
-                                        contentDescription = "Selecionar",
-                                        tint = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.6f),
-                                        modifier = Modifier.size(20.dp)
-                                    )
                                 }
-                            }
-                        }
-                    }
-
-                    Spacer(modifier = Modifier.height(4.dp))
-
-                    // Join other club outlined button
-                    OutlinedButton(
-                        onClick = onNavigateToJoinClub,
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .height(52.dp),
-                        shape = RoundedCornerShape(26.dp),
-                        border = BorderStroke(1.5.dp, Terracota)
-                    ) {
-                        Icon(
-                            imageVector = Icons.Outlined.Add,
-                            contentDescription = "Entrar em outro clube",
-                            tint = Terracota,
-                            modifier = Modifier.size(20.dp)
-                        )
-                        Spacer(modifier = Modifier.width(8.dp))
-                        Text(
-                            "Entrar em outro clube",
-                            style = MaterialTheme.typography.bodyLarge.copy(
-                                fontWeight = FontWeight.Bold,
-                                color = Terracota
-                            )
-                        )
-                    }
-                }
-            }
-
-            item {
-                SectionHeader(title = "Tema e preferências")
-                StandardCard {
-                    Text(
-                        text = "Aparência",
-                        style = MaterialTheme.typography.bodyMedium.copy(fontWeight = FontWeight.Bold)
-                    )
-                    Spacer(modifier = Modifier.height(12.dp))
-
-                    // Custom segmented control for Theme selector
-                    Row(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .height(48.dp)
-                            .background(
-                                MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.05f),
-                                RoundedCornerShape(24.dp)
-                            )
-                            .border(
-                                0.5.dp,
-                                MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.1f),
-                                RoundedCornerShape(24.dp)
-                            )
-                            .padding(4.dp),
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        val themeModes = listOf("system" to "Sistema", "light" to "Claro", "dark" to "Escuro")
-                        themeModes.forEach { (mode, label) ->
-                            val isSelected = themeMode == mode
-                            Box(
-                                modifier = Modifier
-                                    .weight(1f)
-                                    .fillMaxHeight()
-                                    .background(
-                                        if (isSelected) Terracota else Color.Transparent,
-                                        RoundedCornerShape(20.dp)
-                                    )
-                                    .clickable { viewModel.updateThemeMode(mode) },
-                                contentAlignment = Alignment.Center
-                            ) {
-                                Text(
-                                    label,
-                                    color = if (isSelected) Color.White else MaterialTheme.colorScheme.onSurfaceVariant,
-                                    style = MaterialTheme.typography.bodyMedium.copy(fontWeight = FontWeight.Medium)
+                                Icon(
+                                    imageVector = Icons.Outlined.KeyboardArrowRight,
+                                    contentDescription = "Selecionar",
+                                    tint = Muted,
+                                    modifier = Modifier.size(18.dp)
                                 )
                             }
                         }
                     }
+
+                    // "+ Entrar em outro clube" — dashed outline button
+                    Box(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .clip(RoundedCornerShape(16.dp))
+                            .border(
+                                BorderStroke(1.5.dp, Divider),
+                                shape = RoundedCornerShape(16.dp)
+                            )
+                            .clickable { onNavigateToJoinClub() }
+                            .padding(vertical = 14.dp),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Row(
+                            horizontalArrangement = Arrangement.spacedBy(8.dp),
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Icon(
+                                imageVector = Icons.Outlined.Add,
+                                contentDescription = null,
+                                tint = Muted,
+                                modifier = Modifier.size(16.dp)
+                            )
+                            Text(
+                                text = "Entrar em outro clube",
+                                style = MaterialTheme.typography.bodyMedium.copy(
+                                    fontFamily = InterFontFamily,
+                                    fontWeight = FontWeight.SemiBold,
+                                    color = Muted
+                                )
+                            )
+                        }
+                    }
                 }
             }
 
+            // ── Sair da conta ────────────────────────────────────────────
             item {
-                Spacer(modifier = Modifier.height(16.dp))
-                OutlinedButton(
+                Spacer(modifier = Modifier.height(4.dp))
+                TbButton(
+                    text = "Sair da conta",
                     onClick = { showLogoutDialog = true },
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .height(52.dp),
-                    shape = RoundedCornerShape(26.dp),
-                    border = BorderStroke(1.dp, Terracota)
-                ) {
-                    Icon(
-                        imageVector = Icons.Outlined.ExitToApp,
-                        contentDescription = "Sair",
-                        tint = Terracota
-                    )
-                    Spacer(modifier = Modifier.width(12.dp))
-                    Text(
-                        "Sair da conta",
-                        style = MaterialTheme.typography.bodyLarge.copy(fontWeight = FontWeight.Medium, color = Terracota)
-                    )
-                }
+                    variant = TbButtonVariant.Outline,
+                    size = TbButtonSize.Lg,
+                    modifier = Modifier.fillMaxWidth()
+                )
                 Spacer(modifier = Modifier.height(40.dp))
             }
         }
@@ -1777,39 +1744,40 @@ fun ProfileScreenTab(
     if (showLogoutDialog) {
         AlertDialog(
             onDismissRequest = { showLogoutDialog = false },
+            containerColor = Cream,
             title = {
                 Text(
                     "Deseja sair?",
                     style = MaterialTheme.typography.titleMedium.copy(
-                        fontFamily = FrauncesFontFamily,
+                        fontFamily = LiterataFontFamily,
                         fontSize = 18.sp,
-                        fontWeight = FontWeight.Bold
+                        fontWeight = FontWeight.Bold,
+                        color = Ink
                     )
                 )
             },
             text = {
                 Text(
                     "Tem certeza que deseja desconectar da sua conta?",
-                    style = MaterialTheme.typography.bodyMedium
+                    style = MaterialTheme.typography.bodyMedium.copy(color = Muted)
                 )
             },
             confirmButton = {
-                Button(
+                TbButton(
+                    text = "Sair",
                     onClick = {
                         showLogoutDialog = false
-                        viewModel.logout {
-                            onLogoutCompleted()
-                        }
+                        viewModel.logout { onLogoutCompleted() }
                     },
-                    colors = ButtonDefaults.buttonColors(containerColor = Terracota)
-                ) {
-                    Text("Sair", color = Color.White, fontWeight = FontWeight.Bold)
-                }
+                    variant = TbButtonVariant.Terra
+                )
             },
             dismissButton = {
-                TextButton(onClick = { showLogoutDialog = false }) {
-                    Text("Cancelar", color = MaterialTheme.colorScheme.onSurfaceVariant)
-                }
+                TbButton(
+                    text = "Cancelar",
+                    onClick = { showLogoutDialog = false },
+                    variant = TbButtonVariant.Outline
+                )
             }
         )
     }
@@ -1827,157 +1795,179 @@ fun EditProfileView(
     var email by remember { mutableStateOf(initialEmail) }
     var avatarUrl by remember { mutableStateOf(initialAvatarUrl) }
 
-    val avatars = listOf(
-        "https://lh3.googleusercontent.com/aida-public/AB6AXuCVScro7b5L7FyxSBjNpeqetGOxXZcJe5_EViRuBb5j15OIqZzjjFE8AD5HxgnDcV__koM3NJtsawXA84KY9YNkGFN7fhPvCmJozzDXIkaDWzjObrvzqA2QOSHYCkvK6No2M6UEtsJXEoOaqY7O0WDiVtrhyaKZIqMxGEdP732KB_qtc7_tWeZHNZ9WEOJp6PTJnWMO-kidNZ_0LEvCMirIjMy140n059Elt4YwhfPZbjqKivR3NRgIsXyLxp8THGS41Y3roxiIJS8",
-        "https://images.unsplash.com/photo-1544005313-94ddf0286df2?auto=format&fit=crop&q=80&w=120",
-        "https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&q=80&w=120",
-        "https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?auto=format&fit=crop&q=80&w=120",
-        "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?auto=format&fit=crop&q=80&w=120",
-        "https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?auto=format&fit=crop&q=80&w=120"
-    )
+    // Preset avatar names (initials-based, matching react prototype)
+    val presetNames = listOf("Bia", "Marina", "Rafael", "Júlia", "Leo", "Helena")
 
     LazyColumn(
         modifier = Modifier
             .fillMaxSize()
-            .padding(horizontal = 24.dp),
+            .background(CardSoft)
+            .padding(horizontal = 28.dp),
         verticalArrangement = Arrangement.spacedBy(20.dp),
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
         item {
             Spacer(modifier = Modifier.height(16.dp))
             Text(
-                text = "Alterar dados do perfil",
+                text = "Editar perfil",
                 style = MaterialTheme.typography.titleLarge.copy(
-                    fontWeight = FontWeight.Bold,
-                    fontFamily = androidx.compose.ui.text.font.FontFamily.Serif,
+                    fontFamily = LiterataFontFamily,
+                    fontWeight = FontWeight.SemiBold,
                     fontSize = 22.sp,
-                    color = MaterialTheme.colorScheme.onBackground
+                    color = Ink
                 ),
-                textAlign = TextAlign.Center
+                textAlign = TextAlign.Center,
+                modifier = Modifier.fillMaxWidth()
             )
         }
 
+        // ── Large avatar preview with edit badge ──
         item {
             Box(
-                modifier = Modifier.size(96.dp),
+                modifier = Modifier.size(100.dp),
                 contentAlignment = Alignment.BottomEnd
             ) {
-                MemberAvatar(name = name.ifEmpty { "Você" }, avatarUrl = avatarUrl, size = 96.dp)
+                Avatar(
+                    name = name.ifEmpty { "Você" },
+                    avatarUrl = avatarUrl,
+                    size = 100.dp
+                )
                 Box(
                     modifier = Modifier
-                        .size(28.dp)
-                        .background(Terracota, CircleShape)
-                        .padding(4.dp),
+                        .size(32.dp)
+                        .background(Oliva, CircleShape)
+                        .border(3.dp, CardSoft, CircleShape),
                     contentAlignment = Alignment.Center
                 ) {
                     Icon(
                         imageVector = Icons.Outlined.Edit,
-                        contentDescription = "Selecionar Foto",
-                        tint = Color.White,
+                        contentDescription = "Selecionar avatar",
+                        tint = Cream,
                         modifier = Modifier.size(14.dp)
                     )
                 }
             }
         }
 
+        // ── Preset avatar grid ──
         item {
             Text(
-                text = "Escolha um avatar",
-                style = MaterialTheme.typography.bodyMedium.copy(fontWeight = FontWeight.Bold),
+                text = "ESCOLHER UM AVATAR",
+                style = MaterialTheme.typography.labelMedium.copy(
+                    fontFamily = InterFontFamily,
+                    fontWeight = FontWeight.SemiBold,
+                    color = Muted
+                ),
                 modifier = Modifier.fillMaxWidth()
             )
-            Spacer(modifier = Modifier.height(8.dp))
+            Spacer(modifier = Modifier.height(10.dp))
             Row(
                 modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.spacedBy(10.dp, Alignment.CenterHorizontally)
+                horizontalArrangement = Arrangement.SpaceBetween
             ) {
-                avatars.forEach { url ->
-                    val isSelected = avatarUrl == url
+                presetNames.forEach { preset ->
+                    val isSelected = avatarUrl == preset
                     Box(
                         modifier = Modifier
-                            .size(48.dp)
-                            .border(
-                                width = if (isSelected) 3.dp else 0.dp,
-                                color = if (isSelected) Terracota else Color.Transparent,
-                                shape = CircleShape
-                            )
-                            .clip(CircleShape)
-                            .clickable { avatarUrl = url }
+                            .size(44.dp)
+                            .clickable { avatarUrl = preset }
                     ) {
-                        MemberAvatar(name = "User", avatarUrl = url, size = 48.dp)
+                        Avatar(
+                            name = preset,
+                            avatarUrl = "",
+                            size = 44.dp,
+                            ring = if (isSelected) Ink else null
+                        )
                     }
                 }
             }
         }
 
+        // ── Nome field ──
         item {
-            OutlinedTextField(
-                value = name,
-                onValueChange = { name = it },
-                label = { Text("Nome", color = Terracota) },
-                placeholder = { Text("Seu nome de leitor") },
-                modifier = Modifier.fillMaxWidth(),
-                shape = RoundedCornerShape(12.dp),
-                singleLine = true,
-                colors = OutlinedTextFieldDefaults.colors(
-                    focusedBorderColor = Terracota,
-                    focusedLabelColor = Terracota,
-                    unfocusedBorderColor = MaterialTheme.colorScheme.outline.copy(alpha = 0.3f)
+            Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
+                Text(
+                    text = "NOME",
+                    style = MaterialTheme.typography.labelMedium.copy(
+                        fontFamily = InterFontFamily,
+                        fontWeight = FontWeight.SemiBold,
+                        color = Muted
+                    )
                 )
-            )
+                OutlinedTextField(
+                    value = name,
+                    onValueChange = { name = it },
+                    placeholder = { Text("Seu nome de leitor", color = Muted) },
+                    modifier = Modifier.fillMaxWidth(),
+                    shape = RoundedCornerShape(14.dp),
+                    singleLine = true,
+                    colors = OutlinedTextFieldDefaults.colors(
+                        focusedBorderColor = Terracota,
+                        unfocusedBorderColor = Divider,
+                        focusedContainerColor = Cream,
+                        unfocusedContainerColor = Cream,
+                        focusedTextColor = Ink,
+                        unfocusedTextColor = Ink
+                    )
+                )
+            }
         }
 
+        // ── E-mail field ──
         item {
-            OutlinedTextField(
-                value = email,
-                onValueChange = { email = it },
-                label = { Text("E-mail", color = Terracota) },
-                placeholder = { Text("exemplo@email.com") },
-                modifier = Modifier.fillMaxWidth(),
-                shape = RoundedCornerShape(12.dp),
-                singleLine = true,
-                colors = OutlinedTextFieldDefaults.colors(
-                    focusedBorderColor = Terracota,
-                    focusedLabelColor = Terracota,
-                    unfocusedBorderColor = MaterialTheme.colorScheme.outline.copy(alpha = 0.3f)
+            Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
+                Text(
+                    text = "EMAIL",
+                    style = MaterialTheme.typography.labelMedium.copy(
+                        fontFamily = InterFontFamily,
+                        fontWeight = FontWeight.SemiBold,
+                        color = Muted
+                    )
                 )
-            )
+                OutlinedTextField(
+                    value = email,
+                    onValueChange = { email = it },
+                    placeholder = { Text("exemplo@email.com", color = Muted) },
+                    modifier = Modifier.fillMaxWidth(),
+                    shape = RoundedCornerShape(14.dp),
+                    singleLine = true,
+                    colors = OutlinedTextFieldDefaults.colors(
+                        focusedBorderColor = Terracota,
+                        unfocusedBorderColor = Divider,
+                        focusedContainerColor = Cream,
+                        unfocusedContainerColor = Cream,
+                        focusedTextColor = Ink,
+                        unfocusedTextColor = Ink
+                    )
+                )
+            }
         }
 
+        // ── Cancelar / Salvar buttons ──
         item {
-            Spacer(modifier = Modifier.height(8.dp))
+            Spacer(modifier = Modifier.height(4.dp))
             Row(
                 modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.spacedBy(16.dp)
+                horizontalArrangement = Arrangement.spacedBy(10.dp)
             ) {
-                OutlinedButton(
+                TbButton(
+                    text = "Cancelar",
                     onClick = onCancel,
-                    modifier = Modifier
-                        .weight(1f)
-                        .height(52.dp),
-                    shape = RoundedCornerShape(26.dp),
-                    border = BorderStroke(1.dp, Terracota)
-                ) {
-                    Text("Cancelar", color = Terracota, style = MaterialTheme.typography.bodyLarge.copy(fontWeight = FontWeight.Bold))
-                }
-
-                Button(
+                    variant = TbButtonVariant.Outline,
+                    size = TbButtonSize.Lg,
+                    modifier = Modifier.weight(1f)
+                )
+                TbButton(
+                    text = "Salvar",
                     onClick = {
                         if (name.isNotBlank() && email.isNotBlank()) {
                             onSave(name, email, avatarUrl)
                         }
                     },
-                    modifier = Modifier
-                        .weight(1f)
-                        .height(52.dp),
-                    shape = RoundedCornerShape(26.dp),
-                    colors = ButtonDefaults.buttonColors(
-                        containerColor = Terracota,
-                        contentColor = Color.White
-                    )
-                ) {
-                    Text("Salvar", style = MaterialTheme.typography.bodyLarge.copy(fontWeight = FontWeight.Bold))
-                }
+                    variant = TbButtonVariant.Terra,
+                    size = TbButtonSize.Lg,
+                    modifier = Modifier.weight(1f)
+                )
             }
             Spacer(modifier = Modifier.height(32.dp))
         }

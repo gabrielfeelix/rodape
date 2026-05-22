@@ -19,10 +19,6 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
     private val repository = TramabookRepository(database.tramabookDao())
     private val dataStoreManager = DataStoreManager(application)
 
-    // Theme state
-    val themeMode: StateFlow<String> = dataStoreManager.themeModeFlow
-        .stateIn(viewModelScope, SharingStarted.Eagerly, "system")
-
     // Session state
     val currentUserId: StateFlow<String?> = dataStoreManager.userIdFlow
         .stateIn(viewModelScope, SharingStarted.Eagerly, null)
@@ -208,13 +204,6 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
             val updatedUser = User(userId, nome, email, avatarUrl)
             repository.insertUser(updatedUser)
             dataStoreManager.saveSession(userId, nome, email)
-        }
-    }
-
-    // --- Theme Config ---
-    fun updateThemeMode(mode: String) {
-        viewModelScope.launch {
-            dataStoreManager.saveThemeMode(mode)
         }
     }
 
