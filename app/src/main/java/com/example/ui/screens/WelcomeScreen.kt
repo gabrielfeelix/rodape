@@ -42,8 +42,18 @@ import com.example.ui.components.StandardCard
 import com.example.ui.components.TbButton
 import com.example.ui.components.TbButtonSize
 import com.example.ui.components.TbButtonVariant
+import com.example.ui.components.TramabookCard
+import com.example.ui.theme.Cream
+import com.example.ui.theme.CardSurface
+import com.example.ui.theme.Divider
+import com.example.ui.theme.Ink
+import com.example.ui.theme.Muted
 import com.example.ui.theme.Oliva
+import com.example.ui.theme.OlivaDark
+import com.example.ui.theme.OlivaSoft
+import com.example.ui.theme.PaperDeep
 import com.example.ui.theme.Terracota
+import com.example.ui.theme.Tertiary
 import com.example.ui.theme.VerdeMusgo
 import androidx.compose.ui.text.SpanStyle
 import androidx.compose.ui.text.buildAnnotatedString
@@ -209,12 +219,13 @@ fun LoginScreen(
             item {
                 Spacer(modifier = Modifier.height(24.dp))
 
-                StandardCard(
-                    modifier = Modifier.fillMaxWidth()
+                TramabookCard(
+                    modifier = Modifier.fillMaxWidth(),
+                    contentPadding = androidx.compose.foundation.layout.PaddingValues(20.dp)
                 ) {
                     Text(
                         text = if (isSignUp) "Criar conta" else "Bem-vindo de volta",
-                        style = MaterialTheme.typography.headlineLarge,
+                        style = MaterialTheme.typography.displaySmall,
                         modifier = Modifier.fillMaxWidth(),
                         textAlign = TextAlign.Center
                     )
@@ -226,8 +237,8 @@ fun LoginScreen(
                             modifier = Modifier
                                 .fillMaxWidth()
                                 .padding(vertical = 4.dp),
-                            colors = CardDefaults.cardColors(containerColor = Terracota.copy(alpha = 0.08f)),
-                            border = BorderStroke(1.dp, Terracota.copy(alpha = 0.2f)),
+                            colors = CardDefaults.cardColors(containerColor = OlivaSoft),
+                            border = BorderStroke(1.dp, OlivaDark.copy(alpha = 0.2f)),
                             shape = RoundedCornerShape(12.dp)
                         ) {
                             Row(
@@ -237,13 +248,13 @@ fun LoginScreen(
                                 Icon(
                                     imageVector = Icons.Outlined.AccountCircle,
                                     contentDescription = "Dica",
-                                    tint = Terracota,
+                                    tint = OlivaDark,
                                     modifier = Modifier.size(24.dp)
                                 )
                                 Spacer(modifier = Modifier.width(12.dp))
                                 Text(
                                     text = "Dica: Para ver o app cheio de conteúdo (Clubes, discussões, progresso), use o botão de atalho abaixo ou digite o email: voce@tramabook.com",
-                                    style = MaterialTheme.typography.bodyMedium.copy(color = Terracota, fontWeight = FontWeight.Medium),
+                                    style = MaterialTheme.typography.bodyMedium.copy(color = OlivaDark, fontWeight = FontWeight.Medium),
                                     modifier = Modifier.weight(1f)
                                 )
                             }
@@ -257,15 +268,8 @@ fun LoginScreen(
                         modifier = Modifier
                             .fillMaxWidth()
                             .height(52.dp)
-                            .background(
-                                MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.05f),
-                                RoundedCornerShape(26.dp)
-                            )
-                            .border(
-                                0.5.dp,
-                                MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.1f),
-                                RoundedCornerShape(26.dp)
-                            )
+                            .background(PaperDeep, RoundedCornerShape(26.dp))
+                            .border(0.5.dp, Divider, RoundedCornerShape(26.dp))
                             .padding(4.dp),
                         verticalAlignment = Alignment.CenterVertically
                     ) {
@@ -274,7 +278,7 @@ fun LoginScreen(
                                 .weight(1f)
                                 .fillMaxHeight()
                                 .background(
-                                    if (!isSignUp) Terracota else Color.Transparent,
+                                    if (!isSignUp) CardSurface else Color.Transparent,
                                     RoundedCornerShape(22.dp)
                                 )
                                 .clickable { isSignUp = false },
@@ -282,7 +286,7 @@ fun LoginScreen(
                         ) {
                             Text(
                                 "Entrar",
-                                color = if (!isSignUp) Color.White else MaterialTheme.colorScheme.onSurfaceVariant,
+                                color = if (!isSignUp) Ink else Muted,
                                 style = MaterialTheme.typography.bodyLarge.copy(fontWeight = FontWeight.Medium)
                             )
                         }
@@ -292,7 +296,7 @@ fun LoginScreen(
                                 .weight(1f)
                                 .fillMaxHeight()
                                 .background(
-                                    if (isSignUp) Terracota else Color.Transparent,
+                                    if (isSignUp) CardSurface else Color.Transparent,
                                     RoundedCornerShape(22.dp)
                                 )
                                 .clickable { isSignUp = true },
@@ -300,7 +304,7 @@ fun LoginScreen(
                         ) {
                             Text(
                                 "Criar conta",
-                                color = if (isSignUp) Color.White else MaterialTheme.colorScheme.onSurfaceVariant,
+                                color = if (isSignUp) Ink else Muted,
                                 style = MaterialTheme.typography.bodyLarge.copy(fontWeight = FontWeight.Medium)
                             )
                         }
@@ -310,8 +314,8 @@ fun LoginScreen(
 
                     if (isSignUp) {
                         Text(
-                            text = "Nome",
-                            style = MaterialTheme.typography.headlineMedium,
+                            text = "Nome".uppercase(),
+                            style = MaterialTheme.typography.labelMedium.copy(color = Tertiary),
                             modifier = Modifier.fillMaxWidth()
                         )
                         Spacer(modifier = Modifier.height(8.dp))
@@ -320,14 +324,20 @@ fun LoginScreen(
                             onValueChange = { name = it },
                             placeholder = { Text("Seu nome") },
                             modifier = Modifier.fillMaxWidth(),
-                            shape = RoundedCornerShape(12.dp)
+                            shape = RoundedCornerShape(14.dp),
+                            colors = OutlinedTextFieldDefaults.colors(
+                                focusedBorderColor = Terracota,
+                                unfocusedBorderColor = Divider,
+                                focusedContainerColor = Cream,
+                                unfocusedContainerColor = Cream
+                            )
                         )
                         Spacer(modifier = Modifier.height(16.dp))
                     }
 
                     Text(
-                        text = "Email",
-                        style = MaterialTheme.typography.headlineMedium,
+                        text = "Email".uppercase(),
+                        style = MaterialTheme.typography.labelMedium.copy(color = Tertiary),
                         modifier = Modifier.fillMaxWidth()
                     )
                     Spacer(modifier = Modifier.height(8.dp))
@@ -336,15 +346,21 @@ fun LoginScreen(
                         onValueChange = { email = it },
                         placeholder = { Text("Seu email") },
                         modifier = Modifier.fillMaxWidth(),
-                        shape = RoundedCornerShape(12.dp),
-                        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Email)
+                        shape = RoundedCornerShape(14.dp),
+                        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Email),
+                        colors = OutlinedTextFieldDefaults.colors(
+                            focusedBorderColor = Terracota,
+                            unfocusedBorderColor = Divider,
+                            focusedContainerColor = Cream,
+                            unfocusedContainerColor = Cream
+                        )
                     )
 
                     Spacer(modifier = Modifier.height(16.dp))
 
                     Text(
-                        text = "Senha",
-                        style = MaterialTheme.typography.headlineMedium,
+                        text = "Senha".uppercase(),
+                        style = MaterialTheme.typography.labelMedium.copy(color = Tertiary),
                         modifier = Modifier.fillMaxWidth()
                     )
                     Spacer(modifier = Modifier.height(8.dp))
@@ -354,8 +370,14 @@ fun LoginScreen(
                         placeholder = { Text("Mínimo 6 caracteres") },
                         visualTransformation = PasswordVisualTransformation(),
                         modifier = Modifier.fillMaxWidth(),
-                        shape = RoundedCornerShape(12.dp),
-                        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Password)
+                        shape = RoundedCornerShape(14.dp),
+                        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Password),
+                        colors = OutlinedTextFieldDefaults.colors(
+                            focusedBorderColor = Terracota,
+                            unfocusedBorderColor = Divider,
+                            focusedContainerColor = Cream,
+                            unfocusedContainerColor = Cream
+                        )
                     )
 
                     if (!isSignUp) {
@@ -377,7 +399,7 @@ fun LoginScreen(
 
                     Spacer(modifier = Modifier.height(16.dp))
 
-                    PillButton(
+                    TbButton(
                         text = if (isSignUp) "Criar conta" else "Entrar",
                         onClick = {
                             if (isFormValid) {
@@ -385,6 +407,9 @@ fun LoginScreen(
                                 onLoginSuccess(resolvedName, email)
                             }
                         },
+                        variant = TbButtonVariant.Terra,
+                        size = TbButtonSize.Lg,
+                        modifier = Modifier.fillMaxWidth(),
                         enabled = isFormValid
                     )
 
@@ -396,16 +421,16 @@ fun LoginScreen(
                     ) {
                         HorizontalDivider(
                             modifier = Modifier.weight(1f),
-                            color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.2f)
+                            color = Divider
                         )
                         Text(
                             text = "ou",
-                            style = MaterialTheme.typography.labelSmall.copy(color = MaterialTheme.colorScheme.onSurfaceVariant),
+                            style = MaterialTheme.typography.labelSmall.copy(color = Muted),
                             modifier = Modifier.padding(horizontal = 16.dp)
                         )
                         HorizontalDivider(
                             modifier = Modifier.weight(1f),
-                            color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.2f)
+                            color = Divider
                         )
                     }
 
@@ -443,12 +468,12 @@ fun LoginScreen(
                             .fillMaxWidth()
                             .height(52.dp),
                         shape = RoundedCornerShape(26.dp),
-                        border = BorderStroke(1.dp, Terracota)
+                        border = BorderStroke(1.dp, Divider)
                     ) {
                         Icon(
                             imageVector = Icons.Outlined.AccountCircle,
                             contentDescription = "Google Icon",
-                            tint = Terracota,
+                            tint = Ink,
                             modifier = Modifier.size(24.dp)
                         )
                         Spacer(modifier = Modifier.width(12.dp))
@@ -456,7 +481,7 @@ fun LoginScreen(
                             text = "Continuar com Google (Novo)",
                             style = MaterialTheme.typography.bodyLarge.copy(
                                 fontWeight = FontWeight.Medium,
-                                color = Terracota
+                                color = Ink
                             )
                         )
                     }
