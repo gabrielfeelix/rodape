@@ -1,0 +1,6 @@
+{
+  "name": "Tramabook",
+  "description": "Clube de leitura privado para coordenar leituras, discussões e encontros de livros",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}

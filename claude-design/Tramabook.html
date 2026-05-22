@@ -1,0 +1,241 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Tramabook</title>
+
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Literata:ital,wght@0,300..900;1,300..900&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+
+  <style>
+    html, body {
+      margin: 0; padding: 0; height: 100%;
+      background: #f0eee9;
+      font-family: 'Inter', system-ui, sans-serif;
+      color: #1B1C1A;
+      -webkit-font-smoothing: antialiased;
+      text-rendering: optimizeLegibility;
+    }
+    body { overflow: hidden; }
+    #root { width: 100vw; height: 100vh; }
+    button { font-family: inherit; }
+  </style>
+
+  <script src="https://unpkg.com/react@18.3.1/umd/react.development.js" integrity="sha384-hD6/rw4ppMLGNu3tX5cjIb+uRZ7UkRJ6BPkLpg4hAu/6onKUg4lLsHAs9EBPT82L" crossorigin="anonymous"></script>
+  <script src="https://unpkg.com/react-dom@18.3.1/umd/react-dom.development.js" integrity="sha384-u6aeetuaXnQ38mYT8rp6sbXaQe3NL9t+IBXmnYxwkUI2Hw4bsp2Wvmx4yRQF1uAm" crossorigin="anonymous"></script>
+  <script src="https://unpkg.com/@babel/standalone@7.29.0/babel.min.js" integrity="sha384-m08KidiNqLdpJqLq95G/LEi8Qvjl/xUYll3QILypMoQ65QorJ9Lvtp2RXYGBFj1y" crossorigin="anonymous"></script>
+</head>
+<body>
+  <div id="root"></div>
+
+  <!-- Design canvas + tokens + icons + data -->
+  <script type="text/babel" src="design-canvas.jsx"></script>
+  <script type="text/babel" src="tokens.jsx"></script>
+  <script type="text/babel" src="icons.jsx"></script>
+  <script type="text/babel" src="logo.jsx"></script>
+  <script type="text/babel" src="data.jsx"></script>
+
+  <!-- Shell + screens -->
+  <script type="text/babel" src="shell.jsx"></script>
+  <script type="text/babel" src="screens-onboarding.jsx"></script>
+  <script type="text/babel" src="screens-main.jsx"></script>
+  <script type="text/babel" src="screens-next.jsx"></script>
+  <script type="text/babel" src="screens-aux.jsx"></script>
+  <script type="text/babel" src="screens-book-detail.jsx"></script>
+  <script type="text/babel" src="app.jsx"></script>
+
+  <script type="text/babel" data-presets="react">
+    const PHONE_W = 390;
+    const PHONE_H = 844;
+
+    function Frame({ start, tab, nextTab, book }) {
+      return (
+        <TramabookApp
+          startScreen={start || 'main'}
+          startTab={tab || 'home'}
+          startNextTab={nextTab || 'meeting'}
+          startBookTitle={book}
+        />
+      );
+    }
+
+    function App() {
+      return (
+        <DesignCanvas>
+
+          {/* SECTION 1 — Onboarding */}
+          <DCSection id="onboarding" title="Entrada" subtitle="Boas-vindas, login, criar e entrar num clube">
+            <DCArtboard id="welcome" label="Boas-vindas" width={PHONE_W} height={PHONE_H}>
+              <Frame start="welcome" />
+            </DCArtboard>
+            <DCArtboard id="login" label="Login" width={PHONE_W} height={PHONE_H}>
+              <Frame start="login" />
+            </DCArtboard>
+            <DCArtboard id="signup" label="Criar conta" width={PHONE_W} height={PHONE_H}>
+              <Frame start="signup-create" />
+            </DCArtboard>
+            <DCArtboard id="create-club" label="Criar clube" width={PHONE_W} height={PHONE_H}>
+              <Frame start="create-club" />
+            </DCArtboard>
+            <DCArtboard id="join-club" label="Entrar num clube" width={PHONE_W} height={PHONE_H}>
+              <Frame start="join-club" />
+            </DCArtboard>
+          </DCSection>
+
+          {/* SECTION 2 — Fluxo principal */}
+          <DCSection id="main" title="Fluxo principal" subtitle="As 4 abas com header global e bottom nav">
+            <DCArtboard id="home" label="Início" width={PHONE_W} height={PHONE_H}>
+              <Frame tab="home" />
+            </DCArtboard>
+            <DCArtboard id="book" label="Livro atual" width={PHONE_W} height={PHONE_H}>
+              <Frame tab="book" />
+            </DCArtboard>
+            <DCArtboard id="next-meeting" label="Próximo · Encontro" width={PHONE_W} height={PHONE_H}>
+              <Frame tab="next" nextTab="meeting" />
+            </DCArtboard>
+            <DCArtboard id="next-voting" label="Próximo · Votação" width={PHONE_W} height={PHONE_H}>
+              <Frame tab="next" nextTab="voting" />
+            </DCArtboard>
+            <DCArtboard id="next-shelf" label="Próximo · Estante" width={PHONE_W} height={PHONE_H}>
+              <Frame tab="next" nextTab="shelf" />
+            </DCArtboard>
+            <DCArtboard id="profile" label="Perfil" width={PHONE_W} height={PHONE_H}>
+              <Frame tab="profile" />
+            </DCArtboard>
+          </DCSection>
+
+          {/* SECTION 3 — Telas auxiliares */}
+          <DCSection id="aux" title="Telas auxiliares" subtitle="Capítulo, sugerir, editar perfil, avisos">
+            <DCArtboard id="chapter" label="Discussão do capítulo" width={PHONE_W} height={PHONE_H}>
+              <ChapterFrame />
+            </DCArtboard>
+            <DCArtboard id="suggest" label="Sugerir livro" width={PHONE_W} height={PHONE_H}>
+              <Frame start="suggest" />
+            </DCArtboard>
+            <DCArtboard id="edit-profile" label="Editar perfil" width={PHONE_W} height={PHONE_H}>
+              <Frame start="edit-profile" />
+            </DCArtboard>
+            <DCArtboard id="notifications" label="Avisos" width={PHONE_W} height={PHONE_H}>
+              <Frame start="notifications" />
+            </DCArtboard>
+          </DCSection>
+
+          {/* SECTION 4 — Detalhe do livro + Frases */}
+          <DCSection id="book-detail" title="Detalhe do livro" subtitle="Clicar num livro da estante abre essa tela">
+            <DCArtboard id="detail-resumo" label="Resumo" width={PHONE_W} height={PHONE_H}>
+              <Frame start="book-detail" book="Olhos d'água" />
+            </DCArtboard>
+            <DCArtboard id="detail-frases" label="Frases marcadas" width={PHONE_W} height={PHONE_H}>
+              <BookDetailFramesFrame tab="frases" />
+            </DCArtboard>
+            <DCArtboard id="detail-timeline" label="Histórico" width={PHONE_W} height={PHONE_H}>
+              <BookDetailFramesFrame tab="timeline" />
+            </DCArtboard>
+            <DCArtboard id="frases-all" label="Frases (geral)" width={PHONE_W} height={PHONE_H}>
+              <Frame start="frases" />
+            </DCArtboard>
+          </DCSection>
+
+          {/* SECTION 4 — Estados / sheets */}
+          <DCSection id="states" title="Estados e bottom sheets" subtitle="Sobrepostos ao fluxo principal">
+            <DCArtboard id="club-sheet" label="Trocar de clube" width={PHONE_W} height={PHONE_H}>
+              <ClubSheetFrame />
+            </DCArtboard>
+            <DCArtboard id="progress-sheet" label="Marcar progresso" width={PHONE_W} height={PHONE_H}>
+              <ProgressSheetFrame />
+            </DCArtboard>
+          </DCSection>
+
+          <DCPostIt top={60} left={60} rotate={-3} width={240}>
+            <b>Tramabook</b> — protótipo navegável.<br/>
+            Tape em qualquer botão pra explorar. Cada artboard começa numa tela diferente, mas todos compartilham a mesma navegação.
+          </DCPostIt>
+
+        </DesignCanvas>
+      );
+    }
+
+    // ── Wrapper artboards for opened sheets ──
+    function ClubSheetFrame() {
+      const [open, setOpen] = React.useState(true);
+      return (
+        <Phone>
+          <div style={{ width: '100%', height: '100%', display: 'flex', flexDirection: 'column', background: TB.paper, position: 'relative' }}>
+            <StatusBar />
+            <GlobalHeader
+              club={TB_DATA.clubs[0]} user={TB_DATA.user}
+              onAvatar={() => {}} onClubTap={() => setOpen(true)} onBell={() => {}} unread={3}
+            />
+            <div style={{ flex: 1, overflow: 'hidden', filter: 'brightness(0.96)' }}>
+              <HomeScreen goTo={() => {}} openClubSheet={() => setOpen(true)} />
+            </div>
+            <BottomNav tab="home" setTab={() => {}} />
+            <ClubSheet open={open} onClose={() => setOpen(false)} onSelect={() => {}} onJoin={() => {}} />
+          </div>
+        </Phone>
+      );
+    }
+
+    function ProgressSheetFrame() {
+      const [open, setOpen] = React.useState(true);
+      const [c, setC] = React.useState(8);
+      return (
+        <Phone>
+          <div style={{ width: '100%', height: '100%', display: 'flex', flexDirection: 'column', background: TB.paper, position: 'relative' }}>
+            <StatusBar />
+            <GlobalHeader
+              club={TB_DATA.clubs[0]} user={TB_DATA.user}
+              onAvatar={() => {}} onClubTap={() => {}} onBell={() => {}} unread={3}
+            />
+            <div style={{ flex: 1, overflow: 'hidden', filter: 'brightness(0.96)' }}>
+              <CurrentBookScreen goTo={() => {}} openProgressSheet={() => setOpen(true)} />
+            </div>
+            <BottomNav tab="book" setTab={() => {}} />
+            <ProgressSheet open={open} onClose={() => setOpen(false)} current={c} total={13} onSet={setC} doneToast={() => {}} />
+          </div>
+        </Phone>
+      );
+    }
+
+    function ChapterFrame() {
+      return (
+        <Phone>
+          <ChapterScreen
+            chapter={{ n: 7, title: 'Encontro com Olímpico' }}
+            onBack={() => {}}
+          />
+        </Phone>
+      );
+    }
+
+    function BookDetailFramesFrame({ tab }) {
+      // Mount BookDetail and click the right tab after render
+      const ref = React.useRef(null);
+      React.useEffect(() => {
+        if (!ref.current) return;
+        const btns = ref.current.querySelectorAll('button');
+        const label = tab === 'frases' ? 'Frases' : tab === 'timeline' ? 'Histórico' : 'Resumo';
+        for (const b of btns) {
+          if (b.textContent.trim().startsWith(label)) { b.click(); break; }
+        }
+      }, [tab]);
+      return (
+        <div ref={ref} style={{ width: '100%', height: '100%' }}>
+          <Phone>
+            <BookDetailScreen title="Olhos d'água" onBack={() => {}} />
+          </Phone>
+        </div>
+      );
+    }
+
+    window.ChapterFrame = ChapterFrame;
+    window.ClubSheetFrame = ClubSheetFrame;
+    window.ProgressSheetFrame = ProgressSheetFrame;
+    window.BookDetailFramesFrame = BookDetailFramesFrame;
+
+    ReactDOM.createRoot(document.getElementById('root')).render(<App />);
+  </script>
+</body>
+</html>

@@ -1,0 +1,39 @@
+package com.example.data.api
+
+import com.squareup.moshi.Json
+import com.squareup.moshi.JsonClass
+import retrofit2.Retrofit
+import retrofit2.converter.moshi.MoshiConverterFactory
+import retrofit2.http.GET
+import retrofit2.http.Query
+
+@JsonClass(generateAdapter = true)
+data class OpenLibraryDoc(
+    @Json(name = "title") val title: String,
+    @Json(name = "author_name") val authorName: List<String>?,
+    @Json(name = "first_publish_year") val firstPublishYear: Int?,
+    @Json(name = "cover_i") val coverI: Long?,
+    @Json(name = "isbn") val isbn: List<String>?
+)
+
+@JsonClass(generateAdapter = true)
+data class OpenLibrarySearchResponse(
+    @Json(name = "docs") val docs: List<OpenLibraryDoc>?
+)
+
+interface OpenLibraryService {
+    @GET("search.json")
+    suspend fun searchBooks(
+        @Query("q") query: String,
+        @Query("limit") limit: Int = 15
+    ): OpenLibrarySearchResponse
+}
+
+object OpenLibraryApi {
+    private val retrofit = Retrofit.Builder()
+        .baseUrl("https://openlibrary.org/")
+        .addConverterFactory(MoshiConverterFactory.create())
+        .build()
+
+    val service: OpenLibraryService = retrofit.create(OpenLibraryService::class.java)
+}
