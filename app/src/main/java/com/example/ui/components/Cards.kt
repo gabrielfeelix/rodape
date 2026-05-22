@@ -16,6 +16,7 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import com.example.ui.theme.CardSurface
 import com.example.ui.theme.Divider
@@ -37,7 +38,10 @@ fun TramabookCard(
         border = BorderStroke(0.5.dp, Divider),
         elevation = CardDefaults.cardElevation(defaultElevation = 2.dp),
     ) {
-        Column(Modifier.padding(contentPadding), content = content)
+        Column(
+            Modifier.fillMaxWidth().padding(contentPadding),
+            content = content,
+        )
     }
 }
 
@@ -55,6 +59,9 @@ fun TbSectionHeader(
         Text(
             text = title,
             style = MaterialTheme.typography.headlineMedium,
+            maxLines = 1,
+            overflow = TextOverflow.Ellipsis,
+            modifier = Modifier.weight(1f),
         )
         action?.invoke()
     }
