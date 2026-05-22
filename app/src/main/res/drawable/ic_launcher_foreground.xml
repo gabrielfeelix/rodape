@@ -3,10 +3,17 @@
     android:height="108dp"
     android:viewportWidth="108"
     android:viewportHeight="108">
-    <path
-        android:fillColor="#C26A4A"
-        android:pathData="M 34 30 H 74 A 14 14 0 0 1 88 44 V 60 L 74 74 H 42 L 38 81 L 36 74 H 34 A 14 14 0 0 1 20 60 V 44 A 14 14 0 0 1 34 30 Z" />
-    <path
-        android:fillColor="#9E4E30"
-        android:pathData="M 74 74 C 74 66 80 60 88 60 C 85 69 79 73 74 74 Z" />
+    <!-- Balao de fala Tramabook, escalado para a safe zone central do icone adaptativo -->
+    <group
+        android:scaleX="0.66"
+        android:scaleY="0.66"
+        android:pivotX="54"
+        android:pivotY="54">
+        <path
+            android:fillColor="#B85838"
+            android:pathData="M 34 30 H 74 A 14 14 0 0 1 88 44 V 60 L 74 74 H 42 L 38 81 L 36 74 H 34 A 14 14 0 0 1 20 60 V 44 A 14 14 0 0 1 34 30 Z" />
+        <path
+            android:fillColor="#8E3F25"
+            android:pathData="M 74 74 C 74 66 80 60 88 60 C 85 69 79 73 74 74 Z" />
+    </group>
 </vector>
