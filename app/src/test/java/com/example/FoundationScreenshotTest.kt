@@ -1,4 +1,4 @@
-package com.example.theme
+package com.example
 
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
@@ -43,14 +43,19 @@ class FoundationScreenshotTest {
                     verticalArrangement = Arrangement.spacedBy(12.dp),
                 ) {
                     TbSectionHeader(title = "Componentes")
+                    TbSectionHeader(
+                        title = "Lendo agora",
+                        action = { Pill(text = "Ver tudo", variant = PillVariant.Outline) },
+                    )
                     TbButton(text = "Criar um clube", onClick = {}, variant = TbButtonVariant.Primary)
                     TbButton(text = "Sugerir livro", onClick = {}, variant = TbButtonVariant.Outline)
                     Pill(text = "Atual", variant = PillVariant.Terra)
                     ProgressBar(value = 0.62f)
+                    Avatar(name = "Beatriz Almeida")
                     Avatar(name = "Beatriz Almeida", size = 56.dp)
                     Cover(title = "A Hora da Estrela", author = "Clarice Lispector")
                     TramabookCard {
-                        Pill(text = "olive", variant = PillVariant.Olive)
+                        Pill(text = "Em leitura", variant = PillVariant.Olive)
                     }
                 }
             }
