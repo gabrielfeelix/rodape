@@ -3,6 +3,7 @@ package com.example.ui.components
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material3.Text
@@ -18,7 +19,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import coil.compose.AsyncImage
+import coil.compose.SubcomposeAsyncImage
 
 // 8 cores — origem: claude-design/tokens.jsx (Avatar).
 private val avatarColors = listOf(
@@ -39,24 +40,34 @@ fun Avatar(
     size: Dp = 40.dp,
     ring: Color? = null,
 ) {
-    val base = modifier.size(size).clip(CircleShape)
-    val ringed = if (ring != null) base.border(2.dp, ring, CircleShape) else base
-
-    if (avatarUrl.isNotBlank()) {
-        AsyncImage(
-            model = avatarUrl,
-            contentDescription = "Avatar de $name",
-            modifier = ringed,
-            contentScale = ContentScale.Crop,
-        )
-        return
+    val sized = modifier.size(size)
+    val shaped = if (ring != null) {
+        sized.border(2.dp, ring, CircleShape).clip(CircleShape)
+    } else {
+        sized.clip(CircleShape)
     }
 
+    if (avatarUrl.isNotBlank()) {
+        SubcomposeAsyncImage(
+            model = avatarUrl,
+            contentDescription = "Avatar de $name",
+            modifier = shaped,
+            contentScale = ContentScale.Crop,
+            loading = { InitialsAvatar(name, size) },
+            error = { InitialsAvatar(name, size) },
+        )
+    } else {
+        Box(modifier = shaped.semantics { contentDescription = "Avatar de $name" }) {
+            InitialsAvatar(name, size)
+        }
+    }
+}
+
+@Composable
+private fun InitialsAvatar(name: String, size: Dp) {
     val bg = avatarColors[name.sumOf { it.code }.mod(avatarColors.size)]
     Box(
-        modifier = ringed
-            .background(bg)
-            .semantics { contentDescription = "Avatar de $name" },
+        modifier = Modifier.fillMaxSize().background(bg),
         contentAlignment = Alignment.Center,
     ) {
         Text(
