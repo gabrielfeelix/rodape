@@ -3,6 +3,7 @@ package com.example.ui.components
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
@@ -17,12 +18,15 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import coil.compose.AsyncImage
+import com.example.ui.theme.InterFontFamily
 import com.example.ui.theme.LiterataFontFamily
 
 private data class CoverPalette(val bg: Color, val fg: Color)
@@ -57,7 +61,7 @@ fun Cover(
         .shadow(elevation = 8.dp, shape = shape, clip = false)
         .clip(shape)
 
-    if (coverUrl.isNotEmpty()) {
+    if (coverUrl.isNotBlank()) {
         AsyncImage(
             model = coverUrl,
             contentDescription = "Capa de $title",
@@ -68,25 +72,30 @@ fun Cover(
     }
 
     val palette = coverPalettes[hashOf(title).mod(coverPalettes.size)]
-    Box(modifier = box.background(palette.bg)) {
+    val titleFontSize = (92f / maxOf(8, title.length) * 1.4f).coerceIn(9f, 15f)
+    val titleLineHeight = (92f / maxOf(8, title.length) * 1.5f).coerceIn(11f, 17f)
+    Box(
+        modifier = box
+            .background(palette.bg)
+            .semantics { contentDescription = "Capa de $title" },
+    ) {
         Column(modifier = Modifier.fillMaxSize().padding(width * 0.09f)) {
             Text(
                 text = title,
                 color = palette.fg,
                 fontFamily = LiterataFontFamily,
                 fontWeight = FontWeight.SemiBold,
-                fontSize = (width.value / maxOf(8, title.length) * 1.4f)
-                    .coerceIn(9f, 15f).sp,
-                lineHeight = (width.value / maxOf(8, title.length) * 1.5f)
-                    .coerceIn(11f, 17f).sp,
+                fontSize = titleFontSize.sp,
+                lineHeight = titleLineHeight.sp,
                 maxLines = 4,
                 overflow = TextOverflow.Ellipsis,
                 modifier = Modifier.fillMaxWidth().wrapContentHeight(),
             )
-            Box(Modifier.weight(1f))
+            Spacer(Modifier.weight(1f))
             Text(
                 text = author.uppercase(),
                 color = palette.fg.copy(alpha = 0.75f),
+                fontFamily = InterFontFamily,
                 fontSize = 7.sp,
                 fontWeight = FontWeight.Medium,
                 maxLines = 1,
