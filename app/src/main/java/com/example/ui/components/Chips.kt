@@ -3,15 +3,19 @@ package com.example.ui.components
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.semantics.ProgressBarRangeInfo
+import androidx.compose.ui.semantics.progressBarRangeInfo
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
@@ -47,9 +51,9 @@ fun Pill(
         PillVariant.Ink -> PillStyle(Ink, Cream, null)
         PillVariant.Outline -> PillStyle(Color.Transparent, Tertiary, Divider)
     }
-    val base = modifier.clip(RoundedCornerShape(999.dp)).background(style.bg)
+    val base = modifier.clip(CircleShape).background(style.bg)
     val bordered = if (style.border != null) {
-        base.border(1.dp, style.border, RoundedCornerShape(999.dp))
+        base.border(1.dp, style.border, CircleShape)
     } else base
 
     Box(bordered.padding(horizontal = 10.dp, vertical = 4.dp)) {
@@ -75,14 +79,14 @@ fun ProgressBar(
     Box(
         modifier
             .height(height)
-            .clip(RoundedCornerShape(999.dp))
-            .background(track),
+            .clip(CircleShape)
+            .background(track)
+            .semantics { progressBarRangeInfo = ProgressBarRangeInfo(clamped, 0f..1f) },
     ) {
         Box(
             Modifier
                 .fillMaxWidth(clamped)
-                .height(height)
-                .clip(RoundedCornerShape(999.dp))
+                .fillMaxHeight()
                 .background(color),
         )
     }
