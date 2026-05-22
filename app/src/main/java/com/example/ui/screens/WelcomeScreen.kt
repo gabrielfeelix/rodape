@@ -39,8 +39,16 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.ui.components.PillButton
 import com.example.ui.components.StandardCard
+import com.example.ui.components.TbButton
+import com.example.ui.components.TbButtonSize
+import com.example.ui.components.TbButtonVariant
+import com.example.ui.theme.Oliva
 import com.example.ui.theme.Terracota
 import com.example.ui.theme.VerdeMusgo
+import androidx.compose.ui.text.SpanStyle
+import androidx.compose.ui.text.buildAnnotatedString
+import androidx.compose.ui.text.font.FontStyle
+import androidx.compose.ui.text.withStyle
 import kotlinx.coroutines.delay
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -91,12 +99,17 @@ fun WelcomeScreen(
                     Spacer(modifier = Modifier.height(24.dp))
 
                     Text(
-                        text = "Leituras juntas.",
-                        style = MaterialTheme.typography.displayLarge.copy(
-                            fontWeight = FontWeight.Medium,
-                            fontSize = 28.sp,
-                            color = Terracota
-                        ),
+                        text = buildAnnotatedString {
+                            append("Leituras")
+                            append("\n")
+                            withStyle(SpanStyle(fontStyle = FontStyle.Italic, color = Oliva)) {
+                                append("juntas")
+                            }
+                            withStyle(SpanStyle(color = Terracota)) {
+                                append(".")
+                            }
+                        },
+                        style = MaterialTheme.typography.displayLarge,
                         textAlign = TextAlign.Center
                     )
 
@@ -121,15 +134,20 @@ fun WelcomeScreen(
                 verticalArrangement = Arrangement.spacedBy(16.dp),
                 horizontalAlignment = Alignment.CenterHorizontally
             ) {
-                PillButton(
+                TbButton(
                     text = "Criar um clube",
-                    onClick = onNavigateToCreateClub
+                    onClick = onNavigateToCreateClub,
+                    variant = TbButtonVariant.Terra,
+                    size = TbButtonSize.Lg,
+                    modifier = Modifier.fillMaxWidth()
                 )
 
-                PillButton(
+                TbButton(
                     text = "Entrar num clube",
                     onClick = onNavigateToJoinClub,
-                    isSecondary = true
+                    variant = TbButtonVariant.Outline,
+                    size = TbButtonSize.Lg,
+                    modifier = Modifier.fillMaxWidth()
                 )
 
                 Text(
