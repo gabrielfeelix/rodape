@@ -108,6 +108,14 @@ ink         bg #2E3A47   soft #D7DCE2
 Persistido em `Club.cor` como índice "0".."4". Manter compatibilidade com o mapeamento
 antigo já existente em `MainTabsScreen`.
 
+> **Atenção (conflito conhecido — resolver na fase de re-skin de clubes):** o app legado
+> em `WelcomeScreen.kt`/`CreateClubScreen` salva `Club.cor` como **hex** (ex.: `"#8C4027"`),
+> não como índice, e o seed em `TramabookRepository.kt` usa `"0"`. O helper `clubColorFor()`
+> (criado na Fase 1) resolve índice **ou** hex, mas o índice "0" mapeia para oliva
+> (`#4F653F`), enquanto o mapeamento legado de `MainTabsScreen` tratava "0" como terracota.
+> A fase que re-skina `CreateClubScreen`/`MainTabsScreen` deve unificar: passar a salvar
+> sempre o índice "0".."4" e usar `clubColorFor()` em todos os pontos de leitura.
+
 ### 3.2 Tipografia
 
 - **Serif: Literata** (era Fraunces). Editorial, combina com leitura. Via Google Fonts.
