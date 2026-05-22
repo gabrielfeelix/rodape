@@ -45,6 +45,7 @@ import com.example.ui.components.TbButtonVariant
 import com.example.ui.components.TramabookCard
 import com.example.ui.theme.Cream
 import com.example.ui.theme.CardSurface
+import com.example.ui.theme.ClubColors
 import com.example.ui.theme.Divider
 import com.example.ui.theme.Ink
 import com.example.ui.theme.Muted
@@ -502,27 +503,18 @@ fun CreateClubScreen(
     var privacy by remember { mutableStateOf("convidados") }
     var selectedColorIndex by remember { mutableStateOf(0) }
 
-    val colors = listOf(
-        Color(0xFF8C4027), // Terracota from screenshot
-        Color(0xFF4C663D), // Green from screenshot
-        Color(0xFF5A5852), // Warm dark gray from screenshot
-        Color(0xFFFDE1D8), // Pastel peach from screenshot
-        Color(0xFF7A7973)  // Secondary slate gray from screenshot
-    )
-
     val isNameValid = name.trim().length >= 3
 
     Scaffold(
         topBar = {
             CenterAlignedTopAppBar(
-                title = { 
+                title = {
                     Text(
-                        text = "Novo clube", 
+                        text = "Novo clube",
                         style = MaterialTheme.typography.titleLarge.copy(
-                            fontWeight = FontWeight.Bold,
-                            fontFamily = androidx.compose.ui.text.font.FontFamily.Serif
+                            fontWeight = FontWeight.Bold
                         )
-                    ) 
+                    )
                 },
                 navigationIcon = {
                     IconButton(onClick = onNavigateBack) {
@@ -548,12 +540,12 @@ fun CreateClubScreen(
             item {
                 Spacer(modifier = Modifier.height(8.dp))
 
-                // Standard white card container from the screenshot
+                // Input card aligned to design system
                 Surface(
                     modifier = Modifier.fillMaxWidth(),
                     shape = RoundedCornerShape(24.dp),
-                    color = MaterialTheme.colorScheme.surface,
-                    border = BorderStroke(1.dp, MaterialTheme.colorScheme.onSurface.copy(alpha = 0.04f)),
+                    color = CardSurface,
+                    border = BorderStroke(1.dp, Divider),
                     shadowElevation = 1.dp
                 ) {
                     Column(
@@ -569,33 +561,33 @@ fun CreateClubScreen(
                                 text = "Como vocês querem chamar?",
                                 style = MaterialTheme.typography.titleMedium.copy(
                                     fontWeight = FontWeight.SemiBold,
-                                    color = MaterialTheme.colorScheme.onSurface
+                                    color = Ink
                                 )
                             )
                             Text(
                                 text = "${name.length}/40",
-                                style = MaterialTheme.typography.labelSmall.copy(color = MaterialTheme.colorScheme.onSurfaceVariant)
+                                style = MaterialTheme.typography.labelSmall.copy(color = Muted)
                             )
                         }
                         OutlinedTextField(
                             value = name,
                             onValueChange = { if (it.length <= 40) name = it },
-                            placeholder = { 
+                            placeholder = {
                                 Text(
-                                    "Nome do clube (máx. 40)", 
+                                    "Nome do clube (máx. 40)",
                                     style = MaterialTheme.typography.bodyLarge.copy(
-                                        color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.5f)
+                                        color = Muted
                                     )
-                                ) 
+                                )
                             },
                             modifier = Modifier.fillMaxWidth(),
-                            shape = RoundedCornerShape(12.dp),
+                            shape = RoundedCornerShape(14.dp),
                             singleLine = true,
                             colors = OutlinedTextFieldDefaults.colors(
                                 focusedBorderColor = Terracota,
-                                unfocusedBorderColor = MaterialTheme.colorScheme.outline.copy(alpha = 0.3f),
-                                focusedContainerColor = Color.Transparent,
-                                unfocusedContainerColor = Color.Transparent
+                                unfocusedBorderColor = Divider,
+                                focusedContainerColor = Cream,
+                                unfocusedContainerColor = Cream
                             )
                         )
 
@@ -610,34 +602,34 @@ fun CreateClubScreen(
                                 text = "Conta um pouco",
                                 style = MaterialTheme.typography.titleMedium.copy(
                                     fontWeight = FontWeight.SemiBold,
-                                    color = MaterialTheme.colorScheme.onSurface
+                                    color = Ink
                                 )
                             )
                             Text(
                                 text = "${description.length}/140",
-                                style = MaterialTheme.typography.labelSmall.copy(color = MaterialTheme.colorScheme.onSurfaceVariant)
+                                style = MaterialTheme.typography.labelSmall.copy(color = Muted)
                             )
                         }
                         OutlinedTextField(
                             value = description,
                             onValueChange = { if (it.length <= 140) description = it },
-                            placeholder = { 
+                            placeholder = {
                                 Text(
-                                    "Descrição curta", 
+                                    "Descrição curta",
                                     style = MaterialTheme.typography.bodyLarge.copy(
-                                        color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.5f)
+                                        color = Muted
                                     )
-                                ) 
+                                )
                             },
                             modifier = Modifier
                                 .fillMaxWidth()
                                 .height(110.dp),
-                            shape = RoundedCornerShape(12.dp),
+                            shape = RoundedCornerShape(14.dp),
                             colors = OutlinedTextFieldDefaults.colors(
                                 focusedBorderColor = Terracota,
-                                unfocusedBorderColor = MaterialTheme.colorScheme.outline.copy(alpha = 0.3f),
-                                focusedContainerColor = Color.Transparent,
-                                unfocusedContainerColor = Color.Transparent
+                                unfocusedBorderColor = Divider,
+                                focusedContainerColor = Cream,
+                                unfocusedContainerColor = Cream
                             )
                         )
                     }
@@ -657,18 +649,18 @@ fun CreateClubScreen(
                     modifier = Modifier.fillMaxWidth(),
                     horizontalArrangement = Arrangement.spacedBy(16.dp)
                 ) {
-                    colors.forEachIndexed { index, color ->
+                    ClubColors.forEachIndexed { index, clubColor ->
                         val isSelected = selectedColorIndex == index
                         Box(
                             modifier = Modifier
                                 .size(44.dp)
                                 .border(
-                                    width = if (isSelected) 1.5.dp else 0.dp,
-                                    color = if (isSelected) MaterialTheme.colorScheme.onBackground else Color.Transparent,
+                                    width = if (isSelected) 2.dp else 0.dp,
+                                    color = if (isSelected) Ink else Color.Transparent,
                                     shape = CircleShape
                                 )
                                 .padding(4.dp)
-                                .background(color, CircleShape)
+                                .background(clubColor.bg, CircleShape)
                                 .clip(CircleShape)
                                 .clickable { selectedColorIndex = index }
                         )
@@ -695,10 +687,10 @@ fun CreateClubScreen(
                             .fillMaxWidth()
                             .clickable { privacy = "convidados" },
                         shape = RoundedCornerShape(16.dp),
-                        color = if (isOption1) Terracota.copy(alpha = 0.04f) else MaterialTheme.colorScheme.surface,
+                        color = if (isOption1) Terracota.copy(alpha = 0.04f) else CardSurface,
                         border = BorderStroke(
-                            width = if (isOption1) 1.5.dp else 0.5.dp,
-                            color = if (isOption1) Terracota else MaterialTheme.colorScheme.outline.copy(alpha = 0.4f)
+                            width = if (isOption1) 1.5.dp else 1.dp,
+                            color = if (isOption1) Terracota else Divider
                         )
                     ) {
                         Row(
@@ -756,10 +748,10 @@ fun CreateClubScreen(
                             .fillMaxWidth()
                             .clickable { privacy = "publico" },
                         shape = RoundedCornerShape(16.dp),
-                        color = if (isOption2) Terracota.copy(alpha = 0.04f) else MaterialTheme.colorScheme.surface,
+                        color = if (isOption2) Terracota.copy(alpha = 0.04f) else CardSurface,
                         border = BorderStroke(
-                            width = if (isOption2) 1.5.dp else 0.5.dp,
-                            color = if (isOption2) Terracota else MaterialTheme.colorScheme.outline.copy(alpha = 0.4f)
+                            width = if (isOption2) 1.5.dp else 1.dp,
+                            color = if (isOption2) Terracota else Divider
                         )
                     ) {
                         Row(
@@ -814,36 +806,18 @@ fun CreateClubScreen(
 
             item {
                 Spacer(modifier = Modifier.height(16.dp))
-                Button(
+                TbButton(
+                    text = "Criar clube",
                     onClick = {
                         if (isNameValid) {
-                            val chosenColorHex = when (selectedColorIndex) {
-                                0 -> "#8C4027"
-                                1 -> "#4C663D"
-                                2 -> "#5A5852"
-                                3 -> "#FDE1D8"
-                                else -> "#7A7973"
-                            }
-                            onCreateCompleted(name, description, chosenColorHex, privacy)
+                            onCreateCompleted(name, description, selectedColorIndex.toString(), privacy)
                         }
                     },
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .height(56.dp),
+                    variant = TbButtonVariant.Terra,
+                    size = TbButtonSize.Lg,
                     enabled = isNameValid,
-                    shape = RoundedCornerShape(28.dp),
-                    colors = ButtonDefaults.buttonColors(
-                        containerColor = Terracota,
-                        contentColor = Color.White,
-                        disabledContainerColor = Terracota.copy(alpha = 0.4f),
-                        disabledContentColor = Color.White.copy(alpha = 0.6f)
-                    )
-                ) {
-                    Text(
-                        text = "Criar clube",
-                        style = MaterialTheme.typography.bodyLarge.copy(fontWeight = FontWeight.Bold)
-                    )
-                }
+                    modifier = Modifier.fillMaxWidth()
+                )
                 Spacer(modifier = Modifier.height(40.dp))
             }
         }
@@ -871,14 +845,13 @@ fun JoinClubScreen(
     Scaffold(
         topBar = {
             CenterAlignedTopAppBar(
-                title = { 
+                title = {
                     Text(
-                        text = "Entrar num clube", 
+                        text = "Entrar num clube",
                         style = MaterialTheme.typography.titleLarge.copy(
-                            fontWeight = FontWeight.Bold,
-                            fontFamily = androidx.compose.ui.text.font.FontFamily.Serif
+                            fontWeight = FontWeight.Bold
                         )
-                    ) 
+                    )
                 },
                 navigationIcon = {
                     IconButton(onClick = onNavigateBack) {
@@ -890,12 +863,6 @@ fun JoinClubScreen(
                     }
                 },
                 colors = TopAppBarDefaults.centerAlignedTopAppBarColors(containerColor = MaterialTheme.colorScheme.background)
-            )
-        },
-        bottomBar = {
-            CustomBottomBar(
-                selectedTab = "home",
-                onTabSelected = { }
             )
         },
         containerColor = MaterialTheme.colorScheme.background
@@ -916,15 +883,8 @@ fun JoinClubScreen(
                     modifier = Modifier
                         .fillMaxWidth()
                         .height(52.dp)
-                        .background(
-                            MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.05f),
-                            RoundedCornerShape(26.dp)
-                        )
-                        .border(
-                            0.5.dp,
-                            MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.1f),
-                            RoundedCornerShape(26.dp)
-                        )
+                        .background(PaperDeep, RoundedCornerShape(26.dp))
+                        .border(0.5.dp, Divider, RoundedCornerShape(26.dp))
                         .padding(4.dp),
                     verticalAlignment = Alignment.CenterVertically
                 ) {
@@ -933,7 +893,7 @@ fun JoinClubScreen(
                             .weight(1f)
                             .fillMaxHeight()
                             .background(
-                                if (activeTabIsCode) Color.White else Color.Transparent,
+                                if (activeTabIsCode) CardSurface else Color.Transparent,
                                 RoundedCornerShape(22.dp)
                             )
                             .clickable { activeTabIsCode = true },
@@ -941,7 +901,7 @@ fun JoinClubScreen(
                     ) {
                         Text(
                             "Com código",
-                            color = if (activeTabIsCode) MaterialTheme.colorScheme.onSurface else MaterialTheme.colorScheme.onSurfaceVariant,
+                            color = if (activeTabIsCode) Ink else Muted,
                             style = MaterialTheme.typography.bodyLarge.copy(fontWeight = FontWeight.SemiBold)
                         )
                     }
@@ -951,7 +911,7 @@ fun JoinClubScreen(
                             .weight(1f)
                             .fillMaxHeight()
                             .background(
-                                if (!activeTabIsCode) Color.White else Color.Transparent,
+                                if (!activeTabIsCode) CardSurface else Color.Transparent,
                                 RoundedCornerShape(22.dp)
                             )
                             .clickable { activeTabIsCode = false },
@@ -959,7 +919,7 @@ fun JoinClubScreen(
                     ) {
                         Text(
                             "Com link",
-                            color = if (!activeTabIsCode) MaterialTheme.colorScheme.onSurface else MaterialTheme.colorScheme.onSurfaceVariant,
+                            color = if (!activeTabIsCode) Ink else Muted,
                             style = MaterialTheme.typography.bodyLarge.copy(fontWeight = FontWeight.SemiBold)
                         )
                     }
@@ -970,8 +930,8 @@ fun JoinClubScreen(
                 Surface(
                     modifier = Modifier.fillMaxWidth(),
                     shape = RoundedCornerShape(24.dp),
-                    color = MaterialTheme.colorScheme.surface,
-                    border = BorderStroke(1.dp, MaterialTheme.colorScheme.onSurface.copy(alpha = 0.04f)),
+                    color = CardSurface,
+                    border = BorderStroke(1.dp, Divider),
                     shadowElevation = 1.dp
                 ) {
                     Column(
@@ -1025,9 +985,9 @@ fun JoinClubScreen(
                                         keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Text),
                                         colors = OutlinedTextFieldDefaults.colors(
                                             focusedBorderColor = Terracota,
-                                            unfocusedBorderColor = MaterialTheme.colorScheme.outline.copy(alpha = 0.3f),
-                                            focusedContainerColor = Color.Transparent,
-                                            unfocusedContainerColor = Color.Transparent
+                                            unfocusedBorderColor = Divider,
+                                            focusedContainerColor = Cream,
+                                            unfocusedContainerColor = Cream
                                         )
                                     )
                                 }
@@ -1063,9 +1023,9 @@ fun JoinClubScreen(
                                         keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Text),
                                         colors = OutlinedTextFieldDefaults.colors(
                                             focusedBorderColor = Terracota,
-                                            unfocusedBorderColor = MaterialTheme.colorScheme.outline.copy(alpha = 0.3f),
-                                            focusedContainerColor = Color.Transparent,
-                                            unfocusedContainerColor = Color.Transparent
+                                            unfocusedBorderColor = Divider,
+                                            focusedContainerColor = Cream,
+                                            unfocusedContainerColor = Cream
                                         )
                                     )
                                 }
@@ -1107,9 +1067,9 @@ fun JoinClubScreen(
                                 singleLine = true,
                                 colors = OutlinedTextFieldDefaults.colors(
                                     focusedBorderColor = Terracota,
-                                    unfocusedBorderColor = MaterialTheme.colorScheme.outline.copy(alpha = 0.3f),
-                                    focusedContainerColor = Color.Transparent,
-                                    unfocusedContainerColor = Color.Transparent
+                                    unfocusedBorderColor = Divider,
+                                    focusedContainerColor = Cream,
+                                    unfocusedContainerColor = Cream
                                 )
                             )
 
@@ -1125,7 +1085,8 @@ fun JoinClubScreen(
 
                         Spacer(modifier = Modifier.height(16.dp))
 
-                        Button(
+                        TbButton(
+                            text = "Confirmar",
                             onClick = {
                                 if (activeTabIsCode) {
                                     if (isCodeComplete) {
@@ -1156,23 +1117,11 @@ fun JoinClubScreen(
                                     }
                                 }
                             },
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .height(56.dp),
+                            variant = TbButtonVariant.Terra,
+                            size = TbButtonSize.Lg,
                             enabled = if (activeTabIsCode) isCodeComplete else linkInput.trim().isNotEmpty(),
-                            shape = RoundedCornerShape(28.dp),
-                            colors = ButtonDefaults.buttonColors(
-                                containerColor = Terracota,
-                                contentColor = Color.White,
-                                disabledContainerColor = Terracota.copy(alpha = 0.4f),
-                                disabledContentColor = Color.White.copy(alpha = 0.6f)
-                            )
-                        ) {
-                            Text(
-                                text = "Confirmar",
-                                style = MaterialTheme.typography.bodyLarge.copy(fontWeight = FontWeight.Bold)
-                            )
-                        }
+                            modifier = Modifier.fillMaxWidth()
+                        )
 
                         Spacer(modifier = Modifier.height(8.dp))
 
