@@ -20,9 +20,10 @@ import com.example.data.model.*
         Vote::class,
         Meeting::class,
         MeetingRsvp::class,
-        DbNotification::class
+        DbNotification::class,
+        SavedQuote::class
     ],
-    version = 1,
+    version = 2,
     exportSchema = false
 )
 abstract class AppDatabase : RoomDatabase() {

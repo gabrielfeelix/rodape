@@ -116,3 +116,14 @@ data class DbNotification(
     val lida: Boolean,
     val criadoEm: Long
 )
+
+@Entity(tableName = "saved_quotes")
+data class SavedQuote(
+    @PrimaryKey val id: String,
+    val userId: String,
+    val clubId: String,
+    val bookId: String,
+    val texto: String,
+    val capituloRef: String,
+    val criadoEm: Long
+)

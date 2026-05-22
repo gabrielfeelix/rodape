@@ -71,6 +71,12 @@ class TramabookRepository(private val dao: TramabookDao) {
     suspend fun markNotificationAsRead(id: String) = dao.markNotificationAsRead(id)
     fun getNotificationsFlow(userId: String): Flow<List<DbNotification>> = dao.getNotificationsFlow(userId)
 
+    // --- Saved Quotes ---
+    suspend fun insertSavedQuote(quote: SavedQuote) = dao.insertSavedQuote(quote)
+    suspend fun deleteSavedQuote(quote: SavedQuote) = dao.deleteSavedQuote(quote)
+    fun getSavedQuotesForUserFlow(userId: String): Flow<List<SavedQuote>> = dao.getSavedQuotesForUserFlow(userId)
+    fun getSavedQuotesForBookFlow(userId: String, bookId: String): Flow<List<SavedQuote>> = dao.getSavedQuotesForBookFlow(userId, bookId)
+
     suspend fun seedDatabase() {
         // Only seed if no clubs exist
         val list = dao.getClubsForUserList("user_voce")
