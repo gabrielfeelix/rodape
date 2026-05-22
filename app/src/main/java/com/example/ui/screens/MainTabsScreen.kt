@@ -79,7 +79,8 @@ fun MainTabsScreen(
     onNavigateToSuggestBook: () -> Unit,
     onNavigateToJoinClub: () -> Unit,
     onLogoutCompleted: () -> Unit,
-    onNavigateToBookDetail: (String) -> Unit = {}
+    onNavigateToBookDetail: (String) -> Unit = {},
+    onNavigateToFrases: () -> Unit = {},
 ) {
     var selectedTab by remember { mutableStateOf("home") }
     var showBottomSheet by remember { mutableStateOf(false) }

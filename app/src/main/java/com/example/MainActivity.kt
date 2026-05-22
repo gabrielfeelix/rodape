@@ -109,7 +109,15 @@ class MainActivity : ComponentActivity() {
                                     popUpTo("main_tabs") { inclusive = true }
                                 }
                             },
-                            onNavigateToBookDetail = { bookId -> navController.navigate("book_detail/$bookId") }
+                            onNavigateToBookDetail = { bookId -> navController.navigate("book_detail/$bookId") },
+                            onNavigateToFrases = { navController.navigate("frases") }
+                        )
+                    }
+
+                    composable("frases") {
+                        FrasesScreen(
+                            viewModel = viewModel,
+                            onNavigateBack = { navController.popBackStack() }
                         )
                     }
 
