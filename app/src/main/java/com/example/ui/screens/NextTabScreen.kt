@@ -1,6 +1,5 @@
 package com.example.ui.screens
 
-import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
@@ -10,7 +9,6 @@ import androidx.compose.foundation.lazy.grid.GridCells
 import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
 import androidx.compose.foundation.lazy.grid.items
 import androidx.compose.foundation.lazy.items
-import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.outlined.*
@@ -19,6 +17,7 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
@@ -27,8 +26,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.data.model.*
 import com.example.ui.components.*
-import com.example.ui.theme.Terracota
-import com.example.ui.theme.VerdeMusgo
+import com.example.ui.theme.*
 import com.example.ui.viewmodel.MainViewModel
 
 @Composable
@@ -48,12 +46,12 @@ fun NextTabScreen(
                 .padding(horizontal = 24.dp, vertical = 8.dp)
                 .height(48.dp)
                 .background(
-                    MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.05f),
+                    OlivaSoft.copy(alpha = 0.5f),
                     RoundedCornerShape(24.dp)
                 )
                 .border(
                     0.5.dp,
-                    MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.1f),
+                    Divider,
                     RoundedCornerShape(24.dp)
                 )
                 .padding(4.dp),
@@ -67,7 +65,7 @@ fun NextTabScreen(
                         .weight(1f)
                         .fillMaxHeight()
                         .background(
-                            if (isSelected) Terracota else Color.Transparent,
+                            if (isSelected) Oliva else Color.Transparent,
                             RoundedCornerShape(20.dp)
                         )
                         .clickable { subTab = tab },
@@ -75,10 +73,33 @@ fun NextTabScreen(
                 ) {
                     Text(
                         label,
-                        color = if (isSelected) Color.White else MaterialTheme.colorScheme.onSurfaceVariant,
-                        style = MaterialTheme.typography.bodyMedium.copy(fontWeight = FontWeight.Medium)
+                        color = if (isSelected) Cream else Tertiary,
+                        style = MaterialTheme.typography.titleMedium.copy(
+                            fontFamily = LiterataFontFamily,
+                            fontWeight = if (isSelected) FontWeight.SemiBold else FontWeight.Normal
+                        )
                     )
                 }
+            }
+        }
+
+        // Terracota underline accent below selected tab — rendered as a thin bar
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(horizontal = 24.dp),
+        ) {
+            val nextTabs = listOf("encontro", "votacao", "estante")
+            nextTabs.forEachIndexed { i, tab ->
+                Box(
+                    modifier = Modifier
+                        .weight(1f)
+                        .height(2.dp)
+                        .background(
+                            if (subTab == tab) Terracota else Color.Transparent,
+                            RoundedCornerShape(1.dp)
+                        )
+                )
             }
         }
 
@@ -117,7 +138,7 @@ fun EncontroTab(viewModel: MainViewModel) {
             Text(
                 "Nenhum próximo encontro agendado.",
                 style = MaterialTheme.typography.bodyLarge,
-                color = MaterialTheme.colorScheme.onSurfaceVariant
+                color = Muted
             )
         }
     } else {
@@ -131,110 +152,129 @@ fun EncontroTab(viewModel: MainViewModel) {
             verticalArrangement = Arrangement.spacedBy(16.dp)
         ) {
             item {
-                StandardCard {
-                    Row(
-                        verticalAlignment = Alignment.CenterVertically,
-                        horizontalArrangement = Arrangement.spacedBy(12.dp)
+                // Meeting header card with olive gradient
+                TramabookCard(contentPadding = PaddingValues(0.dp)) {
+                    Box(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .background(
+                                Brush.linearGradient(
+                                    colors = listOf(Oliva, OlivaDark)
+                                )
+                            )
+                            .padding(20.dp)
                     ) {
-                        Box(
-                            modifier = Modifier
-                                .size(64.dp)
-                                .background(Terracota.copy(alpha = 0.10f), RoundedCornerShape(12.dp)),
-                            contentAlignment = Alignment.Center
+                        Row(
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.spacedBy(12.dp)
                         ) {
-                            Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                            Box(
+                                modifier = Modifier
+                                    .size(64.dp)
+                                    .background(Cream.copy(alpha = 0.15f), RoundedCornerShape(12.dp)),
+                                contentAlignment = Alignment.Center
+                            ) {
+                                Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                                    Text(
+                                        text = meeting!!.data.substringBefore(" "),
+                                        style = MaterialTheme.typography.displayLarge.copy(
+                                            fontSize = 20.sp,
+                                            color = Cream,
+                                            fontWeight = FontWeight.Bold
+                                        )
+                                    )
+                                    Text(
+                                        text = "out",
+                                        style = MaterialTheme.typography.labelMedium.copy(color = Cream.copy(alpha = 0.8f))
+                                    )
+                                }
+                            }
+
+                            Column {
                                 Text(
-                                    text = meeting!!.data.substringBefore(" "),
-                                    style = MaterialTheme.typography.displayLarge.copy(fontSize = 20.sp, color = Terracota, fontWeight = FontWeight.Bold)
+                                    text = "Próximo encontro",
+                                    style = MaterialTheme.typography.bodyLarge.copy(
+                                        color = OlivaSoft,
+                                        fontWeight = FontWeight.Medium
+                                    )
                                 )
                                 Text(
-                                    text = "out", // representation slice
-                                    style = MaterialTheme.typography.labelMedium.copy(color = Terracota)
+                                    text = meeting!!.data,
+                                    style = MaterialTheme.typography.headlineLarge.copy(
+                                        fontSize = 18.sp,
+                                        fontWeight = FontWeight.Bold,
+                                        color = Cream
+                                    )
+                                )
+                                Text(
+                                    text = meeting!!.hora,
+                                    style = MaterialTheme.typography.bodyLarge.copy(color = OlivaSoft.copy(alpha = 0.9f))
                                 )
                             }
                         }
-
-                        Column {
-                            Text(
-                                text = "Próximo encontro",
-                                style = MaterialTheme.typography.bodyLarge.copy(color = Terracota, fontWeight = FontWeight.Medium)
-                            )
-                            Text(
-                                text = meeting!!.data,
-                                style = MaterialTheme.typography.headlineLarge.copy(fontSize = 18.sp, fontWeight = FontWeight.Bold)
-                            )
-                            Text(
-                                text = meeting!!.hora,
-                                style = MaterialTheme.typography.bodyLarge.copy(color = MaterialTheme.colorScheme.onSurfaceVariant)
-                            )
-                        }
                     }
 
-                    HorizontalDivider(
-                        modifier = Modifier.padding(vertical = 16.dp),
-                        color = MaterialTheme.colorScheme.outline.copy(alpha = 0.3f)
-                    )
-
-                    Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        verticalAlignment = Alignment.CenterVertically,
-                        horizontalArrangement = Arrangement.spacedBy(8.dp)
-                    ) {
-                        Icon(
-                            imageVector = Icons.Outlined.Place,
-                            contentDescription = "Local",
-                            tint = MaterialTheme.colorScheme.onSurfaceVariant,
-                            modifier = Modifier.size(20.dp)
-                        )
-                        Text(
-                            text = meeting!!.local,
-                            style = MaterialTheme.typography.bodyLarge,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant
-                        )
+                    Column(modifier = Modifier.padding(20.dp)) {
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.spacedBy(8.dp)
+                        ) {
+                            Icon(
+                                imageVector = Icons.Outlined.Place,
+                                contentDescription = "Local",
+                                tint = OlivaMid,
+                                modifier = Modifier.size(20.dp)
+                            )
+                            Text(
+                                text = meeting!!.local,
+                                style = MaterialTheme.typography.bodyLarge,
+                                color = Tertiary
+                            )
+                        }
                     }
                 }
             }
 
             item {
-                SectionHeader(title = "Sua participação")
-                StandardCard {
+                TbSectionHeader(
+                    title = "Sua participação",
+                    modifier = Modifier.padding(bottom = 8.dp)
+                )
+                TramabookCard {
                     Text(
                         "Você vai participar desse encontro?",
-                        style = MaterialTheme.typography.bodyMedium.copy(fontWeight = FontWeight.Bold)
+                        style = MaterialTheme.typography.bodyMedium.copy(
+                            fontWeight = FontWeight.SemiBold,
+                            color = Ink
+                        )
                     )
                     Spacer(modifier = Modifier.height(16.dp))
 
                     Row(
                         modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.spacedBy(12.dp)
+                        horizontalArrangement = Arrangement.spacedBy(8.dp)
                     ) {
                         listOf("Vou", "Talvez", "Não vou").forEach { statusOption ->
                             val isSelected = userStatus == statusOption
-                            val buttonColor = if (isSelected) {
-                                if (statusOption == "Vou") VerdeMusgo else Terracota
-                            } else {
-                                Color.Transparent
-                            }
-                            val contentColor = if (isSelected) Color.White else MaterialTheme.colorScheme.onSurfaceVariant
-                            val border = if (isSelected) null else BorderStroke(1.dp, MaterialTheme.colorScheme.outline)
 
                             Box(
                                 modifier = Modifier
                                     .weight(1f)
                                     .height(44.dp)
                                     .clip(RoundedCornerShape(22.dp))
-                                    .background(buttonColor)
+                                    .background(if (isSelected) Ink else Color.Transparent)
                                     .clickable { viewModel.rsvpMeeting(meeting!!.id, statusOption) }
                                     .border(
-                                        width = if (isSelected) 0.dp else 1.dp,
-                                        color = if (isSelected) Color.Transparent else MaterialTheme.colorScheme.outline,
+                                        width = 1.dp,
+                                        color = if (isSelected) Color.Transparent else Divider,
                                         shape = RoundedCornerShape(22.dp)
                                     ),
                                 contentAlignment = Alignment.Center
                             ) {
                                 Text(
                                     text = statusOption,
-                                    color = contentColor,
+                                    color = if (isSelected) Cream else Tertiary,
                                     style = MaterialTheme.typography.bodyLarge.copy(fontWeight = FontWeight.Medium)
                                 )
                             }
@@ -245,44 +285,58 @@ fun EncontroTab(viewModel: MainViewModel) {
 
             // RSVP breakdowns
             item {
-                SectionHeader(title = "Quem vai?")
-                StandardCard {
+                TbSectionHeader(
+                    title = "Quem vai?",
+                    modifier = Modifier.padding(bottom = 8.dp)
+                )
+                TramabookCard {
                     val confirmados = rsvps.filter { it.status == "Vou" }
                     val talvez = rsvps.filter { it.status == "Talvez" }
                     val naoVou = rsvps.filter { it.status == "Não vou" }
 
                     Row(
-                        modifier = Modifier.fillMaxWidth().padding(bottom = 8.dp),
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(bottom = 8.dp),
                         horizontalArrangement = Arrangement.SpaceAround,
                         verticalAlignment = Alignment.CenterVertically
                     ) {
                         Column(horizontalAlignment = Alignment.CenterHorizontally) {
                             Text(
                                 confirmados.size.toString(),
-                                style = MaterialTheme.typography.displayLarge.copy(color = VerdeMusgo, fontWeight = FontWeight.Bold)
+                                style = MaterialTheme.typography.displayLarge.copy(
+                                    color = Oliva,
+                                    fontWeight = FontWeight.Bold
+                                )
                             )
-                            Text("Confirmados", style = MaterialTheme.typography.labelSmall)
+                            Text("Confirmados", style = MaterialTheme.typography.labelSmall.copy(color = Muted))
                         }
 
                         Column(horizontalAlignment = Alignment.CenterHorizontally) {
                             Text(
                                 talvez.size.toString(),
-                                style = MaterialTheme.typography.displayLarge.copy(color = Color(0xFFD4A373), fontWeight = FontWeight.Bold)
+                                style = MaterialTheme.typography.displayLarge.copy(
+                                    color = OlivaMid, // substituído de Color(0xFFD4A373)
+                                    fontWeight = FontWeight.Bold
+                                )
                             )
-                            Text("Talvez", style = MaterialTheme.typography.labelSmall)
+                            Text("Talvez", style = MaterialTheme.typography.labelSmall.copy(color = Muted))
                         }
 
                         Column(horizontalAlignment = Alignment.CenterHorizontally) {
                             Text(
                                 naoVou.size.toString(),
-                                style = MaterialTheme.typography.displayLarge.copy(color = MaterialTheme.colorScheme.onSurfaceVariant, fontWeight = FontWeight.Bold)
+                                style = MaterialTheme.typography.displayLarge.copy(
+                                    color = Tertiary,
+                                    fontWeight = FontWeight.Bold
+                                )
                             )
-                            Text("Não vão", style = MaterialTheme.typography.labelSmall)
+                            Text("Não vão", style = MaterialTheme.typography.labelSmall.copy(color = Muted))
                         }
                     }
 
                     Spacer(modifier = Modifier.height(16.dp))
-                    HorizontalDivider(thickness = 0.5.dp, color = MaterialTheme.colorScheme.outline.copy(alpha = 0.2f))
+                    HorizontalDivider(thickness = 0.5.dp, color = Divider)
                     Spacer(modifier = Modifier.height(8.dp))
 
                     // Group 1: Confirmados
@@ -296,13 +350,16 @@ fun EncontroTab(viewModel: MainViewModel) {
                         Icon(
                             imageVector = if (isConfirmadosExpanded) Icons.Outlined.KeyboardArrowDown else Icons.Outlined.KeyboardArrowRight,
                             contentDescription = null,
-                            tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                            tint = OlivaMid,
                             modifier = Modifier.size(20.dp)
                         )
                         Spacer(modifier = Modifier.width(8.dp))
                         Text(
                             text = "Confirmados (${confirmados.size})",
-                            style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold),
+                            style = MaterialTheme.typography.titleMedium.copy(
+                                fontWeight = FontWeight.Bold,
+                                color = Ink
+                            ),
                             modifier = Modifier.weight(1f)
                         )
                     }
@@ -316,7 +373,7 @@ fun EncontroTab(viewModel: MainViewModel) {
                                 Text(
                                     "Nenhum membro confirmado ainda.",
                                     style = MaterialTheme.typography.bodyMedium,
-                                    color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.6f)
+                                    color = Muted
                                 )
                             } else {
                                 confirmados.forEach { resp ->
@@ -326,10 +383,12 @@ fun EncontroTab(viewModel: MainViewModel) {
                                     Row(
                                         verticalAlignment = Alignment.CenterVertically,
                                         horizontalArrangement = Arrangement.spacedBy(10.dp),
-                                        modifier = Modifier.fillMaxWidth().padding(vertical = 4.dp)
+                                        modifier = Modifier
+                                            .fillMaxWidth()
+                                            .padding(vertical = 4.dp)
                                     ) {
-                                        MemberAvatar(name = nameVal, avatarUrl = urlVal, size = 32.dp)
-                                        Text(text = nameVal, style = MaterialTheme.typography.bodyLarge)
+                                        Avatar(name = nameVal, avatarUrl = urlVal, size = 32.dp)
+                                        Text(text = nameVal, style = MaterialTheme.typography.bodyLarge.copy(color = Ink))
                                     }
                                 }
                             }
@@ -347,13 +406,16 @@ fun EncontroTab(viewModel: MainViewModel) {
                         Icon(
                             imageVector = if (isTalvezExpanded) Icons.Outlined.KeyboardArrowDown else Icons.Outlined.KeyboardArrowRight,
                             contentDescription = null,
-                            tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                            tint = OlivaMid,
                             modifier = Modifier.size(20.dp)
                         )
                         Spacer(modifier = Modifier.width(8.dp))
                         Text(
                             text = "Talvez (${talvez.size})",
-                            style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold),
+                            style = MaterialTheme.typography.titleMedium.copy(
+                                fontWeight = FontWeight.Bold,
+                                color = Ink
+                            ),
                             modifier = Modifier.weight(1f)
                         )
                     }
@@ -367,7 +429,7 @@ fun EncontroTab(viewModel: MainViewModel) {
                                 Text(
                                     "Ninguém em dúvida por enquanto.",
                                     style = MaterialTheme.typography.bodyMedium,
-                                    color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.6f)
+                                    color = Muted
                                 )
                             } else {
                                 talvez.forEach { resp ->
@@ -377,10 +439,12 @@ fun EncontroTab(viewModel: MainViewModel) {
                                     Row(
                                         verticalAlignment = Alignment.CenterVertically,
                                         horizontalArrangement = Arrangement.spacedBy(10.dp),
-                                        modifier = Modifier.fillMaxWidth().padding(vertical = 4.dp)
+                                        modifier = Modifier
+                                            .fillMaxWidth()
+                                            .padding(vertical = 4.dp)
                                     ) {
-                                        MemberAvatar(name = nameVal, avatarUrl = urlVal, size = 32.dp)
-                                        Text(text = nameVal, style = MaterialTheme.typography.bodyLarge)
+                                        Avatar(name = nameVal, avatarUrl = urlVal, size = 32.dp)
+                                        Text(text = nameVal, style = MaterialTheme.typography.bodyLarge.copy(color = Ink))
                                     }
                                 }
                             }
@@ -398,13 +462,16 @@ fun EncontroTab(viewModel: MainViewModel) {
                         Icon(
                             imageVector = if (isNaoVouExpanded) Icons.Outlined.KeyboardArrowDown else Icons.Outlined.KeyboardArrowRight,
                             contentDescription = null,
-                            tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                            tint = OlivaMid,
                             modifier = Modifier.size(20.dp)
                         )
                         Spacer(modifier = Modifier.width(8.dp))
                         Text(
                             text = "Não vão (${naoVou.size})",
-                            style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold),
+                            style = MaterialTheme.typography.titleMedium.copy(
+                                fontWeight = FontWeight.Bold,
+                                color = Ink
+                            ),
                             modifier = Modifier.weight(1f)
                         )
                     }
@@ -418,7 +485,7 @@ fun EncontroTab(viewModel: MainViewModel) {
                                 Text(
                                     "Ninguém recusou até agora.",
                                     style = MaterialTheme.typography.bodyMedium,
-                                    color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.6f)
+                                    color = Muted
                                 )
                             } else {
                                 naoVou.forEach { resp ->
@@ -428,10 +495,12 @@ fun EncontroTab(viewModel: MainViewModel) {
                                     Row(
                                         verticalAlignment = Alignment.CenterVertically,
                                         horizontalArrangement = Arrangement.spacedBy(10.dp),
-                                        modifier = Modifier.fillMaxWidth().padding(vertical = 4.dp)
+                                        modifier = Modifier
+                                            .fillMaxWidth()
+                                            .padding(vertical = 4.dp)
                                     ) {
-                                        MemberAvatar(name = nameVal, avatarUrl = urlVal, size = 32.dp)
-                                        Text(text = nameVal, style = MaterialTheme.typography.bodyLarge)
+                                        Avatar(name = nameVal, avatarUrl = urlVal, size = 32.dp)
+                                        Text(text = nameVal, style = MaterialTheme.typography.bodyLarge.copy(color = Ink))
                                     }
                                 }
                             }
@@ -441,8 +510,11 @@ fun EncontroTab(viewModel: MainViewModel) {
             }
 
             item {
-                SectionHeader(title = "Programação / pauta")
-                StandardCard {
+                TbSectionHeader(
+                    title = "Programação / pauta",
+                    modifier = Modifier.padding(bottom = 8.dp)
+                )
+                TramabookCard {
                     meeting!!.agenda.split("\n").forEachIndexed { index, line ->
                         Row(
                             verticalAlignment = Alignment.Top,
@@ -451,11 +523,14 @@ fun EncontroTab(viewModel: MainViewModel) {
                         ) {
                             Text(
                                 text = "•",
-                                style = MaterialTheme.typography.bodyLarge.copy(color = Terracota, fontWeight = FontWeight.Bold)
+                                style = MaterialTheme.typography.bodyLarge.copy(
+                                    color = Terracota,
+                                    fontWeight = FontWeight.Bold
+                                )
                             )
                             Text(
                                 text = line,
-                                style = MaterialTheme.typography.bodyLarge
+                                style = MaterialTheme.typography.bodyLarge.copy(color = Ink)
                             )
                         }
                     }
@@ -490,16 +565,16 @@ fun VotacaoTab(
         verticalArrangement = Arrangement.spacedBy(16.dp)
     ) {
         item {
-            StandardCard {
+            TramabookCard {
                 Text(
                     text = "Votação do próximo livro",
-                    style = MaterialTheme.typography.headlineLarge.copy(color = Terracota),
+                    style = MaterialTheme.typography.headlineLarge.copy(color = OlivaDark),
                     modifier = Modifier.padding(bottom = 4.dp)
                 )
                 Text(
                     text = "Votem no livro que vocês gostariam de ler a partir da próxima semana. Cada membro tem direito a um voto, mudando quando quiser.",
                     style = MaterialTheme.typography.bodyLarge,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                    color = Tertiary
                 )
             }
         }
@@ -515,7 +590,7 @@ fun VotacaoTab(
                     Text(
                         "Nenhum livro sugerido ainda.",
                         style = MaterialTheme.typography.bodyLarge,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                        color = Muted
                     )
                 }
             }
@@ -530,14 +605,16 @@ fun VotacaoTab(
                     0f
                 }
 
-                StandardCard(
-                    onClick = { viewModel.voteForBook(book.id) }
+                TramabookCard(
+                    modifier = Modifier.clickable { viewModel.voteForBook(book.id) }
                 ) {
                     Row(
                         modifier = Modifier.fillMaxWidth(),
                         horizontalArrangement = Arrangement.spacedBy(16.dp)
                     ) {
-                        BookCover(
+                        Cover(
+                            title = book.title,
+                            author = book.author,
                             coverUrl = book.coverUrl,
                             width = 64.dp,
                             height = 96.dp
@@ -554,41 +631,37 @@ fun VotacaoTab(
                                 Column(modifier = Modifier.weight(1f)) {
                                     Text(
                                         text = book.title,
-                                        style = MaterialTheme.typography.headlineLarge.copy(fontSize = 16.sp),
+                                        style = MaterialTheme.typography.headlineLarge.copy(
+                                            fontSize = 16.sp,
+                                            color = Ink
+                                        ),
                                         maxLines = 2,
                                         overflow = TextOverflow.Ellipsis
                                     )
                                     Text(
                                         text = book.author,
-                                        style = MaterialTheme.typography.bodyLarge.copy(color = MaterialTheme.colorScheme.onSurfaceVariant)
+                                        style = MaterialTheme.typography.bodyLarge.copy(color = Muted)
                                     )
                                 }
 
                                 if (hasUserVoted) {
-                                    Box(
-                                        modifier = Modifier
-                                            .background(VerdeMusgo.copy(alpha = 0.12f), RoundedCornerShape(12.dp))
-                                            .padding(horizontal = 10.dp, vertical = 4.dp)
-                                    ) {
-                                        Text(
-                                            "Seu voto",
-                                            style = MaterialTheme.typography.labelSmall.copy(color = VerdeMusgo, fontWeight = FontWeight.Bold)
-                                        )
-                                    }
+                                    Pill(
+                                        text = "Teu voto",
+                                        variant = PillVariant.OliveDeep,
+                                        modifier = Modifier.padding(start = 8.dp)
+                                    )
                                 }
                             }
 
                             Spacer(modifier = Modifier.height(12.dp))
 
-                            // Vote progress representation
-                            LinearProgressIndicator(
-                                progress = { pct },
-                                modifier = Modifier
-                                    .fillMaxWidth()
-                                    .height(8.dp)
-                                    .clip(RoundedCornerShape(4.dp)),
-                                color = if (hasUserVoted) VerdeMusgo else Terracota,
-                                trackColor = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.15f)
+                            // Vote progress bar — Phase-1 ProgressBar component
+                            ProgressBar(
+                                value = pct,
+                                modifier = Modifier.fillMaxWidth(),
+                                color = if (hasUserVoted) Oliva else Terracota,
+                                track = DividerSoft,
+                                height = 8.dp
                             )
 
                             Spacer(modifier = Modifier.height(6.dp))
@@ -599,13 +672,26 @@ fun VotacaoTab(
                             ) {
                                 Text(
                                     text = "${bookVotes.size} ${if (bookVotes.size == 1) "voto" else "votos"}",
-                                    style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Bold)
+                                    style = MaterialTheme.typography.labelSmall.copy(
+                                        fontWeight = FontWeight.Bold,
+                                        color = Ink
+                                    )
                                 )
                                 Text(
                                     text = "${(pct * 100).toInt()}%",
-                                    style = MaterialTheme.typography.labelSmall.copy(color = MaterialTheme.colorScheme.onSurfaceVariant)
+                                    style = MaterialTheme.typography.labelSmall.copy(color = Muted)
                                 )
                             }
+
+                            Spacer(modifier = Modifier.height(12.dp))
+
+                            TbButton(
+                                text = if (hasUserVoted) "Teu voto" else "Votar nesse",
+                                onClick = { viewModel.voteForBook(book.id) },
+                                modifier = Modifier.fillMaxWidth(),
+                                variant = if (hasUserVoted) TbButtonVariant.OlivaSoft else TbButtonVariant.Primary,
+                                size = TbButtonSize.Sm
+                            )
                         }
                     }
                 }
@@ -613,10 +699,12 @@ fun VotacaoTab(
         }
 
         item {
-            Spacer(modifier = Modifier.height(16.dp))
-            PillButton(
-                text = "Sugerir livro...",
-                onClick = onNavigateToSuggestBook
+            Spacer(modifier = Modifier.height(8.dp))
+            TbButton(
+                text = "Sugerir livro",
+                onClick = onNavigateToSuggestBook,
+                modifier = Modifier.fillMaxWidth(),
+                variant = TbButtonVariant.Outline
             )
             Spacer(modifier = Modifier.height(32.dp))
         }
@@ -643,7 +731,7 @@ fun EstanteTab(viewModel: MainViewModel) {
     Column(
         modifier = Modifier.fillMaxSize()
     ) {
-        // Shelf Filter Pills (A10)
+        // Shelf Filter Pills using Phase-1 Pill component
         Row(
             modifier = Modifier
                 .fillMaxWidth()
@@ -654,25 +742,11 @@ fun EstanteTab(viewModel: MainViewModel) {
             listOf("Todos", "Favoritos").forEach { option ->
                 val isSelected = filterBy == option
                 Box(
-                    modifier = Modifier
-                        .background(
-                            if (isSelected) Terracota else MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.05f),
-                            RoundedCornerShape(16.dp)
-                        )
-                        .border(
-                            0.5.dp,
-                            if (isSelected) Color.Transparent else MaterialTheme.colorScheme.outline.copy(alpha = 0.3f),
-                            RoundedCornerShape(16.dp)
-                        )
-                        .clickable { filterBy = option }
-                        .padding(horizontal = 16.dp, vertical = 6.dp)
+                    modifier = Modifier.clickable { filterBy = option }
                 ) {
-                    Text(
+                    Pill(
                         text = option,
-                        style = MaterialTheme.typography.labelSmall.copy(
-                            fontWeight = FontWeight.Medium,
-                            color = if (isSelected) Color.White else MaterialTheme.colorScheme.onSurfaceVariant
-                        )
+                        variant = if (isSelected) PillVariant.OliveDeep else PillVariant.Default
                     )
                 }
             }
@@ -686,7 +760,7 @@ fun EstanteTab(viewModel: MainViewModel) {
                 Text(
                     "Nenhum livro nesta categoria.",
                     style = MaterialTheme.typography.bodyLarge,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                    color = Muted
                 )
             }
         } else {
@@ -701,17 +775,16 @@ fun EstanteTab(viewModel: MainViewModel) {
             ) {
                 items(displayedBooks) { book ->
                     val rating = getBookRating(book)
-                    Card(
+                    TramabookCard(
                         modifier = Modifier.fillMaxWidth(),
-                        shape = RoundedCornerShape(12.dp),
-                        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
-                        border = BorderStroke(0.5.dp, MaterialTheme.colorScheme.outline)
+                        contentPadding = PaddingValues(12.dp)
                     ) {
                         Column(
-                            modifier = Modifier.padding(16.dp),
                             horizontalAlignment = Alignment.CenterHorizontally
                         ) {
-                            BookCover(
+                            Cover(
+                                title = book.title,
+                                author = book.author,
                                 coverUrl = book.coverUrl,
                                 width = 100.dp,
                                 height = 150.dp
@@ -721,7 +794,10 @@ fun EstanteTab(viewModel: MainViewModel) {
 
                             Text(
                                 text = book.title,
-                                style = MaterialTheme.typography.headlineLarge.copy(fontSize = 14.sp),
+                                style = MaterialTheme.typography.headlineLarge.copy(
+                                    fontSize = 14.sp,
+                                    color = Ink
+                                ),
                                 textAlign = TextAlign.Center,
                                 maxLines = 1,
                                 overflow = TextOverflow.Ellipsis,
@@ -730,7 +806,10 @@ fun EstanteTab(viewModel: MainViewModel) {
 
                             Text(
                                 text = book.author,
-                                style = MaterialTheme.typography.bodyLarge.copy(color = MaterialTheme.colorScheme.onSurfaceVariant, fontSize = 12.sp),
+                                style = MaterialTheme.typography.bodyLarge.copy(
+                                    color = Muted,
+                                    fontSize = 12.sp
+                                ),
                                 textAlign = TextAlign.Center,
                                 maxLines = 1,
                                 overflow = TextOverflow.Ellipsis,
@@ -739,7 +818,7 @@ fun EstanteTab(viewModel: MainViewModel) {
 
                             Spacer(modifier = Modifier.height(8.dp))
 
-                            // Star ratings rendering based on book rating (A10)
+                            // Star ratings — gold literal from prototype, no dedicated token
                             Row(
                                 horizontalArrangement = Arrangement.spacedBy(2.dp)
                             ) {
@@ -747,7 +826,7 @@ fun EstanteTab(viewModel: MainViewModel) {
                                     Icon(
                                         imageVector = Icons.Outlined.Star,
                                         contentDescription = "Rating Star",
-                                        tint = if (rateIndex < rating) Color(0xFFF4A261) else MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.2f),
+                                        tint = if (rateIndex < rating) Color(0xFFE6BF6B) else DividerSoft, // estrela — cor do protótipo
                                         modifier = Modifier.size(16.dp)
                                     )
                                 }
