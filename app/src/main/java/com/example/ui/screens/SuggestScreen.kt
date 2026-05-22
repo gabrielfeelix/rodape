@@ -1,32 +1,37 @@
 package com.example.ui.screens
 
-import androidx.compose.foundation.clickable
+import androidx.compose.foundation.background
 import androidx.compose.foundation.border
-import androidx.compose.material.icons.outlined.CheckCircle
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.ui.draw.alpha
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.outlined.ArrowBack
-import androidx.compose.material.icons.filled.Add
+import androidx.compose.material.icons.outlined.Check
 import androidx.compose.material.icons.outlined.Search
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
 import com.example.data.api.OpenLibraryDoc
-import com.example.ui.components.BookCover
-import com.example.ui.components.StandardCard
-import com.example.ui.theme.Terracota
-import com.example.ui.theme.FrauncesFontFamily
+import com.example.ui.components.Cover
+import com.example.ui.components.TbButton
+import com.example.ui.components.TbButtonVariant
+import com.example.ui.theme.Cream
+import com.example.ui.theme.Divider
+import com.example.ui.theme.Ink
 import com.example.ui.theme.InterFontFamily
+import com.example.ui.theme.LiterataFontFamily
+import com.example.ui.theme.Muted
+import com.example.ui.theme.Terracota
 import com.example.ui.viewmodel.MainViewModel
 import kotlinx.coroutines.delay
 
@@ -62,7 +67,12 @@ fun SuggestScreen(
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { Text("Sugerir livro", style = MaterialTheme.typography.headlineLarge) },
+                title = {
+                    Text(
+                        "Sugerir livro",
+                        style = MaterialTheme.typography.headlineLarge
+                    )
+                },
                 navigationIcon = {
                     IconButton(onClick = onNavigateBack) {
                         Icon(
@@ -86,10 +96,17 @@ fun SuggestScreen(
                             disabledContentColor = Terracota.copy(alpha = 0.4f)
                         )
                     ) {
-                        Text("Adicionar", style = MaterialTheme.typography.bodyLarge.copy(fontWeight = FontWeight.Bold))
+                        Text(
+                            "Adicionar",
+                            style = MaterialTheme.typography.bodyLarge.copy(
+                                fontWeight = FontWeight.Bold
+                            )
+                        )
                     }
                 },
-                colors = TopAppBarDefaults.topAppBarColors(containerColor = MaterialTheme.colorScheme.background)
+                colors = TopAppBarDefaults.topAppBarColors(
+                    containerColor = MaterialTheme.colorScheme.background
+                )
             )
         },
         containerColor = MaterialTheme.colorScheme.background
@@ -102,21 +119,36 @@ fun SuggestScreen(
         ) {
             Spacer(modifier = Modifier.height(8.dp))
 
-            // Search bar input
+            // Search bar input — rounded, Cream background, Divider border
             OutlinedTextField(
                 value = query,
                 onValueChange = { query = it },
-                placeholder = { Text("Buscar por título, autor ou ISBN") },
+                placeholder = {
+                    Text(
+                        "Buscar por título, autor ou ISBN",
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = Muted
+                    )
+                },
                 modifier = Modifier.fillMaxWidth(),
-                shape = RoundedCornerShape(12.dp),
+                shape = RoundedCornerShape(14.dp),
                 leadingIcon = {
                     Icon(
                         imageVector = Icons.Outlined.Search,
-                        contentDescription = "Search Icon",
-                        tint = MaterialTheme.colorScheme.onSurfaceVariant
+                        contentDescription = "Buscar",
+                        tint = Muted
                     )
                 },
-                singleLine = true
+                singleLine = true,
+                colors = OutlinedTextFieldDefaults.colors(
+                    unfocusedContainerColor = Cream,
+                    focusedContainerColor = Cream,
+                    unfocusedBorderColor = Divider,
+                    focusedBorderColor = Terracota,
+                    unfocusedLeadingIconColor = Muted,
+                    focusedLeadingIconColor = Muted,
+                    cursorColor = Terracota,
+                )
             )
 
             Spacer(modifier = Modifier.height(16.dp))
@@ -138,9 +170,12 @@ fun SuggestScreen(
                     contentAlignment = Alignment.Center
                 ) {
                     Text(
-                        text = if (query.trim().length < 3) "Comece a digitar pra encontrar livros." else "Nenhum livro de catálogo completo localizado.",
+                        text = if (query.trim().length < 3)
+                            "Comece a digitar pra encontrar livros."
+                        else
+                            "Nenhum livro de catálogo completo localizado.",
                         style = MaterialTheme.typography.bodyLarge,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                        color = Muted
                     )
                 }
             } else {
@@ -148,7 +183,7 @@ fun SuggestScreen(
                     modifier = Modifier
                         .fillMaxWidth()
                         .weight(1f),
-                    verticalArrangement = Arrangement.spacedBy(12.dp),
+                    verticalArrangement = Arrangement.spacedBy(8.dp),
                     contentPadding = PaddingValues(bottom = 24.dp)
                 ) {
                     items(filteredResults) { doc ->
@@ -156,69 +191,81 @@ fun SuggestScreen(
                         val author = doc.authorName?.firstOrNull() ?: "Autor desconhecido"
                         val coverUrl = "https://covers.openlibrary.org/b/id/${doc.coverI}-M.jpg"
 
-                        StandardCard(
-                            onClick = {
-                                selectedDoc = if (isSelected) null else doc
-                            },
-                            modifier = Modifier.then(
-                                if (isSelected) {
-                                    Modifier.border(2.dp, Terracota, RoundedCornerShape(16.dp))
-                                } else {
-                                    Modifier
+                        // Result row — Terracota border when selected
+                        Row(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .clip(RoundedCornerShape(14.dp))
+                                .background(if (isSelected) Cream else Color.Transparent)
+                                .border(
+                                    width = if (isSelected) 1.5.dp else 0.5.dp,
+                                    color = if (isSelected) Terracota else Divider,
+                                    shape = RoundedCornerShape(14.dp)
+                                )
+                                .clickable {
+                                    selectedDoc = if (isSelected) null else doc
                                 }
-                            )
+                                .padding(10.dp),
+                            horizontalArrangement = Arrangement.spacedBy(12.dp),
+                            verticalAlignment = Alignment.CenterVertically
                         ) {
-                            Row(
-                                modifier = Modifier.fillMaxWidth().padding(4.dp),
-                                horizontalArrangement = Arrangement.spacedBy(16.dp),
-                                verticalAlignment = Alignment.CenterVertically
+                            // Phase-1 Cover component
+                            Cover(
+                                title = doc.title,
+                                author = author,
+                                coverUrl = coverUrl,
+                                width = 48.dp,
+                                height = 72.dp
+                            )
+
+                            Column(
+                                modifier = Modifier.weight(1f)
                             ) {
-                                BookCover(coverUrl = coverUrl, width = 50.dp, height = 75.dp)
-
-                                Column(
-                                    modifier = Modifier.weight(1f)
-                                ) {
+                                Text(
+                                    text = doc.title,
+                                    style = MaterialTheme.typography.titleSmall.copy(
+                                        fontFamily = LiterataFontFamily,
+                                        fontWeight = FontWeight.SemiBold
+                                    ),
+                                    color = Ink,
+                                    maxLines = 2,
+                                    overflow = TextOverflow.Ellipsis
+                                )
+                                Spacer(modifier = Modifier.height(3.dp))
+                                Text(
+                                    text = author,
+                                    style = MaterialTheme.typography.bodySmall.copy(
+                                        fontFamily = InterFontFamily
+                                    ),
+                                    color = Muted,
+                                    maxLines = 1,
+                                    overflow = TextOverflow.Ellipsis
+                                )
+                                if (doc.firstPublishYear != null) {
+                                    Spacer(modifier = Modifier.height(2.dp))
                                     Text(
-                                        text = doc.title,
-                                        style = MaterialTheme.typography.bodyLarge.copy(
-                                            fontFamily = FrauncesFontFamily,
-                                            fontWeight = FontWeight.Medium,
-                                            fontSize = 16.sp,
-                                            color = MaterialTheme.colorScheme.onSurface
+                                        text = "${doc.firstPublishYear}",
+                                        style = MaterialTheme.typography.labelSmall.copy(
+                                            fontFamily = InterFontFamily
                                         ),
-                                        maxLines = 2,
-                                        overflow = TextOverflow.Ellipsis
+                                        color = Muted
                                     )
-                                    Spacer(modifier = Modifier.height(4.dp))
-                                    Text(
-                                        text = author,
-                                        style = MaterialTheme.typography.bodyMedium.copy(
-                                            fontFamily = InterFontFamily,
-                                            fontSize = 13.sp,
-                                            color = MaterialTheme.colorScheme.onSurfaceVariant
-                                        ),
-                                        maxLines = 1,
-                                        overflow = TextOverflow.Ellipsis
-                                    )
-                                    if (doc.firstPublishYear != null) {
-                                        Spacer(modifier = Modifier.height(2.dp))
-                                        Text(
-                                            text = "${doc.firstPublishYear}",
-                                            style = MaterialTheme.typography.labelSmall.copy(
-                                                fontFamily = InterFontFamily,
-                                                fontSize = 11.sp,
-                                                color = MaterialTheme.colorScheme.onSurfaceVariant
-                                            )
-                                        )
-                                    }
                                 }
+                            }
 
-                                if (isSelected) {
+                            if (isSelected) {
+                                Box(
+                                    modifier = Modifier
+                                        .size(24.dp)
+                                        .clip(CircleShape)
+                                        .background(Terracota),
+                                    contentAlignment = Alignment.Center
+                                ) {
                                     Icon(
-                                        imageVector = Icons.Outlined.CheckCircle,
+                                        imageVector = Icons.Outlined.Check,
                                         contentDescription = "Selecionado",
-                                        tint = Terracota,
-                                        modifier = Modifier.size(24.dp)
+                                        tint = Cream,
+                                        modifier = Modifier.size(14.dp)
                                     )
                                 }
                             }
@@ -229,19 +276,16 @@ fun SuggestScreen(
         }
     }
 
-    // Justification dialog sheet
+    // Justification dialog
     if (showJustifySheetForDoc != null) {
         val doc = showJustifySheetForDoc!!
         AlertDialog(
             onDismissRequest = { showJustifySheetForDoc = null },
+            containerColor = MaterialTheme.colorScheme.background,
             title = {
                 Text(
                     text = "Por que esse livro?",
-                    style = MaterialTheme.typography.titleMedium.copy(
-                        fontFamily = FrauncesFontFamily,
-                        fontSize = 18.sp,
-                        fontWeight = FontWeight.Medium
-                    )
+                    style = MaterialTheme.typography.headlineSmall
                 )
             },
             text = {
@@ -251,22 +295,36 @@ fun SuggestScreen(
                     Text(
                         text = "Conta pro pessoal por que tu sugere esse. Opcional.",
                         style = MaterialTheme.typography.bodyMedium,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                        color = Muted
                     )
 
                     OutlinedTextField(
                         value = justificationText,
                         onValueChange = { justificationText = it },
-                        placeholder = { Text("Ex: É um clássico excelente e curto...") },
+                        placeholder = {
+                            Text(
+                                "Ex: É um clássico excelente e curto...",
+                                style = MaterialTheme.typography.bodyMedium,
+                                color = Muted
+                            )
+                        },
                         modifier = Modifier
                             .fillMaxWidth()
                             .height(100.dp),
-                        shape = RoundedCornerShape(12.dp)
+                        shape = RoundedCornerShape(12.dp),
+                        colors = OutlinedTextFieldDefaults.colors(
+                            unfocusedContainerColor = Cream,
+                            focusedContainerColor = Cream,
+                            unfocusedBorderColor = Divider,
+                            focusedBorderColor = Terracota,
+                            cursorColor = Terracota,
+                        )
                     )
                 }
             },
             confirmButton = {
-                Button(
+                TbButton(
+                    text = "Adicionar",
                     onClick = {
                         viewModel.createBookSuggestion(doc, justificationText) {
                             showJustifySheetForDoc = null
@@ -274,29 +332,17 @@ fun SuggestScreen(
                             onNavigateBack()
                         }
                     },
-                    colors = ButtonDefaults.buttonColors(
-                        containerColor = Terracota,
-                        disabledContainerColor = Terracota.copy(alpha = 0.5f)
-                    )
-                ) {
-                    Text(
-                        text = "Adicionar",
-                        style = MaterialTheme.typography.labelLarge.copy(
-                            color = Color.White,
-                            fontWeight = FontWeight.Bold
-                        )
-                    )
-                }
+                    variant = TbButtonVariant.Terra,
+                    modifier = Modifier.fillMaxWidth()
+                )
             },
             dismissButton = {
-                TextButton(onClick = { showJustifySheetForDoc = null }) {
-                    Text(
-                        text = "Voltar",
-                        style = MaterialTheme.typography.labelLarge.copy(
-                            color = MaterialTheme.colorScheme.onSurfaceVariant
-                        )
-                    )
-                }
+                TbButton(
+                    text = "Voltar",
+                    onClick = { showJustifySheetForDoc = null },
+                    variant = TbButtonVariant.Outline,
+                    modifier = Modifier.fillMaxWidth()
+                )
             }
         )
     }

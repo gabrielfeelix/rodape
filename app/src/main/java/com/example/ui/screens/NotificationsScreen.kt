@@ -1,15 +1,18 @@
 package com.example.ui.screens
 
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.outlined.ArrowBack
-import androidx.compose.material.icons.outlined.Check
+import androidx.compose.material.icons.outlined.CheckCircle
+import androidx.compose.material.icons.outlined.DateRange
+import androidx.compose.material.icons.outlined.FavoriteBorder
 import androidx.compose.material.icons.outlined.Notifications
+import androidx.compose.material.icons.outlined.ThumbUp
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
@@ -17,12 +20,17 @@ import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
-import com.example.ui.components.StandardCard
+import com.example.ui.components.Avatar
+import com.example.ui.theme.Cream
+import com.example.ui.theme.Ink
+import com.example.ui.theme.Muted
+import com.example.ui.theme.OlivaSoft
+import com.example.ui.theme.OlivaDark
 import com.example.ui.theme.Terracota
+import com.example.ui.theme.TerracotaSoft
 import com.example.ui.viewmodel.MainViewModel
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -36,7 +44,12 @@ fun NotificationsScreen(
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { Text("Notificações", style = MaterialTheme.typography.headlineLarge) },
+                title = {
+                    Text(
+                        "Avisos",
+                        style = MaterialTheme.typography.headlineLarge
+                    )
+                },
                 navigationIcon = {
                     IconButton(onClick = onNavigateBack) {
                         Icon(
@@ -49,11 +62,19 @@ fun NotificationsScreen(
                 actions = {
                     if (list.any { !it.lida }) {
                         TextButton(onClick = { viewModel.markAllNotificationsAsRead() }) {
-                            Text("Ler todas", color = Terracota, fontWeight = FontWeight.Bold)
+                            Text(
+                                "Ler todas",
+                                color = Terracota,
+                                style = MaterialTheme.typography.labelLarge.copy(
+                                    fontWeight = FontWeight.SemiBold
+                                )
+                            )
                         }
                     }
                 },
-                colors = TopAppBarDefaults.topAppBarColors(containerColor = MaterialTheme.colorScheme.background)
+                colors = TopAppBarDefaults.topAppBarColors(
+                    containerColor = MaterialTheme.colorScheme.background
+                )
             )
         },
         containerColor = MaterialTheme.colorScheme.background
@@ -72,94 +93,179 @@ fun NotificationsScreen(
                     Icon(
                         imageVector = Icons.Outlined.Notifications,
                         contentDescription = "Sino",
-                        tint = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.5f),
+                        tint = Muted,
                         modifier = Modifier.size(64.dp)
                     )
                     Text(
                         text = "Você não tem nenhuma notificação.",
                         style = MaterialTheme.typography.bodyLarge,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                        color = Muted
                     )
                 }
             }
         } else {
+            // Group notifications by day
+            val grouped = list.groupBy { notif ->
+                when {
+                    notif.payloadJson.contains("meetingId") -> "ESTA SEMANA"
+                    else -> "HOJE"
+                }
+            }
+
             LazyColumn(
                 modifier = Modifier
                     .fillMaxSize()
                     .padding(padding)
-                    .padding(horizontal = 24.dp),
-                verticalArrangement = Arrangement.spacedBy(12.dp),
-                contentPadding = PaddingValues(top = 12.dp, bottom = 24.dp)
+                    .padding(horizontal = 16.dp),
+                verticalArrangement = Arrangement.spacedBy(4.dp),
+                contentPadding = PaddingValues(top = 8.dp, bottom = 24.dp)
             ) {
-                items(list) { notif ->
-                    StandardCard(
-                        modifier = Modifier.fillMaxWidth(),
-                        onClick = { viewModel.markNotificationAsRead(notif.id) }
-                    ) {
-                        Row(
-                            verticalAlignment = Alignment.CenterVertically,
-                            horizontalArrangement = Arrangement.spacedBy(12.dp)
-                        ) {
-                            Box(
-                                modifier = Modifier
-                                    .size(10.dp)
-                                    .background(if (notif.lida) Color.Transparent else Terracota, CircleShape)
+                grouped.forEach { (group, groupItems) ->
+                    item {
+                        Text(
+                            text = group,
+                            style = MaterialTheme.typography.labelMedium.copy(
+                                fontWeight = FontWeight.Bold
+                            ),
+                            color = Muted,
+                            modifier = Modifier.padding(
+                                start = 4.dp,
+                                top = 16.dp,
+                                bottom = 8.dp
                             )
-
-                            Column(
-                                modifier = Modifier.weight(1f),
-                                verticalArrangement = Arrangement.spacedBy(4.dp)
-                            ) {
-                                // Beautiful and cozy payload formatting (A8)
-                                val text = when (notif.tipo) {
-                                    "comment_on_chapter" -> "Comentário na leitura"
-                                    "next_book_decided" -> "Próxima leitura definida!"
-                                    "voting_open" -> "Nova votação de livro!"
-                                    "meeting_reminder" -> "Encontro marcado!"
-                                    "member_finished" -> "Comemoração! 🥳"
-                                    else -> "Novidades e avisos"
-                                }
-
-                                val desc = when {
-                                    notif.tipo == "comment_on_chapter" && notif.payloadJson.contains("chapterTitle") -> {
-                                        val userName = notif.payloadJson.substringAfter("\"userName\":\"").substringBefore("\"")
-                                        val chapterTitle = notif.payloadJson.substringAfter("\"chapterTitle\":\"").substringBefore("\"")
-                                        val quote = if (userName == "Luciana") ": \"Essa parte me pegou de surpresa...\"" else ""
-                                        "$userName comentou em '$chapterTitle'$quote. Vem participar da rodada!"
-                                    }
-                                    notif.tipo == "next_book_decided" && notif.payloadJson.contains("bookTitle") -> {
-                                        val bookTitle = notif.payloadJson.substringAfter("\"bookTitle\":\"").substringBefore("\"")
-                                        "Nosso próximo companheiro de viagem será '$bookTitle'. Prepare seu coração!"
-                                    }
-                                    notif.tipo == "voting_open" -> {
-                                        "Quem será nosso próximo parceiro de leituras? A votação iniciou, dê seu palpite!"
-                                    }
-                                    notif.payloadJson.contains("meetingId") -> {
-                                        val datePart = notif.payloadJson.substringAfter("\"date\":\"").substringBefore("\"")
-                                        "Nosso próximo encontro será: $datePart. Confirme sua presença para nos vermos!"
-                                    }
-                                    notif.payloadJson.contains("bookTitle") -> {
-                                        val userName = notif.payloadJson.substringAfter("\"userName\":\"").substringBefore("\"")
-                                        val bookTitle = notif.payloadJson.substringAfter("\"bookTitle\":\"").substringBefore("\"")
-                                        "Viva! $userName terminou todas as metas de '$bookTitle'! Que jornada incrível."
-                                    }
-                                    else -> "Navegue para conferir os detalhes desse momento do clube."
-                                }
-
-                                Text(
-                                    text = text,
-                                    style = MaterialTheme.typography.bodyMedium.copy(fontWeight = FontWeight.Bold)
-                                )
-                                Text(
-                                    text = desc,
-                                    style = MaterialTheme.typography.bodyLarge,
-                                    color = MaterialTheme.colorScheme.onSurfaceVariant
-                                )
-                            }
-                        }
+                        )
+                    }
+                    items(groupItems) { notif ->
+                        NotificationItem(
+                            tipo = notif.tipo,
+                            payloadJson = notif.payloadJson,
+                            lida = notif.lida,
+                            onClick = { viewModel.markNotificationAsRead(notif.id) }
+                        )
                     }
                 }
             }
+        }
+    }
+}
+
+@Composable
+private fun NotificationItem(
+    tipo: String,
+    payloadJson: String,
+    lida: Boolean,
+    onClick: () -> Unit
+) {
+    // Extract user name from payload to decide icon vs avatar
+    val userName = if (payloadJson.contains("\"userName\"")) {
+        payloadJson.substringAfter("\"userName\":\"").substringBefore("\"")
+    } else ""
+
+    // Notification title
+    val title = when (tipo) {
+        "comment_on_chapter" -> "Comentário na leitura"
+        "next_book_decided" -> "Próxima leitura definida!"
+        "voting_open" -> "Nova votação de livro!"
+        "meeting_reminder" -> "Encontro marcado!"
+        "member_finished" -> "Comemoração! 🥳"
+        else -> "Novidades e avisos"
+    }
+
+    // Notification description
+    val desc = when {
+        tipo == "comment_on_chapter" && payloadJson.contains("chapterTitle") -> {
+            val chapterTitle = payloadJson.substringAfter("\"chapterTitle\":\"").substringBefore("\"")
+            val quote = if (userName == "Luciana") ": \"Essa parte me pegou de surpresa...\"" else ""
+            "$userName comentou em '$chapterTitle'$quote. Vem participar da rodada!"
+        }
+        tipo == "next_book_decided" && payloadJson.contains("bookTitle") -> {
+            val bookTitle = payloadJson.substringAfter("\"bookTitle\":\"").substringBefore("\"")
+            "Nosso próximo companheiro de viagem será '$bookTitle'. Prepare seu coração!"
+        }
+        tipo == "voting_open" -> {
+            "Quem será nosso próximo parceiro de leituras? A votação iniciou, dê seu palpite!"
+        }
+        payloadJson.contains("meetingId") -> {
+            val datePart = payloadJson.substringAfter("\"date\":\"").substringBefore("\"")
+            "Nosso próximo encontro será: $datePart. Confirme sua presença para nos vermos!"
+        }
+        payloadJson.contains("bookTitle") -> {
+            val bookTitle = payloadJson.substringAfter("\"bookTitle\":\"").substringBefore("\"")
+            "Viva! $userName terminou todas as metas de '$bookTitle'! Que jornada incrível."
+        }
+        else -> "Navegue para conferir os detalhes desse momento do clube."
+    }
+
+    // Icon type
+    val iconInfo: Pair<ImageVector, Pair<androidx.compose.ui.graphics.Color, androidx.compose.ui.graphics.Color>> = when (tipo) {
+        "comment_on_chapter" -> Pair(Icons.Outlined.FavoriteBorder, Pair(OlivaSoft, OlivaDark))
+        "voting_open", "next_book_decided" -> Pair(Icons.Outlined.ThumbUp, Pair(TerracotaSoft, Terracota))
+        "meeting_reminder" -> Pair(Icons.Outlined.DateRange, Pair(OlivaSoft, OlivaDark))
+        "member_finished" -> Pair(Icons.Outlined.CheckCircle, Pair(Ink, Cream))
+        else -> Pair(Icons.Outlined.Notifications, Pair(OlivaSoft, OlivaDark))
+    }
+
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .clip(MaterialTheme.shapes.medium)
+            .background(if (!lida) Cream else androidx.compose.ui.graphics.Color.Transparent)
+            .clickable(onClick = onClick)
+            .padding(horizontal = 12.dp, vertical = 12.dp),
+        horizontalArrangement = Arrangement.spacedBy(12.dp),
+        verticalAlignment = Alignment.Top
+    ) {
+        // Avatar (if user notification) or icon circle
+        if (userName.isNotBlank() && tipo == "comment_on_chapter") {
+            Avatar(
+                name = userName,
+                size = 40.dp
+            )
+        } else {
+            Box(
+                modifier = Modifier
+                    .size(40.dp)
+                    .clip(CircleShape)
+                    .background(iconInfo.second.first),
+                contentAlignment = Alignment.Center
+            ) {
+                Icon(
+                    imageVector = iconInfo.first,
+                    contentDescription = null,
+                    tint = iconInfo.second.second,
+                    modifier = Modifier.size(18.dp)
+                )
+            }
+        }
+
+        // Text content
+        Column(
+            modifier = Modifier.weight(1f),
+            verticalArrangement = Arrangement.spacedBy(3.dp)
+        ) {
+            Text(
+                text = title,
+                style = MaterialTheme.typography.bodyMedium.copy(
+                    fontWeight = FontWeight.SemiBold
+                ),
+                color = Ink
+            )
+            Text(
+                text = desc,
+                style = MaterialTheme.typography.bodySmall,
+                color = Muted
+            )
+        }
+
+        // Unread dot
+        if (!lida) {
+            Box(
+                modifier = Modifier
+                    .padding(top = 6.dp)
+                    .size(8.dp)
+                    .clip(CircleShape)
+                    .background(Terracota)
+            )
         }
     }
 }
