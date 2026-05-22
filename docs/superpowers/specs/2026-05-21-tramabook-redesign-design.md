@@ -136,17 +136,26 @@ antigo já existente em `MainTabsScreen`.
   (`0 1px 2px` + `0 4px 14px` em tom quente).
 - Botões: pílula (raio 999), altura 46 (md) / 54 (lg).
 
-### 3.4 Componentes base (`ui/components/`)
+### 3.4 Componentes base (`ui/components/`) — entregues na Fase 1
 
 | Componente | Comportamento |
 |---|---|
-| `Cover` | Capa de livro. Se `coverUrl` existe → `AsyncImage`. Senão → **bloco colorido gerado por hash do título** (8 paletas + ornamento), com título serif. Espelha `Cover` do `tokens.jsx` |
-| `Avatar` | Iniciais sobre cor por hash; suporta anel (ring) |
-| `PillButton` | Variantes: `primary`(oliva), `terra`, `outline`, `soft`, `dark`, `oliveSoft`. Pílula |
-| `Pill` / chip | Variantes: `default`, `olive`, `terra`, `mustard`, `ink`, `outline`. Uppercase |
-| `Progress` | Barra fina arredondada |
-| `Card` | Superfície com a sombra/borda padrão |
-| `SectionHeader` | Título serif + ação opcional à direita |
+| `Cover` | Capa de livro. Se `coverUrl` existe → `SubcomposeAsyncImage` (cai no bloco gerado em erro/loading). Senão → **bloco colorido gerado por hash do título** (8 paletas), com título serif. Fonte escala pela `width` |
+| `Avatar` | Imagem (`SubcomposeAsyncImage`, fallback de iniciais em erro) ou iniciais sobre cor por hash; suporta anel (ring) |
+| `TbButton` | Variantes: `Primary`(oliva), `Terra`, `TerraSoft`, `Outline`, `Dark`, `OlivaSoft`. Tamanhos `Sm`/`Md`/`Lg`. Pílula |
+| `Pill` / chip | Variantes: `Default`, `Olive`, `OliveDeep`, `Terra`, `Mustard`, `Ink`, `Outline`. Uppercase |
+| `ProgressBar` | Barra fina arredondada, com semântica de progresso |
+| `TramabookCard` | Superfície com a sombra/borda padrão |
+| `TbSectionHeader` | Título serif + ação opcional à direita |
+
+> **Housekeeping para a Fase 2** (não-bloqueante, levantado na review final da Fase 1):
+> - **Prefixo de nomes:** os componentes misturam `Tb`-prefixo (`TbButton`, `TbSectionHeader`),
+>   sem-prefixo (`Cover`, `Avatar`, `Pill`, `ProgressBar`) e brand (`TramabookCard`).
+>   Adotar uma convenção única ao migrar telas — sugestão: `Tb`-prefixo para todos.
+> - `TramabookTokens` (em `Tokens.kt`) ainda não é consumido — os componentes importam
+>   tokens direto de `Color.kt`. Decidir se `TramabookTokens` é o caminho canônico ou removê-lo.
+> - `Pill` variante `Mustard` usa hex cru `0xFF6E5316` — promover a token `MustardDark` em `Color.kt`.
+> - Ao migrar telas, remover os aliases de compat `VerdeMusgo` e `FrauncesFontFamily`.
 
 ---
 
