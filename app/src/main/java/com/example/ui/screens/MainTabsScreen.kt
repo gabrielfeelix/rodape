@@ -39,14 +39,26 @@ import androidx.compose.ui.unit.sp
 import com.example.data.model.*
 import com.example.ui.components.*
 import com.example.ui.theme.Terracota
+import com.example.ui.theme.TerracotaSoft
 import com.example.ui.theme.VerdeMusgo
 import com.example.ui.theme.OlivaDeep
 import com.example.ui.theme.Oliva
 import com.example.ui.theme.OlivaSoft
+import com.example.ui.theme.OlivaMid
 import com.example.ui.theme.Cream
+import com.example.ui.theme.CardSurface
+import com.example.ui.theme.Divider
+import com.example.ui.theme.Ink
+import com.example.ui.theme.Muted
 import com.example.ui.theme.LiterataFontFamily
 import com.example.ui.theme.clubColorFor
 import com.example.ui.viewmodel.MainViewModel
+import com.example.ui.components.Cover
+import com.example.ui.components.Pill
+import com.example.ui.components.PillVariant
+import com.example.ui.components.ProgressBar
+import com.example.ui.components.TramabookCard
+import com.example.ui.components.TbSectionHeader
 
 import androidx.compose.foundation.lazy.LazyRow
 import com.example.ui.theme.FrauncesFontFamily
@@ -487,16 +499,19 @@ fun HomeScreenTab(
             Spacer(modifier = Modifier.height(4.dp))
             Text(
                 text = buildAnnotatedString {
-                    append("A galera tá ")
+                    withStyle(SpanStyle(color = Ink)) {
+                        append("A galera tá ")
+                    }
                     withStyle(SpanStyle(
                         fontStyle = FontStyle.Italic,
-                        fontFamily = FrauncesFontFamily,
-                        color = VerdeMusgo
+                        fontFamily = LiterataFontFamily,
+                        color = Oliva
                     )) {
                         append("esperando.")
                     }
                 },
                 style = MaterialTheme.typography.displayMedium.copy(
+                    fontFamily = LiterataFontFamily,
                     fontWeight = FontWeight.Bold,
                     fontSize = 32.sp,
                     lineHeight = 38.sp
@@ -561,7 +576,7 @@ fun HomeScreenTab(
                     modifier = Modifier
                         .fillMaxWidth()
                         .clip(RoundedCornerShape(24.dp))
-                        .background(Color(0xFF1B221B))
+                        .background(OlivaDeep)
                         .padding(20.dp)
                 ) {
                     Column {
@@ -579,7 +594,7 @@ fun HomeScreenTab(
                                     text = dayNameStr,
                                     style = MaterialTheme.typography.labelMedium.copy(
                                         fontWeight = FontWeight.Bold,
-                                        color = Color.White.copy(alpha = 0.5f),
+                                        color = Cream.copy(alpha = 0.5f),
                                         letterSpacing = 0.5.sp
                                     )
                                 )
@@ -589,8 +604,9 @@ fun HomeScreenTab(
                                     style = MaterialTheme.typography.displayMedium.copy(
                                         fontSize = 38.sp,
                                         fontWeight = FontWeight.Bold,
-                                        color = Color.White,
-                                        fontFamily = FrauncesFontFamily
+                                        color = Cream,
+                                        fontFamily = LiterataFontFamily,
+                                        fontStyle = FontStyle.Italic
                                     )
                                 )
                                 Spacer(modifier = Modifier.height(2.dp))
@@ -598,7 +614,7 @@ fun HomeScreenTab(
                                     text = finalMonthLabel,
                                     style = MaterialTheme.typography.bodySmall.copy(
                                         fontSize = 11.sp,
-                                        color = Color.White.copy(alpha = 0.4f)
+                                        color = Cream.copy(alpha = 0.4f)
                                     )
                                 )
                             }
@@ -608,7 +624,7 @@ fun HomeScreenTab(
                                 modifier = Modifier
                                     .width(1.dp)
                                     .height(84.dp)
-                                    .background(Color.White.copy(alpha = 0.15f))
+                                    .background(Cream.copy(alpha = 0.15f))
                             )
 
                             // Detail Column
@@ -620,21 +636,8 @@ fun HomeScreenTab(
                                     horizontalArrangement = Arrangement.SpaceBetween,
                                     verticalAlignment = Alignment.CenterVertically
                                 ) {
-                                    // "em 3 dias" pill
-                                    Box(
-                                        modifier = Modifier
-                                            .background(Color(0xFFF1E9DB), RoundedCornerShape(12.dp))
-                                            .padding(horizontal = 8.dp, vertical = 2.dp)
-                                    ) {
-                                        Text(
-                                            "em 3 dias",
-                                            style = MaterialTheme.typography.labelSmall.copy(
-                                                fontSize = 10.sp,
-                                                fontWeight = FontWeight.Bold,
-                                                color = Color(0xFF1B221B)
-                                            )
-                                        )
-                                    }
+                                    // "em 3 dias" countdown pill
+                                    Pill(text = "em 3 dias", variant = PillVariant.Default)
                                 }
 
                                 Spacer(modifier = Modifier.height(4.dp))
@@ -642,10 +645,10 @@ fun HomeScreenTab(
                                 Text(
                                     text = meeting?.agenda?.ifEmpty { "Discussão: A Hora da Estrela" } ?: "Discussão: A Hora da Estrela",
                                     style = MaterialTheme.typography.titleMedium.copy(
-                                        fontFamily = FrauncesFontFamily,
+                                        fontFamily = LiterataFontFamily,
                                         fontSize = 18.sp,
                                         fontWeight = FontWeight.SemiBold,
-                                        color = Color.White
+                                        color = Cream
                                     ),
                                     maxLines = 2,
                                     overflow = TextOverflow.Ellipsis
@@ -660,13 +663,13 @@ fun HomeScreenTab(
                                     Icon(
                                         imageVector = Icons.Outlined.DateRange,
                                         contentDescription = null,
-                                        tint = Color.White.copy(alpha = 0.6f),
+                                        tint = Cream.copy(alpha = 0.6f),
                                         modifier = Modifier.size(14.dp)
                                     )
                                     Text(
                                         text = meeting?.hora ?: "19:00 — 21:00",
                                         style = MaterialTheme.typography.bodySmall,
-                                        color = Color.White.copy(alpha = 0.6f)
+                                        color = Cream.copy(alpha = 0.6f)
                                     )
                                 }
 
@@ -679,13 +682,13 @@ fun HomeScreenTab(
                                     Icon(
                                         imageVector = Icons.Outlined.Place,
                                         contentDescription = null,
-                                        tint = Color.White.copy(alpha = 0.6f),
+                                        tint = Cream.copy(alpha = 0.6f),
                                         modifier = Modifier.size(14.dp)
                                     )
                                     Text(
                                         text = meeting?.local ?: "Café Lispector, Vila Madalena",
                                         style = MaterialTheme.typography.bodySmall,
-                                        color = Color.White.copy(alpha = 0.6f),
+                                        color = Cream.copy(alpha = 0.6f),
                                         maxLines = 1,
                                         overflow = TextOverflow.Ellipsis
                                     )
@@ -700,7 +703,7 @@ fun HomeScreenTab(
                             modifier = Modifier
                                 .fillMaxWidth()
                                 .height(0.5.dp)
-                                .background(Color.White.copy(alpha = 0.12f))
+                                .background(Cream.copy(alpha = 0.12f))
                         )
 
                         Spacer(modifier = Modifier.height(16.dp))
@@ -716,19 +719,20 @@ fun HomeScreenTab(
                                 horizontalArrangement = Arrangement.spacedBy((-8).dp)
                             ) {
                                 confirmedUsers.take(3).forEach { u ->
-                                    MemberAvatar(
+                                    Avatar(
                                         name = u.nome,
-                                        avatarUrl = u.avatarUrl,
+                                        avatarUrl = u.avatarUrl ?: "",
                                         size = 28.dp,
-                                        modifier = Modifier.border(1.5.dp, Color(0xFF1B221B), CircleShape)
+                                        ring = OlivaDeep,
+                                        modifier = Modifier
                                     )
                                 }
                                 if (confirmedUsers.size > 3) {
                                     Box(
                                         modifier = Modifier
                                             .size(28.dp)
-                                            .background(Color.White.copy(alpha = 0.15f), CircleShape)
-                                            .border(1.5.dp, Color(0xFF1B221B), CircleShape),
+                                            .background(OlivaMid.copy(alpha = 0.4f), CircleShape)
+                                            .border(1.5.dp, OlivaDeep, CircleShape),
                                         contentAlignment = Alignment.Center
                                     ) {
                                         Text(
@@ -736,7 +740,7 @@ fun HomeScreenTab(
                                             style = MaterialTheme.typography.labelSmall.copy(
                                                 fontSize = 11.sp,
                                                 fontWeight = FontWeight.Bold,
-                                                color = Color.White
+                                                color = Cream
                                             )
                                         )
                                     }
@@ -745,17 +749,17 @@ fun HomeScreenTab(
                                 Text(
                                     text = if (confirmedUsers.isEmpty()) "Ninguém confirmado" else "${confirmedUsers.size} confirmaram",
                                     style = MaterialTheme.typography.bodySmall.copy(
-                                        color = Color.White.copy(alpha = 0.6f)
+                                        color = Cream.copy(alpha = 0.6f)
                                     )
                                 )
                             }
 
-                            // RSVP Toggle box interaction "Eu vou >"
+                            // RSVP Toggle — pill-style button
                             val isParticipating = rsvps.any { it.userId == (viewModel.currentUserId.value ?: "user_voce") && it.status == "Vou" }
                             Box(
                                 modifier = Modifier
                                     .clip(RoundedCornerShape(16.dp))
-                                    .background(if (isParticipating) VerdeMusgo else Color.White)
+                                    .background(if (isParticipating) Oliva else Cream)
                                     .clickable {
                                         val nextStatus = if (isParticipating) "Não vou" else "Vou"
                                         meeting?.let { m -> viewModel.rsvpMeeting(m.id, nextStatus) }
@@ -766,7 +770,7 @@ fun HomeScreenTab(
                                 Text(
                                     text = if (isParticipating) "Confirmado ✓" else "Eu vou >",
                                     style = MaterialTheme.typography.labelSmall.copy(
-                                        color = if (isParticipating) Color.White else Color(0xFF1B221B),
+                                        color = if (isParticipating) Cream else OlivaDeep,
                                         fontWeight = FontWeight.Bold
                                     )
                                 )
@@ -779,25 +783,20 @@ fun HomeScreenTab(
 
         // Section: Tua Leitura Row Card (Image 1 Left Card 2)
         item {
-            Card(
+            TramabookCard(
                 modifier = Modifier
                     .fillMaxWidth()
                     .clickable { onNavigateToTab("book") },
-                shape = RoundedCornerShape(16.dp),
-                colors = CardDefaults.cardColors(
-                    containerColor = MaterialTheme.colorScheme.surface
-                ),
-                border = BorderStroke(1.dp, MaterialTheme.colorScheme.onSurface.copy(alpha = 0.08f)),
-                elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
+                contentPadding = PaddingValues(16.dp)
             ) {
                 Row(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(16.dp),
+                    modifier = Modifier.fillMaxWidth(),
                     verticalAlignment = Alignment.CenterVertically,
                     horizontalArrangement = Arrangement.spacedBy(16.dp)
                 ) {
-                    BookCover(
+                    Cover(
+                        title = currentBook?.title ?: "A Hora da Estrela",
+                        author = currentBook?.author ?: "",
                         coverUrl = currentBook?.coverUrl ?: "",
                         width = 48.dp,
                         height = 72.dp
@@ -826,7 +825,7 @@ fun HomeScreenTab(
                         Text(
                             text = bookTitle,
                             style = MaterialTheme.typography.titleMedium.copy(
-                                fontFamily = FrauncesFontFamily,
+                                fontFamily = LiterataFontFamily,
                                 fontWeight = FontWeight.SemiBold
                             ),
                             maxLines = 1,
@@ -840,20 +839,16 @@ fun HomeScreenTab(
                             verticalAlignment = Alignment.CenterVertically,
                             horizontalArrangement = Arrangement.spacedBy(8.dp)
                         ) {
-                            LinearProgressIndicator(
-                                progress = { visualPct },
-                                modifier = Modifier
-                                    .weight(1f)
-                                    .height(6.dp)
-                                    .clip(RoundedCornerShape(3.dp)),
+                            ProgressBar(
+                                value = visualPct,
                                 color = Terracota,
-                                trackColor = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.12f)
+                                modifier = Modifier.weight(1f)
                             )
                             Text(
                                 text = "${(visualPct * 100).toInt()}%",
                                 style = MaterialTheme.typography.labelSmall.copy(
                                     fontWeight = FontWeight.Medium,
-                                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                                    color = Muted
                                 )
                             )
                         }
@@ -862,7 +857,7 @@ fun HomeScreenTab(
                     Icon(
                         imageVector = Icons.AutoMirrored.Outlined.KeyboardArrowRight,
                         contentDescription = "Ver livro",
-                        tint = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.35f),
+                        tint = Muted.copy(alpha = 0.5f),
                         modifier = Modifier.size(20.dp)
                     )
                 }
@@ -881,7 +876,7 @@ fun HomeScreenTab(
                 Text(
                     text = "Onde a galera tá",
                     style = MaterialTheme.typography.titleMedium.copy(
-                        fontFamily = FrauncesFontFamily,
+                        fontFamily = LiterataFontFamily,
                         fontWeight = FontWeight.SemiBold,
                         fontSize = 18.sp
                     )
@@ -914,14 +909,7 @@ fun HomeScreenTab(
                     val isCurrentUser = member.id == currentUserId
                     val displayName = if (isCurrentUser) "Você" else member.nome.substringBefore(" ")
 
-                    val (badgeText, badgeBg, badgeColor) = when {
-                        memChap >= totalChaps -> {
-                            Triple("Terminou", VerdeMusgo.copy(alpha = 0.12f), VerdeMusgo)
-                        }
-                        else -> {
-                            Triple("Cap. $memChap", MaterialTheme.colorScheme.surfaceVariant, MaterialTheme.colorScheme.onSurfaceVariant)
-                        }
-                    }
+                    val finished = memChap >= totalChaps
 
                     Column(
                         horizontalAlignment = Alignment.CenterHorizontally,
@@ -930,32 +918,20 @@ fun HomeScreenTab(
                     ) {
                         Box(
                             contentAlignment = Alignment.BottomCenter,
-                            modifier = Modifier.padding(bottom = 6.dp)
+                            modifier = Modifier.padding(bottom = 10.dp)
                         ) {
-                            MemberAvatar(
+                            Avatar(
                                 name = member.nome,
-                                avatarUrl = member.avatarUrl,
+                                avatarUrl = member.avatarUrl ?: "",
                                 size = 56.dp,
-                                modifier = Modifier
-                                    .border(1.5.dp, if (isCurrentUser) Terracota else Color.Transparent, CircleShape)
+                                ring = if (isCurrentUser) Terracota else null
                             )
 
-                            // Small popped-up progress badge cropped over the bottom of the avatar
-                            Box(
-                                modifier = Modifier
-                                    .offset(y = 8.dp)
-                                    .background(Color.White, RoundedCornerShape(10.dp))
-                                    .border(0.5.dp, MaterialTheme.colorScheme.outline.copy(alpha = 0.25f), RoundedCornerShape(10.dp))
-                                    .background(badgeBg, RoundedCornerShape(10.dp))
-                                    .padding(horizontal = 6.dp, vertical = 2.dp)
-                            ) {
-                                Text(
-                                    text = badgeText,
-                                    style = MaterialTheme.typography.labelSmall.copy(
-                                        fontSize = 10.sp,
-                                        fontWeight = FontWeight.Bold,
-                                        color = badgeColor
-                                    )
+                            // Small progress badge below avatar
+                            Box(modifier = Modifier.offset(y = 10.dp)) {
+                                Pill(
+                                    text = if (finished) "Terminou" else "Cap. $memChap",
+                                    variant = if (finished) PillVariant.OliveDeep else PillVariant.Default
                                 )
                             }
                         }
@@ -966,7 +942,7 @@ fun HomeScreenTab(
                             text = displayName,
                             style = MaterialTheme.typography.bodySmall.copy(
                                 fontWeight = FontWeight.Medium,
-                                color = MaterialTheme.colorScheme.onSurface
+                                color = Ink
                             ),
                             maxLines = 1,
                             overflow = TextOverflow.Ellipsis
@@ -1000,11 +976,11 @@ fun HomeScreenTab(
         }
 
         item {
-            StandardCard {
+            TramabookCard(modifier = Modifier.fillMaxWidth()) {
                 Text(
                     text = activeClub?.descricao ?: "Um clubinho clássico de leitura íntima para tomar vinho e conversar livremente sobre livros excelentes.",
                     style = MaterialTheme.typography.bodyMedium,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                    color = Muted
                 )
             }
         }
