@@ -20,7 +20,7 @@ private val TramabookColorScheme = lightColorScheme(
     surface = CardSurface,
     onSurface = Ink,
     surfaceVariant = CardSoft,
-    onSurfaceVariant = Muted,
+    onSurfaceVariant = Tertiary,
     outline = Divider,
     outlineVariant = DividerSoft,
 )
