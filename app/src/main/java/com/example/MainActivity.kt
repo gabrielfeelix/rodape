@@ -108,7 +108,17 @@ class MainActivity : ComponentActivity() {
                                 navController.navigate("welcome") {
                                     popUpTo("main_tabs") { inclusive = true }
                                 }
-                            }
+                            },
+                            onNavigateToBookDetail = { bookId -> navController.navigate("book_detail/$bookId") }
+                        )
+                    }
+
+                    composable("book_detail/{bookId}") { backStackEntry ->
+                        val bookId = backStackEntry.arguments?.getString("bookId") ?: ""
+                        BookDetailScreen(
+                            viewModel = viewModel,
+                            bookId = bookId,
+                            onNavigateBack = { navController.popBackStack() }
                         )
                     }
 

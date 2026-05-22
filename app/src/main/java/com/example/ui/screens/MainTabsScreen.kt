@@ -78,7 +78,8 @@ fun MainTabsScreen(
     onNavigateToDiscussion: (String, String) -> Unit,
     onNavigateToSuggestBook: () -> Unit,
     onNavigateToJoinClub: () -> Unit,
-    onLogoutCompleted: () -> Unit
+    onLogoutCompleted: () -> Unit,
+    onNavigateToBookDetail: (String) -> Unit = {}
 ) {
     var selectedTab by remember { mutableStateOf("home") }
     var showBottomSheet by remember { mutableStateOf(false) }
@@ -184,7 +185,8 @@ fun MainTabsScreen(
                 )
                 "next" -> NextTabScreen(
                     viewModel = viewModel,
-                    onNavigateToSuggestBook = onNavigateToSuggestBook
+                    onNavigateToSuggestBook = onNavigateToSuggestBook,
+                    onNavigateToBookDetail = onNavigateToBookDetail
                 )
                 "profile" -> ProfileScreenTab(
                     viewModel = viewModel,
