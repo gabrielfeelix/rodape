@@ -25,7 +25,7 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import coil.compose.AsyncImage
+import coil.compose.SubcomposeAsyncImage
 import com.example.ui.theme.InterFontFamily
 import com.example.ui.theme.LiterataFontFamily
 
@@ -62,23 +62,27 @@ fun Cover(
         .clip(shape)
 
     if (coverUrl.isNotBlank()) {
-        AsyncImage(
+        SubcomposeAsyncImage(
             model = coverUrl,
             contentDescription = "Capa de $title",
             modifier = box,
             contentScale = ContentScale.Crop,
+            loading = { GeneratedCover(title, author, width) },
+            error = { GeneratedCover(title, author, width) },
         )
-        return
+    } else {
+        Box(modifier = box.semantics { contentDescription = "Capa de $title" }) {
+            GeneratedCover(title, author, width)
+        }
     }
+}
 
+@Composable
+private fun GeneratedCover(title: String, author: String, width: Dp) {
     val palette = coverPalettes[hashOf(title).mod(coverPalettes.size)]
-    val titleFontSize = (92f / maxOf(8, title.length) * 1.4f).coerceIn(9f, 15f)
-    val titleLineHeight = (92f / maxOf(8, title.length) * 1.5f).coerceIn(11f, 17f)
-    Box(
-        modifier = box
-            .background(palette.bg)
-            .semantics { contentDescription = "Capa de $title" },
-    ) {
+    val titleFontSize = (width.value / maxOf(8, title.length) * 1.4f).coerceIn(9f, 15f)
+    val titleLineHeight = (width.value / maxOf(8, title.length) * 1.5f).coerceIn(11f, 17f)
+    Box(modifier = Modifier.fillMaxSize().background(palette.bg)) {
         Column(modifier = Modifier.fillMaxSize().padding(width * 0.09f)) {
             Text(
                 text = title,
