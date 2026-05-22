@@ -36,13 +36,3 @@ val DividerSoft = Color(0xFFF1EFE6)
 // Compat: nomes antigos ainda referenciados pelas telas atuais.
 // Serão removidos quando as telas forem re-skinadas nas fases seguintes.
 val VerdeMusgo = Oliva
-
-// Compat: Theme.kt ainda depende desses (serão refatorados nas próximas fases).
-val BackgroundLight = Paper
-val SurfaceLight = CardSurface
-val TextoLight = Ink
-val TextoSecundarioLight = Muted
-val BackgroundDark = OlivaDeep
-val SurfaceDark = OlivaDark
-val TextoDark = Paper
-val TextoSecundarioDark = TertiarySoft
