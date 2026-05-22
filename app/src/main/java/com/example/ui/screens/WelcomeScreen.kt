@@ -37,8 +37,6 @@ import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import com.example.ui.components.PillButton
-import com.example.ui.components.StandardCard
 import com.example.ui.components.TbButton
 import com.example.ui.components.TbButtonSize
 import com.example.ui.components.TbButtonVariant
@@ -55,7 +53,6 @@ import com.example.ui.theme.OlivaSoft
 import com.example.ui.theme.PaperDeep
 import com.example.ui.theme.Terracota
 import com.example.ui.theme.Tertiary
-import com.example.ui.theme.VerdeMusgo
 import androidx.compose.ui.text.SpanStyle
 import androidx.compose.ui.text.buildAnnotatedString
 import androidx.compose.ui.text.font.FontStyle

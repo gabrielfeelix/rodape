@@ -62,7 +62,6 @@ import com.example.ui.components.TramabookCard
 import com.example.ui.components.TbSectionHeader
 
 import androidx.compose.foundation.lazy.LazyRow
-import com.example.ui.theme.FrauncesFontFamily
 import com.example.ui.theme.InterFontFamily
 import androidx.compose.ui.text.buildAnnotatedString
 import androidx.compose.ui.text.withStyle
@@ -221,7 +220,7 @@ fun MainTabsScreen(
                 Text(
                     text = "Trocar de clube",
                     style = MaterialTheme.typography.titleMedium.copy(
-                        fontFamily = FrauncesFontFamily,
+                        fontFamily = LiterataFontFamily,
                         fontSize = 18.sp,
                         fontWeight = FontWeight.Medium
                     ),
@@ -277,7 +276,7 @@ fun MainTabsScreen(
                                 Text(
                                     text = club.nome,
                                     style = MaterialTheme.typography.bodyLarge.copy(
-                                        fontFamily = FrauncesFontFamily,
+                                        fontFamily = LiterataFontFamily,
                                         fontSize = 16.sp,
                                         fontWeight = FontWeight.Medium
                                     )

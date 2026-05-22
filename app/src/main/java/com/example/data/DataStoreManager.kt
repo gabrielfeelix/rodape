@@ -18,7 +18,6 @@ class DataStoreManager(private val context: Context) {
         val USER_NAME_KEY = stringPreferencesKey("user_name")
         val USER_EMAIL_KEY = stringPreferencesKey("user_email")
         val ACTIVE_CLUB_ID_KEY = stringPreferencesKey("active_club_id")
-        val THEME_MODE_KEY = stringPreferencesKey("theme_mode") // "system", "light", "dark"
     }
 
     val userIdFlow: Flow<String?> = context.dataStore.data.map { prefs ->
@@ -37,10 +36,6 @@ class DataStoreManager(private val context: Context) {
         prefs[ACTIVE_CLUB_ID_KEY]
     }
 
-    val themeModeFlow: Flow<String> = context.dataStore.data.map { prefs ->
-        prefs[THEME_MODE_KEY] ?: "light"
-    }
-
     suspend fun saveSession(userId: String, name: String, email: String) {
         context.dataStore.edit { prefs ->
             prefs[USER_ID_KEY] = userId
@@ -52,12 +47,6 @@ class DataStoreManager(private val context: Context) {
     suspend fun saveActiveClubId(clubId: String) {
         context.dataStore.edit { prefs ->
             prefs[ACTIVE_CLUB_ID_KEY] = clubId
-        }
-    }
-
-    suspend fun saveThemeMode(mode: String) {
-        context.dataStore.edit { prefs ->
-            prefs[THEME_MODE_KEY] = mode
         }
     }
 
