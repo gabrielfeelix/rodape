@@ -95,7 +95,12 @@ Superfícies (claras, frescas)
 
 **Mapeamento Material `lightColorScheme`:**
 `primary`=terracota · `secondary`=oliva · `background`=paper · `surface`=card ·
-`onBackground`/`onSurface`=ink · `onSurfaceVariant`=muted · `outline`=divider.
+`onBackground`/`onSurface`=ink · `onSurfaceVariant`=**tertiary** (`#5B5B53`) · `outline`=divider.
+
+> Nota: `onSurfaceVariant` usa `tertiary`, não `muted`. `muted` (`#8A8A80`) sobre
+> `surfaceVariant` falha WCAG AA (3.27:1); `tertiary` dá 6.44:1. Para texto secundário,
+> prefira `onSurfaceVariant` (= tertiary). `muted` continua disponível para uso
+> decorativo onde contraste de texto não se aplica.
 
 **Cores de clube** (5 presets — `CreateClubScreen`):
 ```
@@ -107,6 +112,14 @@ ink         bg #2E3A47   soft #D7DCE2
 ```
 Persistido em `Club.cor` como índice "0".."4". Manter compatibilidade com o mapeamento
 antigo já existente em `MainTabsScreen`.
+
+> **Atenção (conflito conhecido — resolver na fase de re-skin de clubes):** o app legado
+> em `WelcomeScreen.kt`/`CreateClubScreen` salva `Club.cor` como **hex** (ex.: `"#8C4027"`),
+> não como índice, e o seed em `TramabookRepository.kt` usa `"0"`. O helper `clubColorFor()`
+> (criado na Fase 1) resolve índice **ou** hex, mas o índice "0" mapeia para oliva
+> (`#4F653F`), enquanto o mapeamento legado de `MainTabsScreen` tratava "0" como terracota.
+> A fase que re-skina `CreateClubScreen`/`MainTabsScreen` deve unificar: passar a salvar
+> sempre o índice "0".."4" e usar `clubColorFor()` em todos os pontos de leitura.
 
 ### 3.2 Tipografia
 
@@ -123,17 +136,26 @@ antigo já existente em `MainTabsScreen`.
   (`0 1px 2px` + `0 4px 14px` em tom quente).
 - Botões: pílula (raio 999), altura 46 (md) / 54 (lg).
 
-### 3.4 Componentes base (`ui/components/`)
+### 3.4 Componentes base (`ui/components/`) — entregues na Fase 1
 
 | Componente | Comportamento |
 |---|---|
-| `Cover` | Capa de livro. Se `coverUrl` existe → `AsyncImage`. Senão → **bloco colorido gerado por hash do título** (8 paletas + ornamento), com título serif. Espelha `Cover` do `tokens.jsx` |
-| `Avatar` | Iniciais sobre cor por hash; suporta anel (ring) |
-| `PillButton` | Variantes: `primary`(oliva), `terra`, `outline`, `soft`, `dark`, `oliveSoft`. Pílula |
-| `Pill` / chip | Variantes: `default`, `olive`, `terra`, `mustard`, `ink`, `outline`. Uppercase |
-| `Progress` | Barra fina arredondada |
-| `Card` | Superfície com a sombra/borda padrão |
-| `SectionHeader` | Título serif + ação opcional à direita |
+| `Cover` | Capa de livro. Se `coverUrl` existe → `SubcomposeAsyncImage` (cai no bloco gerado em erro/loading). Senão → **bloco colorido gerado por hash do título** (8 paletas), com título serif. Fonte escala pela `width` |
+| `Avatar` | Imagem (`SubcomposeAsyncImage`, fallback de iniciais em erro) ou iniciais sobre cor por hash; suporta anel (ring) |
+| `TbButton` | Variantes: `Primary`(oliva), `Terra`, `TerraSoft`, `Outline`, `Dark`, `OlivaSoft`. Tamanhos `Sm`/`Md`/`Lg`. Pílula |
+| `Pill` / chip | Variantes: `Default`, `Olive`, `OliveDeep`, `Terra`, `Mustard`, `Ink`, `Outline`. Uppercase |
+| `ProgressBar` | Barra fina arredondada, com semântica de progresso |
+| `TramabookCard` | Superfície com a sombra/borda padrão |
+| `TbSectionHeader` | Título serif + ação opcional à direita |
+
+> **Housekeeping para a Fase 2** (não-bloqueante, levantado na review final da Fase 1):
+> - **Prefixo de nomes:** os componentes misturam `Tb`-prefixo (`TbButton`, `TbSectionHeader`),
+>   sem-prefixo (`Cover`, `Avatar`, `Pill`, `ProgressBar`) e brand (`TramabookCard`).
+>   Adotar uma convenção única ao migrar telas — sugestão: `Tb`-prefixo para todos.
+> - `TramabookTokens` (em `Tokens.kt`) ainda não é consumido — os componentes importam
+>   tokens direto de `Color.kt`. Decidir se `TramabookTokens` é o caminho canônico ou removê-lo.
+> - `Pill` variante `Mustard` usa hex cru `0xFF6E5316` — promover a token `MustardDark` em `Color.kt`.
+> - Ao migrar telas, remover os aliases de compat `VerdeMusgo` e `FrauncesFontFamily`.
 
 ---
 
