@@ -266,5 +266,15 @@ class TramabookRepository(private val dao: TramabookDao) {
         dao.insertNotification(DbNotification("not_3", "user_voce", "club_mari", "meeting_reminder", "{\"meetingId\":\"meet_1\",\"date\":\"DOMINGO, 24 DE OUTUBRO\"}", false, System.currentTimeMillis() - 1 * 24 * 3600 * 1000))
         dao.insertNotification(DbNotification("not_4", "user_voce", "club_mari", "member_finished", "{\"bookTitle\":\"O Pequeno Príncipe\",\"userName\":\"Ana\"}", true, System.currentTimeMillis() - 2 * 24 * 3600 * 1000))
         dao.insertNotification(DbNotification("not_5", "user_voce", "club_mari", "comment_on_chapter", "{\"chapterId\":\"ch_3\",\"chapterTitle\":\"A partida\",\"userName\":\"Lucas T.\"}", true, System.currentTimeMillis() - 3 * 24 * 3600 * 1000))
+
+        // 9. Frases guardadas de exemplo
+        dao.insertSavedQuote(SavedQuote("quote_seed_1", "user_voce", "club_mari", "book_metamorfose",
+            "A culpa é minha, dizia Macabéa sem saber bem de quê.", "Cap. 1", System.currentTimeMillis() - 6 * 24 * 3600 * 1000L))
+        dao.insertSavedQuote(SavedQuote("quote_seed_2", "user_voce", "club_mari", "book_metamorfose",
+            "Ela acreditava em anjos e, porque acreditava, eles existiam.", "Cap. 7", System.currentTimeMillis() - 3 * 24 * 3600 * 1000L))
+        dao.insertSavedQuote(SavedQuote("quote_seed_3", "user_voce", "club_mari", "fin_3",
+            "A terra é a nossa carta de alforria sem assinatura.", "Torto arado", System.currentTimeMillis() - 12 * 24 * 3600 * 1000L))
+        dao.insertSavedQuote(SavedQuote("quote_seed_4", "user_voce", "club_mari", "fin_1",
+            "O choro de minha mãe não desaguava em rio. Empoçava nos olhos.", "Olhos d'água", System.currentTimeMillis() - 20 * 24 * 3600 * 1000L))
     }
 }
