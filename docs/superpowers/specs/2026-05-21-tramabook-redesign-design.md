@@ -95,7 +95,12 @@ Superfícies (claras, frescas)
 
 **Mapeamento Material `lightColorScheme`:**
 `primary`=terracota · `secondary`=oliva · `background`=paper · `surface`=card ·
-`onBackground`/`onSurface`=ink · `onSurfaceVariant`=muted · `outline`=divider.
+`onBackground`/`onSurface`=ink · `onSurfaceVariant`=**tertiary** (`#5B5B53`) · `outline`=divider.
+
+> Nota: `onSurfaceVariant` usa `tertiary`, não `muted`. `muted` (`#8A8A80`) sobre
+> `surfaceVariant` falha WCAG AA (3.27:1); `tertiary` dá 6.44:1. Para texto secundário,
+> prefira `onSurfaceVariant` (= tertiary). `muted` continua disponível para uso
+> decorativo onde contraste de texto não se aplica.
 
 **Cores de clube** (5 presets — `CreateClubScreen`):
 ```
