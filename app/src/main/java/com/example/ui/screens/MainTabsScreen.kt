@@ -40,6 +40,12 @@ import com.example.data.model.*
 import com.example.ui.components.*
 import com.example.ui.theme.Terracota
 import com.example.ui.theme.VerdeMusgo
+import com.example.ui.theme.OlivaDeep
+import com.example.ui.theme.Oliva
+import com.example.ui.theme.OlivaSoft
+import com.example.ui.theme.Cream
+import com.example.ui.theme.LiterataFontFamily
+import com.example.ui.theme.clubColorFor
 import com.example.ui.viewmodel.MainViewModel
 
 import androidx.compose.foundation.lazy.LazyRow
@@ -76,7 +82,7 @@ fun MainTabsScreen(
             CenterAlignedTopAppBar(
                 navigationIcon = {
                     Box(modifier = Modifier.padding(start = 16.dp)) {
-                        MemberAvatar(
+                        Avatar(
                             name = currentUser?.nome ?: "Você",
                             avatarUrl = currentUser?.avatarUrl ?: "",
                             size = 40.dp,
@@ -101,7 +107,7 @@ fun MainTabsScreen(
                             style = MaterialTheme.typography.titleLarge.copy(
                                 fontWeight = FontWeight.Medium,
                                 color = Terracota,
-                                fontFamily = FrauncesFontFamily,
+                                fontFamily = LiterataFontFamily,
                                 fontSize = 22.sp
                             )
                         )
@@ -219,20 +225,13 @@ fun MainTabsScreen(
                     allClubs.forEach { club ->
                         val isActive = club.id == activeClub?.id
                         val lastActivity = currentBooks[club.id] ?: "Sem livro atual"
-                        val clubColor = when (club.cor) {
-                            "0" -> Color(0xFF8C4027)
-                            "1" -> Color(0xFF4C663D)
-                            "2" -> Color(0xFF5A5852)
-                            "3" -> Color(0xFFFDE1D8)
-                            "4" -> Color(0xFF7A7973)
-                            else -> try { Color(android.graphics.Color.parseColor(club.cor)) } catch (e: Exception) { Terracota }
-                        }
+                        val resolvedClubColor = clubColorFor(club.cor)
 
                         Row(
                             modifier = Modifier
                                 .fillMaxWidth()
                                 .clip(RoundedCornerShape(16.dp))
-                                .background(if (isActive) MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.3f) else Color.Transparent)
+                                .background(if (isActive) OlivaSoft.copy(alpha = 0.35f) else Color.Transparent)
                                 .border(
                                     width = 1.dp,
                                     color = if (isActive) Terracota else MaterialTheme.colorScheme.outline.copy(alpha = 0.5f),
@@ -248,12 +247,12 @@ fun MainTabsScreen(
                             Box(
                                 modifier = Modifier
                                     .size(40.dp)
-                                    .background(clubColor, CircleShape),
+                                    .background(resolvedClubColor.bg, CircleShape),
                                 contentAlignment = Alignment.Center
                             ) {
                                 Text(
                                     text = club.nome.take(1).uppercase(),
-                                    color = Color.White,
+                                    color = resolvedClubColor.ink,
                                     fontWeight = FontWeight.Bold,
                                     fontSize = 16.sp
                                 )
@@ -283,13 +282,13 @@ fun MainTabsScreen(
                             if (isActive) {
                                 Surface(
                                     shape = RoundedCornerShape(8.dp),
-                                    color = VerdeMusgo.copy(alpha = 0.15f),
+                                    color = OlivaSoft,
                                     modifier = Modifier.padding(start = 8.dp)
                                 ) {
                                     Text(
                                         text = "atual",
                                         style = MaterialTheme.typography.labelSmall.copy(
-                                            color = VerdeMusgo,
+                                            color = Oliva,
                                             fontFamily = InterFontFamily,
                                             fontSize = 11.sp,
                                             fontWeight = FontWeight.Bold
@@ -341,16 +340,15 @@ fun CustomBottomBar(
         contentAlignment = Alignment.Center
     ) {
         Surface(
-            modifier = Modifier
-                .fillMaxWidth()
-                .height(68.dp),
-            shape = RoundedCornerShape(24.dp),
-            color = MaterialTheme.colorScheme.surface,
-            shadowElevation = 8.dp,
-            border = BorderStroke(1.dp, Terracota.copy(alpha = 0.15f))
+            modifier = Modifier.fillMaxWidth(),
+            shape = RoundedCornerShape(999.dp),
+            color = OlivaDeep,
+            shadowElevation = 8.dp
         ) {
             Row(
-                modifier = Modifier.fillMaxSize().padding(horizontal = 8.dp),
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(6.dp),
                 horizontalArrangement = Arrangement.SpaceAround,
                 verticalAlignment = Alignment.CenterVertically
             ) {
@@ -390,45 +388,54 @@ fun BottomBarItem(
     selected: Boolean,
     onClick: () -> Unit
 ) {
-    val activeColor = Color.White
-    val inactiveColor = MaterialTheme.colorScheme.onSurfaceVariant
-    val iconColor = if (selected) activeColor else inactiveColor
-    val textColor = if (selected) Terracota else inactiveColor
-
-    Column(
-        modifier = Modifier
-            .fillMaxHeight()
-            .clickable(
-                interactionSource = remember { MutableInteractionSource() },
-                indication = ripple(bounded = false, radius = 28.dp),
-                onClick = onClick
+    if (selected) {
+        Row(
+            modifier = Modifier
+                .clip(RoundedCornerShape(999.dp))
+                .background(Terracota)
+                .clickable(
+                    interactionSource = remember { MutableInteractionSource() },
+                    indication = ripple(bounded = true),
+                    onClick = onClick
+                )
+                .padding(horizontal = 16.dp, vertical = 10.dp),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(6.dp)
+        ) {
+            Icon(
+                imageVector = icon,
+                contentDescription = label,
+                tint = Cream,
+                modifier = Modifier.size(20.dp)
             )
-            .padding(horizontal = 4.dp),
-        verticalArrangement = Arrangement.Center,
-        horizontalAlignment = Alignment.CenterHorizontally
-    ) {
+            Text(
+                text = label,
+                style = MaterialTheme.typography.labelLarge.copy(
+                    color = Cream,
+                    fontFamily = InterFontFamily,
+                    fontWeight = FontWeight.SemiBold
+                )
+            )
+        }
+    } else {
         Box(
             modifier = Modifier
-                .width(48.dp)
-                .height(28.dp)
-                .clip(RoundedCornerShape(14.dp))
-                .background(if (selected) Terracota else Color.Transparent),
+                .clip(RoundedCornerShape(999.dp))
+                .clickable(
+                    interactionSource = remember { MutableInteractionSource() },
+                    indication = ripple(bounded = true),
+                    onClick = onClick
+                )
+                .padding(horizontal = 12.dp, vertical = 10.dp),
             contentAlignment = Alignment.Center
         ) {
             Icon(
                 imageVector = icon,
                 contentDescription = label,
-                tint = iconColor,
-                modifier = Modifier.size(18.dp)
+                tint = Cream.copy(alpha = 0.65f),
+                modifier = Modifier.size(20.dp)
             )
         }
-        Spacer(modifier = Modifier.height(2.dp))
-        Text(
-            text = label,
-            fontSize = 11.sp,
-            fontWeight = if (selected) FontWeight.Bold else FontWeight.Medium,
-            color = textColor
-        )
     }
 }
 
