@@ -50,6 +50,7 @@ import com.example.ui.theme.CardSurface
 import com.example.ui.theme.Divider
 import com.example.ui.theme.Ink
 import com.example.ui.theme.Muted
+import com.example.ui.theme.DividerSoft
 import com.example.ui.theme.LiterataFontFamily
 import com.example.ui.theme.clubColorFor
 import com.example.ui.viewmodel.MainViewModel
@@ -1023,151 +1024,223 @@ fun BookDetailScreenTab(
             )
         }
     } else {
+        val totalChapters = chapters.size
+        val pct = if (totalChapters > 0) {
+            (currentChapIndex.toFloat() / totalChapters.toFloat()).coerceIn(0f, 1f)
+        } else 0f
+        val pctInt = (pct * 100).toInt()
+
         LazyColumn(
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(horizontal = 24.dp),
-            verticalArrangement = Arrangement.spacedBy(16.dp),
+            modifier = Modifier.fillMaxSize(),
+            verticalArrangement = Arrangement.spacedBy(0.dp),
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
+            // ── OLIVE HERO ──────────────────────────────────────────────────
             item {
-                Spacer(modifier = Modifier.height(16.dp))
-
-                // Beautiful Book Header Info - Center Aligned Cover with brown backdrop
                 Box(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .wrapContentWidth(Alignment.CenterHorizontally)
-                        .padding(bottom = 16.dp)
+                        .background(
+                            color = OlivaDeep,
+                            shape = RoundedCornerShape(bottomStart = 36.dp, bottomEnd = 36.dp)
+                        )
+                        .padding(start = 22.dp, end = 22.dp, top = 20.dp, bottom = 80.dp)
                 ) {
-                    Surface(
-                        modifier = Modifier
-                            .width(220.dp)
-                            .height(290.dp),
-                        shape = RoundedCornerShape(20.dp),
-                        color = Terracota,
-                        shadowElevation = 6.dp
-                    ) {
-                        Box(
-                            modifier = Modifier.fillMaxSize(),
-                            contentAlignment = Alignment.Center
-                        ) {
-                            BookCover(
-                                coverUrl = currentBook?.coverUrl ?: "",
-                                width = 160.dp,
-                                height = 240.dp,
-                                modifier = Modifier.clip(RoundedCornerShape(8.dp))
-                            )
-                        }
-                    }
-                }
+                    // Label row
+                    Text(
+                        text = "Livro atual",
+                        style = MaterialTheme.typography.labelSmall.copy(
+                            fontWeight = FontWeight.Bold,
+                            letterSpacing = 1.2.sp,
+                            color = Cream.copy(alpha = 0.70f)
+                        ),
+                        modifier = Modifier.padding(bottom = 14.dp)
+                    )
 
-                // Title
-                Text(
-                    text = currentBook!!.title,
-                    style = MaterialTheme.typography.titleLarge.copy(
-                        fontWeight = FontWeight.Bold,
-                        fontFamily = androidx.compose.ui.text.font.FontFamily.Serif,
-                        fontSize = 28.sp,
-                        color = MaterialTheme.colorScheme.onBackground
-                    ),
-                    textAlign = TextAlign.Center,
-                    modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp)
-                )
-                
-                Spacer(modifier = Modifier.height(4.dp))
-                
-                // Author
-                Text(
-                    text = currentBook!!.author,
-                    style = MaterialTheme.typography.bodyLarge.copy(
-                        color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.8f),
-                        fontSize = 18.sp
-                    ),
-                    textAlign = TextAlign.Center,
-                    modifier = Modifier.fillMaxWidth()
-                )
-
-                // Extra tagline statistics
-                val currentChap = currentChapIndex
-                val totalChapters = chapters.size
-                Text(
-                    text = "$currentChap de $totalChapters capítulos  •  ★ 4.5 do clube  •  8 leitores",
-                    style = MaterialTheme.typography.bodyMedium.copy(
-                        color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.6f),
-                        fontSize = 13.sp
-                    ),
-                    textAlign = TextAlign.Center,
-                    modifier = Modifier.fillMaxWidth().padding(vertical = 12.dp)
-                )
-
-                Spacer(modifier = Modifier.height(8.dp))
-
-                // Marcar progresso Button
-                Button(
-                    onClick = {
-                        val nextChap = currentChapIndex + 1
-                        if (nextChap <= chapters.size) {
-                            viewModel.updateBookProgress(currentBook!!.id, nextChap)
-                        }
-                    },
-                    colors = ButtonDefaults.buttonColors(
-                        containerColor = Terracota,
-                        contentColor = Color.White
-                    ),
-                    shape = RoundedCornerShape(26.dp),
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .height(52.dp)
-                        .padding(horizontal = 8.dp)
-                ) {
+                    // Cover + info row
                     Row(
-                        verticalAlignment = Alignment.CenterVertically,
-                        horizontalArrangement = Arrangement.Center
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(top = 28.dp),
+                        horizontalArrangement = Arrangement.spacedBy(18.dp),
+                        verticalAlignment = Alignment.Top
                     ) {
-                        Icon(
-                            imageVector = Icons.Outlined.Check,
-                            contentDescription = null,
-                            modifier = Modifier.size(20.dp)
+                        Cover(
+                            title = currentBook!!.title,
+                            author = currentBook!!.author,
+                            coverUrl = currentBook?.coverUrl ?: "",
+                            width = 108.dp,
+                            height = 162.dp
                         )
-                        Spacer(modifier = Modifier.width(8.dp))
-                        Text(
-                            "Marcar progresso",
-                            style = MaterialTheme.typography.bodyLarge.copy(
-                                fontWeight = FontWeight.Bold,
-                                fontSize = 16.sp
+
+                        Column(
+                            modifier = Modifier
+                                .weight(1f)
+                                .padding(top = 6.dp),
+                            verticalArrangement = Arrangement.spacedBy(6.dp)
+                        ) {
+                            Text(
+                                text = currentBook!!.title,
+                                style = MaterialTheme.typography.headlineLarge.copy(
+                                    fontWeight = FontWeight.SemiBold,
+                                    color = Cream,
+                                    lineHeight = 30.sp
+                                ),
+                                maxLines = 4,
+                                overflow = TextOverflow.Ellipsis
                             )
-                        )
+                            Text(
+                                text = currentBook!!.author,
+                                style = MaterialTheme.typography.bodyMedium.copy(
+                                    color = Cream.copy(alpha = 0.70f)
+                                )
+                            )
+                            Spacer(modifier = Modifier.height(4.dp))
+                            Text(
+                                text = "★ 4.5  ·  $totalChapters capítulos  ·  8 lendo",
+                                style = MaterialTheme.typography.bodySmall.copy(
+                                    color = Cream.copy(alpha = 0.80f)
+                                )
+                            )
+                        }
                     }
                 }
-
-                Spacer(modifier = Modifier.height(16.dp))
             }
 
+            // ── PROGRESS CARD (overlaps hero curve) ─────────────────────────
             item {
-                Text(
-                    text = "Capítulos",
-                    style = MaterialTheme.typography.titleMedium.copy(
-                        fontWeight = FontWeight.Bold,
-                        color = MaterialTheme.colorScheme.onBackground
-                    ),
-                    modifier = Modifier.fillMaxWidth().padding(vertical = 4.dp)
-                )
-
-                // List of Chapters nested inside a single gorgeous white Card/Surface
-                Surface(
-                    modifier = Modifier.fillMaxWidth(),
-                    shape = RoundedCornerShape(24.dp),
-                    color = MaterialTheme.colorScheme.surface,
-                    border = BorderStroke(1.dp, MaterialTheme.colorScheme.onSurface.copy(alpha = 0.04f)),
-                    shadowElevation = 1.dp
+                Box(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .offset(y = (-54).dp)
+                        .padding(horizontal = 22.dp)
                 ) {
-                    Column(
-                        modifier = Modifier.padding(vertical = 8.dp)
+                    TramabookCard(
+                        modifier = Modifier.fillMaxWidth(),
+                        contentPadding = PaddingValues(16.dp)
                     ) {
-                        chapters.forEachIndexed { index, chapter ->
+                        // Reading info row
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.SpaceBetween,
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Column {
+                                Text(
+                                    text = "Tua leitura",
+                                    style = MaterialTheme.typography.labelSmall.copy(
+                                        fontWeight = FontWeight.Bold,
+                                        letterSpacing = 0.6.sp,
+                                        color = Muted
+                                    )
+                                )
+                                Spacer(modifier = Modifier.height(2.dp))
+                                Text(
+                                    text = buildAnnotatedString {
+                                        withStyle(SpanStyle(fontWeight = FontWeight.SemiBold, color = Ink)) {
+                                            append("Cap. $currentChapIndex")
+                                        }
+                                        withStyle(SpanStyle(color = Muted, fontWeight = FontWeight.Normal)) {
+                                            append(" de $totalChapters")
+                                        }
+                                    },
+                                    style = MaterialTheme.typography.titleLarge
+                                )
+                            }
+
+                            // Circular ring progress indicator
+                            Box(
+                                modifier = Modifier
+                                    .size(56.dp)
+                                    .drawBehind {
+                                        val stroke = 5.dp.toPx()
+                                        val radius = (size.minDimension - stroke) / 2f
+                                        val cx = size.width / 2f
+                                        val cy = size.height / 2f
+                                        // track arc
+                                        drawArc(
+                                            color = DividerSoft,
+                                            startAngle = -90f,
+                                            sweepAngle = 360f,
+                                            useCenter = false,
+                                            style = androidx.compose.ui.graphics.drawscope.Stroke(
+                                                width = stroke
+                                            )
+                                        )
+                                        // progress arc
+                                        drawArc(
+                                            color = Terracota,
+                                            startAngle = -90f,
+                                            sweepAngle = 360f * pct,
+                                            useCenter = false,
+                                            style = androidx.compose.ui.graphics.drawscope.Stroke(
+                                                width = stroke
+                                            )
+                                        )
+                                    },
+                                contentAlignment = Alignment.Center
+                            ) {
+                                Text(
+                                    text = "$pctInt%",
+                                    style = MaterialTheme.typography.labelSmall.copy(
+                                        fontWeight = FontWeight.SemiBold,
+                                        color = Ink
+                                    )
+                                )
+                            }
+                        }
+
+                        Spacer(modifier = Modifier.height(12.dp))
+
+                        TbButton(
+                            text = "Marcar progresso",
+                            onClick = {
+                                val nextChap = currentChapIndex + 1
+                                if (nextChap <= chapters.size) {
+                                    viewModel.updateBookProgress(currentBook!!.id, nextChap)
+                                }
+                            },
+                            variant = TbButtonVariant.Terra,
+                            size = TbButtonSize.Lg,
+                            modifier = Modifier.fillMaxWidth()
+                        )
+                    }
+                }
+            }
+
+            // ── CHAPTER LIST ────────────────────────────────────────────────
+            item {
+                Column(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .offset(y = (-38).dp)
+                        .padding(horizontal = 22.dp),
+                    verticalArrangement = Arrangement.spacedBy(0.dp)
+                ) {
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(bottom = 14.dp),
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Text(
+                            text = "Capítulos",
+                            style = MaterialTheme.typography.titleLarge.copy(
+                                fontWeight = FontWeight.SemiBold,
+                                color = Ink
+                            )
+                        )
+                        val readCount = chapters.count { it.numero < currentChapIndex }
+                        Text(
+                            text = "$readCount lidos",
+                            style = MaterialTheme.typography.bodySmall.copy(color = Muted)
+                        )
+                    }
+
+                    Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                        chapters.forEach { chapter ->
                             val chapNumber = chapter.numero
-                            
                             val isCompleted = chapNumber < currentChapIndex
                             val isCurrent = chapNumber == currentChapIndex
                             val isLocked = chapNumber > currentChapIndex
@@ -1178,131 +1251,106 @@ fun BookDetailScreenTab(
                             val chapterComments by commentsFlow.collectAsState(initial = emptyList())
                             val commentsCount = chapterComments.size
 
-                            Box(
+                            // Chapter row card
+                            Surface(
                                 modifier = Modifier
                                     .fillMaxWidth()
                                     .clickable(enabled = !isLocked) {
                                         onNavigateToDiscussion(chapter.id, chapter.titulo)
-                                    }
+                                    },
+                                shape = RoundedCornerShape(16.dp),
+                                color = if (isCurrent) Cream else CardSurface,
+                                border = BorderStroke(
+                                    width = if (isCurrent) 1.5.dp else 0.5.dp,
+                                    color = if (isCurrent) Terracota else Divider
+                                )
                             ) {
-                                if (index > 0) {
-                                    HorizontalDivider(
-                                        modifier = Modifier.padding(horizontal = 24.dp),
-                                        color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.06f)
-                                    )
-                                }
-
                                 Row(
                                     modifier = Modifier
                                         .fillMaxWidth()
-                                        .then(
-                                            if (isCurrent) {
-                                                Modifier
-                                                    .background(Terracota.copy(alpha = 0.06f))
-                                                    .drawBehind {
-                                                        drawRect(
-                                                            color = Terracota,
-                                                            size = androidx.compose.ui.geometry.Size(4.dp.toPx(), size.height)
-                                                        )
-                                                    }
-                                            } else {
-                                                Modifier
-                                            }
-                                        )
-                                        .padding(horizontal = 24.dp, vertical = 20.dp),
+                                        .padding(horizontal = 14.dp, vertical = 12.dp),
                                     verticalAlignment = Alignment.CenterVertically,
-                                    horizontalArrangement = Arrangement.SpaceBetween
+                                    horizontalArrangement = Arrangement.spacedBy(14.dp)
                                 ) {
-                                    Row(
-                                        verticalAlignment = Alignment.CenterVertically,
-                                        horizontalArrangement = Arrangement.spacedBy(16.dp),
-                                        modifier = Modifier.weight(1f)
+                                    // Status indicator circle
+                                    Box(
+                                        modifier = Modifier
+                                            .size(36.dp)
+                                            .background(
+                                                color = when {
+                                                    isLocked -> DividerSoft
+                                                    isCurrent -> Terracota
+                                                    else -> OlivaSoft
+                                                },
+                                                shape = CircleShape
+                                            ),
+                                        contentAlignment = Alignment.Center
                                     ) {
-                                        if (isCompleted) {
-                                            Box(
-                                                modifier = Modifier
-                                                    .size(24.dp)
-                                                    .background(VerdeMusgo, CircleShape),
-                                                contentAlignment = Alignment.Center
-                                            ) {
-                                                Icon(
-                                                    imageVector = Icons.Outlined.Check,
-                                                    contentDescription = "Concluído",
-                                                    tint = Color.White,
-                                                    modifier = Modifier.size(14.dp)
-                                                )
-                                            }
-                                        } else if (isCurrent) {
-                                            Box(
-                                                modifier = Modifier
-                                                    .size(24.dp)
-                                                    .border(1.5.dp, Terracota, CircleShape),
-                                                contentAlignment = Alignment.Center
-                                            ) {
-                                                // Empty inner circle
-                                            }
-                                        } else {
-                                            Box(
-                                                modifier = Modifier
-                                                    .size(24.dp)
-                                                    .background(MaterialTheme.colorScheme.onSurface.copy(alpha = 0.05f), CircleShape),
-                                                contentAlignment = Alignment.Center
-                                            ) {
-                                                Icon(
-                                                    imageVector = Icons.Outlined.Lock,
-                                                    contentDescription = "Bloqueado",
-                                                    tint = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.3f),
-                                                    modifier = Modifier.size(12.dp)
-                                                )
-                                            }
-                                        }
-
-                                        Column {
-                                            Text(
-                                                text = "Capítulo $chapNumber",
-                                                style = MaterialTheme.typography.titleMedium.copy(
-                                                    fontWeight = FontWeight.Bold,
-                                                    color = if (isLocked) {
-                                                        MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.4f)
-                                                    } else {
-                                                        MaterialTheme.colorScheme.onSurface
-                                                    }
-                                                )
+                                        when {
+                                            isLocked -> Icon(
+                                                imageVector = Icons.Outlined.Lock,
+                                                contentDescription = "Bloqueado",
+                                                tint = Muted,
+                                                modifier = Modifier.size(16.dp)
                                             )
-                                            Text(
-                                                text = if (isLocked) "Chega aqui pra liberar" else chapter.titulo,
-                                                style = MaterialTheme.typography.bodyMedium.copy(
-                                                    color = if (isLocked) {
-                                                        MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.4f)
-                                                    } else {
-                                                        MaterialTheme.colorScheme.onSurfaceVariant
-                                                    }
-                                                )
+                                            isCurrent -> Icon(
+                                                imageVector = Icons.Outlined.Edit,
+                                                contentDescription = "Capítulo atual",
+                                                tint = Cream,
+                                                modifier = Modifier.size(18.dp)
+                                            )
+                                            else -> Icon(
+                                                imageVector = Icons.Outlined.Check,
+                                                contentDescription = "Concluído",
+                                                tint = OlivaDeep,
+                                                modifier = Modifier.size(18.dp)
                                             )
                                         }
                                     }
 
-                                    if (isCurrent) {
-                                        Box(
-                                            modifier = Modifier
-                                                .background(Color(0xFFFDE1D8), RoundedCornerShape(12.dp))
-                                                .padding(horizontal = 10.dp, vertical = 4.dp)
+                                    // Chapter info
+                                    Column(modifier = Modifier.weight(1f)) {
+                                        Row(
+                                            verticalAlignment = Alignment.CenterVertically,
+                                            horizontalArrangement = Arrangement.spacedBy(8.dp)
                                         ) {
                                             Text(
-                                                text = "Atual",
+                                                text = "Cap. $chapNumber".uppercase(),
                                                 style = MaterialTheme.typography.labelSmall.copy(
-                                                    color = Terracota,
-                                                    fontWeight = FontWeight.Bold
+                                                    fontWeight = FontWeight.SemiBold,
+                                                    letterSpacing = 0.4.sp,
+                                                    color = Muted
                                                 )
                                             )
+                                            if (isCurrent) {
+                                                Pill(
+                                                    text = "Atual",
+                                                    variant = PillVariant.Terra
+                                                )
+                                            }
                                         }
-                                    } else if (isCompleted) {
                                         Text(
-                                            text = if (commentsCount > 0) "$commentsCount comentários" else "—",
+                                            text = if (isLocked) "Chega aqui pra liberar" else chapter.titulo,
                                             style = MaterialTheme.typography.bodyMedium.copy(
-                                                color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.5f),
-                                                fontSize = 13.sp
-                                            )
+                                                fontWeight = FontWeight.Medium,
+                                                color = if (isLocked) Muted else Ink
+                                            ),
+                                            maxLines = 1,
+                                            overflow = TextOverflow.Ellipsis
+                                        )
+                                    }
+
+                                    // Right side info
+                                    if (!isLocked) {
+                                        Text(
+                                            text = if (commentsCount == 1) "1 comentário"
+                                                   else if (commentsCount > 1) "$commentsCount comentários"
+                                                   else "—",
+                                            style = MaterialTheme.typography.bodySmall.copy(
+                                                color = Muted,
+                                                fontWeight = FontWeight.Medium
+                                            ),
+                                            textAlign = TextAlign.End
                                         )
                                     }
                                 }
@@ -1312,82 +1360,78 @@ fun BookDetailScreenTab(
                 }
             }
 
+            // ── STATISTICS CARD ─────────────────────────────────────────────
             item {
-                Spacer(modifier = Modifier.height(8.dp))
-                Text(
-                    text = "Estatísticas",
-                    style = MaterialTheme.typography.titleMedium.copy(
-                        fontWeight = FontWeight.Bold,
-                        color = MaterialTheme.colorScheme.onBackground
-                    ),
-                    modifier = Modifier.fillMaxWidth().padding(vertical = 4.dp)
-                )
-
-                Surface(
-                    modifier = Modifier.fillMaxWidth(),
-                    shape = RoundedCornerShape(24.dp),
-                    color = MaterialTheme.colorScheme.surface,
-                    border = BorderStroke(1.dp, MaterialTheme.colorScheme.onSurface.copy(alpha = 0.04f)),
-                    shadowElevation = 1.dp
+                Column(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .offset(y = (-30).dp)
+                        .padding(horizontal = 22.dp)
                 ) {
-                    Row(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(24.dp),
-                        verticalAlignment = Alignment.CenterVertically
+                    Text(
+                        text = "Estatísticas",
+                        style = MaterialTheme.typography.titleLarge.copy(
+                            fontWeight = FontWeight.SemiBold,
+                            color = Ink
+                        ),
+                        modifier = Modifier.padding(bottom = 14.dp)
+                    )
+
+                    TramabookCard(
+                        modifier = Modifier.fillMaxWidth(),
+                        contentPadding = PaddingValues(24.dp)
                     ) {
-                        Column(
-                            modifier = Modifier.weight(1f)
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            verticalAlignment = Alignment.CenterVertically
                         ) {
-                            Text(
-                                text = "Tempo de leitura",
-                                style = MaterialTheme.typography.bodySmall.copy(
-                                    color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.6f),
-                                    fontWeight = FontWeight.Medium
+                            Column(modifier = Modifier.weight(1f)) {
+                                Text(
+                                    text = "Tempo de leitura",
+                                    style = MaterialTheme.typography.bodySmall.copy(
+                                        color = Muted,
+                                        fontWeight = FontWeight.Medium
+                                    )
                                 )
-                            )
-                            Spacer(modifier = Modifier.height(4.dp))
-                            Text(
-                                text = "1h 45m",
-                                style = MaterialTheme.typography.titleLarge.copy(
-                                    fontWeight = FontWeight.Bold,
-                                    fontSize = 20.sp
+                                Spacer(modifier = Modifier.height(4.dp))
+                                Text(
+                                    text = "1h 45m",
+                                    style = MaterialTheme.typography.titleLarge.copy(
+                                        fontWeight = FontWeight.Bold
+                                    )
                                 )
-                            )
-                        }
+                            }
 
-                        Box(
-                            modifier = Modifier
-                                .width(1.dp)
-                                .height(40.dp)
-                                .background(MaterialTheme.colorScheme.onSurface.copy(alpha = 0.08f))
-                        )
-
-                        Spacer(modifier = Modifier.width(24.dp))
-
-                        Column(
-                            modifier = Modifier.weight(1f)
-                        ) {
-                            Text(
-                                text = "Velocidade média",
-                                style = MaterialTheme.typography.bodySmall.copy(
-                                    color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.6f),
-                                    fontWeight = FontWeight.Medium
-                                )
+                            Box(
+                                modifier = Modifier
+                                    .width(1.dp)
+                                    .height(40.dp)
+                                    .background(Divider)
                             )
-                            Spacer(modifier = Modifier.height(4.dp))
-                            Text(
-                                text = "25 pág/h",
-                                style = MaterialTheme.typography.titleLarge.copy(
-                                    fontWeight = FontWeight.Bold,
-                                    fontSize = 20.sp
+
+                            Spacer(modifier = Modifier.width(24.dp))
+
+                            Column(modifier = Modifier.weight(1f)) {
+                                Text(
+                                    text = "Velocidade média",
+                                    style = MaterialTheme.typography.bodySmall.copy(
+                                        color = Muted,
+                                        fontWeight = FontWeight.Medium
+                                    )
                                 )
-                            )
+                                Spacer(modifier = Modifier.height(4.dp))
+                                Text(
+                                    text = "25 pág/h",
+                                    style = MaterialTheme.typography.titleLarge.copy(
+                                        fontWeight = FontWeight.Bold
+                                    )
+                                )
+                            }
                         }
                     }
-                }
 
-                Spacer(modifier = Modifier.height(32.dp))
+                    Spacer(modifier = Modifier.height(32.dp))
+                }
             }
         }
     }
