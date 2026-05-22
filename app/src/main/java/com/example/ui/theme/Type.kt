@@ -10,16 +10,16 @@ import androidx.compose.ui.text.googlefonts.GoogleFont
 import androidx.compose.ui.unit.sp
 import com.example.R
 
-val fontProvider = GoogleFont.Provider(
+private val fontProvider = GoogleFont.Provider(
     providerAuthority = "com.google.android.gms.fonts",
     providerPackage = "com.google.android.gms",
     certificates = R.array.com_google_android_gms_fonts_certs
 )
 
 // Serif editorial — origem: claude-design usa Literata.
-val LiterataFont = GoogleFont("Literata")
+private val LiterataFont = GoogleFont("Literata")
 // Sans para UI.
-val InterFont = GoogleFont("Inter")
+private val InterFont = GoogleFont("Inter")
 
 val LiterataFontFamily = FontFamily(
     Font(googleFont = LiterataFont, fontProvider = fontProvider, weight = FontWeight.Normal),
@@ -27,6 +27,7 @@ val LiterataFontFamily = FontFamily(
     Font(googleFont = LiterataFont, fontProvider = fontProvider, weight = FontWeight.SemiBold),
     Font(googleFont = LiterataFont, fontProvider = fontProvider, weight = FontWeight.Bold),
     Font(googleFont = LiterataFont, fontProvider = fontProvider, weight = FontWeight.Normal, style = FontStyle.Italic),
+    Font(googleFont = LiterataFont, fontProvider = fontProvider, weight = FontWeight.Medium, style = FontStyle.Italic),
     Font(googleFont = LiterataFont, fontProvider = fontProvider, weight = FontWeight.SemiBold, style = FontStyle.Italic),
 )
 
@@ -62,6 +63,10 @@ val Typography = Typography(
         fontFamily = LiterataFontFamily, fontWeight = FontWeight.SemiBold,
         fontSize = 19.sp, lineHeight = 24.sp, letterSpacing = (-0.3).sp,
     ),
+    headlineSmall = TextStyle(
+        fontFamily = LiterataFontFamily, fontWeight = FontWeight.SemiBold,
+        fontSize = 17.sp, lineHeight = 22.sp, letterSpacing = (-0.2).sp,
+    ),
     titleLarge = TextStyle(
         fontFamily = LiterataFontFamily, fontWeight = FontWeight.SemiBold,
         fontSize = 17.sp, lineHeight = 22.sp, letterSpacing = (-0.3).sp,
@@ -69,6 +74,10 @@ val Typography = Typography(
     titleMedium = TextStyle(
         fontFamily = LiterataFontFamily, fontWeight = FontWeight.SemiBold,
         fontSize = 15.sp, lineHeight = 20.sp, letterSpacing = (-0.2).sp,
+    ),
+    titleSmall = TextStyle(
+        fontFamily = LiterataFontFamily, fontWeight = FontWeight.Medium,
+        fontSize = 13.sp, lineHeight = 18.sp, letterSpacing = (-0.1).sp,
     ),
     bodyLarge = TextStyle(
         fontFamily = InterFontFamily, fontWeight = FontWeight.Normal,
