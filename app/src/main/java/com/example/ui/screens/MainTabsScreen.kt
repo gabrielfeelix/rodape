@@ -580,7 +580,7 @@ fun HomeScreenTab(
                         ) {
                             // Date Column
                             Column(
-                                modifier = Modifier.width(72.dp),
+                                modifier = Modifier.width(80.dp),
                                 horizontalAlignment = Alignment.CenterHorizontally
                             ) {
                                 Text(
@@ -589,7 +589,9 @@ fun HomeScreenTab(
                                         fontWeight = FontWeight.Bold,
                                         color = Cream.copy(alpha = 0.5f),
                                         letterSpacing = 0.5.sp
-                                    )
+                                    ),
+                                    maxLines = 1,
+                                    overflow = TextOverflow.Ellipsis
                                 )
                                 Spacer(modifier = Modifier.height(2.dp))
                                 Text(
@@ -608,7 +610,9 @@ fun HomeScreenTab(
                                     style = MaterialTheme.typography.bodySmall.copy(
                                         fontSize = 11.sp,
                                         color = Cream.copy(alpha = 0.4f)
-                                    )
+                                    ),
+                                    maxLines = 1,
+                                    overflow = TextOverflow.Ellipsis
                                 )
                             }
 
