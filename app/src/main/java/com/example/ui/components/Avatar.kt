@@ -36,19 +36,39 @@ private val avatarColors = listOf(
 
 /**
  * Avatares ilustrados — esquema "preset:<id>" no Book/User.avatarUrl.
- * Cada preset = drawable em res/drawable + cor de fundo do círculo.
+ *
+ * Cada preset declara seus próprios fatores visuais porque ilustrações têm
+ * proporções diferentes (busto compacto ~1:1 vs figura inteira ~1:2). O
+ * círculo de fundo sempre tem [size]; a ilustração escala/posiciona em cima.
+ *
+ * - [widthFactor]: largura da imagem relativa ao [size] do círculo (1.0 = mesma)
+ * - [heightFactor]: altura da imagem relativa ao [size] (pode ser >1 pra estourar)
+ * - [verticalOffsetFactor]: deslocamento vertical (negativo sobe, fração de [size])
  */
 private data class PresetAvatar(
     val drawableRes: Int,
     val bgColor: Color,
-    val displayName: String
+    val displayName: String,
+    val widthFactor: Float = 1.15f,
+    val heightFactor: Float = 1.30f,
+    val verticalOffsetFactor: Float = 0f
 )
 
 private val presetAvatars: Map<String, PresetAvatar> = mapOf(
     "preset:pequeno_principe" to PresetAvatar(
         drawableRes = R.drawable.avatar_pequeno_principe,
         bgColor = Color(0xFFE5EBDA), // OlivaSoft
-        displayName = "Pequeno Príncipe"
+        displayName = "Pequeno Príncipe",
+        widthFactor = 1.15f,
+        heightFactor = 1.30f
+    ),
+    "preset:don_quixote" to PresetAvatar(
+        drawableRes = R.drawable.avatar_don_quixote,
+        bgColor = Color(0xFFFBE5DA), // TerracotaSoft — combina com armadura/cavaleiro
+        displayName = "Don Quixote",
+        // Figura inteira ~1:1.7 — ocupa mais altura pra ver da cabeça até o meio do corpo
+        widthFactor = 1.30f,
+        heightFactor = 2.10f
     )
 )
 
@@ -112,17 +132,18 @@ private fun PresetAvatarView(
     ring: Color?,
     name: String
 ) {
-    // Box externo precisa ser maior que o círculo pra acomodar o "estouro" da ilustração.
-    // O círculo de fundo ocupa o tamanho [size], a ilustração ocupa size * 1.25 e fica
-    // ancorada na base — assim a parte de cima ultrapassa o círculo naturalmente.
-    val containerSize = size * 1.3f
+    // Container externo precisa caber o estouro da ilustração. Largura igual ao
+    // widthFactor, altura igual ao heightFactor — ambos relativos ao size do círculo.
+    val containerWidth = size * preset.widthFactor.coerceAtLeast(1f)
+    val containerHeight = size * preset.heightFactor.coerceAtLeast(1f)
     Box(
         modifier = modifier
-            .size(containerSize)
+            .width(containerWidth)
+            .height(containerHeight)
             .semantics { contentDescription = "Avatar de $name" },
         contentAlignment = Alignment.BottomCenter
     ) {
-        // Círculo de fundo (oliva soft), com ring opcional
+        // Círculo de fundo (preset.bgColor), com ring opcional
         val circleMod = Modifier
             .size(size)
             .align(Alignment.BottomCenter)
@@ -133,13 +154,14 @@ private fun PresetAvatarView(
             .background(preset.bgColor)
         Box(modifier = circleMod)
 
-        // Ilustração — sem clip, ancorada na base, "estoura" o círculo no topo
+        // Ilustração — sem clip, ancorada na base, ultrapassa o círculo no topo
         Image(
             painter = painterResource(id = preset.drawableRes),
             contentDescription = null,
             modifier = Modifier
-                .width(size * 1.15f)
-                .height(containerSize),
+                .width(size * preset.widthFactor)
+                .height(containerHeight)
+                .offset(y = size * preset.verticalOffsetFactor),
             contentScale = ContentScale.Fit
         )
     }

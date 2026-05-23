@@ -2266,9 +2266,16 @@ fun EditProfileView(
     var email by remember { mutableStateOf(initialEmail) }
     var avatarUrl by remember { mutableStateOf(initialAvatarUrl) }
 
-    // Avatares disponíveis: primeiro é ilustrado (Pequeno Príncipe via drawable),
-    // os outros 5 são iniciais coloridas (esquema antigo)
-    val presetNames = listOf("preset:pequeno_principe", "Marina", "Rafael", "Júlia", "Leo", "Helena")
+    // Avatares disponíveis: primeiros 2 são ilustrados (drawables);
+    // os outros 4 são iniciais coloridas (esquema antigo)
+    val presetNames = listOf(
+        "preset:pequeno_principe",
+        "preset:don_quixote",
+        "Rafael",
+        "Júlia",
+        "Leo",
+        "Helena"
+    )
 
     LazyColumn(
         modifier = Modifier
@@ -2333,22 +2340,31 @@ fun EditProfileView(
                 modifier = Modifier.fillMaxWidth()
             )
             Spacer(modifier = Modifier.height(10.dp))
+            // Altura fixa pra todas as células — comporta o avatar mais alto (Don Quixote 2.10x)
             Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceBetween
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(96.dp),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.Bottom
             ) {
                 presetNames.forEach { preset ->
                     val isSelected = avatarUrl == preset
                     val isIllustrated = preset.startsWith("preset:")
-                    // Avatares ilustrados precisam de container maior pro "estouro" do topo
-                    val cellSize = if (isIllustrated) 58.dp else 44.dp
+                    val displayLabel = when (preset) {
+                        "preset:pequeno_principe" -> "Pequeno Príncipe"
+                        "preset:don_quixote" -> "Don Quixote"
+                        else -> preset
+                    }
                     Box(
                         modifier = Modifier
-                            .size(cellSize)
-                            .clickable { avatarUrl = preset }
+                            .width(48.dp)
+                            .height(96.dp)
+                            .clickable { avatarUrl = preset },
+                        contentAlignment = Alignment.BottomCenter
                     ) {
                         Avatar(
-                            name = if (isIllustrated) "Pequeno Príncipe" else preset,
+                            name = displayLabel,
                             avatarUrl = if (isIllustrated) preset else "",
                             size = 44.dp,
                             ring = if (isSelected) Ink else null
