@@ -33,7 +33,8 @@ import com.example.ui.viewmodel.MainViewModel
 @Composable
 fun NextTabScreen(
     viewModel: MainViewModel,
-    onNavigateToSuggestBook: () -> Unit
+    onNavigateToSuggestBook: () -> Unit,
+    onNavigateToMeetingDetail: (String) -> Unit = {}
 ) {
     var subTab by remember { mutableStateOf("encontro") }
 
@@ -112,7 +113,7 @@ fun NextTabScreen(
                 .weight(1f)
         ) {
             when (subTab) {
-                "encontro" -> EncontroTab(viewModel = viewModel)
+                "encontro" -> EncontroTab(viewModel = viewModel, onNavigateToMeetingDetail = onNavigateToMeetingDetail)
                 "votacao" -> VotacaoTab(viewModel = viewModel, onNavigateToSuggestBook = onNavigateToSuggestBook)
             }
         }
@@ -121,10 +122,15 @@ fun NextTabScreen(
 
 // --- SUB-TAB 1: ENCONTRO ---
 @Composable
-fun EncontroTab(viewModel: MainViewModel) {
+fun EncontroTab(
+    viewModel: MainViewModel,
+    onNavigateToMeetingDetail: (String) -> Unit = {}
+) {
     val meeting by viewModel.latestMeeting.collectAsState()
     val rsvps by viewModel.latestMeetingRsvps.collectAsState()
     val members by viewModel.clubMembers.collectAsState()
+    val meetingsForBook by viewModel.meetingsForCurrentBook.collectAsState()
+    val currentBookTitle = viewModel.currentBook.collectAsState().value?.title
 
     var isConfirmadosExpanded by remember { mutableStateOf(true) }
     var isTalvezExpanded by remember { mutableStateOf(false) }
@@ -151,6 +157,98 @@ fun EncontroTab(viewModel: MainViewModel) {
                 .padding(horizontal = 24.dp),
             verticalArrangement = Arrangement.spacedBy(16.dp)
         ) {
+            // Cronograma do livro atual (se houver múltiplos encontros)
+            if (meetingsForBook.size > 1) {
+                item {
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(6.dp),
+                        modifier = Modifier.padding(top = 4.dp)
+                    ) {
+                        Box(modifier = Modifier.size(6.dp).background(Terracota, androidx.compose.foundation.shape.CircleShape))
+                        Text(
+                            text = "CRONOGRAMA · ${currentBookTitle ?: "—"}",
+                            style = MaterialTheme.typography.labelSmall.copy(
+                                fontWeight = FontWeight.Bold,
+                                color = Terracota,
+                                letterSpacing = 1.sp
+                            ),
+                            maxLines = 1,
+                            overflow = TextOverflow.Ellipsis
+                        )
+                    }
+                }
+                items(meetingsForBook, key = { it.id }) { m ->
+                    val concluded = m.status == "concluido"
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .clip(RoundedCornerShape(12.dp))
+                            .background(if (concluded) DividerSoft.copy(alpha = 0.3f) else Cream)
+                            .border(0.5.dp, Divider, RoundedCornerShape(12.dp))
+                            .clickable { onNavigateToMeetingDetail(m.id) }
+                            .padding(12.dp),
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(12.dp)
+                    ) {
+                        Box(
+                            modifier = Modifier
+                                .size(40.dp)
+                                .clip(RoundedCornerShape(10.dp))
+                                .background(
+                                    if (concluded) Muted.copy(alpha = 0.2f)
+                                    else Terracota.copy(alpha = 0.12f)
+                                ),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            val dayNum = m.data
+                                .substringAfter(",", "")
+                                .trim()
+                                .takeWhile { it.isDigit() }
+                                .ifEmpty { m.data.trim().takeWhile { it.isDigit() }.ifEmpty { "—" } }
+                            Text(
+                                text = dayNum,
+                                style = MaterialTheme.typography.bodyLarge.copy(
+                                    fontWeight = FontWeight.Bold,
+                                    color = if (concluded) Muted else Terracota,
+                                    fontFamily = LiterataFontFamily
+                                )
+                            )
+                        }
+                        Column(modifier = Modifier.weight(1f)) {
+                            Row(
+                                verticalAlignment = Alignment.CenterVertically,
+                                horizontalArrangement = Arrangement.spacedBy(6.dp)
+                            ) {
+                                Text(
+                                    text = m.data,
+                                    style = MaterialTheme.typography.bodyMedium.copy(
+                                        fontFamily = LiterataFontFamily,
+                                        color = if (concluded) Muted else Ink
+                                    ),
+                                    maxLines = 1,
+                                    overflow = TextOverflow.Ellipsis,
+                                    modifier = Modifier.weight(1f, fill = false)
+                                )
+                                if (concluded) {
+                                    Pill(text = "Concluído", variant = PillVariant.Olive)
+                                }
+                            }
+                            if (m.chapterStart != null && m.chapterEnd != null) {
+                                Text(
+                                    text = "📖 Caps ${m.chapterStart}–${m.chapterEnd}",
+                                    style = MaterialTheme.typography.labelSmall.copy(
+                                        color = if (concluded) Muted else Terracota,
+                                        fontWeight = FontWeight.SemiBold
+                                    )
+                                )
+                            }
+                        }
+                    }
+                }
+                item { Spacer(modifier = Modifier.height(4.dp)) }
+            }
+
             item {
                 // Meeting header card with olive gradient
                 TramabookCard(contentPadding = PaddingValues(0.dp)) {

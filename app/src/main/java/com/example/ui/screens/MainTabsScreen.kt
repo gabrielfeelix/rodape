@@ -85,6 +85,7 @@ fun MainTabsScreen(
     onNavigateToBookDetail: (String) -> Unit = {},
     onNavigateToFrases: () -> Unit = {},
     onNavigateToManageClub: () -> Unit = {},
+    onNavigateToMeetingDetail: (String) -> Unit = {},
 ) {
     var selectedTab by remember { mutableStateOf("home") }
     // Observa pedidos externos de troca de tab (ex: notificações navegando)
@@ -218,7 +219,8 @@ fun MainTabsScreen(
                 )
                 "next" -> NextTabScreen(
                     viewModel = viewModel,
-                    onNavigateToSuggestBook = onNavigateToSuggestBook
+                    onNavigateToSuggestBook = onNavigateToSuggestBook,
+                    onNavigateToMeetingDetail = onNavigateToMeetingDetail
                 )
                 "shelf" -> ShelfTabScreen(
                     viewModel = viewModel,

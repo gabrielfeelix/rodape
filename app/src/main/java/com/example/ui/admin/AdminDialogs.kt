@@ -414,53 +414,156 @@ fun EditSingleMeetingDialog(
     initialHora: String,
     initialLocal: String,
     initialAgenda: String,
+    initialBookId: String?,
+    initialChapterStart: Int?,
+    initialChapterEnd: Int?,
+    currentBookId: String?,
+    currentBookTitle: String?,
+    totalChapters: Int,
     onDismiss: () -> Unit,
-    onSave: (String, String, String, String) -> Unit
+    onSave: (
+        data: String,
+        hora: String,
+        local: String,
+        agenda: String,
+        bookId: String?,
+        chapterStart: Int?,
+        chapterEnd: Int?
+    ) -> Unit
 ) {
     var data by remember { mutableStateOf(initialData) }
     var hora by remember { mutableStateOf(initialHora) }
     var local by remember { mutableStateOf(initialLocal) }
     var agenda by remember { mutableStateOf(initialAgenda) }
+    // "vincular ao livro atual?" — true se já está vinculado OU se tem livro atual e usuário não desmarcou
+    var linkedToCurrentBook by remember { mutableStateOf(initialBookId != null || (currentBookId != null && initialBookId == null && initialChapterStart == null)) }
+    var chapterStart by remember { mutableStateOf(initialChapterStart ?: 1) }
+    var chapterEnd by remember { mutableStateOf(initialChapterEnd ?: totalChapters.coerceAtLeast(1)) }
 
     AlertDialog(
         containerColor = MaterialTheme.colorScheme.surface,
         onDismissRequest = onDismiss,
         title = { Text("Encontro") },
         text = {
-            Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
-                OutlinedTextField(
-                    value = data,
-                    onValueChange = { data = it },
-                    label = { Text("Data (ex: DOMINGO, 24 DE OUTUBRO)") },
-                    singleLine = true,
-                    modifier = Modifier.fillMaxWidth()
-                )
-                OutlinedTextField(
-                    value = hora,
-                    onValueChange = { hora = it.take(12) },
-                    label = { Text("Hora (ex: 19:00 — 21:00)") },
-                    singleLine = true,
-                    modifier = Modifier.fillMaxWidth()
-                )
-                OutlinedTextField(
-                    value = local,
-                    onValueChange = { local = it },
-                    label = { Text("Local") },
-                    singleLine = true,
-                    modifier = Modifier.fillMaxWidth()
-                )
-                OutlinedTextField(
-                    value = agenda,
-                    onValueChange = { if (it.length <= 280) agenda = it },
-                    label = { Text("Agenda") },
-                    minLines = 2,
-                    modifier = Modifier.fillMaxWidth()
-                )
+            androidx.compose.foundation.lazy.LazyColumn(
+                verticalArrangement = Arrangement.spacedBy(12.dp),
+                modifier = Modifier.fillMaxWidth()
+            ) {
+                item {
+                    OutlinedTextField(
+                        value = data,
+                        onValueChange = { data = it },
+                        label = { Text("Data (ex: DOMINGO, 24 DE OUTUBRO)") },
+                        singleLine = true,
+                        modifier = Modifier.fillMaxWidth()
+                    )
+                }
+                item {
+                    OutlinedTextField(
+                        value = hora,
+                        onValueChange = { hora = it.take(12) },
+                        label = { Text("Hora (ex: 19:00 — 21:00)") },
+                        singleLine = true,
+                        modifier = Modifier.fillMaxWidth()
+                    )
+                }
+                item {
+                    OutlinedTextField(
+                        value = local,
+                        onValueChange = { local = it },
+                        label = { Text("Local") },
+                        singleLine = true,
+                        modifier = Modifier.fillMaxWidth()
+                    )
+                }
+                item {
+                    OutlinedTextField(
+                        value = agenda,
+                        onValueChange = { if (it.length <= 280) agenda = it },
+                        label = { Text("Agenda") },
+                        minLines = 2,
+                        modifier = Modifier.fillMaxWidth()
+                    )
+                }
+
+                // ── Vincular ao livro atual? ──
+                if (currentBookId != null) {
+                    item {
+                        Row(
+                            verticalAlignment = Alignment.CenterVertically,
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .clickable { linkedToCurrentBook = !linkedToCurrentBook }
+                                .padding(vertical = 4.dp)
+                        ) {
+                            Checkbox(
+                                checked = linkedToCurrentBook,
+                                onCheckedChange = { linkedToCurrentBook = it }
+                            )
+                            Column {
+                                Text(
+                                    "Discutir o livro atual",
+                                    style = MaterialTheme.typography.bodyMedium.copy(fontWeight = FontWeight.SemiBold)
+                                )
+                                Text(
+                                    "📖 ${currentBookTitle ?: "—"}",
+                                    style = MaterialTheme.typography.bodySmall.copy(color = Muted)
+                                )
+                            }
+                        }
+                    }
+
+                    if (linkedToCurrentBook && totalChapters > 0) {
+                        item {
+                            Text(
+                                "Capítulos deste encontro",
+                                style = MaterialTheme.typography.bodyMedium.copy(fontWeight = FontWeight.SemiBold)
+                            )
+                            Row(
+                                verticalAlignment = Alignment.CenterVertically,
+                                horizontalArrangement = Arrangement.spacedBy(8.dp)
+                            ) {
+                                OutlinedTextField(
+                                    value = chapterStart.toString(),
+                                    onValueChange = { txt ->
+                                        if (txt.isBlank()) chapterStart = 1
+                                        else txt.toIntOrNull()?.let { if (it in 1..totalChapters) chapterStart = it }
+                                    },
+                                    label = { Text("Do cap.") },
+                                    singleLine = true,
+                                    modifier = Modifier.weight(1f)
+                                )
+                                Text("até", style = MaterialTheme.typography.bodyMedium)
+                                OutlinedTextField(
+                                    value = chapterEnd.toString(),
+                                    onValueChange = { txt ->
+                                        if (txt.isBlank()) chapterEnd = chapterStart
+                                        else txt.toIntOrNull()?.let { if (it in 1..totalChapters) chapterEnd = it }
+                                    },
+                                    label = { Text("o cap.") },
+                                    singleLine = true,
+                                    modifier = Modifier.weight(1f)
+                                )
+                            }
+                            Text(
+                                "Total de capítulos no livro: $totalChapters",
+                                style = MaterialTheme.typography.labelSmall.copy(color = Muted)
+                            )
+                        }
+                    }
+                }
             }
         },
         confirmButton = {
             TextButton(
-                onClick = { onSave(data, hora, local, agenda) },
+                onClick = {
+                    val effectiveStart = if (linkedToCurrentBook && currentBookId != null) chapterStart else null
+                    val effectiveEnd = if (linkedToCurrentBook && currentBookId != null) {
+                        chapterEnd.coerceAtLeast(chapterStart)
+                    } else null
+                    val effectiveBookId = if (linkedToCurrentBook) currentBookId else null
+                    onSave(data, hora, local, agenda, effectiveBookId, effectiveStart, effectiveEnd)
+                },
                 enabled = data.trim().isNotEmpty() && hora.trim().isNotEmpty()
             ) { Text("Salvar", color = Oliva, fontWeight = FontWeight.SemiBold) }
         },

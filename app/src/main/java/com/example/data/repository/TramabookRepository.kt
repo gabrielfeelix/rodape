@@ -152,6 +152,26 @@ class TramabookRepository(private val dao: TramabookDao) {
     suspend fun deleteBookSuggestion(bookId: String, clubId: String) = dao.deleteBookSuggestion(bookId, clubId)
     suspend fun deleteVotesForBook(bookId: String) = dao.deleteVotesForBook(bookId)
 
+    // --- Meetings (Fase 6) ---
+    suspend fun getMeetingById(meetingId: String): Meeting? = dao.getMeetingById(meetingId)
+    fun getMeetingByIdFlow(meetingId: String): Flow<Meeting?> = dao.getMeetingByIdFlow(meetingId)
+    fun getMeetingsForBookFlow(clubId: String, bookId: String): Flow<List<Meeting>> =
+        dao.getMeetingsForBookFlow(clubId, bookId)
+    suspend fun getMeetingsForBookList(clubId: String, bookId: String): List<Meeting> =
+        dao.getMeetingsForBookList(clubId, bookId)
+    fun getScheduledMeetingsForClubFlow(clubId: String): Flow<List<Meeting>> =
+        dao.getScheduledMeetingsForClubFlow(clubId)
+    suspend fun updateMeetingStatus(meetingId: String, status: String) =
+        dao.updateMeetingStatus(meetingId, status)
+
+    suspend fun insertMeetingMinutes(minutes: MeetingMinutes) = dao.insertMeetingMinutes(minutes)
+    fun getMeetingMinutesFlow(meetingId: String): Flow<MeetingMinutes?> =
+        dao.getMeetingMinutesFlow(meetingId)
+
+    suspend fun insertMeetingNote(note: MeetingNote) = dao.insertMeetingNote(note)
+    fun getMeetingNoteFlow(meetingId: String, userId: String): Flow<MeetingNote?> =
+        dao.getMeetingNoteFlow(meetingId, userId)
+
     suspend fun seedDatabase() {
         // Only seed if no clubs exist
         val list = dao.getClubsForUserList("user_voce")
@@ -292,9 +312,28 @@ class TramabookRepository(private val dao: TramabookDao) {
             data = "DOMINGO, 24 DE OUTUBRO",
             hora = "19:00 — 21:00",
             local = "Café Lispector, Vila Madalena",
-            agenda = "Discussão: A Hora da Estrela"
+            agenda = "Discussão: A Hora da Estrela",
+            bookId = "book_metamorfose",
+            chapterStart = 1,
+            chapterEnd = 7,
+            status = "agendado"
         )
         dao.insertMeeting(meeting)
+        // Segundo encontro: caps 8-13 (final do livro)
+        dao.insertMeeting(
+            Meeting(
+                id = "meet_2",
+                clubId = "club_mari",
+                data = "DOMINGO, 7 DE NOVEMBRO",
+                hora = "19:00 — 21:00",
+                local = "Café Lispector, Vila Madalena",
+                agenda = "Discussão: A Hora da Estrela — parte final",
+                bookId = "book_metamorfose",
+                chapterStart = 8,
+                chapterEnd = 13,
+                status = "agendado"
+            )
+        )
 
         dao.insertMeetingRsvp(MeetingRsvp("meet_1", "user_marina", "Vou"))
         dao.insertMeetingRsvp(MeetingRsvp("meet_1", "user_lucas", "Vou"))

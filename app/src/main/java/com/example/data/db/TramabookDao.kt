@@ -310,4 +310,37 @@ interface TramabookDao {
 
     @Query("DELETE FROM votes WHERE clubBookId = :bookId")
     suspend fun deleteVotesForBook(bookId: String)
+
+    // --- Meetings (Fase 6 — múltiplos por livro) ---
+    @Query("SELECT * FROM meetings WHERE id = :meetingId LIMIT 1")
+    suspend fun getMeetingById(meetingId: String): Meeting?
+
+    @Query("SELECT * FROM meetings WHERE id = :meetingId LIMIT 1")
+    fun getMeetingByIdFlow(meetingId: String): Flow<Meeting?>
+
+    @Query("SELECT * FROM meetings WHERE clubId = :clubId AND bookId = :bookId ORDER BY id ASC")
+    fun getMeetingsForBookFlow(clubId: String, bookId: String): Flow<List<Meeting>>
+
+    @Query("SELECT * FROM meetings WHERE clubId = :clubId AND bookId = :bookId")
+    suspend fun getMeetingsForBookList(clubId: String, bookId: String): List<Meeting>
+
+    @Query("SELECT * FROM meetings WHERE clubId = :clubId AND status = 'agendado' ORDER BY id ASC")
+    fun getScheduledMeetingsForClubFlow(clubId: String): Flow<List<Meeting>>
+
+    @Query("UPDATE meetings SET status = :status WHERE id = :meetingId")
+    suspend fun updateMeetingStatus(meetingId: String, status: String)
+
+    // --- Meeting minutes (ata) ---
+    @Insert(onConflict = OnConflictStrategy.REPLACE)
+    suspend fun insertMeetingMinutes(minutes: MeetingMinutes)
+
+    @Query("SELECT * FROM meeting_minutes WHERE meetingId = :meetingId LIMIT 1")
+    fun getMeetingMinutesFlow(meetingId: String): Flow<MeetingMinutes?>
+
+    // --- Meeting notes (privadas) ---
+    @Insert(onConflict = OnConflictStrategy.REPLACE)
+    suspend fun insertMeetingNote(note: MeetingNote)
+
+    @Query("SELECT * FROM meeting_notes WHERE meetingId = :meetingId AND userId = :userId LIMIT 1")
+    fun getMeetingNoteFlow(meetingId: String, userId: String): Flow<MeetingNote?>
 }

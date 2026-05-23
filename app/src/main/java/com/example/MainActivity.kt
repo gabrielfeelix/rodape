@@ -111,7 +111,17 @@ class MainActivity : ComponentActivity() {
                             },
                             onNavigateToBookDetail = { bookId -> navController.navigate("book_detail/$bookId") },
                             onNavigateToFrases = { navController.navigate("frases") },
-                            onNavigateToManageClub = { navController.navigate("manage_club") }
+                            onNavigateToManageClub = { navController.navigate("manage_club") },
+                            onNavigateToMeetingDetail = { mid -> navController.navigate("meeting_detail/$mid") }
+                        )
+                    }
+
+                    composable("meeting_detail/{meetingId}") { backStackEntry ->
+                        val mid = backStackEntry.arguments?.getString("meetingId") ?: ""
+                        MeetingDetailScreen(
+                            viewModel = viewModel,
+                            meetingId = mid,
+                            onNavigateBack = { navController.popBackStack() }
                         )
                     }
 

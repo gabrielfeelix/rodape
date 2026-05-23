@@ -286,7 +286,10 @@ fun ManageClubScreen(
                         modifier = Modifier.fillMaxWidth()
                     )
 
-                    // ── Próximo encontro ─────────────────────────────────
+                    // ── Encontros do livro atual ─────────────────────────
+                    val meetingsBook by viewModel.meetingsForCurrentBook.collectAsState()
+                    val scheduledMeetings by viewModel.scheduledMeetingsInActiveClub.collectAsState()
+
                     Spacer(modifier = Modifier.height(20.dp))
                     Row(
                         verticalAlignment = Alignment.CenterVertically,
@@ -299,7 +302,7 @@ fun ManageClubScreen(
                             modifier = Modifier.size(16.dp)
                         )
                         Text(
-                            text = "PRÓXIMO ENCONTRO",
+                            text = if (meetingsBook.isNotEmpty()) "ENCONTROS DESTE LIVRO" else "PRÓXIMOS ENCONTROS",
                             style = MaterialTheme.typography.labelSmall.copy(
                                 fontWeight = FontWeight.Bold,
                                 color = Terracota,
@@ -308,78 +311,11 @@ fun ManageClubScreen(
                         )
                     }
                     Spacer(modifier = Modifier.height(8.dp))
-                    if (meeting != null) {
-                        val m = meeting!!
-                        Row(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .clip(RoundedCornerShape(14.dp))
-                                .background(Cream)
-                                .border(0.5.dp, Divider, RoundedCornerShape(14.dp))
-                                .padding(14.dp),
-                            verticalAlignment = Alignment.CenterVertically,
-                            horizontalArrangement = Arrangement.spacedBy(14.dp)
-                        ) {
-                            Box(
-                                modifier = Modifier
-                                    .size(56.dp)
-                                    .clip(RoundedCornerShape(12.dp))
-                                    .background(Terracota.copy(alpha = 0.12f)),
-                                contentAlignment = Alignment.Center
-                            ) {
-                                val dayNumber = m.data
-                                    .substringAfter(",", "")
-                                    .trim()
-                                    .takeWhile { it.isDigit() }
-                                    .ifEmpty { m.data.trim().takeWhile { it.isDigit() }.ifEmpty { "—" } }
-                                Text(
-                                    text = dayNumber,
-                                    style = MaterialTheme.typography.displayMedium.copy(
-                                        fontSize = 22.sp,
-                                        fontWeight = FontWeight.Bold,
-                                        color = Terracota,
-                                        fontFamily = LiterataFontFamily
-                                    )
-                                )
-                            }
-                            Column(modifier = Modifier.weight(1f)) {
-                                Text(
-                                    text = m.data,
-                                    style = MaterialTheme.typography.bodyMedium.copy(
-                                        fontFamily = LiterataFontFamily,
-                                        fontWeight = FontWeight.SemiBold,
-                                        color = Ink
-                                    ),
-                                    maxLines = 2,
-                                    overflow = TextOverflow.Ellipsis
-                                )
-                                Text(text = m.hora, style = MaterialTheme.typography.bodySmall.copy(color = Muted))
-                                Text(
-                                    text = "📍 ${m.local}",
-                                    style = MaterialTheme.typography.bodySmall.copy(color = Muted),
-                                    maxLines = 1,
-                                    overflow = TextOverflow.Ellipsis
-                                )
-                            }
-                        }
-                        Spacer(modifier = Modifier.height(8.dp))
-                        Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                            TbButton(
-                                text = "Editar",
-                                onClick = { editingMeetingId = m.id },
-                                variant = TbButtonVariant.Outline,
-                                size = TbButtonSize.Sm,
-                                modifier = Modifier.weight(1f)
-                            )
-                            TbButton(
-                                text = "Cancelar",
-                                onClick = { cancelMeetingId = m.id },
-                                variant = TbButtonVariant.Outline,
-                                size = TbButtonSize.Sm,
-                                modifier = Modifier.weight(1f)
-                            )
-                        }
-                    } else {
+
+                    // Mostra encontros do livro atual (se houver) OU encontros avulsos agendados (fallback)
+                    val displayList = if (meetingsBook.isNotEmpty()) meetingsBook
+                        else scheduledMeetings.filter { it.bookId == null }
+                    if (displayList.isEmpty()) {
                         Column(
                             modifier = Modifier
                                 .fillMaxWidth()
@@ -400,23 +336,26 @@ fun ManageClubScreen(
                                 style = MaterialTheme.typography.bodyMedium.copy(color = Muted)
                             )
                         }
+                    } else {
+                        Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                            displayList.forEach { m ->
+                                MeetingRow(
+                                    meeting = m,
+                                    onEdit = { editingMeetingId = m.id },
+                                    onCancel = { cancelMeetingId = m.id },
+                                    onConclude = { viewModel.concludeMeeting(m.id) }
+                                )
+                            }
+                        }
                     }
                     Spacer(modifier = Modifier.height(8.dp))
-                    Row(horizontalArrangement = Arrangement.spacedBy(8.dp), modifier = Modifier.fillMaxWidth()) {
-                        Icon(
-                            imageVector = Icons.Outlined.Add,
-                            contentDescription = null,
-                            tint = Terracota,
-                            modifier = Modifier.size(18.dp).align(Alignment.CenterVertically)
-                        )
-                        TbButton(
-                            text = "Encontro avulso",
-                            onClick = { creatingNewMeeting = true },
-                            variant = TbButtonVariant.Outline,
-                            size = TbButtonSize.Sm,
-                            modifier = Modifier.weight(1f)
-                        )
-                    }
+                    TbButton(
+                        text = "+ Novo encontro",
+                        onClick = { creatingNewMeeting = true },
+                        variant = TbButtonVariant.Outline,
+                        size = TbButtonSize.Sm,
+                        modifier = Modifier.fillMaxWidth()
+                    )
                 }
             }
 
@@ -675,29 +614,51 @@ fun ManageClubScreen(
         )
     }
 
-    if (editingMeetingId != null && meeting != null) {
-        EditSingleMeetingDialog(
-            initialData = meeting!!.data,
-            initialHora = meeting!!.hora,
-            initialLocal = meeting!!.local,
-            initialAgenda = meeting!!.agenda,
-            onDismiss = { editingMeetingId = null },
-            onSave = { d, h, l, a ->
-                viewModel.upsertMeeting(meeting!!.id, d, h, l, a)
-                editingMeetingId = null
-            }
-        )
+    if (editingMeetingId != null) {
+        val meetingsBook by viewModel.meetingsForCurrentBook.collectAsState()
+        val scheduled by viewModel.scheduledMeetingsInActiveClub.collectAsState()
+        val editing = meetingsBook.find { it.id == editingMeetingId } ?: scheduled.find { it.id == editingMeetingId }
+        if (editing != null) {
+            EditSingleMeetingDialog(
+                initialData = editing.data,
+                initialHora = editing.hora,
+                initialLocal = editing.local,
+                initialAgenda = editing.agenda,
+                initialBookId = editing.bookId,
+                initialChapterStart = editing.chapterStart,
+                initialChapterEnd = editing.chapterEnd,
+                currentBookId = currentBook?.id,
+                currentBookTitle = currentBook?.title,
+                totalChapters = chapters.size,
+                onDismiss = { editingMeetingId = null },
+                onSave = { d, h, l, a, bId, cs, ce ->
+                    viewModel.upsertMeeting(editing.id, d, h, l, a, bId, cs, ce)
+                    editingMeetingId = null
+                }
+            )
+        }
     }
 
     if (creatingNewMeeting) {
+        // Sugestão automática de caps pro próximo encontro
+        var suggested by remember { mutableStateOf<Pair<Int, Int>?>(null) }
+        LaunchedEffect(Unit) {
+            suggested = viewModel.suggestNextChapterRange()
+        }
         EditSingleMeetingDialog(
             initialData = "",
-            initialHora = "",
+            initialHora = pattern?.hora ?: "",
             initialLocal = pattern?.local ?: "",
             initialAgenda = pattern?.agendaTemplate ?: "",
+            initialBookId = currentBook?.id,
+            initialChapterStart = suggested?.first ?: 1,
+            initialChapterEnd = suggested?.second ?: chapters.size.coerceAtLeast(1),
+            currentBookId = currentBook?.id,
+            currentBookTitle = currentBook?.title,
+            totalChapters = chapters.size,
             onDismiss = { creatingNewMeeting = false },
-            onSave = { d, h, l, a ->
-                viewModel.upsertMeeting(null, d, h, l, a)
+            onSave = { d, h, l, a, bId, cs, ce ->
+                viewModel.upsertMeeting(null, d, h, l, a, bId, cs, ce)
                 creatingNewMeeting = false
             }
         )
@@ -850,6 +811,115 @@ private fun ChangeCurrentBookDialog(
             TextButton(onClick = onDismiss) { Text("Fechar", color = Muted) }
         }
     )
+}
+
+@Composable
+private fun MeetingRow(
+    meeting: com.example.data.model.Meeting,
+    onEdit: () -> Unit,
+    onCancel: () -> Unit,
+    onConclude: () -> Unit
+) {
+    val concluded = meeting.status == "concluido"
+    Column(
+        modifier = Modifier
+            .fillMaxWidth()
+            .clip(RoundedCornerShape(14.dp))
+            .background(if (concluded) DividerSoft.copy(alpha = 0.3f) else Cream)
+            .border(0.5.dp, Divider, RoundedCornerShape(14.dp))
+            .padding(14.dp),
+        verticalArrangement = Arrangement.spacedBy(8.dp)
+    ) {
+        Row(
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(14.dp)
+        ) {
+            Box(
+                modifier = Modifier
+                    .size(56.dp)
+                    .clip(RoundedCornerShape(12.dp))
+                    .background(
+                        if (concluded) Muted.copy(alpha = 0.15f)
+                        else Terracota.copy(alpha = 0.12f)
+                    ),
+                contentAlignment = Alignment.Center
+            ) {
+                val dayNumber = meeting.data
+                    .substringAfter(",", "")
+                    .trim()
+                    .takeWhile { it.isDigit() }
+                    .ifEmpty { meeting.data.trim().takeWhile { it.isDigit() }.ifEmpty { "—" } }
+                Text(
+                    text = dayNumber,
+                    style = MaterialTheme.typography.displayMedium.copy(
+                        fontSize = 22.sp,
+                        fontWeight = FontWeight.Bold,
+                        color = if (concluded) Muted else Terracota,
+                        fontFamily = LiterataFontFamily
+                    )
+                )
+            }
+            Column(modifier = Modifier.weight(1f)) {
+                Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+                    Text(
+                        text = meeting.data,
+                        style = MaterialTheme.typography.bodyMedium.copy(
+                            fontFamily = LiterataFontFamily,
+                            fontWeight = FontWeight.SemiBold,
+                            color = if (concluded) Muted else Ink
+                        ),
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis,
+                        modifier = Modifier.weight(1f, fill = false)
+                    )
+                    if (concluded) {
+                        com.example.ui.components.Pill(text = "Concluído", variant = com.example.ui.components.PillVariant.Olive)
+                    }
+                }
+                Text(text = meeting.hora, style = MaterialTheme.typography.bodySmall.copy(color = Muted))
+                if (meeting.chapterStart != null && meeting.chapterEnd != null) {
+                    Text(
+                        text = "📖 Caps ${meeting.chapterStart}–${meeting.chapterEnd}",
+                        style = MaterialTheme.typography.labelSmall.copy(
+                            color = Terracota,
+                            fontWeight = FontWeight.SemiBold
+                        )
+                    )
+                }
+                Text(
+                    text = "📍 ${meeting.local}",
+                    style = MaterialTheme.typography.bodySmall.copy(color = Muted),
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis
+                )
+            }
+        }
+        if (!concluded) {
+            Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+                TbButton(
+                    text = "Editar",
+                    onClick = onEdit,
+                    variant = TbButtonVariant.Outline,
+                    size = TbButtonSize.Sm,
+                    modifier = Modifier.weight(1f)
+                )
+                TbButton(
+                    text = "Cancelar",
+                    onClick = onCancel,
+                    variant = TbButtonVariant.Outline,
+                    size = TbButtonSize.Sm,
+                    modifier = Modifier.weight(1f)
+                )
+                TbButton(
+                    text = "Concluir",
+                    onClick = onConclude,
+                    variant = TbButtonVariant.Terra,
+                    size = TbButtonSize.Sm,
+                    modifier = Modifier.weight(1f)
+                )
+            }
+        }
+    }
 }
 
 private fun recurrenceShortLabel(tipo: String): String = when (tipo) {

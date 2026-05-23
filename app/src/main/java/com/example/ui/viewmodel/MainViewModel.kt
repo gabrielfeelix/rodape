@@ -348,7 +348,11 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
             data = "Próxima semana",
             hora = "20h",
             local = "Online / Discussão por chamada",
-            agenda = "Conectar, bater papo e discutir capítulo 1\nEscolher as metas de leitura"
+            agenda = "Conectar, bater papo e discutir capítulo 1\nEscolher as metas de leitura",
+            bookId = null,
+            chapterStart = null,
+            chapterEnd = null,
+            status = "agendado"
         )
         repository.insertMeeting(meet)
     }
@@ -926,11 +930,22 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
         }
     }
 
-    fun upsertMeeting(meetingId: String?, data: String, hora: String, local: String, agenda: String) {
+    fun upsertMeeting(
+        meetingId: String?,
+        data: String,
+        hora: String,
+        local: String,
+        agenda: String,
+        bookId: String? = null,
+        chapterStart: Int? = null,
+        chapterEnd: Int? = null
+    ) {
         viewModelScope.launch {
             val clubId = activeClubId.value ?: return@launch
             if (currentUserPapel.value !in setOf("admin", "super_admin")) return@launch
             val id = meetingId ?: "meet_${UUID.randomUUID().toString().take(8)}"
+            // Preserva status atual se já existe, senão "agendado"
+            val existing = repository.getMeetingById(id)
             repository.insertMeeting(
                 Meeting(
                     id = id,
@@ -938,7 +953,11 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
                     data = data,
                     hora = hora,
                     local = local,
-                    agenda = agenda
+                    agenda = agenda,
+                    bookId = bookId,
+                    chapterStart = chapterStart,
+                    chapterEnd = chapterEnd,
+                    status = existing?.status ?: "agendado"
                 )
             )
         }
@@ -1105,5 +1124,128 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
                 onResult(com.example.voting.ChapterFetchResult.Failed)
             }
         }
+    }
+
+    // ============================================================
+    // Múltiplos encontros por livro (Fase 6)
+    // ============================================================
+
+    /**
+     * Encontros agendados ou concluídos do livro atual do clube ativo, ordenados.
+     */
+    val meetingsForCurrentBook: StateFlow<List<Meeting>> =
+        combine(activeClubId, currentBook) { clubId, book -> Pair(clubId, book) }
+            .flatMapLatest { (clubId, book) ->
+                if (clubId != null && book != null) repository.getMeetingsForBookFlow(clubId, book.id)
+                else flowOf(emptyList())
+            }
+            .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
+
+    /**
+     * Todos os encontros agendados (status = "agendado") do clube ativo.
+     */
+    val scheduledMeetingsInActiveClub: StateFlow<List<Meeting>> = activeClubId.flatMapLatest { clubId ->
+        if (clubId != null) repository.getScheduledMeetingsForClubFlow(clubId) else flowOf(emptyList())
+    }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
+
+    fun getMeetingByIdFlow(meetingId: String): Flow<Meeting?> = repository.getMeetingByIdFlow(meetingId)
+
+    fun getMeetingMinutesFlow(meetingId: String): Flow<MeetingMinutes?> =
+        repository.getMeetingMinutesFlow(meetingId)
+
+    fun getMyMeetingNoteFlow(meetingId: String): Flow<MeetingNote?> = currentUserId.flatMapLatest { uid ->
+        if (uid != null) repository.getMeetingNoteFlow(meetingId, uid) else flowOf(null)
+    }
+
+    fun saveMeetingMinutes(meetingId: String, texto: String) {
+        viewModelScope.launch {
+            val uid = currentUserId.value ?: return@launch
+            if (currentUserPapel.value !in setOf("admin", "super_admin")) return@launch
+            if (texto.isBlank()) return@launch
+            repository.insertMeetingMinutes(
+                MeetingMinutes(
+                    meetingId = meetingId,
+                    texto = texto.trim(),
+                    lastEditorId = uid,
+                    updatedAt = System.currentTimeMillis()
+                )
+            )
+        }
+    }
+
+    fun saveMyMeetingNote(meetingId: String, texto: String) {
+        viewModelScope.launch {
+            val uid = currentUserId.value ?: return@launch
+            repository.insertMeetingNote(
+                MeetingNote(
+                    meetingId = meetingId,
+                    userId = uid,
+                    texto = texto.trim(),
+                    updatedAt = System.currentTimeMillis()
+                )
+            )
+        }
+    }
+
+    /**
+     * Marca encontro como concluído. Se for o último agendado do livro atual,
+     * promove o livro a finished automaticamente.
+     */
+    fun concludeMeeting(meetingId: String) {
+        viewModelScope.launch {
+            val clubId = activeClubId.value ?: return@launch
+            if (currentUserPapel.value !in setOf("admin", "super_admin")) return@launch
+            val meeting = repository.getMeetingById(meetingId) ?: return@launch
+            repository.updateMeetingStatus(meetingId, "concluido")
+
+            // Se o encontro está vinculado a um livro, verificar se ainda há encontros agendados
+            val bookId = meeting.bookId ?: return@launch
+            val remaining = repository.getMeetingsForBookList(clubId, bookId)
+                .filter { it.id != meetingId && it.status == "agendado" }
+            if (remaining.isEmpty()) {
+                // Promover livro a finished
+                val currentList = repository.getBookByStatusFlow(clubId, "current").first()
+                val isCurrentBook = currentList.any { it.id == bookId }
+                if (isCurrentBook) {
+                    repository.updateClubBookStatus(clubId, bookId, "finished")
+                    repository.updateClubBookMeetingDate(clubId, bookId, System.currentTimeMillis())
+                    // Notificar membros
+                    val members = repository.getClubMembersFlow(clubId).first()
+                    val book = repository.getBook(bookId)
+                    val titleEsc = (book?.title ?: "").replace("\\", "\\\\").replace("\"", "\\\"")
+                    members.forEach { m ->
+                        repository.insertNotification(
+                            DbNotification(
+                                id = "ntf_${UUID.randomUUID()}",
+                                userId = m.id,
+                                clubId = clubId,
+                                tipo = "book_finished",
+                                payloadJson = "{\"bookTitle\":\"$titleEsc\"}",
+                                lida = false,
+                                criadoEm = System.currentTimeMillis()
+                            )
+                        )
+                    }
+                }
+            }
+        }
+    }
+
+    /**
+     * Sugestão automática de range de capítulos pro próximo encontro do livro atual.
+     * Retorna par (start, end) baseado nos encontros já agendados.
+     */
+    suspend fun suggestNextChapterRange(): Pair<Int, Int>? {
+        val clubId = activeClubId.value ?: return null
+        val book = currentBook.value ?: return null
+        val totalChapters = currentChapters.value.size
+        if (totalChapters == 0) return null
+        val existing = repository.getMeetingsForBookList(clubId, book.id)
+            .filter { it.chapterEnd != null }
+        val lastCovered = existing.maxOfOrNull { it.chapterEnd ?: 0 } ?: 0
+        if (lastCovered >= totalChapters) return null
+        val start = lastCovered + 1
+        val end = (start + 5).coerceAtMost(totalChapters) // sugere ~6 caps
+        return start to end
     }
 }

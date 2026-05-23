@@ -102,7 +102,11 @@ data class Meeting(
     val data: String,
     val hora: String,
     val local: String,
-    val agenda: String
+    val agenda: String,
+    val bookId: String?,
+    val chapterStart: Int?,
+    val chapterEnd: Int?,
+    val status: String // "agendado" | "concluido" | "cancelado"
 )
 
 @Entity(tableName = "meeting_rsvps", primaryKeys = ["meetingId", "userId"])
@@ -205,4 +209,20 @@ data class MemberRemoval(
     val removedByUserId: String,
     val motivo: String,
     val removedAt: Long
+)
+
+@Entity(tableName = "meeting_minutes")
+data class MeetingMinutes(
+    @PrimaryKey val meetingId: String,
+    val texto: String,
+    val lastEditorId: String,
+    val updatedAt: Long
+)
+
+@Entity(tableName = "meeting_notes", primaryKeys = ["meetingId", "userId"])
+data class MeetingNote(
+    val meetingId: String,
+    val userId: String,
+    val texto: String,
+    val updatedAt: Long
 )
