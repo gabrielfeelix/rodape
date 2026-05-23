@@ -1472,6 +1472,7 @@ fun ProfileScreenTab(
     val allClubs by viewModel.allClubs.collectAsState()
     val activeClub by viewModel.activeClub.collectAsState()
     val savedQuotes by viewModel.savedQuotes.collectAsState()
+    val archivedClubs by viewModel.archivedClubsForUser.collectAsState()
 
     var isEditingProfile by remember { mutableStateOf(false) }
     var showLogoutDialog by remember { mutableStateOf(false) }
@@ -1757,6 +1758,73 @@ fun ProfileScreenTab(
                                     color = Muted
                                 )
                             )
+                        }
+                    }
+                }
+            }
+
+            // ── Clubes arquivados (só aparece se houver) ─────────────────
+            if (archivedClubs.isNotEmpty()) {
+                item {
+                    Spacer(modifier = Modifier.height(16.dp))
+                    Text(
+                        text = "ARQUIVADOS",
+                        style = MaterialTheme.typography.labelSmall.copy(
+                            fontFamily = InterFontFamily,
+                            fontWeight = FontWeight.Bold,
+                            color = Muted,
+                            letterSpacing = 1.sp
+                        ),
+                        modifier = Modifier.padding(start = 4.dp, bottom = 8.dp)
+                    )
+                    Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                        archivedClubs.forEach { club ->
+                            val resolvedClubColor = clubColorFor(club.cor)
+                            Row(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .clip(RoundedCornerShape(16.dp))
+                                    .border(0.5.dp, Divider, RoundedCornerShape(16.dp))
+                                    .clickable { viewModel.unarchiveClub(club.id) }
+                                    .padding(12.dp),
+                                verticalAlignment = Alignment.CenterVertically,
+                                horizontalArrangement = Arrangement.spacedBy(12.dp)
+                            ) {
+                                Box(
+                                    modifier = Modifier
+                                        .size(36.dp)
+                                        .clip(CircleShape)
+                                        .background(resolvedClubColor.bg.copy(alpha = 0.5f)),
+                                    contentAlignment = Alignment.Center
+                                ) {
+                                    Text(
+                                        text = club.nome.take(1).uppercase(),
+                                        color = resolvedClubColor.ink,
+                                        fontWeight = FontWeight.Bold,
+                                        fontSize = 14.sp
+                                    )
+                                }
+                                Column(modifier = Modifier.weight(1f)) {
+                                    Text(
+                                        text = club.nome,
+                                        style = MaterialTheme.typography.bodyMedium.copy(
+                                            fontFamily = LiterataFontFamily,
+                                            fontWeight = FontWeight.Medium,
+                                            color = Ink
+                                        )
+                                    )
+                                    Text(
+                                        text = "Arquivado · toque para reativar",
+                                        style = MaterialTheme.typography.labelSmall.copy(color = Muted)
+                                    )
+                                }
+                                Icon(
+                                    imageVector = Icons.Outlined.KeyboardArrowRight,
+                                    contentDescription = "Reativar",
+                                    tint = Muted,
+                                    modifier = Modifier.size(18.dp)
+                                )
+                            }
                         }
                     }
                 }
