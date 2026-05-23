@@ -77,6 +77,37 @@ class TramabookRepository(private val dao: TramabookDao) {
     fun getSavedQuotesForUserFlow(userId: String): Flow<List<SavedQuote>> = dao.getSavedQuotesForUserFlow(userId)
     fun getSavedQuotesForBookFlow(userId: String, bookId: String): Flow<List<SavedQuote>> = dao.getSavedQuotesForBookFlow(userId, bookId)
 
+    // --- Book Summaries ---
+    suspend fun insertBookSummary(summary: BookSummary) = dao.insertBookSummary(summary)
+    fun getBookSummaryFlow(bookId: String, clubId: String): Flow<BookSummary?> = dao.getBookSummaryFlow(bookId, clubId)
+
+    // --- Book Ratings ---
+    suspend fun insertBookRating(rating: BookRating) = dao.insertBookRating(rating)
+    fun getBookRatingsFlow(bookId: String, clubId: String): Flow<List<BookRating>> = dao.getBookRatingsFlow(bookId, clubId)
+    fun getBookRatingOfUserFlow(bookId: String, clubId: String, userId: String): Flow<BookRating?> = dao.getBookRatingOfUserFlow(bookId, clubId, userId)
+
+    // --- Book Suggestions ---
+    suspend fun insertBookSuggestion(suggestion: BookSuggestion) = dao.insertBookSuggestion(suggestion)
+    fun getBookSuggestionFlow(bookId: String, clubId: String): Flow<BookSuggestion?> = dao.getBookSuggestionFlow(bookId, clubId)
+    fun getBookSuggestionsForClubFlow(clubId: String): Flow<List<BookSuggestion>> = dao.getBookSuggestionsForClubFlow(clubId)
+
+    // --- Voting Rounds ---
+    suspend fun insertVotingRound(round: VotingRound) = dao.insertVotingRound(round)
+    fun getActiveVotingRoundFlow(clubId: String): Flow<VotingRound?> = dao.getActiveVotingRoundFlow(clubId)
+    suspend fun getActiveVotingRound(clubId: String): VotingRound? = dao.getActiveVotingRound(clubId)
+    suspend fun closeVotingRound(id: String, vencedoresJson: String) = dao.closeVotingRound(id, vencedoresJson)
+
+    fun getVotesForRoundFlow(roundId: String): Flow<List<Vote>> = dao.getVotesForRoundFlow(roundId)
+    suspend fun getVotesForRound(roundId: String): List<Vote> = dao.getVotesForRound(roundId)
+    suspend fun removeUserVoteForBookInRound(userId: String, roundId: String, bookId: String) = dao.removeUserVoteForBookInRound(userId, roundId, bookId)
+    suspend fun countUserVotesInRound(userId: String, roundId: String): Int = dao.countUserVotesInRound(userId, roundId)
+
+    suspend fun updateClubBookStatus(clubId: String, bookId: String, status: String) = dao.updateClubBookStatus(clubId, bookId, status)
+    suspend fun updateClubBookMeetingDate(clubId: String, bookId: String, dataEncontro: Long?) = dao.updateClubBookMeetingDate(clubId, bookId, dataEncontro)
+    fun getClubBooksByStatusFlow(clubId: String, status: String): Flow<List<ClubBook>> = dao.getClubBooksByStatusFlow(clubId, status)
+
+    fun getCommentsForBookFlow(bookId: String, clubId: String): Flow<List<Comment>> = dao.getCommentsForBookFlow(bookId, clubId)
+
     suspend fun seedDatabase() {
         // Only seed if no clubs exist
         val list = dao.getClubsForUserList("user_voce")
