@@ -48,6 +48,23 @@ fun openEmailFeedback(
 }
 
 /**
+ * Compartilha texto livre via share sheet do Android (WhatsApp, email, SMS,
+ * Telegram, Drive, Notes, etc). Usado pra exportar frases salvas.
+ */
+fun shareTextContent(context: Context, subject: String, text: String) {
+    val intent = Intent(Intent.ACTION_SEND).apply {
+        type = "text/plain"
+        putExtra(Intent.EXTRA_SUBJECT, subject)
+        putExtra(Intent.EXTRA_TEXT, text)
+        addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+    }
+    val chooser = Intent.createChooser(intent, subject).apply {
+        addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+    }
+    context.startActivity(chooser)
+}
+
+/**
  * Compartilha o código de convite do clube via share sheet do Android
  * (WhatsApp, SMS, Telegram, etc).
  */

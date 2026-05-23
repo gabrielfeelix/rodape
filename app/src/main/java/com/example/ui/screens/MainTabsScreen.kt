@@ -1938,11 +1938,80 @@ fun ProfileScreenTab(
                 }
             }
 
+            // ── Aparência (tamanho de fonte) ─────────────────────────────
+            item {
+                Spacer(modifier = Modifier.height(16.dp))
+                Text(
+                    text = "APARÊNCIA",
+                    style = MaterialTheme.typography.labelSmall.copy(
+                        fontFamily = InterFontFamily,
+                        fontWeight = FontWeight.Bold,
+                        color = Muted,
+                        letterSpacing = 1.sp
+                    ),
+                    modifier = Modifier.padding(start = 4.dp, bottom = 8.dp)
+                )
+                val fontScale by viewModel.fontScale.collectAsState()
+                RodapeCard(modifier = Modifier.fillMaxWidth()) {
+                    Text(
+                        text = "Tamanho da letra",
+                        style = MaterialTheme.typography.bodyMedium.copy(
+                            fontFamily = LiterataFontFamily,
+                            fontWeight = FontWeight.SemiBold,
+                            color = Ink
+                        )
+                    )
+                    Spacer(modifier = Modifier.height(4.dp))
+                    Text(
+                        text = "Ajuste pra ler melhor. Vale pro app todo.",
+                        style = MaterialTheme.typography.bodySmall.copy(color = Muted)
+                    )
+                    Spacer(modifier = Modifier.height(12.dp))
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.spacedBy(8.dp)
+                    ) {
+                        val options = listOf(
+                            0.9f to "A−",
+                            1.0f to "A",
+                            1.15f to "A+",
+                            1.30f to "A++"
+                        )
+                        options.forEach { (scale, label) ->
+                            val selected = kotlin.math.abs(fontScale - scale) < 0.05f
+                            Box(
+                                modifier = Modifier
+                                    .weight(1f)
+                                    .clip(RoundedCornerShape(12.dp))
+                                    .background(if (selected) Terracota else Cream)
+                                    .border(
+                                        1.dp,
+                                        if (selected) Terracota else Divider,
+                                        RoundedCornerShape(12.dp)
+                                    )
+                                    .clickable { viewModel.setFontScale(scale) }
+                                    .padding(vertical = 12.dp),
+                                contentAlignment = Alignment.Center
+                            ) {
+                                Text(
+                                    text = label,
+                                    style = MaterialTheme.typography.bodyMedium.copy(
+                                        fontFamily = LiterataFontFamily,
+                                        fontWeight = if (selected) FontWeight.Bold else FontWeight.Normal,
+                                        color = if (selected) Cream else Ink
+                                    )
+                                )
+                            }
+                        }
+                    }
+                }
+            }
+
             // ── Ajude o app a crescer ────────────────────────────────────
             item {
                 Spacer(modifier = Modifier.height(16.dp))
                 Text(
-                    text = "AJUDE O RODAPE A CRESCER",
+                    text = "AJUDE O RODAPÉ A CRESCER",
                     style = MaterialTheme.typography.labelSmall.copy(
                         fontFamily = InterFontFamily,
                         fontWeight = FontWeight.Bold,

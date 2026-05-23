@@ -5,6 +5,7 @@ import androidx.datastore.core.DataStore
 import androidx.datastore.preferences.core.Preferences
 import androidx.datastore.preferences.core.booleanPreferencesKey
 import androidx.datastore.preferences.core.edit
+import androidx.datastore.preferences.core.floatPreferencesKey
 import androidx.datastore.preferences.core.intPreferencesKey
 import androidx.datastore.preferences.core.stringPreferencesKey
 import androidx.datastore.preferences.preferencesDataStore
@@ -22,6 +23,7 @@ class DataStoreManager(private val context: Context) {
         val ACTIVE_CLUB_ID_KEY = stringPreferencesKey("active_club_id")
         val RATED_APP_KEY = booleanPreferencesKey("rated_app")
         val ENGAGEMENT_COUNT_KEY = intPreferencesKey("engagement_count")
+        val FONT_SCALE_KEY = floatPreferencesKey("font_scale")
     }
 
     val userIdFlow: Flow<String?> = context.dataStore.data.map { prefs ->
@@ -57,6 +59,16 @@ class DataStoreManager(private val context: Context) {
     suspend fun incrementEngagementCount() {
         context.dataStore.edit { prefs ->
             prefs[ENGAGEMENT_COUNT_KEY] = (prefs[ENGAGEMENT_COUNT_KEY] ?: 0) + 1
+        }
+    }
+
+    val fontScaleFlow: Flow<Float> = context.dataStore.data.map { prefs ->
+        prefs[FONT_SCALE_KEY] ?: 1.0f
+    }
+
+    suspend fun setFontScale(scale: Float) {
+        context.dataStore.edit { prefs ->
+            prefs[FONT_SCALE_KEY] = scale.coerceIn(0.85f, 1.40f)
         }
     }
 

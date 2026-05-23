@@ -63,6 +63,13 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
         viewModelScope.launch { dataStoreManager.markAppRated() }
     }
 
+    val fontScale: StateFlow<Float> = dataStoreManager.fontScaleFlow
+        .stateIn(viewModelScope, SharingStarted.Eagerly, 1.0f)
+
+    fun setFontScale(scale: Float) {
+        viewModelScope.launch { dataStoreManager.setFontScale(scale) }
+    }
+
     // Clubs
     val allClubs: StateFlow<List<Club>> = currentUserId.flatMapLatest { userId ->
         if (userId != null) repository.getClubsForUser(userId) else flowOf(emptyList())

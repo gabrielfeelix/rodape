@@ -9,8 +9,11 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.material3.Surface
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.ui.Modifier
+import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.unit.Density
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
@@ -26,6 +29,13 @@ class MainActivity : ComponentActivity() {
         // Triggering fresh compilation and preview deployment for the user
         enableEdgeToEdge()
         setContent {
+            val fontScale by viewModel.fontScale.collectAsState()
+            val baseDensity = LocalDensity.current
+            val scaledDensity = Density(
+                density = baseDensity.density,
+                fontScale = fontScale
+            )
+            CompositionLocalProvider(LocalDensity provides scaledDensity) {
             MyApplicationTheme {
                 Surface(
                     modifier = Modifier.fillMaxSize(),
@@ -197,6 +207,7 @@ class MainActivity : ComponentActivity() {
                 }
                 }
             }
+            } // CompositionLocalProvider
         }
     }
 }
