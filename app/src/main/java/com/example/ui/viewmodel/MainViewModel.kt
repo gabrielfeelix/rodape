@@ -8,7 +8,7 @@ import com.example.data.api.OpenLibraryApi
 import com.example.data.api.OpenLibraryDoc
 import com.example.data.db.AppDatabase
 import com.example.data.model.*
-import com.example.data.repository.TramabookRepository
+import com.example.data.repository.RodapeRepository
 import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.launch
 import org.json.JSONArray
@@ -17,7 +17,7 @@ import java.util.UUID
 class MainViewModel(application: Application) : AndroidViewModel(application) {
 
     private val database = AppDatabase.getDatabase(application)
-    private val repository = TramabookRepository(database.tramabookDao())
+    private val repository = RodapeRepository(database.rodapeDao())
     private val dataStoreManager = DataStoreManager(application)
 
     // Session state
@@ -252,7 +252,7 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
                 // Already logged in
             } ?: run {
                 // Log in default demo user "Você" to show pristine preloaded data!
-                dataStoreManager.saveSession("user_voce", "Você", "voce@tramabook.com")
+                dataStoreManager.saveSession("user_voce", "Você", "voce@rodape.com")
                 dataStoreManager.saveActiveClubId("club_mari")
             }
             // Dá um respiro pra activeClubId hidratar antes de tentar fechar rodada expirada
@@ -264,7 +264,7 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
     // --- Authentication Actions ---
     fun login(name: String, email: String, onCompleted: () -> Unit) {
         viewModelScope.launch {
-            val isDemo = email.equals("voce@tramabook.com", ignoreCase = true)
+            val isDemo = email.equals("voce@rodape.com", ignoreCase = true)
             val userId = if (isDemo) "user_voce" else "user_${UUID.randomUUID().toString().take(6)}"
             val userName = if (isDemo) "Você" else name
             
@@ -393,7 +393,7 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
                 dataStoreManager.saveActiveClubId(club.id)
                 
                 // Add default book progress for this new user
-                val curBooks = database.tramabookDao().getBookByStatusFlow(club.id, "current").firstOrNull()
+                val curBooks = database.rodapeDao().getBookByStatusFlow(club.id, "current").firstOrNull()
                 curBooks?.firstOrNull()?.let { b ->
                     repository.insertUserProgress(UserProgress(userId, club.id, b.id, 1))
                 }
@@ -455,7 +455,7 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
     fun toggleReaction(commentId: String, emoji: String) {
         viewModelScope.launch {
             val userId = currentUserId.value ?: "user_voce"
-            val existing = database.tramabookDao().getReactionsForCommentFlow(commentId).first().find {
+            val existing = database.rodapeDao().getReactionsForCommentFlow(commentId).first().find {
                 it.userId == userId && it.emoji == emoji
             }
             if (existing != null) {

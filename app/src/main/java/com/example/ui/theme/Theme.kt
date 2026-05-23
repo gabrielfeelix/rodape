@@ -6,7 +6,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.graphics.Color
 
 // Tema único claro. Oliva é herói (secondary), terracota é acento (primary).
-private val TramabookColorScheme = lightColorScheme(
+private val RodapeColorScheme = lightColorScheme(
     primary = Terracota,
     onPrimary = Color.White,
     primaryContainer = TerracotaSoft,
@@ -30,7 +30,7 @@ fun MyApplicationTheme(
     content: @Composable () -> Unit,
 ) {
     MaterialTheme(
-        colorScheme = TramabookColorScheme,
+        colorScheme = RodapeColorScheme,
         typography = Typography,
         content = content,
     )

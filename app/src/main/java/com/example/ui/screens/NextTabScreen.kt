@@ -252,7 +252,7 @@ fun EncontroTab(
 
             item {
                 // Meeting header card with olive gradient
-                TramabookCard(contentPadding = PaddingValues(0.dp)) {
+                RodapeCard(contentPadding = PaddingValues(0.dp)) {
                     Box(
                         modifier = Modifier
                             .fillMaxWidth()
@@ -350,7 +350,7 @@ fun EncontroTab(
                     title = "Sua participação",
                     modifier = Modifier.padding(bottom = 8.dp)
                 )
-                TramabookCard {
+                RodapeCard {
                     Text(
                         "Você vai participar desse encontro?",
                         style = MaterialTheme.typography.bodyMedium.copy(
@@ -398,7 +398,7 @@ fun EncontroTab(
                     title = "Quem vai?",
                     modifier = Modifier.padding(bottom = 8.dp)
                 )
-                TramabookCard {
+                RodapeCard {
                     val confirmados = rsvps.filter { it.status == "Vou" }
                     val talvez = rsvps.filter { it.status == "Talvez" }
                     val naoVou = rsvps.filter { it.status == "Não vou" }
@@ -623,7 +623,7 @@ fun EncontroTab(
                     title = "Programação / pauta",
                     modifier = Modifier.padding(bottom = 8.dp)
                 )
-                TramabookCard {
+                RodapeCard {
                     meeting!!.agenda.split("\n").forEachIndexed { index, line ->
                         Row(
                             verticalAlignment = Alignment.Top,
@@ -683,7 +683,7 @@ fun VotacaoTab(
         verticalArrangement = Arrangement.spacedBy(16.dp)
     ) {
         item {
-            TramabookCard {
+            RodapeCard {
                 Text(
                     text = "Votação do próximo livro",
                     style = MaterialTheme.typography.headlineLarge.copy(color = OlivaDark),
@@ -743,7 +743,7 @@ fun VotacaoTab(
                     val pct = if (totalVotes > 0) bookVotes.size.toFloat() / totalVotes.toFloat() else 0f
                     val hasJustification = suggestionsByBookId[book.id]?.justificativa?.isNotBlank() == true
 
-                    TramabookCard(modifier = Modifier.clickable { viewModel.voteForBook(book.id) }) {
+                    RodapeCard(modifier = Modifier.clickable { viewModel.voteForBook(book.id) }) {
                         Row(
                             modifier = Modifier.fillMaxWidth(),
                             horizontalArrangement = Arrangement.spacedBy(16.dp)

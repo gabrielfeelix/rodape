@@ -23,7 +23,7 @@ import com.example.ui.theme.Divider
 import com.example.ui.theme.Ink
 
 @Composable
-fun TramabookCard(
+fun RodapeCard(
     modifier: Modifier = Modifier,
     contentPadding: PaddingValues = PaddingValues(16.dp),
     content: @Composable ColumnScope.() -> Unit,

@@ -29,7 +29,7 @@ import com.example.data.model.Comment
 import com.example.ui.components.Avatar
 import com.example.ui.components.TbButton
 import com.example.ui.components.TbButtonVariant
-import com.example.ui.components.TramabookCard
+import com.example.ui.components.RodapeCard
 import com.example.ui.theme.CardSoft
 import com.example.ui.theme.Cream
 import com.example.ui.theme.Divider
@@ -122,7 +122,7 @@ fun DiscussionScreen(
                     .padding(24.dp),
                 contentAlignment = Alignment.Center
             ) {
-                TramabookCard {
+                RodapeCard {
                     Column(
                         horizontalAlignment = Alignment.CenterHorizontally,
                         verticalArrangement = Arrangement.spacedBy(16.dp),

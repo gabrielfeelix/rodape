@@ -19,7 +19,7 @@ import com.example.ui.components.Cover
 import com.example.ui.components.Pill
 import com.example.ui.components.PillVariant
 import com.example.ui.components.RatingStars
-import com.example.ui.components.TramabookCard
+import com.example.ui.components.RodapeCard
 import com.example.ui.theme.Ink
 import com.example.ui.theme.Muted
 import com.example.ui.viewmodel.MainViewModel
@@ -102,7 +102,7 @@ private fun ShelfBookCard(
     dataEncontroLabel: String?,
     onClick: () -> Unit
 ) {
-    TramabookCard(
+    RodapeCard(
         modifier = Modifier.fillMaxWidth().clickable { onClick() },
         contentPadding = PaddingValues(12.dp)
     ) {

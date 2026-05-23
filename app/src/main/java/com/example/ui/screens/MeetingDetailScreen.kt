@@ -24,7 +24,7 @@ import com.example.ui.components.PillVariant
 import com.example.ui.components.TbButton
 import com.example.ui.components.TbButtonSize
 import com.example.ui.components.TbButtonVariant
-import com.example.ui.components.TramabookCard
+import com.example.ui.components.RodapeCard
 import com.example.ui.theme.*
 import com.example.ui.viewmodel.MainViewModel
 import com.example.util.timeAgo
@@ -164,7 +164,7 @@ fun MeetingDetailScreen(
                         )
                     )
                     Spacer(modifier = Modifier.height(6.dp))
-                    TramabookCard(modifier = Modifier.fillMaxWidth()) {
+                    RodapeCard(modifier = Modifier.fillMaxWidth()) {
                         Text(
                             text = m.agenda,
                             style = MaterialTheme.typography.bodyMedium.copy(color = InkSoft, lineHeight = 20.sp)
@@ -185,7 +185,7 @@ fun MeetingDetailScreen(
                         )
                     )
                     Spacer(modifier = Modifier.height(6.dp))
-                    TramabookCard(modifier = Modifier.fillMaxWidth()) {
+                    RodapeCard(modifier = Modifier.fillMaxWidth()) {
                         Row(
                             modifier = Modifier.fillMaxWidth(),
                             horizontalArrangement = Arrangement.spacedBy(8.dp)
@@ -231,7 +231,7 @@ fun MeetingDetailScreen(
                 )
                 Spacer(modifier = Modifier.height(6.dp))
                 if (minutes == null) {
-                    TramabookCard(modifier = Modifier.fillMaxWidth()) {
+                    RodapeCard(modifier = Modifier.fillMaxWidth()) {
                         Text(
                             text = "Ninguém escreveu a ata deste encontro ainda.",
                             style = MaterialTheme.typography.bodyMedium.copy(color = Muted)
@@ -252,7 +252,7 @@ fun MeetingDetailScreen(
                     }
                 } else {
                     val editor = members.find { it.id == minutes!!.lastEditorId }
-                    TramabookCard(modifier = Modifier.fillMaxWidth()) {
+                    RodapeCard(modifier = Modifier.fillMaxWidth()) {
                         Text(
                             text = minutes!!.texto,
                             style = MaterialTheme.typography.bodyMedium.copy(color = InkSoft, lineHeight = 20.sp)
@@ -322,7 +322,7 @@ fun MeetingDetailScreen(
                         )
                     }
                 } else {
-                    TramabookCard(modifier = Modifier.fillMaxWidth()) {
+                    RodapeCard(modifier = Modifier.fillMaxWidth()) {
                         Text(
                             text = myNote?.texto?.takeIf { it.isNotBlank() }
                                 ?: "Você ainda não anotou nada para este encontro.",

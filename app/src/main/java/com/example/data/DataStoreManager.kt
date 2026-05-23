@@ -11,7 +11,7 @@ import androidx.datastore.preferences.preferencesDataStore
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.map
 
-val Context.dataStore: DataStore<Preferences> by preferencesDataStore(name = "tramabook_prefs")
+val Context.dataStore: DataStore<Preferences> by preferencesDataStore(name = "rodape_prefs")
 
 class DataStoreManager(private val context: Context) {
 

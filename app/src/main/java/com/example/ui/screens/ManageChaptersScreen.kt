@@ -18,7 +18,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.example.ui.components.TbButton
 import com.example.ui.components.TbButtonVariant
-import com.example.ui.components.TramabookCard
+import com.example.ui.components.RodapeCard
 import com.example.ui.theme.*
 import com.example.ui.viewmodel.MainViewModel
 import com.example.voting.ChapterFetchResult
@@ -114,7 +114,7 @@ fun ManageChaptersScreen(
                 verticalArrangement = Arrangement.spacedBy(8.dp)
             ) {
                 itemsIndexed(draftList) { idx, pair ->
-                    TramabookCard(modifier = Modifier.fillMaxWidth()) {
+                    RodapeCard(modifier = Modifier.fillMaxWidth()) {
                         Row(verticalAlignment = Alignment.CenterVertically) {
                             Text(
                                 "Cap. ${pair.first}",

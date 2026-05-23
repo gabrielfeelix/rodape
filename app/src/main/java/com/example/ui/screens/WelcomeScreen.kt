@@ -37,7 +37,7 @@ import androidx.compose.ui.unit.sp
 import com.example.ui.components.TbButton
 import com.example.ui.components.TbButtonSize
 import com.example.ui.components.TbButtonVariant
-import com.example.ui.components.TramabookCard
+import com.example.ui.components.RodapeCard
 import com.example.ui.theme.Cream
 import com.example.ui.theme.CardSurface
 import com.example.ui.theme.ClubColors
@@ -97,7 +97,7 @@ fun WelcomeScreen(
                     // Logo representation
                     Image(
                         painter = painterResource(id = R.drawable.ic_logo),
-                        contentDescription = "Logo do Tramabook",
+                        contentDescription = "Logo do Rodapé",
                         modifier = Modifier.size(108.dp)
                     )
 
@@ -189,7 +189,7 @@ fun LoginScreen(
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { Text("Tramabook", style = MaterialTheme.typography.headlineLarge.copy(color = Terracota)) },
+                title = { Text("Rodapé", style = MaterialTheme.typography.headlineLarge.copy(color = Terracota)) },
                 navigationIcon = {
                     IconButton(onClick = onNavigateBack) {
                         Icon(
@@ -214,7 +214,7 @@ fun LoginScreen(
             item {
                 Spacer(modifier = Modifier.height(24.dp))
 
-                TramabookCard(
+                RodapeCard(
                     modifier = Modifier.fillMaxWidth(),
                     contentPadding = androidx.compose.foundation.layout.PaddingValues(20.dp)
                 ) {
@@ -248,7 +248,7 @@ fun LoginScreen(
                                 )
                                 Spacer(modifier = Modifier.width(12.dp))
                                 Text(
-                                    text = "Dica: Para ver o app cheio de conteúdo (Clubes, discussões, progresso), use o botão de atalho abaixo ou digite o email: voce@tramabook.com",
+                                    text = "Dica: Para ver o app cheio de conteúdo (Clubes, discussões, progresso), use o botão de atalho abaixo ou digite o email: voce@rodape.com",
                                     style = MaterialTheme.typography.bodyMedium.copy(color = OlivaDark, fontWeight = FontWeight.Medium),
                                     modifier = Modifier.weight(1f)
                                 )
@@ -433,7 +433,7 @@ fun LoginScreen(
 
                     // dev-only: botão com ícone, mantido fora do TbButton de propósito
                     Button(
-                        onClick = { onLoginSuccess("Você", "voce@tramabook.com") },
+                        onClick = { onLoginSuccess("Você", "voce@rodape.com") },
                         modifier = Modifier
                             .fillMaxWidth()
                             .height(52.dp),
@@ -1017,7 +1017,7 @@ fun JoinClubScreen(
                                 onValueChange = { linkInput = it },
                                 placeholder = {
                                     Text(
-                                        "https://tramabook.com/c/...",
+                                        "https://rodape.com/c/...",
                                         style = MaterialTheme.typography.bodyMedium.copy(
                                             color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.5f)
                                         )
@@ -1074,7 +1074,7 @@ fun JoinClubScreen(
                                             }
                                         }
                                     } else {
-                                        linkErrorMsg = "Link inválido. Insira um link válido do Tramabook."
+                                        linkErrorMsg = "Link inválido. Insira um link válido do Rodapé."
                                     }
                                 }
                             },

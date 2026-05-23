@@ -5,7 +5,7 @@ import com.example.data.model.*
 import kotlinx.coroutines.flow.Flow
 
 @Dao
-interface TramabookDao {
+interface RodapeDao {
 
     // --- Users ---
     @Query("SELECT * FROM users WHERE id = :userId")

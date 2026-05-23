@@ -4,9 +4,9 @@ import androidx.compose.ui.graphics.Color
 
 /**
  * Tokens que não cabem no ColorScheme do Material 3.
- * Acesse via `TramabookTokens` direto (são estáticos, tema único claro).
+ * Acesse via `RodapeTokens` direto (são estáticos, tema único claro).
  */
-object TramabookTokens {
+object RodapeTokens {
     val terracotaDark = TerracotaDark
     val terracotaSoft = TerracotaSoft
     val olivaDark = OlivaDark

@@ -328,7 +328,7 @@ private fun SummaryTab(viewModel: MainViewModel, bookId: String) {
     var draftText by remember { mutableStateOf("") }
 
     if (summary == null) {
-        TramabookCard(modifier = Modifier.fillMaxWidth()) {
+        RodapeCard(modifier = Modifier.fillMaxWidth()) {
             Text(
                 text = "Ninguém escreveu o resumo ainda. Que tal começar?",
                 style = MaterialTheme.typography.bodyMedium.copy(
@@ -345,7 +345,7 @@ private fun SummaryTab(viewModel: MainViewModel, bookId: String) {
             modifier = Modifier.fillMaxWidth()
         )
     } else {
-        TramabookCard(modifier = Modifier.fillMaxWidth()) {
+        RodapeCard(modifier = Modifier.fillMaxWidth()) {
             Text(
                 text = summary!!.texto,
                 style = MaterialTheme.typography.bodyMedium.copy(
@@ -622,7 +622,7 @@ private fun RatingsTab(viewModel: MainViewModel, bookId: String) {
         val authorName = author?.nome ?: "Membro"
         val authorAvatar = author?.avatarUrl ?: ""
 
-        TramabookCard(modifier = Modifier.fillMaxWidth()) {
+        RodapeCard(modifier = Modifier.fillMaxWidth()) {
             Row(
                 verticalAlignment = Alignment.CenterVertically,
                 horizontalArrangement = Arrangement.spacedBy(10.dp)

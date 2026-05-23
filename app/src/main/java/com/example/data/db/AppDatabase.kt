@@ -36,7 +36,7 @@ import com.example.data.model.*
 )
 abstract class AppDatabase : RoomDatabase() {
 
-    abstract fun tramabookDao(): TramabookDao
+    abstract fun rodapeDao(): RodapeDao
 
     companion object {
         @Volatile
@@ -47,7 +47,7 @@ abstract class AppDatabase : RoomDatabase() {
                 val instance = Room.databaseBuilder(
                     context.applicationContext,
                     AppDatabase::class.java,
-                    "tramabook_database"
+                    "rodape_database"
                 )
                     .fallbackToDestructiveMigration()
                     .build()

@@ -15,7 +15,7 @@ import androidx.compose.ui.unit.dp
 import com.example.ui.components.Avatar
 import com.example.ui.components.TbButton
 import com.example.ui.components.TbButtonVariant
-import com.example.ui.components.TramabookCard
+import com.example.ui.components.RodapeCard
 import com.example.ui.theme.*
 import com.example.ui.viewmodel.MainViewModel
 import com.example.util.timeAgo
@@ -62,7 +62,7 @@ fun ModerationLogScreen(
                 items(removed, key = { it.id }) { c ->
                     val author = members.find { it.id == c.userId }
                     val remover = members.find { it.id == c.removidoPor }
-                    TramabookCard(modifier = Modifier.fillMaxWidth()) {
+                    RodapeCard(modifier = Modifier.fillMaxWidth()) {
                         Row(
                             verticalAlignment = Alignment.CenterVertically,
                             horizontalArrangement = Arrangement.spacedBy(10.dp)

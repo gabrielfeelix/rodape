@@ -63,7 +63,7 @@ import com.example.ui.components.Cover
 import com.example.ui.components.Pill
 import com.example.ui.components.PillVariant
 import com.example.ui.components.ProgressBar
-import com.example.ui.components.TramabookCard
+import com.example.ui.components.RodapeCard
 import com.example.ui.components.TbSectionHeader
 
 import androidx.compose.foundation.lazy.LazyRow
@@ -128,7 +128,7 @@ fun MainTabsScreen(
                     }
                 },
                 title = {
-                    val rawName = activeClub?.nome ?: "Tramabook"
+                    val rawName = activeClub?.nome ?: "Rodapé"
                     val clubName = if (rawName.length > 20) rawName.take(20) + "..." else rawName
                     Row(
                         verticalAlignment = Alignment.CenterVertically,
@@ -252,7 +252,7 @@ fun MainTabsScreen(
             containerColor = MaterialTheme.colorScheme.surface,
             title = {
                 Text(
-                    "Curtindo o Tramabook? ⭐",
+                    "Curtindo o Rodapé? ⭐",
                     style = MaterialTheme.typography.titleLarge.copy(
                         fontFamily = LiterataFontFamily,
                         fontWeight = FontWeight.SemiBold
@@ -875,7 +875,7 @@ fun HomeScreenTab(
 
         // Section: Tua Leitura Row Card (Image 1 Left Card 2)
         item {
-            TramabookCard(
+            RodapeCard(
                 modifier = Modifier
                     .fillMaxWidth()
                     .clickable { onNavigateToTab("book") },
@@ -1070,7 +1070,7 @@ fun HomeScreenTab(
         }
 
         item {
-            TramabookCard(modifier = Modifier.fillMaxWidth()) {
+            RodapeCard(modifier = Modifier.fillMaxWidth()) {
                 Text(
                     text = activeClub?.descricao ?: "Um clubinho clássico de leitura íntima para tomar vinho e conversar livremente sobre livros excelentes.",
                     style = MaterialTheme.typography.bodyMedium,
@@ -1208,7 +1208,7 @@ fun BookDetailScreenTab(
                         .offset(y = (-54).dp)
                         .padding(horizontal = 22.dp)
                 ) {
-                    TramabookCard(
+                    RodapeCard(
                         modifier = Modifier.fillMaxWidth(),
                         contentPadding = PaddingValues(16.dp)
                     ) {
@@ -1502,7 +1502,7 @@ fun BookDetailScreenTab(
                         modifier = Modifier.padding(bottom = 14.dp)
                     )
 
-                    TramabookCard(
+                    RodapeCard(
                         modifier = Modifier.fillMaxWidth(),
                         contentPadding = PaddingValues(24.dp)
                     ) {
@@ -1633,7 +1633,7 @@ fun ProfileScreenTab(
                                 )
                             )
                             Text(
-                                text = email ?: "contato@tramabook.com",
+                                text = email ?: "contato@rodape.com",
                                 style = MaterialTheme.typography.bodyLarge.copy(color = Muted)
                             )
                         }
@@ -1655,7 +1655,7 @@ fun ProfileScreenTab(
                     horizontalArrangement = Arrangement.spacedBy(8.dp)
                 ) {
                     // Card 1: Livros lidos
-                    TramabookCard(
+                    RodapeCard(
                         modifier = Modifier.weight(1f),
                         contentPadding = PaddingValues(14.dp)
                     ) {
@@ -1679,7 +1679,7 @@ fun ProfileScreenTab(
                     }
 
                     // Card 2: Clubes ativos
-                    TramabookCard(
+                    RodapeCard(
                         modifier = Modifier.weight(1f),
                         contentPadding = PaddingValues(14.dp)
                     ) {
@@ -1749,7 +1749,7 @@ fun ProfileScreenTab(
                     allClubs.forEach { club ->
                         val isActive = club.id == activeClub?.id
                         val clubColor = clubColorFor(club.cor)
-                        val clubReadingText = if (club.id == "club_tramabook") {
+                        val clubReadingText = if (club.id == "club_rodape") {
                             "Lendo: A Metamorfose"
                         } else if (club.id == "club_filosofia") {
                             "Lendo: O Mito de Sísifo"
@@ -1942,7 +1942,7 @@ fun ProfileScreenTab(
             item {
                 Spacer(modifier = Modifier.height(16.dp))
                 Text(
-                    text = "AJUDE O TRAMABOOK A CRESCER",
+                    text = "AJUDE O RODAPE A CRESCER",
                     style = MaterialTheme.typography.labelSmall.copy(
                         fontFamily = InterFontFamily,
                         fontWeight = FontWeight.Bold,
@@ -1967,7 +1967,7 @@ fun ProfileScreenTab(
                             )
                         )
                         Text(
-                            text = "A gente lê todo feedback nas primeiras horas. Conta o que você acha, o que falta, o que poderia ser melhor — é assim que o Tramabook vai virar o que vocês precisam.",
+                            text = "A gente lê todo feedback nas primeiras horas. Conta o que você acha, o que falta, o que poderia ser melhor — é assim que o Rodapé vai virar o que vocês precisam.",
                             style = MaterialTheme.typography.bodyMedium.copy(
                                 fontFamily = InterFontFamily,
                                 color = Ink,

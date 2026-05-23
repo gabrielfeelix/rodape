@@ -3,7 +3,7 @@
     android:height="108dp"
     android:viewportWidth="108"
     android:viewportHeight="108">
-    <!-- Balao de fala Tramabook, escalado para a safe zone central do icone adaptativo -->
+    <!-- Balao de fala Rodape, escalado para a safe zone central do icone adaptativo -->
     <group
         android:scaleX="0.66"
         android:scaleY="0.66"

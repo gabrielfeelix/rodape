@@ -16,7 +16,7 @@ import com.example.ui.components.ProgressBar
 import com.example.ui.components.TbButton
 import com.example.ui.components.TbButtonVariant
 import com.example.ui.components.TbSectionHeader
-import com.example.ui.components.TramabookCard
+import com.example.ui.components.RodapeCard
 import com.example.ui.theme.MyApplicationTheme
 import com.github.takahirom.roborazzi.RobolectricDeviceQualifiers
 import com.github.takahirom.roborazzi.captureRoboImage
@@ -54,7 +54,7 @@ class FoundationScreenshotTest {
                     Avatar(name = "Beatriz Almeida")
                     Avatar(name = "Beatriz Almeida", size = 56.dp)
                     Cover(title = "A Hora da Estrela", author = "Clarice Lispector")
-                    TramabookCard {
+                    RodapeCard {
                         Pill(text = "Em leitura", variant = PillVariant.Olive)
                     }
                 }
