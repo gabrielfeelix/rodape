@@ -35,6 +35,7 @@ import com.example.ui.theme.Cream
 import com.example.ui.theme.Divider
 import com.example.ui.theme.InterFontFamily
 import com.example.ui.theme.LiterataFontFamily
+import com.example.ui.theme.Muted
 import com.example.ui.theme.Oliva
 import com.example.ui.theme.OlivaDark
 import com.example.ui.theme.OlivaSoft
@@ -265,10 +266,15 @@ fun DiscussionScreen(
                             val userNameVal = if (comment.userId == "user_voce") "Você" else userObj?.nome ?: "Iniciante"
                             val commentReactions = reactions.filter { it.commentId == comment.id }
                             val isOwn = comment.userId == "user_voce"
+                            val isAdmin by viewModel.isCurrentUserAdmin.collectAsState()
+                            var showModMenu by remember(comment.id) { mutableStateOf(false) }
+                            var showRemoveDialog by remember(comment.id) { mutableStateOf(false) }
+                            var modMotivo by remember(comment.id) { mutableStateOf("") }
 
                             Row(
                                 modifier = Modifier.fillMaxWidth(),
-                                horizontalArrangement = Arrangement.spacedBy(10.dp)
+                                horizontalArrangement = Arrangement.spacedBy(10.dp),
+                                verticalAlignment = Alignment.Top
                             ) {
                                 Avatar(
                                     name = userNameVal,
@@ -305,15 +311,28 @@ fun DiscussionScreen(
                                                     color = if (isOwn) TerracotaDark else MaterialTheme.colorScheme.onSurface
                                                 )
                                             )
-                                            Text(
-                                                text = comment.texto,
-                                                style = MaterialTheme.typography.bodyMedium.copy(
-                                                    fontFamily = LiterataFontFamily,
-                                                    fontSize = 14.5.sp,
-                                                    lineHeight = 21.sp,
-                                                    color = MaterialTheme.colorScheme.onSurface
+                                            if (comment.removido) {
+                                                Text(
+                                                    text = "[mensagem removida pela moderação]",
+                                                    style = MaterialTheme.typography.bodyMedium.copy(
+                                                        fontFamily = LiterataFontFamily,
+                                                        fontSize = 14.5.sp,
+                                                        lineHeight = 21.sp,
+                                                        color = Muted,
+                                                        fontStyle = androidx.compose.ui.text.font.FontStyle.Italic
+                                                    )
                                                 )
-                                            )
+                                            } else {
+                                                Text(
+                                                    text = comment.texto,
+                                                    style = MaterialTheme.typography.bodyMedium.copy(
+                                                        fontFamily = LiterataFontFamily,
+                                                        fontSize = 14.5.sp,
+                                                        lineHeight = 21.sp,
+                                                        color = MaterialTheme.colorScheme.onSurface
+                                                    )
+                                                )
+                                            }
                                         }
                                     }
 
@@ -366,6 +385,66 @@ fun DiscussionScreen(
                                         }
                                     }
                                 }
+
+                                if (isAdmin && !isOwn && !comment.removido) {
+                                    Box {
+                                        IconButton(
+                                            onClick = { showModMenu = true },
+                                            modifier = Modifier.size(32.dp)
+                                        ) {
+                                            Icon(
+                                                imageVector = Icons.Outlined.MoreVert,
+                                                contentDescription = "Moderação",
+                                                tint = Muted,
+                                                modifier = Modifier.size(18.dp)
+                                            )
+                                        }
+                                        DropdownMenu(
+                                            expanded = showModMenu,
+                                            onDismissRequest = { showModMenu = false }
+                                        ) {
+                                            DropdownMenuItem(
+                                                text = { Text("Remover (moderação)") },
+                                                onClick = {
+                                                    showModMenu = false
+                                                    modMotivo = ""
+                                                    showRemoveDialog = true
+                                                }
+                                            )
+                                        }
+                                    }
+                                }
+                            }
+
+                            if (showRemoveDialog) {
+                                AlertDialog(
+                                    onDismissRequest = { showRemoveDialog = false },
+                                    title = { Text("Remover comentário?") },
+                                    text = {
+                                        Column {
+                                            Text("Vira placeholder pra todos. Registra no log.")
+                                            Spacer(modifier = Modifier.height(8.dp))
+                                            OutlinedTextField(
+                                                value = modMotivo,
+                                                onValueChange = { modMotivo = it.take(200) },
+                                                label = { Text("Motivo (opcional)") },
+                                                minLines = 2,
+                                                modifier = Modifier.fillMaxWidth()
+                                            )
+                                        }
+                                    },
+                                    confirmButton = {
+                                        TextButton(onClick = {
+                                            viewModel.removeComment(comment.id, modMotivo)
+                                            showRemoveDialog = false
+                                        }) { Text("Remover", color = Terracota, fontWeight = FontWeight.SemiBold) }
+                                    },
+                                    dismissButton = {
+                                        TextButton(onClick = { showRemoveDialog = false }) {
+                                            Text("Cancelar", color = Muted)
+                                        }
+                                    }
+                                )
                             }
                         }
                     }

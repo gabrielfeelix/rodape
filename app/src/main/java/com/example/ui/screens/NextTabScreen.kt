@@ -687,6 +687,45 @@ fun VotacaoTab(
                                     if (hasUserVoted) {
                                         Pill(text = "Teu voto", variant = PillVariant.OliveDeep, modifier = Modifier.padding(start = 8.dp))
                                     }
+                                    if (isAdmin) {
+                                        var showMenu by remember(book.id) { mutableStateOf(false) }
+                                        var showConfirm by remember(book.id) { mutableStateOf(false) }
+                                        Box {
+                                            IconButton(
+                                                onClick = { showMenu = true },
+                                                modifier = Modifier.size(28.dp)
+                                            ) {
+                                                Icon(Icons.Outlined.MoreVert, contentDescription = "Ações", tint = Muted, modifier = Modifier.size(18.dp))
+                                            }
+                                            DropdownMenu(expanded = showMenu, onDismissRequest = { showMenu = false }) {
+                                                DropdownMenuItem(
+                                                    text = { Text("Remover sugestão") },
+                                                    onClick = {
+                                                        showMenu = false
+                                                        showConfirm = true
+                                                    }
+                                                )
+                                            }
+                                        }
+                                        if (showConfirm) {
+                                            AlertDialog(
+                                                onDismissRequest = { showConfirm = false },
+                                                title = { Text("Remover sugestão?") },
+                                                text = { Text("Sugestão e votos serão apagados.") },
+                                                confirmButton = {
+                                                    TextButton(onClick = {
+                                                        viewModel.removeSuggestion(book.id)
+                                                        showConfirm = false
+                                                    }) { Text("Remover", color = Terracota, fontWeight = FontWeight.SemiBold) }
+                                                },
+                                                dismissButton = {
+                                                    TextButton(onClick = { showConfirm = false }) {
+                                                        Text("Cancelar", color = Muted)
+                                                    }
+                                                }
+                                            )
+                                        }
+                                    }
                                 }
                                 Spacer(modifier = Modifier.height(12.dp))
                                 ProgressBar(

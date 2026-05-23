@@ -543,13 +543,24 @@ private fun ChatTab(viewModel: MainViewModel, bookId: String) {
                             style = MaterialTheme.typography.labelSmall.copy(color = Muted)
                         )
                     }
-                    Text(
-                        text = c.texto,
-                        style = MaterialTheme.typography.bodyMedium.copy(
-                            color = InkSoft,
-                            lineHeight = 20.sp
+                    if (c.removido) {
+                        Text(
+                            text = "[mensagem removida pela moderação]",
+                            style = MaterialTheme.typography.bodyMedium.copy(
+                                color = Muted,
+                                fontStyle = androidx.compose.ui.text.font.FontStyle.Italic,
+                                lineHeight = 20.sp
+                            )
                         )
-                    )
+                    } else {
+                        Text(
+                            text = c.texto,
+                            style = MaterialTheme.typography.bodyMedium.copy(
+                                color = InkSoft,
+                                lineHeight = 20.sp
+                            )
+                        )
+                    }
                 }
             }
         }
