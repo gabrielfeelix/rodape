@@ -931,7 +931,7 @@ fun JoinClubScreen(
                     shadowElevation = 1.dp
                 ) {
                     Column(
-                        modifier = Modifier.padding(24.dp),
+                        modifier = Modifier.padding(horizontal = 16.dp, vertical = 24.dp),
                         horizontalAlignment = Alignment.CenterHorizontally,
                         verticalArrangement = Arrangement.spacedBy(16.dp)
                     ) {
@@ -948,11 +948,11 @@ fun JoinClubScreen(
                             Spacer(modifier = Modifier.height(8.dp))
 
                             Row(
-                                horizontalArrangement = Arrangement.spacedBy(8.dp),
+                                horizontalArrangement = Arrangement.spacedBy(6.dp),
                                 verticalAlignment = Alignment.CenterVertically,
-                                modifier = Modifier.fillMaxWidth().wrapContentWidth(Alignment.CenterHorizontally)
+                                modifier = Modifier.fillMaxWidth()
                             ) {
-                                for (i in 0..2) {
+                                for (i in 0..5) {
                                     OutlinedTextField(
                                         value = otpValues[i],
                                         onValueChange = { value ->
@@ -964,7 +964,7 @@ fun JoinClubScreen(
                                             }
                                         },
                                         modifier = Modifier
-                                            .width(44.dp)
+                                            .weight(1f)
                                             .height(56.dp)
                                             .focusRequester(focusRequesters[i]),
                                         shape = RoundedCornerShape(12.dp),
@@ -976,7 +976,7 @@ fun JoinClubScreen(
                                                 color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.4f)
                                             )
                                         },
-                                        textStyle = MaterialTheme.typography.titleLarge.copy(textAlign = TextAlign.Center, fontWeight = FontWeight.Bold),
+                                        textStyle = MaterialTheme.typography.titleMedium.copy(textAlign = TextAlign.Center, fontWeight = FontWeight.Bold),
                                         singleLine = true,
                                         keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Text),
                                         colors = OutlinedTextFieldDefaults.colors(
@@ -986,44 +986,9 @@ fun JoinClubScreen(
                                             unfocusedContainerColor = Cream
                                         )
                                     )
-                                }
-
-                                Text("-", style = MaterialTheme.typography.titleMedium.copy(color = MaterialTheme.colorScheme.onSurfaceVariant))
-
-                                for (i in 3..5) {
-                                    OutlinedTextField(
-                                        value = otpValues[i],
-                                        onValueChange = { value ->
-                                            if (value.length <= 1) {
-                                                otpValues[i] = value
-                                                if (value.isNotEmpty() && i < 5) {
-                                                    focusRequesters[i + 1].requestFocus()
-                                                }
-                                            }
-                                        },
-                                        modifier = Modifier
-                                            .width(44.dp)
-                                            .height(56.dp)
-                                            .focusRequester(focusRequesters[i]),
-                                        shape = RoundedCornerShape(12.dp),
-                                        placeholder = {
-                                            Text(
-                                                "-",
-                                                modifier = Modifier.fillMaxWidth(),
-                                                textAlign = TextAlign.Center,
-                                                color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.4f)
-                                            )
-                                        },
-                                        textStyle = MaterialTheme.typography.titleLarge.copy(textAlign = TextAlign.Center, fontWeight = FontWeight.Bold),
-                                        singleLine = true,
-                                        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Text),
-                                        colors = OutlinedTextFieldDefaults.colors(
-                                            focusedBorderColor = Terracota,
-                                            unfocusedBorderColor = Divider,
-                                            focusedContainerColor = Cream,
-                                            unfocusedContainerColor = Cream
-                                        )
-                                    )
+                                    if (i == 2) {
+                                        Spacer(modifier = Modifier.width(8.dp))
+                                    }
                                 }
                             }
 
