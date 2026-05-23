@@ -23,3 +23,4 @@ debug.keystore
 # Keystores e segredos de assinatura
 *.jks
 *.keystore
+*:Zone.Identifier
