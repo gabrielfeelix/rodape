@@ -173,7 +173,7 @@ class TramabookRepository(private val dao: TramabookDao) {
 
         // Club Members
         dao.insertClubMember(ClubMember("club_mari", "user_marina", "admin", System.currentTimeMillis() - 30 * 24 * 60 * 60 * 1000L))
-        dao.insertClubMember(ClubMember("club_mari", "user_voce", "member", System.currentTimeMillis() - 28 * 24 * 60 * 60 * 1000L))
+        dao.insertClubMember(ClubMember("club_mari", "user_voce", "admin", System.currentTimeMillis() - 28 * 24 * 60 * 60 * 1000L))
         dao.insertClubMember(ClubMember("club_mari", "user_lucas", "member", System.currentTimeMillis() - 28 * 24 * 60 * 60 * 1000L))
         dao.insertClubMember(ClubMember("club_mari", "user_sofia", "member", System.currentTimeMillis() - 27 * 24 * 60 * 60 * 1000L))
         dao.insertClubMember(ClubMember("club_mari", "user_bia", "member", System.currentTimeMillis() - 26 * 24 * 60 * 60 * 1000L))
@@ -278,6 +278,56 @@ class TramabookRepository(private val dao: TramabookDao) {
         dao.insertVote(Vote("sug_2", "user_bia", System.currentTimeMillis(), "round_mari_1"))
         dao.insertVote(Vote("sug_2", "user_joao", System.currentTimeMillis(), "round_mari_1"))
 
+        // Voting round ativa (7 dias à frente, N=1, cadência única)
+        val agora = System.currentTimeMillis()
+        val seteDias = 7L * 24 * 60 * 60 * 1000L
+        val umMes = 30L * 24 * 60 * 60 * 1000L
+        dao.insertVotingRound(
+            VotingRound(
+                id = "round_mari_1",
+                clubId = "club_mari",
+                criadoPor = "user_marina",
+                abertaEm = agora,
+                fechaEm = agora + seteDias,
+                nLivros = 1,
+                cadencia = "unica",
+                status = "aberta",
+                vencedoresJson = "[]"
+            )
+        )
+
+        // Justificativas reais persistidas pra cada sugestão
+        dao.insertBookSuggestion(
+            BookSuggestion(
+                id = "bs_1",
+                clubId = "club_mari",
+                bookId = "sug_1",
+                suggestedByUserId = "user_marina",
+                justificativa = "Tava querendo um livro brasileiro contemporâneo. Conceição Evaristo escreve memória e afeto como ninguém.",
+                criadoEm = agora - 2 * 24 * 60 * 60 * 1000L
+            )
+        )
+        dao.insertBookSuggestion(
+            BookSuggestion(
+                id = "bs_2",
+                clubId = "club_mari",
+                bookId = "sug_2",
+                suggestedByUserId = "user_bia",
+                justificativa = "Já é momento de revisitar Rachel de Queiroz — leitura curta e necessária.",
+                criadoEm = agora - 1 * 24 * 60 * 60 * 1000L
+            )
+        )
+        dao.insertBookSuggestion(
+            BookSuggestion(
+                id = "bs_3",
+                clubId = "club_mari",
+                bookId = "sug_3",
+                suggestedByUserId = "user_lucas",
+                justificativa = "Queria algo mais leve depois da intensidade da Clarice. Ficção científica clássica.",
+                criadoEm = agora - 3 * 60 * 60 * 1000L
+            )
+        )
+
         // 7. Finished books (Estante) matching screenshot exactly
         val bFinished1 = Book("fin_1", "Olhos d'água", "Conceição Evaristo", "https://covers.openlibrary.org/b/id/8359489-M.jpg", "", "")
         val bFinished2 = Book("fin_2", "Pedro Páramo", "Juan Rulfo", "https://covers.openlibrary.org/b/id/11105432-M.jpg", "", "")
@@ -287,11 +337,39 @@ class TramabookRepository(private val dao: TramabookDao) {
         dao.insertBook(bFinished2)
         dao.insertBook(bFinished3)
 
-        val agora = System.currentTimeMillis()
-        val umMes = 30L * 24 * 60 * 60 * 1000L
         dao.insertClubBook(ClubBook("club_mari", "fin_1", "finished", 1, agora - 3 * umMes))
         dao.insertClubBook(ClubBook("club_mari", "fin_2", "finished", 2, agora - 2 * umMes))
         dao.insertClubBook(ClubBook("club_mari", "fin_3", "finished", 3, agora - 1 * umMes))
+
+        // Resumos wiki dos finished
+        dao.insertBookSummary(
+            BookSummary(
+                bookId = "fin_1",
+                clubId = "club_mari",
+                texto = "Coletânea de contos da Conceição Evaristo. Cada conto é um soco no estômago — mulheres negras periféricas em situações que a gente prefere não ver. A escrita é direta mas atravessada de poesia. A discussão do clube ficou centrada em \"Maria\" e \"Ana Davenga\".",
+                lastEditorId = "user_marina",
+                updatedAt = agora - 5 * 24 * 60 * 60 * 1000L
+            )
+        )
+        dao.insertBookSummary(
+            BookSummary(
+                bookId = "fin_3",
+                clubId = "club_mari",
+                texto = "Romance que ganhou o Jabuti em 2020. Duas irmãs no sertão da Chapada Diamantina herdam uma faca e uma língua. Itamar Vieira Junior constrói uma narrativa em três partes que vai do mítico ao histórico sem perder o chão.",
+                lastEditorId = "user_voce",
+                updatedAt = agora - 12 * 24 * 60 * 60 * 1000L
+            )
+        )
+
+        // Avaliações dos finished
+        dao.insertBookRating(BookRating("fin_1", "club_mari", "user_marina", 5, "Conceição é incontornável.", agora - 5 * 24 * 60 * 60 * 1000L))
+        dao.insertBookRating(BookRating("fin_1", "club_mari", "user_voce", 5, "", agora - 4 * 24 * 60 * 60 * 1000L))
+        dao.insertBookRating(BookRating("fin_1", "club_mari", "user_sofia", 4, "Achei intenso demais às vezes, mas brilhante.", agora - 3 * 24 * 60 * 60 * 1000L))
+        dao.insertBookRating(BookRating("fin_2", "club_mari", "user_marina", 4, "", agora - 10 * 24 * 60 * 60 * 1000L))
+        dao.insertBookRating(BookRating("fin_2", "club_mari", "user_lucas", 3, "Não conectei muito.", agora - 9 * 24 * 60 * 60 * 1000L))
+        dao.insertBookRating(BookRating("fin_3", "club_mari", "user_voce", 5, "Um dos melhores livros que já li.", agora - 12 * 24 * 60 * 60 * 1000L))
+        dao.insertBookRating(BookRating("fin_3", "club_mari", "user_marina", 5, "Sim.", agora - 11 * 24 * 60 * 60 * 1000L))
+        dao.insertBookRating(BookRating("fin_3", "club_mari", "user_bia", 4, "", agora - 10 * 24 * 60 * 60 * 1000L))
 
         // 8. Visual notifications List
         dao.insertNotification(DbNotification("not_1", "user_voce", "club_mari", "comment_on_chapter", "{\"chapterId\":\"ch_7\",\"chapterTitle\":\"Encontro com Olímpico\",\"userName\":\"Marina\"}", false, System.currentTimeMillis() - 1 * 3600 * 1000))
