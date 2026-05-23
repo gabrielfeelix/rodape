@@ -20,7 +20,8 @@ data class Club(
     val cor: String, // swatch color index or hex
     val privacidade: String, // "convidados" | "publico"
     val criadorId: String,
-    val criadoEm: Long
+    val criadoEm: Long,
+    val arquivado: Boolean
 )
 
 @Entity(tableName = "club_members", primaryKeys = ["clubId", "userId"])
@@ -73,7 +74,10 @@ data class Comment(
     val clubId: String,
     val userId: String,
     val texto: String,
-    val criadoEm: Long
+    val criadoEm: Long,
+    val removido: Boolean,
+    val removidoPor: String?,
+    val motivoRemocao: String?
 )
 
 @Entity(tableName = "reactions", primaryKeys = ["commentId", "userId", "emoji"])
@@ -170,4 +174,25 @@ data class VotingRound(
     val cadencia: String,
     val status: String,
     val vencedoresJson: String
+)
+
+@Entity(tableName = "meeting_patterns")
+data class MeetingPattern(
+    @PrimaryKey val id: String,
+    val clubId: String,
+    val diaSemana: Int,
+    val hora: String,
+    val local: String,
+    val agendaTemplate: String,
+    val ativo: Boolean
+)
+
+@Entity(tableName = "member_removals")
+data class MemberRemoval(
+    @PrimaryKey val id: String,
+    val clubId: String,
+    val userId: String,
+    val removedByUserId: String,
+    val motivo: String,
+    val removedAt: Long
 )

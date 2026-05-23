@@ -174,18 +174,28 @@ fun EncontroTab(viewModel: MainViewModel) {
                                     .background(Cream.copy(alpha = 0.15f), RoundedCornerShape(12.dp)),
                                 contentAlignment = Alignment.Center
                             ) {
-                                Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                                Box(contentAlignment = Alignment.Center) {
+                                    Icon(
+                                        imageVector = Icons.Outlined.DateRange,
+                                        contentDescription = null,
+                                        tint = Cream.copy(alpha = 0.35f),
+                                        modifier = Modifier.size(56.dp)
+                                    )
+                                    val dayNumber = meeting!!.data
+                                        .substringAfter(",", "")
+                                        .trim()
+                                        .takeWhile { it.isDigit() }
+                                        .ifEmpty {
+                                            meeting!!.data.trim().takeWhile { it.isDigit() }.ifEmpty { "—" }
+                                        }
                                     Text(
-                                        text = meeting!!.data.substringBefore(" "),
+                                        text = dayNumber,
                                         style = MaterialTheme.typography.displayLarge.copy(
                                             fontSize = 20.sp,
                                             color = Cream,
                                             fontWeight = FontWeight.Bold
-                                        )
-                                    )
-                                    Text(
-                                        text = "out",
-                                        style = MaterialTheme.typography.labelMedium.copy(color = Cream.copy(alpha = 0.8f))
+                                        ),
+                                        modifier = Modifier.padding(top = 8.dp)
                                     )
                                 }
                             }

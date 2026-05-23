@@ -269,12 +269,13 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
                 cor = cor,
                 privacidade = privacidade,
                 criadorId = creatorId,
-                criadoEm = System.currentTimeMillis()
+                criadoEm = System.currentTimeMillis(),
+                arquivado = false
             )
             repository.insertClub(newClub)
-            
-            // creator is member/admin
-            repository.insertClubMember(ClubMember(clubId, creatorId, "admin", System.currentTimeMillis()))
+
+            // creator vira super_admin do clube
+            repository.insertClubMember(ClubMember(clubId, creatorId, "super_admin", System.currentTimeMillis()))
             
             // Auto seed the new club with basic initial books/meetings so user is not stuck on empty screens
             seedNewClubData(clubId)
@@ -372,7 +373,10 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
                 clubId = clubId,
                 userId = userId,
                 texto = content,
-                criadoEm = System.currentTimeMillis()
+                criadoEm = System.currentTimeMillis(),
+                removido = false,
+                removidoPor = null,
+                motivoRemocao = null
             )
             repository.insertComment(newComment)
         }

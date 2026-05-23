@@ -167,12 +167,13 @@ class TramabookRepository(private val dao: TramabookDao) {
             cor = "0", // terracota selection
             privacidade = "convidados",
             criadorId = "user_marina",
-            criadoEm = System.currentTimeMillis() - 30 * 24 * 60 * 60 * 1000L
+            criadoEm = System.currentTimeMillis() - 30 * 24 * 60 * 60 * 1000L,
+            arquivado = false
         )
         dao.insertClub(clubMari)
 
         // Club Members
-        dao.insertClubMember(ClubMember("club_mari", "user_marina", "admin", System.currentTimeMillis() - 30 * 24 * 60 * 60 * 1000L))
+        dao.insertClubMember(ClubMember("club_mari", "user_marina", "super_admin", System.currentTimeMillis() - 30 * 24 * 60 * 60 * 1000L))
         dao.insertClubMember(ClubMember("club_mari", "user_voce", "admin", System.currentTimeMillis() - 28 * 24 * 60 * 60 * 1000L))
         dao.insertClubMember(ClubMember("club_mari", "user_lucas", "member", System.currentTimeMillis() - 28 * 24 * 60 * 60 * 1000L))
         dao.insertClubMember(ClubMember("club_mari", "user_sofia", "member", System.currentTimeMillis() - 27 * 24 * 60 * 60 * 1000L))
@@ -218,9 +219,9 @@ class TramabookRepository(private val dao: TramabookDao) {
         dao.insertUserProgress(UserProgress("user_joao", "club_mari", "book_metamorfose", 1))
 
         // 4. Chapter 7 comments matching screenshot exactly!
-        val c1 = Comment("c_1", "ch_7", "club_mari", "user_marina", "Esse capítulo me deixou com um nó. A vidente fala umas coisas que a Macabéa nem entende direito, mas a gente sente o peso de cada uma. Clarice é cruel e doce ao mesmo tempo.", System.currentTimeMillis() - 2 * 3600 * 1000)
-        val c2 = Comment("c_2", "ch_7", "club_mari", "user_voce", "Concordo, Marina. Tinha lido um trecho desse capítulo solto e não tinha entendido nada. No contexto inteiro faz muito mais sentido — sobretudo a previsão do estrangeiro.", System.currentTimeMillis() - 1 * 3600 * 1000)
-        val c3 = Comment("c_3", "ch_7", "club_mari", "user_lucas", "Reparem como o narrador (Rodrigo SM) some quase por completo nessa parte. É como se ele deixasse a Macabéa respirar sozinha por uma página inteira.", System.currentTimeMillis() - 30 * 60 * 1000)
+        val c1 = Comment("c_1", "ch_7", "club_mari", "user_marina", "Esse capítulo me deixou com um nó. A vidente fala umas coisas que a Macabéa nem entende direito, mas a gente sente o peso de cada uma. Clarice é cruel e doce ao mesmo tempo.", System.currentTimeMillis() - 2 * 3600 * 1000, false, null, null)
+        val c2 = Comment("c_2", "ch_7", "club_mari", "user_voce", "Concordo, Marina. Tinha lido um trecho desse capítulo solto e não tinha entendido nada. No contexto inteiro faz muito mais sentido — sobretudo a previsão do estrangeiro.", System.currentTimeMillis() - 1 * 3600 * 1000, false, null, null)
+        val c3 = Comment("c_3", "ch_7", "club_mari", "user_lucas", "Reparem como o narrador (Rodrigo SM) some quase por completo nessa parte. É como se ele deixasse a Macabéa respirar sozinha por uma página inteira.", System.currentTimeMillis() - 30 * 60 * 1000, false, null, null)
 
         dao.insertComment(c1)
         dao.insertComment(c2)
@@ -235,8 +236,8 @@ class TramabookRepository(private val dao: TramabookDao) {
         dao.insertReaction(Reaction("c_3", "user_bia", "🤯"))
 
         // Chapter 1 comments
-        val c4 = Comment("c_4", "ch_1", "club_mari", "user_marina", "Gregor Samsa acordando transformado em inseto gigante é possivelmente um dos começos de narrativa mais impressionantes que já li na vida. O absurdo é tratado com tanta naturalidade!", System.currentTimeMillis() - 5 * 24 * 3600 * 1000)
-        val c5 = Comment("c_5", "ch_1", "club_mari", "user_voce", "Eu achei um tanto claustrofóbico. A descrição dele tentando virar o corpo pesado de concha de um lado para o outro na cama te faz se sentir meio preso também. Muito imersivo.", System.currentTimeMillis() - 4 * 24 * 3600 * 1000)
+        val c4 = Comment("c_4", "ch_1", "club_mari", "user_marina", "Gregor Samsa acordando transformado em inseto gigante é possivelmente um dos começos de narrativa mais impressionantes que já li na vida. O absurdo é tratado com tanta naturalidade!", System.currentTimeMillis() - 5 * 24 * 3600 * 1000, false, null, null)
+        val c5 = Comment("c_5", "ch_1", "club_mari", "user_voce", "Eu achei um tanto claustrofóbico. A descrição dele tentando virar o corpo pesado de concha de um lado para o outro na cama te faz se sentir meio preso também. Muito imersivo.", System.currentTimeMillis() - 4 * 24 * 3600 * 1000, false, null, null)
         dao.insertComment(c4)
         dao.insertComment(c5)
 
