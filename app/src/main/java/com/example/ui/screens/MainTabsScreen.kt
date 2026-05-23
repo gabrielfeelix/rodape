@@ -43,6 +43,7 @@ import com.example.data.model.*
 import com.example.ui.components.*
 import com.example.ui.theme.Terracota
 import com.example.ui.theme.TerracotaSoft
+import com.example.ui.theme.OlivaDark
 import com.example.ui.theme.OlivaDeep
 import com.example.ui.theme.Oliva
 import com.example.ui.theme.OlivaSoft
@@ -97,6 +98,11 @@ fun MainTabsScreen(
         }
     }
     var showBottomSheet by remember { mutableStateOf(false) }
+    val context = androidx.compose.ui.platform.LocalContext.current
+    val shouldShowRatePrompt by viewModel.shouldShowRatePrompt.collectAsState()
+    // Mostra prompt só 1x por sessão pra não ser invasivo (e o markAppRated já garante 1x permanente)
+    var ratePromptShown by remember { mutableStateOf(false) }
+    val showRateDialog = shouldShowRatePrompt && !ratePromptShown
 
     val activeClub by viewModel.activeClub.collectAsState()
     val allClubs by viewModel.allClubs.collectAsState()
@@ -235,6 +241,52 @@ fun MainTabsScreen(
                 )
             }
         }
+    }
+
+    // Prompt automático de avaliar Play Store após engajamento
+    if (showRateDialog) {
+        AlertDialog(
+            onDismissRequest = {
+                ratePromptShown = true
+            },
+            containerColor = MaterialTheme.colorScheme.surface,
+            title = {
+                Text(
+                    "Curtindo o Tramabook? ⭐",
+                    style = MaterialTheme.typography.titleLarge.copy(
+                        fontFamily = LiterataFontFamily,
+                        fontWeight = FontWeight.SemiBold
+                    )
+                )
+            },
+            text = {
+                Text(
+                    "Se o app tá ajudando vocês a ler juntos, uma avaliação na Play Store nos ajuda demais a chegar em outros clubes. Leva 30 segundos 💚",
+                    style = MaterialTheme.typography.bodyMedium.copy(
+                        fontFamily = InterFontFamily,
+                        color = Ink,
+                        lineHeight = 20.sp
+                    )
+                )
+            },
+            confirmButton = {
+                TextButton(onClick = {
+                    com.example.util.openPlayStorePage(context)
+                    viewModel.markAppRated()
+                    ratePromptShown = true
+                }) {
+                    Text("Avaliar agora", color = Terracota, fontWeight = FontWeight.SemiBold)
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = {
+                    viewModel.dismissRatePromptForever()
+                    ratePromptShown = true
+                }) {
+                    Text("Não, obrigado", color = Muted)
+                }
+            }
+        )
     }
 
     if (showBottomSheet) {
@@ -1526,9 +1578,12 @@ fun ProfileScreenTab(
     val activeClub by viewModel.activeClub.collectAsState()
     val savedQuotes by viewModel.savedQuotes.collectAsState()
     val archivedClubs by viewModel.archivedClubsForUser.collectAsState()
+    val ratedApp by viewModel.ratedApp.collectAsState()
 
+    val context = androidx.compose.ui.platform.LocalContext.current
     var isEditingProfile by remember { mutableStateOf(false) }
     var showLogoutDialog by remember { mutableStateOf(false) }
+    var showFeedbackDialog by remember { mutableStateOf(false) }
 
     if (isEditingProfile) {
         EditProfileView(
@@ -1883,9 +1938,82 @@ fun ProfileScreenTab(
                 }
             }
 
+            // ── Ajude o app a crescer ────────────────────────────────────
+            item {
+                Spacer(modifier = Modifier.height(16.dp))
+                Text(
+                    text = "AJUDE O TRAMABOOK A CRESCER",
+                    style = MaterialTheme.typography.labelSmall.copy(
+                        fontFamily = InterFontFamily,
+                        fontWeight = FontWeight.Bold,
+                        color = Muted,
+                        letterSpacing = 1.sp
+                    ),
+                    modifier = Modifier.padding(start = 4.dp, bottom = 8.dp)
+                )
+                Card(
+                    modifier = Modifier.fillMaxWidth(),
+                    shape = RoundedCornerShape(20.dp),
+                    colors = CardDefaults.cardColors(containerColor = OlivaSoft.copy(alpha = 0.4f)),
+                    border = BorderStroke(1.dp, Oliva.copy(alpha = 0.3f))
+                ) {
+                    Column(modifier = Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
+                        Text(
+                            text = "Somos novos por aqui 💚",
+                            style = MaterialTheme.typography.titleMedium.copy(
+                                fontFamily = LiterataFontFamily,
+                                fontWeight = FontWeight.SemiBold,
+                                color = OlivaDark
+                            )
+                        )
+                        Text(
+                            text = "A gente lê todo feedback nas primeiras horas. Conta o que você acha, o que falta, o que poderia ser melhor — é assim que o Tramabook vai virar o que vocês precisam.",
+                            style = MaterialTheme.typography.bodyMedium.copy(
+                                fontFamily = InterFontFamily,
+                                color = Ink,
+                                lineHeight = 20.sp
+                            )
+                        )
+                        TbButton(
+                            text = "Mandar feedback",
+                            onClick = { showFeedbackDialog = true },
+                            variant = TbButtonVariant.Primary,
+                            size = TbButtonSize.Md,
+                            modifier = Modifier.fillMaxWidth()
+                        )
+                        if (!ratedApp) {
+                            TbButton(
+                                text = "⭐ Avaliar na Play Store",
+                                onClick = {
+                                    com.example.util.openPlayStorePage(context)
+                                    viewModel.markAppRated()
+                                },
+                                variant = TbButtonVariant.Outline,
+                                size = TbButtonSize.Md,
+                                modifier = Modifier.fillMaxWidth()
+                            )
+                        } else {
+                            Row(
+                                verticalAlignment = Alignment.CenterVertically,
+                                horizontalArrangement = Arrangement.spacedBy(6.dp),
+                                modifier = Modifier.fillMaxWidth().padding(top = 4.dp)
+                            ) {
+                                Text(
+                                    text = "⭐ Obrigado por avaliar!",
+                                    style = MaterialTheme.typography.bodySmall.copy(
+                                        color = OlivaDark,
+                                        fontWeight = FontWeight.Medium
+                                    )
+                                )
+                            }
+                        }
+                    }
+                }
+            }
+
             // ── Sair da conta ────────────────────────────────────────────
             item {
-                Spacer(modifier = Modifier.height(4.dp))
+                Spacer(modifier = Modifier.height(20.dp))
                 TbButton(
                     text = "Sair da conta",
                     onClick = { showLogoutDialog = true },
@@ -1896,6 +2024,59 @@ fun ProfileScreenTab(
                 Spacer(modifier = Modifier.height(40.dp))
             }
         }
+    }
+
+    // Dialog de feedback
+    if (showFeedbackDialog) {
+        var feedbackText by remember { mutableStateOf("") }
+        AlertDialog(
+            onDismissRequest = { showFeedbackDialog = false },
+            containerColor = MaterialTheme.colorScheme.surface,
+            title = {
+                Text(
+                    "Manda esse feedback 💚",
+                    style = MaterialTheme.typography.titleLarge.copy(
+                        fontFamily = LiterataFontFamily,
+                        fontWeight = FontWeight.SemiBold
+                    )
+                )
+            },
+            text = {
+                Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
+                    Text(
+                        "Pode escrever sem cerimônia: o que rolou bem, o que travou, o que poderia melhorar. A gente lê tudo.",
+                        style = MaterialTheme.typography.bodyMedium.copy(color = Muted)
+                    )
+                    OutlinedTextField(
+                        value = feedbackText,
+                        onValueChange = { feedbackText = it },
+                        placeholder = { Text("Ex: amei a estante! mas senti falta de…") },
+                        minLines = 5,
+                        modifier = Modifier.fillMaxWidth()
+                    )
+                    Text(
+                        "Vai abrir seu app de email pra você revisar antes de enviar.",
+                        style = MaterialTheme.typography.labelSmall.copy(color = Muted)
+                    )
+                }
+            },
+            confirmButton = {
+                TextButton(onClick = {
+                    com.example.util.openEmailFeedback(
+                        context = context,
+                        body = feedbackText.ifBlank { "" }
+                    )
+                    showFeedbackDialog = false
+                }) {
+                    Text("Abrir email", color = Terracota, fontWeight = FontWeight.SemiBold)
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = { showFeedbackDialog = false }) {
+                    Text("Cancelar", color = Muted)
+                }
+            }
+        )
     }
 
     if (showLogoutDialog) {

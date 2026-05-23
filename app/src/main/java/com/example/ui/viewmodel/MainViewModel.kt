@@ -37,6 +37,32 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
     val activeClubId: StateFlow<String?> = dataStoreManager.activeClubIdFlow
         .stateIn(viewModelScope, SharingStarted.Eagerly, null)
 
+    // App-level prefs (avaliação na Play Store + contador de engajamento)
+    val ratedApp: StateFlow<Boolean> = dataStoreManager.ratedAppFlow
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), false)
+
+    val engagementCount: StateFlow<Int> = dataStoreManager.engagementCountFlow
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), 0)
+
+    /** Mostra o prompt de avaliação se: não avaliou ainda E já fez ≥3 ações de engajamento. */
+    val shouldShowRatePrompt: StateFlow<Boolean> =
+        combine(ratedApp, engagementCount) { rated, count -> !rated && count >= 3 }
+            .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), false)
+
+    fun markAppRated() {
+        viewModelScope.launch { dataStoreManager.markAppRated() }
+    }
+
+    /** Chamado em pontos de engajamento (votar, comentar, salvar frase, RSVP, avaliar livro). */
+    fun bumpEngagement() {
+        viewModelScope.launch { dataStoreManager.incrementEngagementCount() }
+    }
+
+    /** Marca como rated sem mostrar prompt de novo (pra "Agora não, talvez mais tarde" também silenciar). */
+    fun dismissRatePromptForever() {
+        viewModelScope.launch { dataStoreManager.markAppRated() }
+    }
+
     // Clubs
     val allClubs: StateFlow<List<Club>> = currentUserId.flatMapLatest { userId ->
         if (userId != null) repository.getClubsForUser(userId) else flowOf(emptyList())
@@ -417,6 +443,7 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
                 motivoRemocao = null
             )
             repository.insertComment(newComment)
+            bumpEngagement()
         }
     }
 
@@ -459,6 +486,7 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
             if (count >= round.nLivros) return@launch
 
             repository.insertVote(Vote(bookId, userId, System.currentTimeMillis(), round.id))
+            bumpEngagement()
         }
     }
 
@@ -600,6 +628,7 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
             repository.insertBookRating(
                 BookRating(bookId, clubId, userId, stars, comment.trim(), System.currentTimeMillis())
             )
+            bumpEngagement()
         }
     }
 
@@ -615,6 +644,7 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
         viewModelScope.launch {
             val userId = currentUserId.value ?: "user_voce"
             repository.insertMeetingRsvp(MeetingRsvp(meetingId, userId, status))
+            bumpEngagement()
         }
     }
 
@@ -725,6 +755,7 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
                 criadoEm = System.currentTimeMillis()
             )
             repository.insertSavedQuote(quote)
+            bumpEngagement()
         }
     }
 

@@ -142,6 +142,19 @@ fun ManageClubScreen(
                         modifier = Modifier.fillMaxWidth()
                     )
                     Spacer(modifier = Modifier.height(12.dp))
+                    val ctx = androidx.compose.ui.platform.LocalContext.current
+                    TbButton(
+                        text = "📲 Compartilhar convite",
+                        onClick = {
+                            val code = club?.codigo ?: return@TbButton
+                            val name = club?.nome ?: "Clube"
+                            com.example.util.shareClubInvite(ctx, name, code)
+                        },
+                        variant = TbButtonVariant.Terra,
+                        size = TbButtonSize.Sm,
+                        modifier = Modifier.fillMaxWidth()
+                    )
+                    Spacer(modifier = Modifier.height(8.dp))
                     Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                         TbButton(
                             text = "Copiar",
