@@ -254,6 +254,7 @@ fun DiscussionScreen(
                         )
                     }
                 } else {
+                    val currentUid by viewModel.currentUserId.collectAsState()
                     LazyColumn(
                         modifier = Modifier
                             .fillMaxWidth()
@@ -263,9 +264,9 @@ fun DiscussionScreen(
                     ) {
                         items(comments) { comment ->
                             val userObj = members.find { it.id == comment.userId }
-                            val userNameVal = if (comment.userId == "user_voce") "Você" else userObj?.nome ?: "Iniciante"
+                            val userNameVal = if (comment.userId == currentUid) "Você" else userObj?.nome ?: "Iniciante"
                             val commentReactions = reactions.filter { it.commentId == comment.id }
-                            val isOwn = comment.userId == "user_voce"
+                            val isOwn = comment.userId == currentUid
                             val isAdmin by viewModel.isCurrentUserAdmin.collectAsState()
                             var showModMenu by remember(comment.id) { mutableStateOf(false) }
                             var showRemoveDialog by remember(comment.id) { mutableStateOf(false) }
@@ -346,7 +347,7 @@ fun DiscussionScreen(
                                             val emojiGroups = commentReactions.groupBy { it.emoji }
                                             emojiGroups.forEach { (emoji, list) ->
                                                 val count = list.size
-                                                val hasUserReacted = list.any { it.userId == "user_voce" }
+                                                val hasUserReacted = list.any { it.userId == currentUid }
 
                                                 val chipBg = if (hasUserReacted) TerracotaSoft else CardSoft
                                                 val chipBorder = if (hasUserReacted) {

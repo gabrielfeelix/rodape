@@ -131,6 +131,7 @@ fun EncontroTab(
     val members by viewModel.clubMembers.collectAsState()
     val meetingsForBook by viewModel.meetingsForCurrentBook.collectAsState()
     val currentBookTitle = viewModel.currentBook.collectAsState().value?.title
+    val currentUserId = viewModel.currentUserId.collectAsState().value
 
     var isConfirmadosExpanded by remember { mutableStateOf(true) }
     var isTalvezExpanded by remember { mutableStateOf(false) }
@@ -486,8 +487,8 @@ fun EncontroTab(
                             } else {
                                 confirmados.forEach { resp ->
                                     val userObj = members.find { it.id == resp.userId }
-                                    val nameVal = if (resp.userId == "user_voce") "Você" else userObj?.nome ?: "Membro"
-                                    val urlVal = if (resp.userId == "user_voce") (viewModel.currentUser.value?.avatarUrl ?: "") else userObj?.avatarUrl ?: ""
+                                    val nameVal = if (resp.userId == currentUserId) "Você" else userObj?.nome ?: "Membro"
+                                    val urlVal = if (resp.userId == currentUserId) (viewModel.currentUser.value?.avatarUrl ?: "") else userObj?.avatarUrl ?: ""
                                     Row(
                                         verticalAlignment = Alignment.CenterVertically,
                                         horizontalArrangement = Arrangement.spacedBy(10.dp),
@@ -542,8 +543,8 @@ fun EncontroTab(
                             } else {
                                 talvez.forEach { resp ->
                                     val userObj = members.find { it.id == resp.userId }
-                                    val nameVal = if (resp.userId == "user_voce") "Você" else userObj?.nome ?: "Membro"
-                                    val urlVal = if (resp.userId == "user_voce") (viewModel.currentUser.value?.avatarUrl ?: "") else userObj?.avatarUrl ?: ""
+                                    val nameVal = if (resp.userId == currentUserId) "Você" else userObj?.nome ?: "Membro"
+                                    val urlVal = if (resp.userId == currentUserId) (viewModel.currentUser.value?.avatarUrl ?: "") else userObj?.avatarUrl ?: ""
                                     Row(
                                         verticalAlignment = Alignment.CenterVertically,
                                         horizontalArrangement = Arrangement.spacedBy(10.dp),
@@ -598,8 +599,8 @@ fun EncontroTab(
                             } else {
                                 naoVou.forEach { resp ->
                                     val userObj = members.find { it.id == resp.userId }
-                                    val nameVal = if (resp.userId == "user_voce") "Você" else userObj?.nome ?: "Membro"
-                                    val urlVal = if (resp.userId == "user_voce") (viewModel.currentUser.value?.avatarUrl ?: "") else userObj?.avatarUrl ?: ""
+                                    val nameVal = if (resp.userId == currentUserId) "Você" else userObj?.nome ?: "Membro"
+                                    val urlVal = if (resp.userId == currentUserId) (viewModel.currentUser.value?.avatarUrl ?: "") else userObj?.avatarUrl ?: ""
                                     Row(
                                         verticalAlignment = Alignment.CenterVertically,
                                         horizontalArrangement = Arrangement.spacedBy(10.dp),

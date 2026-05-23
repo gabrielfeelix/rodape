@@ -846,11 +846,13 @@ fun HomeScreenTab(
                         modifier = Modifier.weight(1f)
                     ) {
                         val bookTitle = currentBook?.title ?: "A Hora da Estrela"
-                        val totalChaps = if (chapters.isNotEmpty()) chapters.size else 13
-                        val curChap = if (currentChapIndex > 0) currentChapIndex else 8
+                        val totalChaps = chapters.size
+                        val curChap = currentChapIndex
+                        val readingLabel = if (totalChaps > 0) "TUA LEITURA · CAP. $curChap/$totalChaps"
+                            else "TUA LEITURA · sem capítulos definidos"
 
                         Text(
-                            text = "TUA LEITURA · CAP. $curChap/$totalChaps",
+                            text = readingLabel,
                             style = MaterialTheme.typography.labelSmall.copy(
                                 fontFamily = InterFontFamily,
                                 fontWeight = FontWeight.Bold,
@@ -874,7 +876,7 @@ fun HomeScreenTab(
 
                         Spacer(modifier = Modifier.height(10.dp))
 
-                        val visualPct = curChap.toFloat() / totalChaps.toFloat()
+                        val visualPct = if (totalChaps > 0) (curChap.toFloat() / totalChaps.toFloat()).coerceIn(0f, 1f) else 0f
                         Row(
                             verticalAlignment = Alignment.CenterVertically,
                             horizontalArrangement = Arrangement.spacedBy(8.dp)
@@ -944,12 +946,12 @@ fun HomeScreenTab(
                 items(sortedMembers) { member ->
                     val memberProg = allProgress.find { it.userId == member.id && it.bookId == (currentBook?.id ?: "book_metamorfose") }
                     val memChap = memberProg?.currentChapter ?: if (member.id == "user_marina") 9 else if (member.id == "user_sofia") 13 else 8
-                    val totalChaps = if (chapters.isNotEmpty()) chapters.size else 13
+                    val totalChaps = chapters.size
 
                     val isCurrentUser = member.id == currentUserId
                     val displayName = if (isCurrentUser) "Você" else member.nome.substringBefore(" ")
 
-                    val finished = memChap >= totalChaps
+                    val finished = totalChaps > 0 && memChap >= totalChaps
 
                     Column(
                         horizontalAlignment = Alignment.CenterHorizontally,
@@ -1275,6 +1277,38 @@ fun BookDetailScreenTab(
                             text = "$readCount lidos",
                             style = MaterialTheme.typography.bodySmall.copy(color = Muted)
                         )
+                    }
+
+                    if (chapters.isEmpty()) {
+                        Surface(
+                            modifier = Modifier.fillMaxWidth(),
+                            shape = RoundedCornerShape(16.dp),
+                            color = DividerSoft.copy(alpha = 0.3f)
+                        ) {
+                            Column(
+                                modifier = Modifier.fillMaxWidth().padding(24.dp),
+                                horizontalAlignment = Alignment.CenterHorizontally,
+                                verticalArrangement = Arrangement.spacedBy(8.dp)
+                            ) {
+                                Text(
+                                    text = "📚",
+                                    fontSize = 32.sp
+                                )
+                                Text(
+                                    text = "Capítulos ainda não cadastrados",
+                                    style = MaterialTheme.typography.bodyMedium.copy(
+                                        fontFamily = LiterataFontFamily,
+                                        fontWeight = FontWeight.SemiBold,
+                                        color = Ink
+                                    )
+                                )
+                                Text(
+                                    text = "Peça pro admin abrir Gerenciar clube → Capítulos.",
+                                    style = MaterialTheme.typography.bodySmall.copy(color = Muted),
+                                    textAlign = TextAlign.Center
+                                )
+                            }
+                        }
                     }
 
                     Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {

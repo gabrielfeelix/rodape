@@ -11,6 +11,7 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.ui.theme.Cream
@@ -56,6 +57,11 @@ fun TbButton(
         TbButtonSize.Md -> 15
         TbButtonSize.Lg -> 16
     }
+    val horizontalPadding = when (size) {
+        TbButtonSize.Sm -> 12.dp
+        TbButtonSize.Md -> 18.dp
+        TbButtonSize.Lg -> 22.dp
+    }
 
     Button(
         onClick = onClick,
@@ -63,7 +69,7 @@ fun TbButton(
         modifier = modifier.height(height),
         shape = CircleShape,
         border = style.border,
-        contentPadding = PaddingValues(horizontal = 22.dp),
+        contentPadding = PaddingValues(horizontal = horizontalPadding),
         colors = ButtonDefaults.buttonColors(
             containerColor = style.bg,
             contentColor = style.fg,
@@ -76,6 +82,8 @@ fun TbButton(
             style = MaterialTheme.typography.labelLarge.copy(
                 fontSize = fontSize.sp,
             ),
+            maxLines = 1,
+            overflow = TextOverflow.Ellipsis,
         )
     }
 }
