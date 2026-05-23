@@ -108,6 +108,50 @@ class TramabookRepository(private val dao: TramabookDao) {
 
     fun getCommentsForBookFlow(bookId: String, clubId: String): Flow<List<Comment>> = dao.getCommentsForBookFlow(bookId, clubId)
 
+    // --- Club admin (Fase 5) ---
+    suspend fun updateClubInfo(clubId: String, nome: String, descricao: String, cor: String, privacidade: String) =
+        dao.updateClubInfo(clubId, nome, descricao, cor, privacidade)
+    suspend fun updateClubCodigo(clubId: String, codigo: String) = dao.updateClubCodigo(clubId, codigo)
+    suspend fun updateClubArquivado(clubId: String, arquivado: Boolean) = dao.updateClubArquivado(clubId, arquivado)
+    fun getArchivedClubsForUserFlow(userId: String): Flow<List<Club>> = dao.getArchivedClubsForUserFlow(userId)
+
+    // --- Member admin ---
+    suspend fun updateMemberPapel(clubId: String, userId: String, papel: String) =
+        dao.updateMemberPapel(clubId, userId, papel)
+    suspend fun deleteClubMember(clubId: String, userId: String) = dao.deleteClubMember(clubId, userId)
+    suspend fun getClubMembersListOrderedByJoin(clubId: String): List<ClubMember> =
+        dao.getClubMembersListOrderedByJoin(clubId)
+    fun getClubMembersRawFlow(clubId: String): Flow<List<ClubMember>> = dao.getClubMembersRawFlow(clubId)
+    suspend fun insertMemberRemoval(removal: MemberRemoval) = dao.insertMemberRemoval(removal)
+    fun getMemberRemovalsForClubFlow(clubId: String): Flow<List<MemberRemoval>> =
+        dao.getMemberRemovalsForClubFlow(clubId)
+
+    // --- Meeting pattern ---
+    suspend fun insertMeetingPattern(pattern: MeetingPattern) = dao.insertMeetingPattern(pattern)
+    fun getActiveMeetingPatternFlow(clubId: String): Flow<MeetingPattern?> =
+        dao.getActiveMeetingPatternFlow(clubId)
+    suspend fun getActiveMeetingPattern(clubId: String): MeetingPattern? = dao.getActiveMeetingPattern(clubId)
+    suspend fun deactivateMeetingPatterns(clubId: String) = dao.deactivateMeetingPatterns(clubId)
+
+    // --- Meeting CRUD ---
+    suspend fun deleteMeeting(meetingId: String) = dao.deleteMeeting(meetingId)
+    suspend fun deleteRsvpsForMeeting(meetingId: String) = dao.deleteRsvpsForMeeting(meetingId)
+
+    // --- Comment moderation ---
+    suspend fun softRemoveComment(commentId: String, removidoPor: String, motivo: String) =
+        dao.softRemoveComment(commentId, removidoPor, motivo)
+    suspend fun restoreComment(commentId: String) = dao.restoreComment(commentId)
+    fun getRemovedCommentsForClubFlow(clubId: String): Flow<List<Comment>> =
+        dao.getRemovedCommentsForClubFlow(clubId)
+
+    // --- Chapters CRUD ---
+    suspend fun deleteChaptersForBook(bookId: String) = dao.deleteChaptersForBook(bookId)
+
+    // --- Suggestion delete ---
+    suspend fun deleteClubBook(clubId: String, bookId: String) = dao.deleteClubBook(clubId, bookId)
+    suspend fun deleteBookSuggestion(bookId: String, clubId: String) = dao.deleteBookSuggestion(bookId, clubId)
+    suspend fun deleteVotesForBook(bookId: String) = dao.deleteVotesForBook(bookId)
+
     suspend fun seedDatabase() {
         // Only seed if no clubs exist
         val list = dao.getClubsForUserList("user_voce")
@@ -258,6 +302,19 @@ class TramabookRepository(private val dao: TramabookDao) {
         dao.insertMeetingRsvp(MeetingRsvp("meet_1", "user_sofia", "Vou"))
         dao.insertMeetingRsvp(MeetingRsvp("meet_1", "user_bia", "Talvez"))
         dao.insertMeetingRsvp(MeetingRsvp("meet_1", "user_joao", "Não vou"))
+
+        // Padrão de encontros: domingos 19h
+        dao.insertMeetingPattern(
+            MeetingPattern(
+                id = "pattern_mari",
+                clubId = "club_mari",
+                diaSemana = java.util.Calendar.SUNDAY,
+                hora = "19:00",
+                local = "Café Lispector, Vila Madalena",
+                agendaTemplate = "Discussão do livro atual",
+                ativo = true
+            )
+        )
 
         // 6. Suggestions matching screenshot exactly
         val bookEstravagante = Book("sug_1", "Becos da memória", "Conceição Evaristo", "https://covers.openlibrary.org/b/id/8359489-M.jpg", "", "")
