@@ -15,14 +15,16 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Brush
-import androidx.compose.ui.text.font.FontStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.ui.components.*
 import com.example.ui.theme.*
 import com.example.ui.viewmodel.MainViewModel
+import com.example.util.formatShortDate
+import com.example.util.timeAgo
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -66,7 +68,6 @@ fun BookDetailScreen(
         return
     }
 
-    // --- Internal tabs state ---
     var tab by remember { mutableStateOf("resumo") }
 
     // --- Quote dialog state ---
@@ -74,9 +75,11 @@ fun BookDetailScreen(
     var quoteText by remember { mutableStateOf("") }
     var quoteRef by remember { mutableStateOf("") }
 
-    // --- Quotes flow ---
+    // --- Flows ---
     val quotesFlow = remember(bookId) { viewModel.getSavedQuotesForBook(bookId) }
     val quotes by quotesFlow.collectAsState(initial = emptyList())
+    val meetingDates by viewModel.finishedBooksMeetingDates.collectAsState()
+    val dataEncontro = meetingDates[bookId]
 
     Column(
         modifier = Modifier
@@ -95,7 +98,6 @@ fun BookDetailScreen(
                     .padding(top = 48.dp, bottom = 24.dp),
                 horizontalAlignment = Alignment.CenterHorizontally
             ) {
-                // Cover
                 Cover(
                     title = book.title,
                     author = book.author,
@@ -106,7 +108,6 @@ fun BookDetailScreen(
 
                 Spacer(modifier = Modifier.height(20.dp))
 
-                // Title
                 Text(
                     text = book.title,
                     style = MaterialTheme.typography.displaySmall.copy(
@@ -121,7 +122,6 @@ fun BookDetailScreen(
 
                 Spacer(modifier = Modifier.height(8.dp))
 
-                // Author
                 Text(
                     text = book.author,
                     style = MaterialTheme.typography.bodyLarge.copy(
@@ -132,7 +132,6 @@ fun BookDetailScreen(
                 )
             }
 
-            // Back button — top-left
             Box(
                 modifier = Modifier
                     .padding(top = 8.dp, start = 12.dp)
@@ -151,7 +150,12 @@ fun BookDetailScreen(
             }
         }
 
-        // ── READ-STATUS BANNER ───────────────────────────────────────────────
+        // ── BANNER (com data do encontro quando disponível) ─────────────────
+        val bannerText = if (dataEncontro != null) {
+            "Lido pelo clube · Encontro em ${formatShortDate(dataEncontro)}"
+        } else {
+            "Lido pelo clube"
+        }
         Box(
             modifier = Modifier
                 .fillMaxWidth()
@@ -162,7 +166,7 @@ fun BookDetailScreen(
             contentAlignment = Alignment.Center
         ) {
             Text(
-                text = "Este livro está na estante do clube.",
+                text = bannerText,
                 style = MaterialTheme.typography.bodyMedium.copy(
                     fontFamily = InterFontFamily,
                     fontWeight = FontWeight.Medium,
@@ -174,13 +178,19 @@ fun BookDetailScreen(
 
         Spacer(modifier = Modifier.height(20.dp))
 
-        // ── INTERNAL TABS ────────────────────────────────────────────────────
-        val tabs = listOf("resumo" to "Resumo", "frases" to "Frases", "historico" to "Histórico")
+        // ── TABS ─────────────────────────────────────────────────────────────
+        val tabs = listOf(
+            "resumo" to "Resumo",
+            "frases" to "Frases",
+            "chat" to "Chat",
+            "avaliacoes" to "Avaliações",
+            "historico" to "Histórico"
+        )
 
         Row(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(horizontal = 24.dp),
+                .padding(horizontal = 16.dp),
             horizontalArrangement = Arrangement.spacedBy(0.dp)
         ) {
             tabs.forEach { (key, label) ->
@@ -193,11 +203,13 @@ fun BookDetailScreen(
                 ) {
                     Text(
                         text = label,
-                        style = MaterialTheme.typography.titleMedium.copy(
+                        style = MaterialTheme.typography.bodyMedium.copy(
                             fontFamily = LiterataFontFamily,
                             fontWeight = if (isSelected) FontWeight.SemiBold else FontWeight.Normal,
                             color = if (isSelected) Ink else Muted
                         ),
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis,
                         modifier = Modifier.padding(bottom = 8.dp)
                     )
                     Box(
@@ -215,7 +227,6 @@ fun BookDetailScreen(
 
         Spacer(modifier = Modifier.height(16.dp))
 
-        // ── TAB CONTENT ──────────────────────────────────────────────────────
         Column(
             modifier = Modifier
                 .fillMaxSize()
@@ -223,147 +234,16 @@ fun BookDetailScreen(
                 .padding(horizontal = 24.dp)
         ) {
             when (tab) {
-                // ── RESUMO ───────────────────────────────────────────────────
-                "resumo" -> {
-                    TramabookCard(modifier = Modifier.fillMaxWidth()) {
-                        Text(
-                            text = "Um livro que o clube leu junto. As conversas sobre ele renderam — toca em Frases pra rever o que ficou.",
-                            style = MaterialTheme.typography.bodyMedium.copy(
-                                fontFamily = InterFontFamily,
-                                color = InkSoft,
-                                lineHeight = 22.sp
-                            )
-                        )
-                    }
-
-                    Spacer(modifier = Modifier.height(20.dp))
-
-                    Row(
-                        verticalAlignment = Alignment.CenterVertically,
-                        horizontalArrangement = Arrangement.spacedBy(6.dp),
-                        modifier = Modifier.padding(bottom = 10.dp)
-                    ) {
-                        Box(
-                            modifier = Modifier
-                                .size(6.dp)
-                                .background(Terracota, CircleShape)
-                        )
-                        Text(
-                            text = "O QUE O CLUBE ACHOU",
-                            style = MaterialTheme.typography.labelSmall.copy(
-                                fontFamily = InterFontFamily,
-                                fontWeight = FontWeight.Bold,
-                                letterSpacing = 1.sp,
-                                color = Terracota
-                            )
-                        )
-                    }
-
-                    TramabookCard(modifier = Modifier.fillMaxWidth()) {
-                        Text(
-                            text = "O clube adorou — as discussões ficaram acesas até tarde. Todo mundo saiu com uma visão diferente sobre o livro.",
-                            style = MaterialTheme.typography.bodyMedium.copy(
-                                fontFamily = InterFontFamily,
-                                color = InkSoft,
-                                lineHeight = 22.sp
-                            )
-                        )
-                    }
-                }
-
-                // ── FRASES ───────────────────────────────────────────────────
-                "frases" -> {
-                    if (quotes.isEmpty()) {
-                        Text(
-                            text = "Nenhuma frase guardada deste livro ainda.",
-                            style = MaterialTheme.typography.bodyMedium.copy(
-                                fontFamily = InterFontFamily,
-                                color = Muted
-                            ),
-                            modifier = Modifier.padding(vertical = 16.dp)
-                        )
-                    } else {
-                        quotes.forEach { quote ->
-                            QuoteCard(
-                                texto = quote.texto,
-                                ref = quote.capituloRef,
-                                onDelete = { viewModel.deleteQuote(quote) }
-                            )
-                            Spacer(modifier = Modifier.height(12.dp))
-                        }
-                    }
-
-                    Spacer(modifier = Modifier.height(8.dp))
-
-                    TbButton(
-                        text = "Salvar uma frase",
-                        onClick = { showQuoteDialog = true },
-                        variant = TbButtonVariant.Outline,
-                        size = TbButtonSize.Md,
-                        modifier = Modifier.fillMaxWidth()
-                    )
-                }
-
-                // ── HISTÓRICO ────────────────────────────────────────────────
-                "historico" -> {
-                    val milestones = listOf(
-                        "Sugerido" to "O livro chegou na lista do clube.",
-                        "Leitura começou" to "O clube começou a ler junto.",
-                        "Encontro do clube" to "O clube se reuniu pra discutir."
-                    )
-
-                    Column(verticalArrangement = Arrangement.spacedBy(0.dp)) {
-                        milestones.forEachIndexed { index, (title, desc) ->
-                            Row(
-                                modifier = Modifier.fillMaxWidth(),
-                                horizontalArrangement = Arrangement.spacedBy(16.dp)
-                            ) {
-                                // Timeline column: dot + line
-                                Column(
-                                    horizontalAlignment = Alignment.CenterHorizontally,
-                                    modifier = Modifier.width(24.dp)
-                                ) {
-                                    Box(
-                                        modifier = Modifier
-                                            .size(14.dp)
-                                            .background(Oliva, CircleShape)
-                                    )
-                                    if (index < milestones.size - 1) {
-                                        Box(
-                                            modifier = Modifier
-                                                .width(2.dp)
-                                                .height(56.dp)
-                                                .background(OlivaSoft)
-                                        )
-                                    }
-                                }
-
-                                // Content
-                                Column(modifier = Modifier.weight(1f)) {
-                                    Text(
-                                        text = title,
-                                        style = MaterialTheme.typography.bodyMedium.copy(
-                                            fontFamily = LiterataFontFamily,
-                                            fontWeight = FontWeight.SemiBold,
-                                            color = Ink
-                                        )
-                                    )
-                                    Spacer(modifier = Modifier.height(2.dp))
-                                    Text(
-                                        text = desc,
-                                        style = MaterialTheme.typography.bodySmall.copy(
-                                            fontFamily = InterFontFamily,
-                                            color = Muted
-                                        )
-                                    )
-                                    Spacer(modifier = Modifier.height(if (index < milestones.size - 1) 44.dp else 0.dp))
-                                }
-                            }
-                        }
-                    }
-                }
+                "resumo" -> SummaryTab(viewModel = viewModel, bookId = bookId)
+                "frases" -> FrasesTab(
+                    viewModel = viewModel,
+                    quotes = quotes,
+                    onShowQuoteDialog = { showQuoteDialog = true }
+                )
+                "chat" -> ChatTab(viewModel = viewModel, bookId = bookId)
+                "avaliacoes" -> RatingsTab(viewModel = viewModel, bookId = bookId)
+                "historico" -> HistoryTab(viewModel = viewModel, bookId = bookId, dataEncontro = dataEncontro)
             }
-
             Spacer(modifier = Modifier.height(40.dp))
         }
     }
@@ -416,11 +296,7 @@ fun BookDetailScreen(
                         quoteRef = ""
                     }
                 ) {
-                    Text(
-                        text = "Salvar",
-                        color = Oliva,
-                        fontWeight = FontWeight.SemiBold
-                    )
+                    Text(text = "Salvar", color = Oliva, fontWeight = FontWeight.SemiBold)
                 }
             },
             dismissButton = {
@@ -431,12 +307,511 @@ fun BookDetailScreen(
                         quoteRef = ""
                     }
                 ) {
-                    Text(
-                        text = "Cancelar",
-                        color = Muted
-                    )
+                    Text(text = "Cancelar", color = Muted)
                 }
             }
         )
+    }
+}
+
+// ── TAB: RESUMO ──────────────────────────────────────────────────────────────
+@Composable
+private fun SummaryTab(viewModel: MainViewModel, bookId: String) {
+    val summaryFlow = remember(bookId) { viewModel.getBookSummaryFlow(bookId) }
+    val summary by summaryFlow.collectAsState(initial = null)
+    val members by viewModel.clubMembers.collectAsState()
+    var showEditDialog by remember { mutableStateOf(false) }
+    var draftText by remember { mutableStateOf("") }
+
+    if (summary == null) {
+        TramabookCard(modifier = Modifier.fillMaxWidth()) {
+            Text(
+                text = "Ninguém escreveu o resumo ainda. Que tal começar?",
+                style = MaterialTheme.typography.bodyMedium.copy(
+                    fontFamily = InterFontFamily,
+                    color = Muted
+                )
+            )
+        }
+        Spacer(modifier = Modifier.height(12.dp))
+        TbButton(
+            text = "Escrever resumo",
+            onClick = { draftText = ""; showEditDialog = true },
+            variant = TbButtonVariant.Outline,
+            modifier = Modifier.fillMaxWidth()
+        )
+    } else {
+        TramabookCard(modifier = Modifier.fillMaxWidth()) {
+            Text(
+                text = summary!!.texto,
+                style = MaterialTheme.typography.bodyMedium.copy(
+                    fontFamily = InterFontFamily,
+                    color = InkSoft,
+                    lineHeight = 22.sp
+                )
+            )
+        }
+        Spacer(modifier = Modifier.height(8.dp))
+        val editorName = members.find { it.id == summary!!.lastEditorId }?.nome ?: "alguém"
+        Text(
+            text = "Editado por $editorName · ${timeAgo(summary!!.updatedAt)}",
+            style = MaterialTheme.typography.labelSmall.copy(color = Muted),
+            modifier = Modifier.padding(horizontal = 4.dp)
+        )
+        Spacer(modifier = Modifier.height(12.dp))
+        TbButton(
+            text = "Editar resumo",
+            onClick = { draftText = summary!!.texto; showEditDialog = true },
+            variant = TbButtonVariant.Outline,
+            modifier = Modifier.fillMaxWidth()
+        )
+    }
+
+    if (showEditDialog) {
+        AlertDialog(
+            onDismissRequest = { showEditDialog = false },
+            title = {
+                Text(
+                    "Resumo do livro",
+                    style = MaterialTheme.typography.titleLarge.copy(
+                        fontFamily = LiterataFontFamily,
+                        fontWeight = FontWeight.SemiBold
+                    )
+                )
+            },
+            text = {
+                OutlinedTextField(
+                    value = draftText,
+                    onValueChange = { draftText = it },
+                    placeholder = { Text("O clube leu esse livro — conta o que rolou.") },
+                    minLines = 8,
+                    modifier = Modifier.fillMaxWidth()
+                )
+            },
+            confirmButton = {
+                TextButton(onClick = {
+                    if (draftText.isNotBlank()) {
+                        viewModel.saveBookSummary(bookId, draftText)
+                    }
+                    showEditDialog = false
+                }) {
+                    Text("Salvar", color = Oliva, fontWeight = FontWeight.SemiBold)
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = { showEditDialog = false }) {
+                    Text("Cancelar", color = Muted)
+                }
+            }
+        )
+    }
+}
+
+// ── TAB: FRASES ──────────────────────────────────────────────────────────────
+@Composable
+private fun FrasesTab(
+    viewModel: MainViewModel,
+    quotes: List<com.example.data.model.SavedQuote>,
+    onShowQuoteDialog: () -> Unit
+) {
+    val members by viewModel.clubMembers.collectAsState()
+    if (quotes.isEmpty()) {
+        Text(
+            text = "Nenhuma frase guardada deste livro ainda.",
+            style = MaterialTheme.typography.bodyMedium.copy(
+                fontFamily = InterFontFamily,
+                color = Muted
+            ),
+            modifier = Modifier.padding(vertical = 16.dp)
+        )
+    } else {
+        quotes.forEach { quote ->
+            val author = members.find { it.id == quote.userId }
+            val authorName = author?.nome ?: "Membro"
+            val authorAvatar = author?.avatarUrl ?: ""
+
+            Column {
+                QuoteCard(
+                    texto = quote.texto,
+                    ref = quote.capituloRef,
+                    onDelete = { viewModel.deleteQuote(quote) }
+                )
+                Spacer(modifier = Modifier.height(6.dp))
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(8.dp),
+                    modifier = Modifier.padding(start = 8.dp, bottom = 12.dp)
+                ) {
+                    Avatar(name = authorName, avatarUrl = authorAvatar, size = 20.dp)
+                    Text(
+                        text = "Salva por $authorName",
+                        style = MaterialTheme.typography.labelSmall.copy(color = Muted)
+                    )
+                }
+            }
+        }
+    }
+
+    Spacer(modifier = Modifier.height(8.dp))
+    TbButton(
+        text = "Salvar uma frase",
+        onClick = onShowQuoteDialog,
+        variant = TbButtonVariant.Outline,
+        size = TbButtonSize.Md,
+        modifier = Modifier.fillMaxWidth()
+    )
+}
+
+// ── TAB: CHAT ────────────────────────────────────────────────────────────────
+@Composable
+private fun ChatTab(viewModel: MainViewModel, bookId: String) {
+    val chaptersFlow = remember(bookId) { viewModel.getCommentsForBookFlow(bookId) }
+    val comments by chaptersFlow.collectAsState(initial = emptyList())
+    val members by viewModel.clubMembers.collectAsState()
+
+    // Buscar chapters: precisamos resolver chapterId -> Chapter pra header.
+    // Como `currentChapters` é só do livro atual do clube, usar uma fonte mais geral:
+    // como Comment já tem chapterId, agrupamos por chapterId.
+    // Para mostrar título do capítulo, precisamos consultar os chapters do livro.
+    // Reusamos currentChapters quando bate, senão fallback genérico.
+    val currentChapters by viewModel.currentChapters.collectAsState()
+    val chapterById = currentChapters.associateBy { it.id }
+
+    if (comments.isEmpty()) {
+        Text(
+            text = "Esse livro não rendeu conversa por aqui.",
+            style = MaterialTheme.typography.bodyMedium.copy(
+                fontFamily = InterFontFamily,
+                color = Muted
+            ),
+            modifier = Modifier
+                .padding(vertical = 16.dp)
+                .fillMaxWidth(),
+            textAlign = TextAlign.Center
+        )
+    } else {
+        var lastChapterId: String? = null
+        comments.forEach { c ->
+            val chapter = chapterById[c.chapterId]
+            if (c.chapterId != lastChapterId) {
+                lastChapterId = c.chapterId
+                Spacer(modifier = Modifier.height(20.dp))
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(8.dp),
+                    modifier = Modifier.fillMaxWidth().padding(vertical = 8.dp)
+                ) {
+                    Box(modifier = Modifier.weight(1f).height(1.dp).background(DividerSoft))
+                    Text(
+                        text = if (chapter != null) "CAP. ${chapter.numero} · ${chapter.titulo}" else "CAPÍTULO",
+                        style = MaterialTheme.typography.labelSmall.copy(
+                            color = OlivaMid,
+                            fontWeight = FontWeight.SemiBold
+                        )
+                    )
+                    Box(modifier = Modifier.weight(1f).height(1.dp).background(DividerSoft))
+                }
+            }
+
+            val author = members.find { it.id == c.userId }
+            val authorName = author?.nome ?: "Membro"
+            val authorAvatar = author?.avatarUrl ?: ""
+
+            Row(
+                modifier = Modifier.fillMaxWidth().padding(vertical = 8.dp),
+                horizontalArrangement = Arrangement.spacedBy(10.dp)
+            ) {
+                Avatar(name = authorName, avatarUrl = authorAvatar, size = 32.dp)
+                Column(modifier = Modifier.weight(1f)) {
+                    Row(
+                        horizontalArrangement = Arrangement.spacedBy(8.dp),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Text(
+                            text = authorName,
+                            style = MaterialTheme.typography.bodyMedium.copy(
+                                fontWeight = FontWeight.SemiBold,
+                                color = Ink
+                            )
+                        )
+                        Text(
+                            text = timeAgo(c.criadoEm),
+                            style = MaterialTheme.typography.labelSmall.copy(color = Muted)
+                        )
+                    }
+                    Text(
+                        text = c.texto,
+                        style = MaterialTheme.typography.bodyMedium.copy(
+                            color = InkSoft,
+                            lineHeight = 20.sp
+                        )
+                    )
+                }
+            }
+        }
+
+        Spacer(modifier = Modifier.height(12.dp))
+        Text(
+            text = "(somente leitura — comente em \"Livro atual\")",
+            style = MaterialTheme.typography.labelSmall.copy(color = Muted),
+            modifier = Modifier.fillMaxWidth(),
+            textAlign = TextAlign.Center
+        )
+    }
+}
+
+// ── TAB: AVALIAÇÕES ──────────────────────────────────────────────────────────
+@Composable
+private fun RatingsTab(viewModel: MainViewModel, bookId: String) {
+    val ratingsFlow = remember(bookId) { viewModel.getBookRatingsFlow(bookId) }
+    val ratings by ratingsFlow.collectAsState(initial = emptyList())
+    val myRatingFlow = remember(bookId) { viewModel.getBookRatingOfCurrentUserFlow(bookId) }
+    val myRating by myRatingFlow.collectAsState(initial = null)
+    val members by viewModel.clubMembers.collectAsState()
+
+    var showRatingDialog by remember { mutableStateOf(false) }
+    var draftStars by remember { mutableStateOf(0) }
+    var draftComment by remember { mutableStateOf("") }
+
+    val avg = if (ratings.isNotEmpty()) ratings.sumOf { it.stars }.toFloat() / ratings.size else 0f
+
+    Column(
+        horizontalAlignment = Alignment.CenterHorizontally,
+        modifier = Modifier.fillMaxWidth()
+    ) {
+        RatingStars(rating = avg, size = 28.dp, spacing = 4.dp)
+        Spacer(modifier = Modifier.height(8.dp))
+        Text(
+            text = "${"%.1f".format(avg)} de 5 · ${ratings.size} ${if (ratings.size == 1) "avaliação" else "avaliações"}",
+            style = MaterialTheme.typography.bodyMedium.copy(color = Muted)
+        )
+    }
+
+    Spacer(modifier = Modifier.height(16.dp))
+
+    TbButton(
+        text = if (myRating != null) "Editar minha avaliação" else "Avaliar este livro",
+        onClick = {
+            draftStars = myRating?.stars ?: 0
+            draftComment = myRating?.comment ?: ""
+            showRatingDialog = true
+        },
+        variant = TbButtonVariant.Terra,
+        modifier = Modifier.fillMaxWidth()
+    )
+
+    Spacer(modifier = Modifier.height(20.dp))
+
+    ratings.sortedByDescending { it.updatedAt }.forEach { r ->
+        val author = members.find { it.id == r.userId }
+        val authorName = author?.nome ?: "Membro"
+        val authorAvatar = author?.avatarUrl ?: ""
+
+        TramabookCard(modifier = Modifier.fillMaxWidth()) {
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(10.dp)
+            ) {
+                Avatar(name = authorName, avatarUrl = authorAvatar, size = 28.dp)
+                Column(modifier = Modifier.weight(1f)) {
+                    Text(
+                        text = authorName,
+                        style = MaterialTheme.typography.bodyMedium.copy(
+                            fontWeight = FontWeight.SemiBold,
+                            color = Ink
+                        )
+                    )
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(6.dp)
+                    ) {
+                        RatingStars(rating = r.stars.toFloat(), size = 12.dp)
+                        Text(
+                            text = timeAgo(r.updatedAt),
+                            style = MaterialTheme.typography.labelSmall.copy(color = Muted)
+                        )
+                    }
+                }
+            }
+            if (r.comment.isNotBlank()) {
+                Spacer(modifier = Modifier.height(8.dp))
+                Text(
+                    text = r.comment,
+                    style = MaterialTheme.typography.bodyMedium.copy(
+                        color = InkSoft,
+                        lineHeight = 20.sp
+                    )
+                )
+            }
+        }
+        Spacer(modifier = Modifier.height(8.dp))
+    }
+
+    val totalMembers = members.size
+    val ratedCount = ratings.size
+    if (totalMembers > ratedCount) {
+        Text(
+            text = "${totalMembers - ratedCount} ${if (totalMembers - ratedCount == 1) "membro ainda não avaliou" else "membros ainda não avaliaram"}",
+            style = MaterialTheme.typography.labelSmall.copy(color = Muted),
+            modifier = Modifier.fillMaxWidth().padding(top = 4.dp),
+            textAlign = TextAlign.Center
+        )
+    }
+
+    if (showRatingDialog) {
+        AlertDialog(
+            onDismissRequest = { showRatingDialog = false },
+            title = {
+                Text(
+                    "Avaliar livro",
+                    style = MaterialTheme.typography.titleLarge.copy(
+                        fontFamily = LiterataFontFamily,
+                        fontWeight = FontWeight.SemiBold
+                    )
+                )
+            },
+            text = {
+                Column(
+                    verticalArrangement = Arrangement.spacedBy(12.dp),
+                    horizontalAlignment = Alignment.CenterHorizontally,
+                    modifier = Modifier.fillMaxWidth()
+                ) {
+                    RatingStarsInput(selected = draftStars, onChange = { draftStars = it })
+                    OutlinedTextField(
+                        value = draftComment,
+                        onValueChange = { draftComment = it },
+                        placeholder = { Text("Conta o que tu achou (opcional)") },
+                        minLines = 3,
+                        modifier = Modifier.fillMaxWidth()
+                    )
+                }
+            },
+            confirmButton = {
+                TextButton(
+                    onClick = {
+                        if (draftStars in 1..5) {
+                            viewModel.saveBookRating(bookId, draftStars, draftComment)
+                            showRatingDialog = false
+                        }
+                    },
+                    enabled = draftStars in 1..5
+                ) {
+                    Text("Salvar", color = Oliva, fontWeight = FontWeight.SemiBold)
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = { showRatingDialog = false }) {
+                    Text("Cancelar", color = Muted)
+                }
+            }
+        )
+    }
+}
+
+// ── TAB: HISTÓRICO ───────────────────────────────────────────────────────────
+@Composable
+private fun HistoryTab(viewModel: MainViewModel, bookId: String, dataEncontro: Long?) {
+    val suggestionFlow = remember(bookId) { viewModel.getBookSuggestionFlow(bookId) }
+    val suggestion by suggestionFlow.collectAsState(initial = null)
+    val members by viewModel.clubMembers.collectAsState()
+    val isAdmin by viewModel.isCurrentUserAdmin.collectAsState()
+
+    val suggester = suggestion?.let { s -> members.find { it.id == s.suggestedByUserId }?.nome }
+
+    val milestones = buildList<Pair<String, String>> {
+        add(
+            "Sugerido${suggester?.let { " por $it" } ?: ""}" to
+            (suggestion?.let { "em ${formatShortDate(it.criadoEm)}" } ?: "O livro chegou na lista do clube.")
+        )
+        add("Leitura começou" to "O clube começou a ler junto.")
+        add(
+            "Encontro do clube" to (dataEncontro?.let { "em ${formatShortDate(it)}" } ?: "O clube se reuniu pra discutir.")
+        )
+    }
+
+    Column(verticalArrangement = Arrangement.spacedBy(0.dp)) {
+        milestones.forEachIndexed { index, (title, desc) ->
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.spacedBy(16.dp)
+            ) {
+                Column(
+                    horizontalAlignment = Alignment.CenterHorizontally,
+                    modifier = Modifier.width(24.dp)
+                ) {
+                    Box(modifier = Modifier.size(14.dp).background(Oliva, CircleShape))
+                    if (index < milestones.size - 1) {
+                        Box(modifier = Modifier.width(2.dp).height(56.dp).background(OlivaSoft))
+                    }
+                }
+                Column(modifier = Modifier.weight(1f)) {
+                    Text(
+                        text = title,
+                        style = MaterialTheme.typography.bodyMedium.copy(
+                            fontFamily = LiterataFontFamily,
+                            fontWeight = FontWeight.SemiBold,
+                            color = Ink
+                        )
+                    )
+                    Spacer(modifier = Modifier.height(2.dp))
+                    Text(
+                        text = desc,
+                        style = MaterialTheme.typography.bodySmall.copy(
+                            fontFamily = InterFontFamily,
+                            color = Muted
+                        )
+                    )
+                    Spacer(modifier = Modifier.height(if (index < milestones.size - 1) 44.dp else 0.dp))
+                }
+            }
+        }
+    }
+
+    if (isAdmin) {
+        Spacer(modifier = Modifier.height(24.dp))
+        HorizontalDivider(thickness = 0.5.dp, color = Divider)
+        Spacer(modifier = Modifier.height(12.dp))
+        Text(
+            text = "ADMIN",
+            style = MaterialTheme.typography.labelSmall.copy(
+                fontWeight = FontWeight.Bold,
+                color = Terracota,
+                letterSpacing = 1.sp
+            )
+        )
+        Spacer(modifier = Modifier.height(8.dp))
+        Row(
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(8.dp)
+        ) {
+            Text(
+                text = "Data do encontro:",
+                style = MaterialTheme.typography.bodyMedium.copy(color = Ink)
+            )
+            Text(
+                text = dataEncontro?.let { formatShortDate(it) } ?: "não definida",
+                style = MaterialTheme.typography.bodyMedium.copy(
+                    color = Terracota,
+                    fontWeight = FontWeight.SemiBold
+                )
+            )
+        }
+        Spacer(modifier = Modifier.height(8.dp))
+        Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+            TbButton(
+                text = "Marcar como hoje",
+                onClick = { viewModel.setBookMeetingDate(bookId, System.currentTimeMillis()) },
+                variant = TbButtonVariant.Outline,
+                size = TbButtonSize.Sm
+            )
+            if (dataEncontro != null) {
+                TbButton(
+                    text = "Limpar",
+                    onClick = { viewModel.setBookMeetingDate(bookId, null) },
+                    variant = TbButtonVariant.Outline,
+                    size = TbButtonSize.Sm
+                )
+            }
+        }
     }
 }
