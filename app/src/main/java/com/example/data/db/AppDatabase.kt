@@ -25,9 +25,11 @@ import com.example.data.model.*
         BookSummary::class,
         BookRating::class,
         BookSuggestion::class,
-        VotingRound::class
+        VotingRound::class,
+        MeetingPattern::class,
+        MemberRemoval::class
     ],
-    version = 3,
+    version = 4,
     exportSchema = false
 )
 abstract class AppDatabase : RoomDatabase() {

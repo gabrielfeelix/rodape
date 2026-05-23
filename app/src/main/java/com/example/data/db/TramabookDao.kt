@@ -30,10 +30,10 @@ interface TramabookDao {
     @Query("SELECT * FROM clubs WHERE codigo = :codigo")
     suspend fun getClubByCodigo(codigo: String): Club?
 
-    @Query("SELECT c.* FROM clubs c INNER JOIN club_members m ON c.id = m.clubId WHERE m.userId = :userId")
+    @Query("SELECT c.* FROM clubs c INNER JOIN club_members m ON c.id = m.clubId WHERE m.userId = :userId AND c.arquivado = 0")
     fun getClubsForUser(userId: String): Flow<List<Club>>
 
-    @Query("SELECT c.* FROM clubs c INNER JOIN club_members m ON c.id = m.clubId WHERE m.userId = :userId")
+    @Query("SELECT c.* FROM clubs c INNER JOIN club_members m ON c.id = m.clubId WHERE m.userId = :userId AND c.arquivado = 0")
     suspend fun getClubsForUserList(userId: String): List<Club>
 
     @Insert(onConflict = OnConflictStrategy.REPLACE)
@@ -234,4 +234,80 @@ interface TramabookDao {
         ORDER BY ch.numero ASC, c.criadoEm ASC
     """)
     fun getCommentsForBookFlow(bookId: String, clubId: String): Flow<List<Comment>>
+
+    // --- Club admin actions (Fase 5) ---
+    @Query("UPDATE clubs SET nome = :nome, descricao = :descricao, cor = :cor, privacidade = :privacidade WHERE id = :clubId")
+    suspend fun updateClubInfo(clubId: String, nome: String, descricao: String, cor: String, privacidade: String)
+
+    @Query("UPDATE clubs SET codigo = :codigo WHERE id = :clubId")
+    suspend fun updateClubCodigo(clubId: String, codigo: String)
+
+    @Query("UPDATE clubs SET arquivado = :arquivado WHERE id = :clubId")
+    suspend fun updateClubArquivado(clubId: String, arquivado: Boolean)
+
+    @Query("SELECT * FROM clubs WHERE arquivado = 1 AND id IN (SELECT clubId FROM club_members WHERE userId = :userId)")
+    fun getArchivedClubsForUserFlow(userId: String): Flow<List<Club>>
+
+    // --- Member admin actions ---
+    @Query("UPDATE club_members SET papel = :papel WHERE clubId = :clubId AND userId = :userId")
+    suspend fun updateMemberPapel(clubId: String, userId: String, papel: String)
+
+    @Query("DELETE FROM club_members WHERE clubId = :clubId AND userId = :userId")
+    suspend fun deleteClubMember(clubId: String, userId: String)
+
+    @Query("SELECT * FROM club_members WHERE clubId = :clubId ORDER BY entrouEm ASC")
+    suspend fun getClubMembersListOrderedByJoin(clubId: String): List<ClubMember>
+
+    @Query("SELECT * FROM club_members WHERE clubId = :clubId")
+    fun getClubMembersRawFlow(clubId: String): Flow<List<ClubMember>>
+
+    @Insert(onConflict = OnConflictStrategy.REPLACE)
+    suspend fun insertMemberRemoval(removal: MemberRemoval)
+
+    @Query("SELECT * FROM member_removals WHERE clubId = :clubId ORDER BY removedAt DESC")
+    fun getMemberRemovalsForClubFlow(clubId: String): Flow<List<MemberRemoval>>
+
+    // --- Meeting pattern ---
+    @Insert(onConflict = OnConflictStrategy.REPLACE)
+    suspend fun insertMeetingPattern(pattern: MeetingPattern)
+
+    @Query("SELECT * FROM meeting_patterns WHERE clubId = :clubId AND ativo = 1 LIMIT 1")
+    fun getActiveMeetingPatternFlow(clubId: String): Flow<MeetingPattern?>
+
+    @Query("SELECT * FROM meeting_patterns WHERE clubId = :clubId AND ativo = 1 LIMIT 1")
+    suspend fun getActiveMeetingPattern(clubId: String): MeetingPattern?
+
+    @Query("UPDATE meeting_patterns SET ativo = 0 WHERE clubId = :clubId")
+    suspend fun deactivateMeetingPatterns(clubId: String)
+
+    // --- Meeting CRUD extra ---
+    @Query("DELETE FROM meetings WHERE id = :meetingId")
+    suspend fun deleteMeeting(meetingId: String)
+
+    @Query("DELETE FROM meeting_rsvps WHERE meetingId = :meetingId")
+    suspend fun deleteRsvpsForMeeting(meetingId: String)
+
+    // --- Comment moderation ---
+    @Query("UPDATE comments SET removido = 1, removidoPor = :removidoPor, motivoRemocao = :motivo WHERE id = :commentId")
+    suspend fun softRemoveComment(commentId: String, removidoPor: String, motivo: String)
+
+    @Query("UPDATE comments SET removido = 0, removidoPor = NULL, motivoRemocao = NULL WHERE id = :commentId")
+    suspend fun restoreComment(commentId: String)
+
+    @Query("SELECT * FROM comments WHERE clubId = :clubId AND removido = 1 ORDER BY criadoEm DESC")
+    fun getRemovedCommentsForClubFlow(clubId: String): Flow<List<Comment>>
+
+    // --- Chapters CRUD extra ---
+    @Query("DELETE FROM chapters WHERE bookId = :bookId")
+    suspend fun deleteChaptersForBook(bookId: String)
+
+    // --- Suggestion delete ---
+    @Query("DELETE FROM club_books WHERE clubId = :clubId AND bookId = :bookId")
+    suspend fun deleteClubBook(clubId: String, bookId: String)
+
+    @Query("DELETE FROM book_suggestions WHERE bookId = :bookId AND clubId = :clubId")
+    suspend fun deleteBookSuggestion(bookId: String, clubId: String)
+
+    @Query("DELETE FROM votes WHERE clubBookId = :bookId")
+    suspend fun deleteVotesForBook(bookId: String)
 }
