@@ -162,4 +162,76 @@ interface TramabookDao {
 
     @Query("SELECT * FROM saved_quotes WHERE userId = :userId AND bookId = :bookId ORDER BY criadoEm DESC")
     fun getSavedQuotesForBookFlow(userId: String, bookId: String): Flow<List<SavedQuote>>
+
+    // --- Book Summaries ---
+    @Insert(onConflict = OnConflictStrategy.REPLACE)
+    suspend fun insertBookSummary(summary: BookSummary)
+
+    @Query("SELECT * FROM book_summaries WHERE bookId = :bookId AND clubId = :clubId LIMIT 1")
+    fun getBookSummaryFlow(bookId: String, clubId: String): Flow<BookSummary?>
+
+    // --- Book Ratings ---
+    @Insert(onConflict = OnConflictStrategy.REPLACE)
+    suspend fun insertBookRating(rating: BookRating)
+
+    @Query("SELECT * FROM book_ratings WHERE bookId = :bookId AND clubId = :clubId")
+    fun getBookRatingsFlow(bookId: String, clubId: String): Flow<List<BookRating>>
+
+    @Query("SELECT * FROM book_ratings WHERE bookId = :bookId AND clubId = :clubId AND userId = :userId LIMIT 1")
+    fun getBookRatingOfUserFlow(bookId: String, clubId: String, userId: String): Flow<BookRating?>
+
+    // --- Book Suggestions ---
+    @Insert(onConflict = OnConflictStrategy.REPLACE)
+    suspend fun insertBookSuggestion(suggestion: BookSuggestion)
+
+    @Query("SELECT * FROM book_suggestions WHERE bookId = :bookId AND clubId = :clubId LIMIT 1")
+    fun getBookSuggestionFlow(bookId: String, clubId: String): Flow<BookSuggestion?>
+
+    @Query("SELECT * FROM book_suggestions WHERE clubId = :clubId")
+    fun getBookSuggestionsForClubFlow(clubId: String): Flow<List<BookSuggestion>>
+
+    // --- Voting Rounds ---
+    @Insert(onConflict = OnConflictStrategy.REPLACE)
+    suspend fun insertVotingRound(round: VotingRound)
+
+    @Query("SELECT * FROM voting_rounds WHERE clubId = :clubId AND status = 'aberta' ORDER BY abertaEm DESC LIMIT 1")
+    fun getActiveVotingRoundFlow(clubId: String): Flow<VotingRound?>
+
+    @Query("SELECT * FROM voting_rounds WHERE clubId = :clubId AND status = 'aberta' ORDER BY abertaEm DESC LIMIT 1")
+    suspend fun getActiveVotingRound(clubId: String): VotingRound?
+
+    @Query("UPDATE voting_rounds SET status = 'fechada', vencedoresJson = :vencedoresJson WHERE id = :id")
+    suspend fun closeVotingRound(id: String, vencedoresJson: String)
+
+    // --- Votes (extra queries pra rodadas) ---
+    @Query("SELECT * FROM votes WHERE votingRoundId = :roundId")
+    fun getVotesForRoundFlow(roundId: String): Flow<List<Vote>>
+
+    @Query("SELECT * FROM votes WHERE votingRoundId = :roundId")
+    suspend fun getVotesForRound(roundId: String): List<Vote>
+
+    @Query("DELETE FROM votes WHERE userId = :userId AND votingRoundId = :roundId AND clubBookId = :bookId")
+    suspend fun removeUserVoteForBookInRound(userId: String, roundId: String, bookId: String)
+
+    @Query("SELECT COUNT(*) FROM votes WHERE userId = :userId AND votingRoundId = :roundId")
+    suspend fun countUserVotesInRound(userId: String, roundId: String): Int
+
+    // --- ClubBook update ---
+    @Query("UPDATE club_books SET status = :status WHERE clubId = :clubId AND bookId = :bookId")
+    suspend fun updateClubBookStatus(clubId: String, bookId: String, status: String)
+
+    @Query("UPDATE club_books SET dataEncontro = :dataEncontro WHERE clubId = :clubId AND bookId = :bookId")
+    suspend fun updateClubBookMeetingDate(clubId: String, bookId: String, dataEncontro: Long?)
+
+    @Query("SELECT * FROM club_books WHERE clubId = :clubId AND status = :status")
+    fun getClubBooksByStatusFlow(clubId: String, status: String): Flow<List<ClubBook>>
+
+    // --- Comments por livro (Chat retrospectivo) ---
+    @Query("""
+        SELECT c.* FROM comments c
+        INNER JOIN chapters ch ON c.chapterId = ch.id
+        WHERE ch.bookId = :bookId AND c.clubId = :clubId
+        ORDER BY ch.numero ASC, c.criadoEm ASC
+    """)
+    fun getCommentsForBookFlow(bookId: String, clubId: String): Flow<List<Comment>>
 }
