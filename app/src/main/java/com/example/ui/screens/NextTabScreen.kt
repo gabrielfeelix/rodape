@@ -32,8 +32,7 @@ import com.example.ui.viewmodel.MainViewModel
 @Composable
 fun NextTabScreen(
     viewModel: MainViewModel,
-    onNavigateToSuggestBook: () -> Unit,
-    onNavigateToBookDetail: (String) -> Unit = {}
+    onNavigateToSuggestBook: () -> Unit
 ) {
     var subTab by remember { mutableStateOf("encontro") }
 
@@ -58,7 +57,7 @@ fun NextTabScreen(
                 .padding(4.dp),
             verticalAlignment = Alignment.CenterVertically
         ) {
-            val nextTabs = listOf("encontro" to "Encontro", "votacao" to "Votação", "estante" to "Estante")
+            val nextTabs = listOf("encontro" to "Encontro", "votacao" to "Votação")
             nextTabs.forEach { (tab, label) ->
                 val isSelected = subTab == tab
                 Box(
@@ -90,7 +89,7 @@ fun NextTabScreen(
                 .fillMaxWidth()
                 .padding(horizontal = 24.dp),
         ) {
-            val nextTabs = listOf("encontro", "votacao", "estante")
+            val nextTabs = listOf("encontro", "votacao")
             nextTabs.forEachIndexed { i, tab ->
                 Box(
                     modifier = Modifier
@@ -114,7 +113,6 @@ fun NextTabScreen(
             when (subTab) {
                 "encontro" -> EncontroTab(viewModel = viewModel)
                 "votacao" -> VotacaoTab(viewModel = viewModel, onNavigateToSuggestBook = onNavigateToSuggestBook)
-                "estante" -> EstanteTab(viewModel = viewModel, onNavigateToBookDetail = onNavigateToBookDetail)
             }
         }
     }
@@ -712,135 +710,3 @@ fun VotacaoTab(
     }
 }
 
-// --- SUB-TAB 3: ESTANTE (Lidos) ---
-@Composable
-fun EstanteTab(
-    viewModel: MainViewModel,
-    onNavigateToBookDetail: (String) -> Unit = {}
-) {
-    val finishedBooks by viewModel.finishedBooks.collectAsState()
-    var filterBy by remember { mutableStateOf("Todos") }
-
-    // Dynamic rating: odd index ID get 5 stars (Favoritos), even gets 4
-    val getBookRating = { book: Book ->
-        if (book.id == "fin_1" || book.id == "fin_3") 5 else 4
-    }
-
-    val displayedBooks = if (filterBy == "Favoritos") {
-        finishedBooks.filter { getBookRating(it) == 5 }
-    } else {
-        finishedBooks
-    }
-
-    Column(
-        modifier = Modifier.fillMaxSize()
-    ) {
-        // Shelf Filter Pills using Phase-1 Pill component
-        Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(horizontal = 24.dp, vertical = 12.dp),
-            horizontalArrangement = Arrangement.spacedBy(8.dp),
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            listOf("Todos", "Favoritos").forEach { option ->
-                val isSelected = filterBy == option
-                Box(
-                    modifier = Modifier.clickable { filterBy = option }
-                ) {
-                    Pill(
-                        text = option,
-                        variant = if (isSelected) PillVariant.OliveDeep else PillVariant.Default
-                    )
-                }
-            }
-        }
-
-        if (displayedBooks.isEmpty()) {
-            Box(
-                modifier = Modifier.fillMaxSize(),
-                contentAlignment = Alignment.Center
-            ) {
-                Text(
-                    "Nenhum livro nesta categoria.",
-                    style = MaterialTheme.typography.bodyLarge,
-                    color = Muted
-                )
-            }
-        } else {
-            LazyVerticalGrid(
-                columns = GridCells.Fixed(2),
-                modifier = Modifier
-                    .fillMaxSize()
-                    .padding(horizontal = 16.dp),
-                contentPadding = PaddingValues(bottom = 32.dp),
-                horizontalArrangement = Arrangement.spacedBy(16.dp),
-                verticalArrangement = Arrangement.spacedBy(20.dp)
-            ) {
-                items(displayedBooks) { book ->
-                    val rating = getBookRating(book)
-                    TramabookCard(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .clickable { onNavigateToBookDetail(book.id) },
-                        contentPadding = PaddingValues(12.dp)
-                    ) {
-                        Column(
-                            horizontalAlignment = Alignment.CenterHorizontally
-                        ) {
-                            Cover(
-                                title = book.title,
-                                author = book.author,
-                                coverUrl = book.coverUrl,
-                                width = 100.dp,
-                                height = 150.dp
-                            )
-
-                            Spacer(modifier = Modifier.height(12.dp))
-
-                            Text(
-                                text = book.title,
-                                style = MaterialTheme.typography.headlineLarge.copy(
-                                    fontSize = 14.sp,
-                                    color = Ink
-                                ),
-                                textAlign = TextAlign.Center,
-                                maxLines = 1,
-                                overflow = TextOverflow.Ellipsis,
-                                modifier = Modifier.fillMaxWidth()
-                            )
-
-                            Text(
-                                text = book.author,
-                                style = MaterialTheme.typography.bodyLarge.copy(
-                                    color = Muted,
-                                    fontSize = 12.sp
-                                ),
-                                textAlign = TextAlign.Center,
-                                maxLines = 1,
-                                overflow = TextOverflow.Ellipsis,
-                                modifier = Modifier.fillMaxWidth()
-                            )
-
-                            Spacer(modifier = Modifier.height(8.dp))
-
-                            // Star ratings — gold literal from prototype, no dedicated token
-                            Row(
-                                horizontalArrangement = Arrangement.spacedBy(2.dp)
-                            ) {
-                                repeat(5) { rateIndex ->
-                                    Icon(
-                                        imageVector = Icons.Outlined.Star,
-                                        contentDescription = "Rating Star",
-                                        tint = if (rateIndex < rating) Color(0xFFE6BF6B) else DividerSoft, // estrela — cor do protótipo
-                                        modifier = Modifier.size(16.dp)
-                                    )
-                                }
-                            }
-                        }
-                    }
-                }
-            }
-        }
-    }
-}

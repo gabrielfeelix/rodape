@@ -20,8 +20,10 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowDropDown
 import androidx.compose.material.icons.filled.Home
 import androidx.compose.material.icons.filled.Edit
+import androidx.compose.material.icons.filled.List
 import androidx.compose.material.icons.filled.Star
 import androidx.compose.material.icons.filled.Person
+import androidx.compose.material.icons.outlined.List
 import androidx.compose.material.icons.outlined.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
@@ -186,7 +188,10 @@ fun MainTabsScreen(
                 )
                 "next" -> NextTabScreen(
                     viewModel = viewModel,
-                    onNavigateToSuggestBook = onNavigateToSuggestBook,
+                    onNavigateToSuggestBook = onNavigateToSuggestBook
+                )
+                "shelf" -> ShelfTabScreen(
+                    viewModel = viewModel,
                     onNavigateToBookDetail = onNavigateToBookDetail
                 )
                 "profile" -> ProfileScreenTab(
@@ -341,7 +346,7 @@ fun CustomBottomBar(
         modifier = Modifier
             .fillMaxWidth()
             .windowInsetsPadding(WindowInsets.navigationBars)
-            .padding(horizontal = 16.dp, vertical = 8.dp),
+            .padding(horizontal = 12.dp, vertical = 8.dp),
         contentAlignment = Alignment.Center
     ) {
         Surface(
@@ -376,6 +381,12 @@ fun CustomBottomBar(
                     onClick = { onTabSelected("next") }
                 )
                 BottomBarItem(
+                    label = "Estante",
+                    icon = if (selectedTab == "shelf") Icons.Filled.List else Icons.Outlined.List,
+                    selected = selectedTab == "shelf",
+                    onClick = { onTabSelected("shelf") }
+                )
+                BottomBarItem(
                     label = "Perfil",
                     icon = if (selectedTab == "profile") Icons.Filled.Person else Icons.Outlined.Person,
                     selected = selectedTab == "profile",
@@ -403,7 +414,7 @@ fun BottomBarItem(
                     indication = ripple(bounded = true),
                     onClick = onClick
                 )
-                .padding(horizontal = 16.dp, vertical = 10.dp),
+                .padding(horizontal = 12.dp, vertical = 10.dp),
             verticalAlignment = Alignment.CenterVertically,
             horizontalArrangement = Arrangement.spacedBy(6.dp)
         ) {
