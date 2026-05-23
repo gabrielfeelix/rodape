@@ -2266,8 +2266,9 @@ fun EditProfileView(
     var email by remember { mutableStateOf(initialEmail) }
     var avatarUrl by remember { mutableStateOf(initialAvatarUrl) }
 
-    // Preset avatar names (initials-based, matching react prototype)
-    val presetNames = listOf("Bia", "Marina", "Rafael", "Júlia", "Leo", "Helena")
+    // Avatares disponíveis: primeiro é ilustrado (Pequeno Príncipe via drawable),
+    // os outros 5 são iniciais coloridas (esquema antigo)
+    val presetNames = listOf("preset:pequeno_principe", "Marina", "Rafael", "Júlia", "Leo", "Helena")
 
     LazyColumn(
         modifier = Modifier
@@ -2338,14 +2339,17 @@ fun EditProfileView(
             ) {
                 presetNames.forEach { preset ->
                     val isSelected = avatarUrl == preset
+                    val isIllustrated = preset.startsWith("preset:")
+                    // Avatares ilustrados precisam de container maior pro "estouro" do topo
+                    val cellSize = if (isIllustrated) 58.dp else 44.dp
                     Box(
                         modifier = Modifier
-                            .size(44.dp)
+                            .size(cellSize)
                             .clickable { avatarUrl = preset }
                     ) {
                         Avatar(
-                            name = preset,
-                            avatarUrl = "",
+                            name = if (isIllustrated) "Pequeno Príncipe" else preset,
+                            avatarUrl = if (isIllustrated) preset else "",
                             size = 44.dp,
                             ring = if (isSelected) Ink else null
                         )
