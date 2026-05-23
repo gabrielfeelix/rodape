@@ -48,6 +48,10 @@ fun SuggestScreen(
     var selectedDoc by remember { mutableStateOf<OpenLibraryDoc?>(null) }
     var showJustifySheetForDoc by remember { mutableStateOf<OpenLibraryDoc?>(null) }
     var justificationText by remember { mutableStateOf("") }
+    // Cross-check de autor com Google Books
+    var verifying by remember { mutableStateOf(false) }
+    var gbConflictAuthor by remember { mutableStateOf<String?>(null) }
+    var pickedAuthor by remember { mutableStateOf<String?>(null) }
 
     // Implement 400ms Debounce explicitly in LaunchedEffect/Kotlin
     LaunchedEffect(query) {
@@ -85,23 +89,41 @@ fun SuggestScreen(
                 actions = {
                     TextButton(
                         onClick = {
-                            if (selectedDoc != null) {
-                                showJustifySheetForDoc = selectedDoc
-                                justificationText = ""
+                            val doc = selectedDoc ?: return@TextButton
+                            justificationText = ""
+                            gbConflictAuthor = null
+                            pickedAuthor = null
+                            verifying = true
+                            viewModel.verifyAuthorWithGoogleBooks(
+                                title = doc.title,
+                                olAuthor = doc.authorName?.firstOrNull().orEmpty(),
+                                isbn = doc.isbn?.firstOrNull().orEmpty()
+                            ) { gbAuthor ->
+                                verifying = false
+                                gbConflictAuthor = gbAuthor // null se bate
+                                showJustifySheetForDoc = doc
                             }
                         },
-                        enabled = selectedDoc != null,
+                        enabled = selectedDoc != null && !verifying,
                         colors = ButtonDefaults.textButtonColors(
                             contentColor = Terracota,
                             disabledContentColor = Terracota.copy(alpha = 0.4f)
                         )
                     ) {
-                        Text(
-                            "Adicionar",
-                            style = MaterialTheme.typography.bodyLarge.copy(
-                                fontWeight = FontWeight.Bold
+                        if (verifying) {
+                            CircularProgressIndicator(
+                                color = Terracota,
+                                strokeWidth = 2.dp,
+                                modifier = Modifier.size(18.dp)
                             )
-                        )
+                        } else {
+                            Text(
+                                "Adicionar",
+                                style = MaterialTheme.typography.bodyLarge.copy(
+                                    fontWeight = FontWeight.Bold
+                                )
+                            )
+                        }
                     }
                 },
                 colors = TopAppBarDefaults.topAppBarColors(
@@ -279,9 +301,12 @@ fun SuggestScreen(
     // Justification dialog
     if (showJustifySheetForDoc != null) {
         val doc = showJustifySheetForDoc!!
+        val olAuthor = doc.authorName?.firstOrNull().orEmpty()
+        // Se nunca escolheu, default = OL (autor original do search)
+        if (pickedAuthor == null) pickedAuthor = olAuthor
         AlertDialog(
             onDismissRequest = { showJustifySheetForDoc = null },
-            containerColor = MaterialTheme.colorScheme.background,
+            containerColor = MaterialTheme.colorScheme.surface,
             title = {
                 Text(
                     text = "Por que esse livro?",
@@ -292,6 +317,43 @@ fun SuggestScreen(
                 Column(
                     verticalArrangement = Arrangement.spacedBy(12.dp)
                 ) {
+                    if (gbConflictAuthor != null) {
+                        // Banner de conflito de autor
+                        Surface(
+                            color = Color(0xFFFFF4D6),
+                            shape = RoundedCornerShape(12.dp),
+                            modifier = Modifier.fillMaxWidth()
+                        ) {
+                            Column(modifier = Modifier.padding(12.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                                Text(
+                                    "⚠️ Conflito de autor detectado",
+                                    style = MaterialTheme.typography.bodyMedium.copy(
+                                        fontWeight = FontWeight.SemiBold,
+                                        color = Color(0xFF8B6B00)
+                                    )
+                                )
+                                Text(
+                                    "As fontes discordam. Qual autor está correto?",
+                                    style = MaterialTheme.typography.bodySmall.copy(color = Color(0xFF8B6B00))
+                                )
+                                Row(
+                                    verticalAlignment = Alignment.CenterVertically,
+                                    modifier = Modifier.fillMaxWidth().clickable { pickedAuthor = olAuthor }
+                                ) {
+                                    RadioButton(selected = pickedAuthor == olAuthor, onClick = { pickedAuthor = olAuthor })
+                                    Text("$olAuthor (Open Library)", style = MaterialTheme.typography.bodySmall)
+                                }
+                                Row(
+                                    verticalAlignment = Alignment.CenterVertically,
+                                    modifier = Modifier.fillMaxWidth().clickable { pickedAuthor = gbConflictAuthor }
+                                ) {
+                                    RadioButton(selected = pickedAuthor == gbConflictAuthor, onClick = { pickedAuthor = gbConflictAuthor })
+                                    Text("${gbConflictAuthor} (Google Books)", style = MaterialTheme.typography.bodySmall)
+                                }
+                            }
+                        }
+                    }
+
                     Text(
                         text = "Conta pro pessoal por que tu sugere esse. Opcional.",
                         style = MaterialTheme.typography.bodyMedium,
@@ -326,9 +388,15 @@ fun SuggestScreen(
                 TbButton(
                     text = "Adicionar",
                     onClick = {
-                        viewModel.createBookSuggestion(doc, justificationText) {
+                        viewModel.createBookSuggestion(
+                            doc = doc,
+                            justification = justificationText,
+                            authorOverride = pickedAuthor
+                        ) {
                             showJustifySheetForDoc = null
                             selectedDoc = null
+                            gbConflictAuthor = null
+                            pickedAuthor = null
                             onNavigateBack()
                         }
                     },
@@ -339,7 +407,11 @@ fun SuggestScreen(
             dismissButton = {
                 TbButton(
                     text = "Voltar",
-                    onClick = { showJustifySheetForDoc = null },
+                    onClick = {
+                        showJustifySheetForDoc = null
+                        gbConflictAuthor = null
+                        pickedAuthor = null
+                    },
                     variant = TbButtonVariant.Outline,
                     modifier = Modifier.fillMaxWidth()
                 )

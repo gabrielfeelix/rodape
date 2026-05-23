@@ -174,22 +174,34 @@ fun EditMeetingPatternDialog(
     initialHora: String,
     initialLocal: String,
     initialAgenda: String,
+    initialTipoRecorrencia: String,
+    initialValorRecorrencia: Int,
     onDismiss: () -> Unit,
-    onSave: (Int, String, String, String) -> Unit
+    onSave: (diaSemana: Int, hora: String, local: String, agenda: String, tipoRecorrencia: String, valorRecorrencia: Int) -> Unit
 ) {
     var diaSemana by remember { mutableStateOf(initialDiaSemana) }
     var hora by remember { mutableStateOf(initialHora) }
     var local by remember { mutableStateOf(initialLocal) }
     var agenda by remember { mutableStateOf(initialAgenda) }
+    var tipo by remember { mutableStateOf(initialTipoRecorrencia.ifBlank { "semanal" }) }
+    var valor by remember { mutableStateOf(initialValorRecorrencia) }
 
     val diasLabel = listOf(
-        java.util.Calendar.SUNDAY to "Domingo",
-        java.util.Calendar.MONDAY to "Segunda",
-        java.util.Calendar.TUESDAY to "Terça",
-        java.util.Calendar.WEDNESDAY to "Quarta",
-        java.util.Calendar.THURSDAY to "Quinta",
-        java.util.Calendar.FRIDAY to "Sexta",
-        java.util.Calendar.SATURDAY to "Sábado"
+        java.util.Calendar.SUNDAY to "Dom",
+        java.util.Calendar.MONDAY to "Seg",
+        java.util.Calendar.TUESDAY to "Ter",
+        java.util.Calendar.WEDNESDAY to "Qua",
+        java.util.Calendar.THURSDAY to "Qui",
+        java.util.Calendar.FRIDAY to "Sex",
+        java.util.Calendar.SATURDAY to "Sáb"
+    )
+
+    val tiposLabel = listOf(
+        "semanal" to "Toda semana",
+        "quinzenal" to "A cada 15 dias",
+        "mensal_dia_semana" to "1x por mês (mesmo dia da semana)",
+        "mensal_dia_mes" to "1x por mês (dia fixo do mês)",
+        "personalizado_dias" to "A cada N dias"
     )
 
     AlertDialog(
@@ -197,47 +209,196 @@ fun EditMeetingPatternDialog(
         onDismissRequest = onDismiss,
         title = { Text("Padrão de encontros") },
         text = {
-            Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
-                Text("Dia da semana", style = MaterialTheme.typography.bodyMedium.copy(fontWeight = FontWeight.SemiBold))
-                Column {
-                    diasLabel.forEach { (key, label) ->
-                        Row(
-                            verticalAlignment = Alignment.CenterVertically,
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .clickable { diaSemana = key }
-                                .padding(vertical = 2.dp)
-                        ) {
-                            RadioButton(selected = diaSemana == key, onClick = { diaSemana = key })
-                            Text(label)
+            androidx.compose.foundation.lazy.LazyColumn(
+                verticalArrangement = Arrangement.spacedBy(14.dp),
+                modifier = Modifier.fillMaxWidth()
+            ) {
+                item {
+                    Text(
+                        "Como repete?",
+                        style = MaterialTheme.typography.bodyMedium.copy(fontWeight = FontWeight.SemiBold)
+                    )
+                    Column {
+                        tiposLabel.forEach { (key, label) ->
+                            Row(
+                                verticalAlignment = Alignment.CenterVertically,
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .clickable {
+                                        tipo = key
+                                        valor = when (key) {
+                                            "mensal_dia_semana" -> 1
+                                            "mensal_dia_mes" -> 1
+                                            "personalizado_dias" -> 21
+                                            else -> 0
+                                        }
+                                    }
+                                    .padding(vertical = 2.dp)
+                            ) {
+                                RadioButton(
+                                    selected = tipo == key,
+                                    onClick = {
+                                        tipo = key
+                                        valor = when (key) {
+                                            "mensal_dia_semana" -> 1
+                                            "mensal_dia_mes" -> 1
+                                            "personalizado_dias" -> 21
+                                            else -> 0
+                                        }
+                                    }
+                                )
+                                Text(label, style = MaterialTheme.typography.bodySmall)
+                            }
                         }
                     }
                 }
-                OutlinedTextField(
-                    value = hora,
-                    onValueChange = { hora = it.take(5) },
-                    label = { Text("Hora (HH:MM)") },
-                    singleLine = true,
-                    modifier = Modifier.fillMaxWidth()
-                )
-                OutlinedTextField(
-                    value = local,
-                    onValueChange = { local = it },
-                    label = { Text("Local") },
-                    singleLine = true,
-                    modifier = Modifier.fillMaxWidth()
-                )
-                OutlinedTextField(
-                    value = agenda,
-                    onValueChange = { if (it.length <= 140) agenda = it },
-                    label = { Text("Agenda padrão") },
-                    minLines = 2,
-                    modifier = Modifier.fillMaxWidth()
-                )
+
+                if (tipo in setOf("semanal", "quinzenal", "mensal_dia_semana")) {
+                    item {
+                        Text(
+                            "Dia da semana",
+                            style = MaterialTheme.typography.bodyMedium.copy(fontWeight = FontWeight.SemiBold)
+                        )
+                        Row(
+                            horizontalArrangement = Arrangement.spacedBy(4.dp),
+                            modifier = Modifier.fillMaxWidth()
+                        ) {
+                            diasLabel.forEach { (key, label) ->
+                                val selected = diaSemana == key
+                                Box(
+                                    modifier = Modifier
+                                        .weight(1f)
+                                        .clickable { diaSemana = key }
+                                        .background(
+                                            if (selected) Oliva else Color.Transparent,
+                                            androidx.compose.foundation.shape.RoundedCornerShape(8.dp)
+                                        )
+                                        .border(
+                                            1.dp,
+                                            if (selected) Oliva else Muted.copy(alpha = 0.3f),
+                                            androidx.compose.foundation.shape.RoundedCornerShape(8.dp)
+                                        )
+                                        .padding(vertical = 8.dp),
+                                    contentAlignment = Alignment.Center
+                                ) {
+                                    Text(
+                                        label,
+                                        style = MaterialTheme.typography.labelSmall.copy(
+                                            color = if (selected) MaterialTheme.colorScheme.surface else Muted,
+                                            fontWeight = if (selected) FontWeight.Bold else FontWeight.Normal
+                                        )
+                                    )
+                                }
+                            }
+                        }
+                    }
+                }
+
+                if (tipo == "mensal_dia_semana") {
+                    item {
+                        Text(
+                            "Qual semana do mês?",
+                            style = MaterialTheme.typography.bodyMedium.copy(fontWeight = FontWeight.SemiBold)
+                        )
+                        Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                            listOf(1 to "1ª", 2 to "2ª", 3 to "3ª", 4 to "4ª", 5 to "Última").forEach { (n, label) ->
+                                val selected = valor == n
+                                Box(
+                                    modifier = Modifier
+                                        .weight(1f)
+                                        .clickable { valor = n }
+                                        .background(
+                                            if (selected) Oliva else Color.Transparent,
+                                            androidx.compose.foundation.shape.RoundedCornerShape(8.dp)
+                                        )
+                                        .border(
+                                            1.dp,
+                                            if (selected) Oliva else Muted.copy(alpha = 0.3f),
+                                            androidx.compose.foundation.shape.RoundedCornerShape(8.dp)
+                                        )
+                                        .padding(vertical = 8.dp),
+                                    contentAlignment = Alignment.Center
+                                ) {
+                                    Text(
+                                        label,
+                                        style = MaterialTheme.typography.labelSmall.copy(
+                                            color = if (selected) MaterialTheme.colorScheme.surface else Muted,
+                                            fontWeight = if (selected) FontWeight.Bold else FontWeight.Normal
+                                        )
+                                    )
+                                }
+                            }
+                        }
+                    }
+                }
+
+                if (tipo == "mensal_dia_mes") {
+                    item {
+                        Text(
+                            "Dia do mês (1–31)",
+                            style = MaterialTheme.typography.bodyMedium.copy(fontWeight = FontWeight.SemiBold)
+                        )
+                        OutlinedTextField(
+                            value = valor.toString(),
+                            onValueChange = { txt ->
+                                if (txt.isBlank()) valor = 1
+                                else txt.toIntOrNull()?.let { if (it in 1..31) valor = it }
+                            },
+                            singleLine = true,
+                            modifier = Modifier.fillMaxWidth()
+                        )
+                    }
+                }
+
+                if (tipo == "personalizado_dias") {
+                    item {
+                        Text(
+                            "Repete a cada quantos dias?",
+                            style = MaterialTheme.typography.bodyMedium.copy(fontWeight = FontWeight.SemiBold)
+                        )
+                        OutlinedTextField(
+                            value = valor.toString(),
+                            onValueChange = { txt ->
+                                if (txt.isBlank()) valor = 1
+                                else txt.toIntOrNull()?.let { if (it in 1..365) valor = it }
+                            },
+                            singleLine = true,
+                            modifier = Modifier.fillMaxWidth()
+                        )
+                    }
+                }
+
+                item {
+                    OutlinedTextField(
+                        value = hora,
+                        onValueChange = { hora = it.take(5) },
+                        label = { Text("Hora (HH:MM)") },
+                        singleLine = true,
+                        modifier = Modifier.fillMaxWidth()
+                    )
+                }
+                item {
+                    OutlinedTextField(
+                        value = local,
+                        onValueChange = { local = it },
+                        label = { Text("Local") },
+                        singleLine = true,
+                        modifier = Modifier.fillMaxWidth()
+                    )
+                }
+                item {
+                    OutlinedTextField(
+                        value = agenda,
+                        onValueChange = { if (it.length <= 140) agenda = it },
+                        label = { Text("Agenda padrão") },
+                        minLines = 2,
+                        modifier = Modifier.fillMaxWidth()
+                    )
+                }
             }
         },
         confirmButton = {
-            TextButton(onClick = { onSave(diaSemana, hora, local, agenda) }) {
+            TextButton(onClick = { onSave(diaSemana, hora, local, agenda, tipo, valor) }) {
                 Text("Salvar", color = Oliva, fontWeight = FontWeight.SemiBold)
             }
         },

@@ -1,13 +1,17 @@
 package com.example.ui.screens
 
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.outlined.ArrowBack
+import androidx.compose.material.icons.outlined.Add
+import androidx.compose.material.icons.outlined.DateRange
 import androidx.compose.material.icons.outlined.MoreVert
+import androidx.compose.material.icons.outlined.Refresh
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -16,6 +20,7 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.platform.LocalClipboardManager
 import androidx.compose.ui.text.AnnotatedString
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.data.model.ClubMember
@@ -200,69 +205,217 @@ fun ManageClubScreen(
             // 4. Encontros
             item {
                 SectionCard(title = "Encontros") {
-                    val patternLabel = pattern?.let {
-                        val dia = when (it.diaSemana) {
-                            java.util.Calendar.SUNDAY -> "Domingos"
-                            java.util.Calendar.MONDAY -> "Segundas"
-                            java.util.Calendar.TUESDAY -> "Terças"
-                            java.util.Calendar.WEDNESDAY -> "Quartas"
-                            java.util.Calendar.THURSDAY -> "Quintas"
-                            java.util.Calendar.FRIDAY -> "Sextas"
-                            java.util.Calendar.SATURDAY -> "Sábados"
-                            else -> "—"
+                    // ── Padrão recorrente ────────────────────────────────
+                    if (pattern != null) {
+                        val p = pattern!!
+                        Row(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .clip(RoundedCornerShape(14.dp))
+                                .background(OlivaSoft.copy(alpha = 0.4f))
+                                .padding(12.dp),
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.spacedBy(12.dp)
+                        ) {
+                            Box(
+                                modifier = Modifier
+                                    .size(40.dp)
+                                    .clip(CircleShape)
+                                    .background(Oliva),
+                                contentAlignment = Alignment.Center
+                            ) {
+                                Icon(
+                                    imageVector = Icons.Outlined.Refresh,
+                                    contentDescription = null,
+                                    tint = Cream,
+                                    modifier = Modifier.size(20.dp)
+                                )
+                            }
+                            Column(modifier = Modifier.weight(1f)) {
+                                Text(
+                                    text = recurrenceShortLabel(p.tipoRecorrencia).uppercase(),
+                                    style = MaterialTheme.typography.labelSmall.copy(
+                                        fontWeight = FontWeight.Bold,
+                                        color = OlivaDark,
+                                        letterSpacing = 1.sp
+                                    )
+                                )
+                                Text(
+                                    text = recurrenceFullLabel(p.tipoRecorrencia, p.diaSemana, p.valorRecorrencia, p.hora),
+                                    style = MaterialTheme.typography.bodyMedium.copy(
+                                        fontFamily = LiterataFontFamily,
+                                        fontWeight = FontWeight.SemiBold,
+                                        color = Ink
+                                    )
+                                )
+                                Text(
+                                    text = "📍 ${p.local}",
+                                    style = MaterialTheme.typography.bodySmall.copy(color = Muted)
+                                )
+                            }
                         }
-                        "$dia, ${it.hora} · ${it.local}"
-                    } ?: "Sem padrão recorrente."
-                    Text(
-                        "Padrão:",
-                        style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Bold, color = Muted)
-                    )
-                    Text(patternLabel, style = MaterialTheme.typography.bodyMedium)
+                    } else {
+                        Row(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .clip(RoundedCornerShape(14.dp))
+                                .background(DividerSoft.copy(alpha = 0.3f))
+                                .padding(14.dp),
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.spacedBy(12.dp)
+                        ) {
+                            Icon(
+                                imageVector = Icons.Outlined.Refresh,
+                                contentDescription = null,
+                                tint = Muted,
+                                modifier = Modifier.size(24.dp)
+                            )
+                            Text(
+                                text = "Sem padrão recorrente definido.",
+                                style = MaterialTheme.typography.bodyMedium.copy(color = Muted)
+                            )
+                        }
+                    }
                     Spacer(modifier = Modifier.height(8.dp))
                     TbButton(
-                        text = if (pattern != null) "Editar padrão" else "Definir padrão",
+                        text = if (pattern != null) "Editar padrão de recorrência" else "Definir padrão",
                         onClick = { showEditPattern = true },
                         variant = TbButtonVariant.Outline,
                         size = TbButtonSize.Sm,
                         modifier = Modifier.fillMaxWidth()
                     )
 
-                    Spacer(modifier = Modifier.height(16.dp))
-                    Text(
-                        "Próximo encontro:",
-                        style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Bold, color = Muted)
-                    )
+                    // ── Próximo encontro ─────────────────────────────────
+                    Spacer(modifier = Modifier.height(20.dp))
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(6.dp)
+                    ) {
+                        Icon(
+                            imageVector = Icons.Outlined.DateRange,
+                            contentDescription = null,
+                            tint = Terracota,
+                            modifier = Modifier.size(16.dp)
+                        )
+                        Text(
+                            text = "PRÓXIMO ENCONTRO",
+                            style = MaterialTheme.typography.labelSmall.copy(
+                                fontWeight = FontWeight.Bold,
+                                color = Terracota,
+                                letterSpacing = 1.sp
+                            )
+                        )
+                    }
+                    Spacer(modifier = Modifier.height(8.dp))
                     if (meeting != null) {
-                        Text("${meeting!!.data} · ${meeting!!.hora}", style = MaterialTheme.typography.bodyMedium)
-                        Text(meeting!!.local, style = MaterialTheme.typography.bodySmall.copy(color = Muted))
+                        val m = meeting!!
+                        Row(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .clip(RoundedCornerShape(14.dp))
+                                .background(Cream)
+                                .border(0.5.dp, Divider, RoundedCornerShape(14.dp))
+                                .padding(14.dp),
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.spacedBy(14.dp)
+                        ) {
+                            Box(
+                                modifier = Modifier
+                                    .size(56.dp)
+                                    .clip(RoundedCornerShape(12.dp))
+                                    .background(Terracota.copy(alpha = 0.12f)),
+                                contentAlignment = Alignment.Center
+                            ) {
+                                val dayNumber = m.data
+                                    .substringAfter(",", "")
+                                    .trim()
+                                    .takeWhile { it.isDigit() }
+                                    .ifEmpty { m.data.trim().takeWhile { it.isDigit() }.ifEmpty { "—" } }
+                                Text(
+                                    text = dayNumber,
+                                    style = MaterialTheme.typography.displayMedium.copy(
+                                        fontSize = 22.sp,
+                                        fontWeight = FontWeight.Bold,
+                                        color = Terracota,
+                                        fontFamily = LiterataFontFamily
+                                    )
+                                )
+                            }
+                            Column(modifier = Modifier.weight(1f)) {
+                                Text(
+                                    text = m.data,
+                                    style = MaterialTheme.typography.bodyMedium.copy(
+                                        fontFamily = LiterataFontFamily,
+                                        fontWeight = FontWeight.SemiBold,
+                                        color = Ink
+                                    ),
+                                    maxLines = 2,
+                                    overflow = TextOverflow.Ellipsis
+                                )
+                                Text(text = m.hora, style = MaterialTheme.typography.bodySmall.copy(color = Muted))
+                                Text(
+                                    text = "📍 ${m.local}",
+                                    style = MaterialTheme.typography.bodySmall.copy(color = Muted),
+                                    maxLines = 1,
+                                    overflow = TextOverflow.Ellipsis
+                                )
+                            }
+                        }
                         Spacer(modifier = Modifier.height(8.dp))
                         Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                             TbButton(
                                 text = "Editar",
-                                onClick = { editingMeetingId = meeting!!.id },
+                                onClick = { editingMeetingId = m.id },
                                 variant = TbButtonVariant.Outline,
                                 size = TbButtonSize.Sm,
                                 modifier = Modifier.weight(1f)
                             )
                             TbButton(
                                 text = "Cancelar",
-                                onClick = { cancelMeetingId = meeting!!.id },
+                                onClick = { cancelMeetingId = m.id },
                                 variant = TbButtonVariant.Outline,
                                 size = TbButtonSize.Sm,
                                 modifier = Modifier.weight(1f)
                             )
                         }
                     } else {
-                        Text("Nenhum encontro agendado.", style = MaterialTheme.typography.bodySmall.copy(color = Muted))
+                        Column(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .clip(RoundedCornerShape(14.dp))
+                                .background(DividerSoft.copy(alpha = 0.3f))
+                                .padding(20.dp),
+                            horizontalAlignment = Alignment.CenterHorizontally,
+                            verticalArrangement = Arrangement.spacedBy(8.dp)
+                        ) {
+                            Icon(
+                                imageVector = Icons.Outlined.DateRange,
+                                contentDescription = null,
+                                tint = Muted.copy(alpha = 0.6f),
+                                modifier = Modifier.size(36.dp)
+                            )
+                            Text(
+                                text = "Nenhum encontro agendado",
+                                style = MaterialTheme.typography.bodyMedium.copy(color = Muted)
+                            )
+                        }
                     }
                     Spacer(modifier = Modifier.height(8.dp))
-                    TbButton(
-                        text = "+ Encontro avulso",
-                        onClick = { creatingNewMeeting = true },
-                        variant = TbButtonVariant.Outline,
-                        size = TbButtonSize.Sm,
-                        modifier = Modifier.fillMaxWidth()
-                    )
+                    Row(horizontalArrangement = Arrangement.spacedBy(8.dp), modifier = Modifier.fillMaxWidth()) {
+                        Icon(
+                            imageVector = Icons.Outlined.Add,
+                            contentDescription = null,
+                            tint = Terracota,
+                            modifier = Modifier.size(18.dp).align(Alignment.CenterVertically)
+                        )
+                        TbButton(
+                            text = "Encontro avulso",
+                            onClick = { creatingNewMeeting = true },
+                            variant = TbButtonVariant.Outline,
+                            size = TbButtonSize.Sm,
+                            modifier = Modifier.weight(1f)
+                        )
+                    }
                 }
             }
 
@@ -437,9 +590,11 @@ fun ManageClubScreen(
             initialHora = pattern?.hora ?: "19:00",
             initialLocal = pattern?.local ?: "",
             initialAgenda = pattern?.agendaTemplate ?: "Discussão do livro atual",
+            initialTipoRecorrencia = pattern?.tipoRecorrencia ?: "semanal",
+            initialValorRecorrencia = pattern?.valorRecorrencia ?: 0,
             onDismiss = { showEditPattern = false },
-            onSave = { dia, h, l, a ->
-                viewModel.upsertMeetingPattern(dia, h, l, a)
+            onSave = { dia, h, l, a, tipo, valor ->
+                viewModel.upsertMeetingPattern(dia, h, l, a, tipo, valor)
                 showEditPattern = false
             }
         )
@@ -620,4 +775,42 @@ private fun ChangeCurrentBookDialog(
             TextButton(onClick = onDismiss) { Text("Fechar", color = Muted) }
         }
     )
+}
+
+private fun recurrenceShortLabel(tipo: String): String = when (tipo) {
+    "semanal" -> "Toda semana"
+    "quinzenal" -> "Quinzenal"
+    "mensal_dia_semana" -> "Mensal"
+    "mensal_dia_mes" -> "Mensal"
+    "personalizado_dias" -> "Personalizado"
+    else -> "Recorrente"
+}
+
+private fun recurrenceFullLabel(tipo: String, diaSemana: Int, valor: Int, hora: String): String {
+    val dia = when (diaSemana) {
+        java.util.Calendar.SUNDAY -> "domingos"
+        java.util.Calendar.MONDAY -> "segundas"
+        java.util.Calendar.TUESDAY -> "terças"
+        java.util.Calendar.WEDNESDAY -> "quartas"
+        java.util.Calendar.THURSDAY -> "quintas"
+        java.util.Calendar.FRIDAY -> "sextas"
+        java.util.Calendar.SATURDAY -> "sábados"
+        else -> "—"
+    }
+    val ordinal = when (valor) {
+        1 -> "1ª"
+        2 -> "2ª"
+        3 -> "3ª"
+        4 -> "4ª"
+        5 -> "última"
+        else -> "1ª"
+    }
+    return when (tipo) {
+        "semanal" -> "Toda ${dia.dropLast(1)}, ${hora}"
+        "quinzenal" -> "A cada 15 dias (${dia}), ${hora}"
+        "mensal_dia_semana" -> "Toda $ordinal ${dia.dropLast(1)} do mês, ${hora}"
+        "mensal_dia_mes" -> "Todo dia $valor do mês, ${hora}"
+        "personalizado_dias" -> "A cada $valor dias, ${hora}"
+        else -> "$dia, ${hora}"
+    }
 }

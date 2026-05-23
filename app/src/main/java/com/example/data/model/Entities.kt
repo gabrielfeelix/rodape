@@ -184,7 +184,17 @@ data class MeetingPattern(
     val hora: String,
     val local: String,
     val agendaTemplate: String,
-    val ativo: Boolean
+    val ativo: Boolean,
+    /**
+     * "semanal" | "quinzenal" | "mensal_dia_semana" | "mensal_dia_mes" | "personalizado_dias"
+     * Semântica de [valorRecorrencia] depende:
+     *  - semanal/quinzenal: ignorado (usa diaSemana)
+     *  - mensal_dia_semana: ordinal da semana (1=1ª, 2=2ª, …, 5=última) — combina com diaSemana
+     *  - mensal_dia_mes: dia do mês (1–31)
+     *  - personalizado_dias: número de dias entre encontros
+     */
+    val tipoRecorrencia: String,
+    val valorRecorrencia: Int
 )
 
 @Entity(tableName = "member_removals")

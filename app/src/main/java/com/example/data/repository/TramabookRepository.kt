@@ -217,8 +217,8 @@ class TramabookRepository(private val dao: TramabookDao) {
         dao.insertClub(clubMari)
 
         // Club Members
-        dao.insertClubMember(ClubMember("club_mari", "user_marina", "super_admin", System.currentTimeMillis() - 30 * 24 * 60 * 60 * 1000L))
-        dao.insertClubMember(ClubMember("club_mari", "user_voce", "admin", System.currentTimeMillis() - 28 * 24 * 60 * 60 * 1000L))
+        dao.insertClubMember(ClubMember("club_mari", "user_marina", "admin", System.currentTimeMillis() - 30 * 24 * 60 * 60 * 1000L))
+        dao.insertClubMember(ClubMember("club_mari", "user_voce", "super_admin", System.currentTimeMillis() - 28 * 24 * 60 * 60 * 1000L))
         dao.insertClubMember(ClubMember("club_mari", "user_lucas", "member", System.currentTimeMillis() - 28 * 24 * 60 * 60 * 1000L))
         dao.insertClubMember(ClubMember("club_mari", "user_sofia", "member", System.currentTimeMillis() - 27 * 24 * 60 * 60 * 1000L))
         dao.insertClubMember(ClubMember("club_mari", "user_bia", "member", System.currentTimeMillis() - 26 * 24 * 60 * 60 * 1000L))
@@ -303,7 +303,7 @@ class TramabookRepository(private val dao: TramabookDao) {
         dao.insertMeetingRsvp(MeetingRsvp("meet_1", "user_bia", "Talvez"))
         dao.insertMeetingRsvp(MeetingRsvp("meet_1", "user_joao", "Não vou"))
 
-        // Padrão de encontros: domingos 19h
+        // Padrão de encontros: domingos 19h (semanal)
         dao.insertMeetingPattern(
             MeetingPattern(
                 id = "pattern_mari",
@@ -312,7 +312,9 @@ class TramabookRepository(private val dao: TramabookDao) {
                 hora = "19:00",
                 local = "Café Lispector, Vila Madalena",
                 agendaTemplate = "Discussão do livro atual",
-                ativo = true
+                ativo = true,
+                tipoRecorrencia = "semanal",
+                valorRecorrencia = 0
             )
         )
 

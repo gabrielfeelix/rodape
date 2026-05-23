@@ -641,7 +641,12 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
         }
     }
 
-    fun createBookSuggestion(doc: OpenLibraryDoc, justification: String, onCompleted: () -> Unit) {
+    fun createBookSuggestion(
+        doc: OpenLibraryDoc,
+        justification: String,
+        authorOverride: String? = null,
+        onCompleted: () -> Unit
+    ) {
         viewModelScope.launch {
             val clubId = activeClubId.value ?: return@launch
             val userId = currentUserId.value ?: "user_voce"
@@ -653,10 +658,14 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
                 ""
             }
 
+            val finalAuthor = authorOverride?.trim()?.takeIf { it.isNotBlank() }
+                ?: doc.authorName?.firstOrNull()
+                ?: "Autor desconhecido"
+
             val newBook = Book(
                 id = bookId,
                 title = doc.title,
-                author = doc.authorName?.firstOrNull() ?: "Autor desconhecido",
+                author = finalAuthor,
                 coverUrl = coverUrl,
                 openlibraryId = "",
                 isbn = doc.isbn?.firstOrNull() ?: ""
@@ -881,7 +890,14 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
         }
     }
 
-    fun upsertMeetingPattern(diaSemana: Int, hora: String, local: String, agendaTemplate: String) {
+    fun upsertMeetingPattern(
+        diaSemana: Int,
+        hora: String,
+        local: String,
+        agendaTemplate: String,
+        tipoRecorrencia: String,
+        valorRecorrencia: Int
+    ) {
         viewModelScope.launch {
             val clubId = activeClubId.value ?: return@launch
             if (currentUserPapel.value !in setOf("admin", "super_admin")) return@launch
@@ -894,7 +910,9 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
                     hora = hora,
                     local = local,
                     agendaTemplate = agendaTemplate,
-                    ativo = true
+                    ativo = true,
+                    tipoRecorrencia = tipoRecorrencia,
+                    valorRecorrencia = valorRecorrencia
                 )
             )
         }
@@ -1023,6 +1041,48 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
             if (member.papel != "super_admin") return@launch
             repository.updateClubArquivado(clubId, false)
             dataStoreManager.saveActiveClubId(clubId)
+        }
+    }
+
+    /**
+     * Faz cross-check do autor com Google Books pra detectar conflitos da Open Library
+     * (que às vezes retorna author errado quando cover_id é compartilhado).
+     *
+     * Retorna o autor encontrado no GB se diferente do fornecido, ou null se bate/falha.
+     */
+    fun verifyAuthorWithGoogleBooks(
+        title: String,
+        olAuthor: String,
+        isbn: String,
+        onResult: (gbAuthor: String?) -> Unit
+    ) {
+        viewModelScope.launch {
+            try {
+                val query = if (isbn.isNotBlank()) "isbn:$isbn"
+                    else "intitle:${title.take(80)}"
+                val gb = com.example.data.api.GoogleBooksApi.service.search(query)
+                val gbAuthor = gb.items
+                    ?.firstOrNull()
+                    ?.volumeInfo
+                    ?.authors
+                    ?.firstOrNull()
+                    .orEmpty()
+                if (gbAuthor.isBlank()) {
+                    onResult(null)
+                    return@launch
+                }
+                // Normalize pra comparar (ignora case, trim)
+                val olNorm = olAuthor.trim().lowercase()
+                val gbNorm = gbAuthor.trim().lowercase()
+                if (olNorm == gbNorm || olNorm.contains(gbNorm) || gbNorm.contains(olNorm)) {
+                    onResult(null) // bateu
+                } else {
+                    onResult(gbAuthor.trim())
+                }
+            } catch (e: Exception) {
+                e.printStackTrace()
+                onResult(null)
+            }
         }
     }
 

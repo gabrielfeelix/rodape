@@ -29,7 +29,7 @@ import com.example.data.model.*
         MeetingPattern::class,
         MemberRemoval::class
     ],
-    version = 4,
+    version = 5,
     exportSchema = false
 )
 abstract class AppDatabase : RoomDatabase() {
