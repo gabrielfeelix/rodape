@@ -156,17 +156,44 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
         if (clubId != null) repository.getBookByStatusFlow(clubId, "next") else flowOf(emptyList())
     }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
 
-    // Is current user admin of the active club?
-    val isCurrentUserAdmin: StateFlow<Boolean> = combine(currentUserId, activeClubId) { uid, cid -> Pair(uid, cid) }
+    // Papel do usuário atual no clube ativo: "super_admin" | "admin" | "member" | null
+    val currentUserPapel: StateFlow<String?> = combine(currentUserId, activeClubId) { uid, cid -> Pair(uid, cid) }
         .flatMapLatest { (uid, cid) ->
             if (uid != null && cid != null) {
-                flow {
-                    val m = repository.getClubMember(cid, uid)
-                    emit(m?.papel == "admin")
+                repository.getClubMembersRawFlow(cid).map { list ->
+                    list.find { it.userId == uid }?.papel
                 }
-            } else flowOf(false)
+            } else flowOf(null)
         }
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), null)
+
+    val isCurrentUserAdmin: StateFlow<Boolean> = currentUserPapel
+        .map { it == "admin" || it == "super_admin" }
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), false)
+
+    val isCurrentUserSuperAdmin: StateFlow<Boolean> = currentUserPapel
+        .map { it == "super_admin" }
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), false)
+
+    // Membros do clube ativo (raw com papel)
+    val activeClubMembersRaw: StateFlow<List<ClubMember>> = activeClubId.flatMapLatest { clubId ->
+        if (clubId != null) repository.getClubMembersRawFlow(clubId) else flowOf(emptyList())
+    }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
+
+    // Padrão de encontros do clube ativo
+    val activeMeetingPattern: StateFlow<MeetingPattern?> = activeClubId.flatMapLatest { clubId ->
+        if (clubId != null) repository.getActiveMeetingPatternFlow(clubId) else flowOf(null)
+    }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), null)
+
+    // Comentários removidos do clube ativo
+    val removedCommentsInActiveClub: StateFlow<List<Comment>> = activeClubId.flatMapLatest { clubId ->
+        if (clubId != null) repository.getRemovedCommentsForClubFlow(clubId) else flowOf(emptyList())
+    }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
+
+    // Clubes arquivados do usuário
+    val archivedClubsForUser: StateFlow<List<Club>> = currentUserId.flatMapLatest { uid ->
+        if (uid != null) repository.getArchivedClubsForUserFlow(uid) else flowOf(emptyList())
+    }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
 
     // Mapa bookId -> dataEncontro (do clube ativo, livros finished)
     val finishedBooksMeetingDates: StateFlow<Map<String, Long?>> = activeClubId.flatMapLatest { clubId ->
@@ -684,6 +711,332 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
     fun deleteQuote(quote: SavedQuote) {
         viewModelScope.launch {
             repository.deleteSavedQuote(quote)
+        }
+    }
+
+    // ============================================================
+    // ADMIN ACTIONS — Fase 5
+    // ============================================================
+
+    fun editClubInfo(nome: String, descricao: String, cor: String, privacidade: String) {
+        viewModelScope.launch {
+            val clubId = activeClubId.value ?: return@launch
+            if (nome.trim().length < 3) return@launch
+            repository.updateClubInfo(clubId, nome.trim(), descricao.trim(), cor, privacidade)
+        }
+    }
+
+    fun regenerateInviteCode(onResult: (String) -> Unit = {}) {
+        viewModelScope.launch {
+            val clubId = activeClubId.value ?: return@launch
+            val newCode = (1..6).map { "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789".random() }.joinToString("")
+            repository.updateClubCodigo(clubId, newCode)
+            onResult(newCode)
+        }
+    }
+
+    fun promoteMemberToAdmin(targetUserId: String) {
+        viewModelScope.launch {
+            val clubId = activeClubId.value ?: return@launch
+            if (currentUserPapel.value != "super_admin") return@launch
+            val target = repository.getClubMember(clubId, targetUserId) ?: return@launch
+            if (target.papel != "member") return@launch
+            repository.updateMemberPapel(clubId, targetUserId, "admin")
+
+            val clubName = activeClub.value?.nome ?: ""
+            val promotedBy = currentUser.value?.nome ?: ""
+            repository.insertNotification(
+                DbNotification(
+                    id = "ntf_${UUID.randomUUID()}",
+                    userId = targetUserId,
+                    clubId = clubId,
+                    tipo = "promoted_to_admin",
+                    payloadJson = "{\"clubName\":\"$clubName\",\"promotedBy\":\"$promotedBy\"}",
+                    lida = false,
+                    criadoEm = System.currentTimeMillis()
+                )
+            )
+        }
+    }
+
+    fun demoteAdminToMember(targetUserId: String) {
+        viewModelScope.launch {
+            val clubId = activeClubId.value ?: return@launch
+            if (currentUserPapel.value != "super_admin") return@launch
+            val target = repository.getClubMember(clubId, targetUserId) ?: return@launch
+            if (target.papel != "admin") return@launch
+            repository.updateMemberPapel(clubId, targetUserId, "member")
+        }
+    }
+
+    fun transferSuperAdmin(toAdminUserId: String) {
+        viewModelScope.launch {
+            val clubId = activeClubId.value ?: return@launch
+            val meId = currentUserId.value ?: return@launch
+            if (currentUserPapel.value != "super_admin") return@launch
+            val target = repository.getClubMember(clubId, toAdminUserId) ?: return@launch
+            if (target.papel != "admin") return@launch
+
+            repository.updateMemberPapel(clubId, meId, "admin")
+            repository.updateMemberPapel(clubId, toAdminUserId, "super_admin")
+
+            val clubName = activeClub.value?.nome ?: ""
+            val fromUserName = currentUser.value?.nome ?: ""
+            repository.insertNotification(
+                DbNotification(
+                    id = "ntf_${UUID.randomUUID()}",
+                    userId = toAdminUserId,
+                    clubId = clubId,
+                    tipo = "super_admin_transferred",
+                    payloadJson = "{\"clubName\":\"$clubName\",\"fromUser\":\"$fromUserName\"}",
+                    lida = false,
+                    criadoEm = System.currentTimeMillis()
+                )
+            )
+        }
+    }
+
+    fun removeMember(targetUserId: String, motivo: String) {
+        viewModelScope.launch {
+            val clubId = activeClubId.value ?: return@launch
+            val meId = currentUserId.value ?: return@launch
+            if (currentUserPapel.value !in setOf("admin", "super_admin")) return@launch
+            if (targetUserId == meId) return@launch
+            val target = repository.getClubMember(clubId, targetUserId) ?: return@launch
+            if (target.papel == "super_admin") return@launch
+
+            repository.insertMemberRemoval(
+                MemberRemoval(
+                    id = "rem_${UUID.randomUUID()}",
+                    clubId = clubId,
+                    userId = targetUserId,
+                    removedByUserId = meId,
+                    motivo = motivo.trim(),
+                    removedAt = System.currentTimeMillis()
+                )
+            )
+
+            repository.deleteClubMember(clubId, targetUserId)
+
+            val clubName = activeClub.value?.nome ?: ""
+            val motivoEscapado = motivo.trim().replace("\\", "\\\\").replace("\"", "\\\"")
+            repository.insertNotification(
+                DbNotification(
+                    id = "ntf_${UUID.randomUUID()}",
+                    userId = targetUserId,
+                    clubId = clubId,
+                    tipo = "member_removed",
+                    payloadJson = "{\"clubName\":\"$clubName\",\"motivo\":\"$motivoEscapado\"}",
+                    lida = false,
+                    criadoEm = System.currentTimeMillis()
+                )
+            )
+        }
+    }
+
+    fun leaveActiveClub(onBlocked: (String) -> Unit = {}, onDone: () -> Unit = {}) {
+        viewModelScope.launch {
+            val clubId = activeClubId.value ?: return@launch
+            val meId = currentUserId.value ?: return@launch
+            val me = repository.getClubMember(clubId, meId) ?: return@launch
+
+            if (me.papel == "super_admin") {
+                val members = repository.getClubMembersListOrderedByJoin(clubId)
+                val firstAdmin = members.firstOrNull { it.userId != meId && it.papel == "admin" }
+                if (firstAdmin == null) {
+                    onBlocked("Você é o único administrador. Promova alguém a admin antes de sair, ou arquive o clube.")
+                    return@launch
+                }
+                repository.updateMemberPapel(clubId, firstAdmin.userId, "super_admin")
+                val clubName = activeClub.value?.nome ?: ""
+                val myName = currentUser.value?.nome ?: ""
+                repository.insertNotification(
+                    DbNotification(
+                        id = "ntf_${UUID.randomUUID()}",
+                        userId = firstAdmin.userId,
+                        clubId = clubId,
+                        tipo = "super_admin_transferred",
+                        payloadJson = "{\"clubName\":\"$clubName\",\"fromUser\":\"$myName\"}",
+                        lida = false,
+                        criadoEm = System.currentTimeMillis()
+                    )
+                )
+            }
+
+            repository.deleteClubMember(clubId, meId)
+            val outros = repository.getClubsForUserList(meId)
+            if (outros.isNotEmpty()) {
+                dataStoreManager.saveActiveClubId(outros.first().id)
+            } else {
+                dataStoreManager.saveActiveClubId("")
+            }
+            onDone()
+        }
+    }
+
+    fun upsertMeetingPattern(diaSemana: Int, hora: String, local: String, agendaTemplate: String) {
+        viewModelScope.launch {
+            val clubId = activeClubId.value ?: return@launch
+            if (currentUserPapel.value !in setOf("admin", "super_admin")) return@launch
+            repository.deactivateMeetingPatterns(clubId)
+            repository.insertMeetingPattern(
+                MeetingPattern(
+                    id = "pattern_${clubId}_${System.currentTimeMillis()}",
+                    clubId = clubId,
+                    diaSemana = diaSemana,
+                    hora = hora,
+                    local = local,
+                    agendaTemplate = agendaTemplate,
+                    ativo = true
+                )
+            )
+        }
+    }
+
+    fun deactivateMeetingPattern() {
+        viewModelScope.launch {
+            val clubId = activeClubId.value ?: return@launch
+            if (currentUserPapel.value !in setOf("admin", "super_admin")) return@launch
+            repository.deactivateMeetingPatterns(clubId)
+        }
+    }
+
+    fun upsertMeeting(meetingId: String?, data: String, hora: String, local: String, agenda: String) {
+        viewModelScope.launch {
+            val clubId = activeClubId.value ?: return@launch
+            if (currentUserPapel.value !in setOf("admin", "super_admin")) return@launch
+            val id = meetingId ?: "meet_${UUID.randomUUID().toString().take(8)}"
+            repository.insertMeeting(
+                Meeting(
+                    id = id,
+                    clubId = clubId,
+                    data = data,
+                    hora = hora,
+                    local = local,
+                    agenda = agenda
+                )
+            )
+        }
+    }
+
+    fun cancelMeeting(meetingId: String) {
+        viewModelScope.launch {
+            if (currentUserPapel.value !in setOf("admin", "super_admin")) return@launch
+            repository.deleteRsvpsForMeeting(meetingId)
+            repository.deleteMeeting(meetingId)
+        }
+    }
+
+    fun removeComment(commentId: String, motivo: String) {
+        viewModelScope.launch {
+            val meId = currentUserId.value ?: return@launch
+            if (currentUserPapel.value !in setOf("admin", "super_admin")) return@launch
+            repository.softRemoveComment(commentId, meId, motivo.trim())
+        }
+    }
+
+    fun restoreRemovedComment(commentId: String) {
+        viewModelScope.launch {
+            if (currentUserPapel.value != "super_admin") return@launch
+            repository.restoreComment(commentId)
+        }
+    }
+
+    fun removeSuggestion(bookId: String) {
+        viewModelScope.launch {
+            val clubId = activeClubId.value ?: return@launch
+            if (currentUserPapel.value !in setOf("admin", "super_admin")) return@launch
+            repository.deleteVotesForBook(bookId)
+            repository.deleteBookSuggestion(bookId, clubId)
+            repository.deleteClubBook(clubId, bookId)
+        }
+    }
+
+    fun changeCurrentBookManually(targetBookId: String) {
+        viewModelScope.launch {
+            val clubId = activeClubId.value ?: return@launch
+            if (currentUserPapel.value !in setOf("admin", "super_admin")) return@launch
+
+            val currentList = repository.getBookByStatusFlow(clubId, "current").first()
+            currentList.forEach { b ->
+                repository.updateClubBookStatus(clubId, b.id, "finished")
+                repository.updateClubBookMeetingDate(clubId, b.id, System.currentTimeMillis())
+            }
+            repository.updateClubBookStatus(clubId, targetBookId, "current")
+        }
+    }
+
+    fun markCurrentBookFinished() {
+        viewModelScope.launch {
+            val clubId = activeClubId.value ?: return@launch
+            if (currentUserPapel.value !in setOf("admin", "super_admin")) return@launch
+            val currentList = repository.getBookByStatusFlow(clubId, "current").first()
+            currentList.forEach { b ->
+                repository.updateClubBookStatus(clubId, b.id, "finished")
+                repository.updateClubBookMeetingDate(clubId, b.id, System.currentTimeMillis())
+            }
+        }
+    }
+
+    fun upsertChapters(bookId: String, novos: List<Pair<Int, String>>) {
+        viewModelScope.launch {
+            if (currentUserPapel.value !in setOf("admin", "super_admin")) return@launch
+            repository.deleteChaptersForBook(bookId)
+            val chapters = novos.map { (numero, titulo) ->
+                Chapter(
+                    id = "ch_${bookId}_${numero}",
+                    bookId = bookId,
+                    numero = numero,
+                    titulo = titulo
+                )
+            }
+            repository.insertChapters(chapters)
+        }
+    }
+
+    fun archiveClub() {
+        viewModelScope.launch {
+            val clubId = activeClubId.value ?: return@launch
+            if (currentUserPapel.value != "super_admin") return@launch
+            repository.updateClubArquivado(clubId, true)
+            val uid = currentUserId.value ?: return@launch
+            val outros = repository.getClubsForUserList(uid)
+            if (outros.isNotEmpty()) {
+                dataStoreManager.saveActiveClubId(outros.first().id)
+            } else {
+                dataStoreManager.saveActiveClubId("")
+            }
+        }
+    }
+
+    fun unarchiveClub(clubId: String) {
+        viewModelScope.launch {
+            val uid = currentUserId.value ?: return@launch
+            val member = repository.getClubMember(clubId, uid) ?: return@launch
+            if (member.papel != "super_admin") return@launch
+            repository.updateClubArquivado(clubId, false)
+            dataStoreManager.saveActiveClubId(clubId)
+        }
+    }
+
+    fun fetchChaptersOnline(book: Book, onResult: (com.example.voting.ChapterFetchResult) -> Unit) {
+        viewModelScope.launch {
+            try {
+                val query = if (book.isbn.isNotBlank()) "isbn:${book.isbn}"
+                    else "intitle:${book.title}+inauthor:${book.author}"
+                val gb = com.example.data.api.GoogleBooksApi.service.search(query)
+                val desc = gb.items
+                    ?.firstOrNull()
+                    ?.volumeInfo
+                    ?.description
+                    .orEmpty()
+                val candidates = com.example.voting.ChapterFetcher.extractFromText(desc)
+                val validated = com.example.voting.ChapterFetcher.validate(candidates)
+                onResult(validated)
+            } catch (e: Exception) {
+                e.printStackTrace()
+                onResult(com.example.voting.ChapterFetchResult.Failed)
+            }
         }
     }
 }
