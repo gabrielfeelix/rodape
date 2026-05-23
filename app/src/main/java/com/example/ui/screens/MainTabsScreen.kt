@@ -25,6 +25,7 @@ import androidx.compose.material.icons.filled.Star
 import androidx.compose.material.icons.filled.Person
 import androidx.compose.material.icons.outlined.List
 import androidx.compose.material.icons.outlined.*
+import androidx.compose.material.icons.outlined.Settings
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -83,6 +84,7 @@ fun MainTabsScreen(
     onLogoutCompleted: () -> Unit,
     onNavigateToBookDetail: (String) -> Unit = {},
     onNavigateToFrases: () -> Unit = {},
+    onNavigateToManageClub: () -> Unit = {},
 ) {
     var selectedTab by remember { mutableStateOf("home") }
     var showBottomSheet by remember { mutableStateOf(false) }
@@ -93,6 +95,7 @@ fun MainTabsScreen(
     val unreadNotificationsCount by viewModel.notifications.map { notifs ->
         notifs.count { !it.lida }
     }.collectAsState(initial = 0)
+    val isAdmin by viewModel.isCurrentUserAdmin.collectAsState()
 
     Scaffold(
         topBar = {
@@ -138,6 +141,16 @@ fun MainTabsScreen(
                     }
                 },
                 actions = {
+                    if (isAdmin) {
+                        IconButton(onClick = onNavigateToManageClub) {
+                            Icon(
+                                imageVector = Icons.Outlined.Settings,
+                                contentDescription = "Gerenciar clube",
+                                tint = MaterialTheme.colorScheme.onSurface,
+                                modifier = Modifier.size(24.dp)
+                            )
+                        }
+                    }
                     Box(modifier = Modifier.padding(end = 16.dp)) {
                         IconButton(onClick = onNavigateToNotifications) {
                             Icon(

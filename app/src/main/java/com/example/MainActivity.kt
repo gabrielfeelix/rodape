@@ -110,7 +110,31 @@ class MainActivity : ComponentActivity() {
                                 }
                             },
                             onNavigateToBookDetail = { bookId -> navController.navigate("book_detail/$bookId") },
-                            onNavigateToFrases = { navController.navigate("frases") }
+                            onNavigateToFrases = { navController.navigate("frases") },
+                            onNavigateToManageClub = { navController.navigate("manage_club") }
+                        )
+                    }
+
+                    composable("manage_club") {
+                        ManageClubScreen(
+                            viewModel = viewModel,
+                            onNavigateBack = { navController.popBackStack() },
+                            onNavigateToChapters = { navController.navigate("manage_chapters") },
+                            onNavigateToModerationLog = { navController.navigate("moderation_log") }
+                        )
+                    }
+
+                    composable("manage_chapters") {
+                        ManageChaptersScreen(
+                            viewModel = viewModel,
+                            onNavigateBack = { navController.popBackStack() }
+                        )
+                    }
+
+                    composable("moderation_log") {
+                        ModerationLogScreen(
+                            viewModel = viewModel,
+                            onNavigateBack = { navController.popBackStack() }
                         )
                     }
 
