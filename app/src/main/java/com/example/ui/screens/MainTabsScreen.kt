@@ -2266,12 +2266,12 @@ fun EditProfileView(
     var email by remember { mutableStateOf(initialEmail) }
     var avatarUrl by remember { mutableStateOf(initialAvatarUrl) }
 
-    // Avatares disponíveis: primeiros 2 são ilustrados (drawables);
-    // os outros 4 são iniciais coloridas (esquema antigo)
+    // Avatares disponíveis: primeiros 3 são ilustrados (drawables);
+    // os outros 3 são iniciais coloridas (esquema antigo)
     val presetNames = listOf(
         "preset:pequeno_principe",
         "preset:don_quixote",
-        "Rafael",
+        "preset:petalas",
         "Júlia",
         "Leo",
         "Helena"
@@ -2354,6 +2354,7 @@ fun EditProfileView(
                     val displayLabel = when (preset) {
                         "preset:pequeno_principe" -> "Pequeno Príncipe"
                         "preset:don_quixote" -> "Don Quixote"
+                        "preset:petalas" -> "Pétalas"
                         else -> preset
                     }
                     Box(

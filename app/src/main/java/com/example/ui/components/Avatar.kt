@@ -69,6 +69,14 @@ private val presetAvatars: Map<String, PresetAvatar> = mapOf(
         // Figura inteira ~1:1.7 — ocupa mais altura pra ver da cabeça até o meio do corpo
         widthFactor = 1.30f,
         heightFactor = 2.10f
+    ),
+    "preset:petalas" to PresetAvatar(
+        drawableRes = R.drawable.avatar_petalas,
+        bgColor = Color(0xFFF1E3BE), // Mustard soft — combina com pétalas/jardim
+        displayName = "Pétalas",
+        // Busto ~1:1 (igual o Pequeno Príncipe)
+        widthFactor = 1.15f,
+        heightFactor = 1.30f
     )
 )
 
