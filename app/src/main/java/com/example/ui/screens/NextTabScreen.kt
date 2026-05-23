@@ -5,6 +5,7 @@ import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.grid.GridCells
 import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
 import androidx.compose.foundation.lazy.grid.items
@@ -544,18 +545,27 @@ fun EncontroTab(viewModel: MainViewModel) {
 }
 
 // --- SUB-TAB 2: VOTAÇÃO ---
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun VotacaoTab(
     viewModel: MainViewModel,
     onNavigateToSuggestBook: () -> Unit
 ) {
     val suggestedBooks by viewModel.suggestedBooks.collectAsState()
+    val nextBooks by viewModel.nextBooks.collectAsState()
     val votes by viewModel.suggestionsAndVotes.collectAsState()
     val members by viewModel.clubMembers.collectAsState()
+    val activeRound by viewModel.activeVotingRound.collectAsState()
+    val suggestionsByBookId by viewModel.bookSuggestionsByBookId.collectAsState()
+    val isAdmin by viewModel.isCurrentUserAdmin.collectAsState()
 
     val currentUserId = viewModel.currentUserId.collectAsState().value ?: "user_voce"
 
     val totalVotes = votes.size
+
+    var showOpenSheet by remember { mutableStateOf(false) }
+    var showCloseDialog by remember { mutableStateOf(false) }
+    var justificationSheetFor by remember { mutableStateOf<String?>(null) }
 
     LazyColumn(
         modifier = Modifier
@@ -570,126 +580,184 @@ fun VotacaoTab(
                     style = MaterialTheme.typography.headlineLarge.copy(color = OlivaDark),
                     modifier = Modifier.padding(bottom = 4.dp)
                 )
-                Text(
-                    text = "Votem no livro que vocês gostariam de ler a partir da próxima semana. Cada membro tem direito a um voto, mudando quando quiser.",
-                    style = MaterialTheme.typography.bodyLarge,
-                    color = Tertiary
-                )
-            }
-        }
-
-        if (suggestedBooks.isEmpty()) {
-            item {
-                Box(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(vertical = 40.dp),
-                    contentAlignment = Alignment.Center
-                ) {
+                if (activeRound != null) {
+                    val r = activeRound!!
+                    val dataLabel = com.example.util.formatShortDate(r.fechaEm)
+                    val nLabel = if (r.nLivros == 1) "Escolham o próximo livro" else "Escolham os próximos ${r.nLivros} livros"
                     Text(
-                        "Nenhum livro sugerido ainda.",
+                        text = "Aberta até $dataLabel · $nLabel",
+                        style = MaterialTheme.typography.bodyLarge,
+                        color = Tertiary
+                    )
+                } else {
+                    Text(
+                        text = "Não há votação aberta no momento.",
                         style = MaterialTheme.typography.bodyLarge,
                         color = Muted
                     )
+                    if (isAdmin) {
+                        Spacer(modifier = Modifier.height(12.dp))
+                        TbButton(
+                            text = "Abrir nova votação",
+                            onClick = { showOpenSheet = true },
+                            variant = TbButtonVariant.Terra,
+                            size = TbButtonSize.Md,
+                            modifier = Modifier.fillMaxWidth()
+                        )
+                    }
                 }
             }
-        } else {
-            items(suggestedBooks) { book ->
-                val bookVotes = votes.filter { it.clubBookId == book.id }
-                val hasUserVoted = bookVotes.any { it.userId == currentUserId }
+        }
 
-                val pct = if (totalVotes > 0) {
-                    bookVotes.size.toFloat() / totalVotes.toFloat()
-                } else {
-                    0f
-                }
-
-                TramabookCard(
-                    modifier = Modifier.clickable { viewModel.voteForBook(book.id) }
-                ) {
-                    Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.spacedBy(16.dp)
+        if (activeRound != null) {
+            if (suggestedBooks.isEmpty()) {
+                item {
+                    Box(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(vertical = 40.dp),
+                        contentAlignment = Alignment.Center
                     ) {
-                        Cover(
-                            title = book.title,
-                            author = book.author,
-                            coverUrl = book.coverUrl,
-                            width = 64.dp,
-                            height = 96.dp
+                        Text(
+                            "Nenhum livro sugerido ainda.",
+                            style = MaterialTheme.typography.bodyLarge,
+                            color = Muted
                         )
+                    }
+                }
+            } else {
+                items(suggestedBooks) { book ->
+                    val bookVotes = votes.filter { it.clubBookId == book.id }
+                    val hasUserVoted = bookVotes.any { it.userId == currentUserId }
+                    val userVotesInRound = votes.count { it.userId == currentUserId }
+                    val limitReached = !hasUserVoted && userVotesInRound >= (activeRound?.nLivros ?: 1)
+                    val pct = if (totalVotes > 0) bookVotes.size.toFloat() / totalVotes.toFloat() else 0f
+                    val hasJustification = suggestionsByBookId[book.id]?.justificativa?.isNotBlank() == true
 
-                        Column(
-                            modifier = Modifier.weight(1f)
+                    TramabookCard(modifier = Modifier.clickable { viewModel.voteForBook(book.id) }) {
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.spacedBy(16.dp)
                         ) {
-                            Row(
-                                modifier = Modifier.fillMaxWidth(),
-                                horizontalArrangement = Arrangement.SpaceBetween,
-                                verticalAlignment = Alignment.Top
-                            ) {
-                                Column(modifier = Modifier.weight(1f)) {
-                                    Text(
-                                        text = book.title,
-                                        style = MaterialTheme.typography.headlineLarge.copy(
-                                            fontSize = 16.sp,
-                                            color = Ink
-                                        ),
-                                        maxLines = 2,
-                                        overflow = TextOverflow.Ellipsis
-                                    )
-                                    Text(
-                                        text = book.author,
-                                        style = MaterialTheme.typography.bodyLarge.copy(color = Muted)
-                                    )
-                                }
-
-                                if (hasUserVoted) {
-                                    Pill(
-                                        text = "Teu voto",
-                                        variant = PillVariant.OliveDeep,
-                                        modifier = Modifier.padding(start = 8.dp)
-                                    )
-                                }
-                            }
-
-                            Spacer(modifier = Modifier.height(12.dp))
-
-                            // Vote progress bar — Phase-1 ProgressBar component
-                            ProgressBar(
-                                value = pct,
-                                modifier = Modifier.fillMaxWidth(),
-                                color = if (hasUserVoted) Oliva else Terracota,
-                                track = DividerSoft,
-                                height = 8.dp
+                            Cover(
+                                title = book.title, author = book.author, coverUrl = book.coverUrl,
+                                width = 64.dp, height = 96.dp
                             )
-
-                            Spacer(modifier = Modifier.height(6.dp))
-
-                            Row(
-                                modifier = Modifier.fillMaxWidth(),
-                                horizontalArrangement = Arrangement.SpaceBetween
-                            ) {
-                                Text(
-                                    text = "${bookVotes.size} ${if (bookVotes.size == 1) "voto" else "votos"}",
-                                    style = MaterialTheme.typography.labelSmall.copy(
-                                        fontWeight = FontWeight.Bold,
-                                        color = Ink
-                                    )
+                            Column(modifier = Modifier.weight(1f)) {
+                                Row(
+                                    modifier = Modifier.fillMaxWidth(),
+                                    horizontalArrangement = Arrangement.SpaceBetween,
+                                    verticalAlignment = Alignment.Top
+                                ) {
+                                    Column(modifier = Modifier.weight(1f)) {
+                                        Row(
+                                            verticalAlignment = Alignment.CenterVertically,
+                                            horizontalArrangement = Arrangement.spacedBy(6.dp)
+                                        ) {
+                                            Text(
+                                                text = book.title,
+                                                style = MaterialTheme.typography.headlineLarge.copy(fontSize = 16.sp, color = Ink),
+                                                maxLines = 2,
+                                                overflow = TextOverflow.Ellipsis,
+                                                modifier = Modifier.weight(1f, fill = false)
+                                            )
+                                            if (hasJustification) {
+                                                Icon(
+                                                    imageVector = Icons.Outlined.Info,
+                                                    contentDescription = "Ver justificativa",
+                                                    tint = OlivaMid,
+                                                    modifier = Modifier
+                                                        .size(16.dp)
+                                                        .clickable { justificationSheetFor = book.id }
+                                                )
+                                            }
+                                        }
+                                        Text(text = book.author, style = MaterialTheme.typography.bodyLarge.copy(color = Muted))
+                                    }
+                                    if (hasUserVoted) {
+                                        Pill(text = "Teu voto", variant = PillVariant.OliveDeep, modifier = Modifier.padding(start = 8.dp))
+                                    }
+                                }
+                                Spacer(modifier = Modifier.height(12.dp))
+                                ProgressBar(
+                                    value = pct,
+                                    modifier = Modifier.fillMaxWidth(),
+                                    color = if (hasUserVoted) Oliva else Terracota,
+                                    track = DividerSoft,
+                                    height = 8.dp
                                 )
-                                Text(
-                                    text = "${(pct * 100).toInt()}%",
-                                    style = MaterialTheme.typography.labelSmall.copy(color = Muted)
+                                Spacer(modifier = Modifier.height(6.dp))
+                                Row(
+                                    modifier = Modifier.fillMaxWidth(),
+                                    horizontalArrangement = Arrangement.SpaceBetween
+                                ) {
+                                    Text(
+                                        text = "${bookVotes.size} ${if (bookVotes.size == 1) "voto" else "votos"}",
+                                        style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Bold, color = Ink)
+                                    )
+                                    Text(
+                                        text = "${(pct * 100).toInt()}%",
+                                        style = MaterialTheme.typography.labelSmall.copy(color = Muted)
+                                    )
+                                }
+                                Spacer(modifier = Modifier.height(12.dp))
+                                TbButton(
+                                    text = when {
+                                        hasUserVoted -> "Teu voto"
+                                        limitReached -> "Limite de votos atingido"
+                                        else -> "Votar nesse"
+                                    },
+                                    onClick = { if (!limitReached || hasUserVoted) viewModel.voteForBook(book.id) },
+                                    modifier = Modifier.fillMaxWidth(),
+                                    variant = if (hasUserVoted) TbButtonVariant.OlivaSoft else TbButtonVariant.Primary,
+                                    size = TbButtonSize.Sm,
+                                    enabled = !(limitReached && !hasUserVoted)
                                 )
                             }
+                        }
+                    }
+                }
+            }
+        }
 
-                            Spacer(modifier = Modifier.height(12.dp))
-
-                            TbButton(
-                                text = if (hasUserVoted) "Teu voto" else "Votar nesse",
-                                onClick = { viewModel.voteForBook(book.id) },
-                                modifier = Modifier.fillMaxWidth(),
-                                variant = if (hasUserVoted) TbButtonVariant.OlivaSoft else TbButtonVariant.Primary,
-                                size = TbButtonSize.Sm
+        // Fila do clube (status = "next")
+        if (nextBooks.isNotEmpty()) {
+            item {
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(6.dp),
+                    modifier = Modifier.padding(top = 8.dp)
+                ) {
+                    Box(
+                        modifier = Modifier
+                            .size(6.dp)
+                            .background(Terracota, androidx.compose.foundation.shape.CircleShape)
+                    )
+                    Text(
+                        text = "FILA DO CLUBE",
+                        style = MaterialTheme.typography.labelSmall.copy(
+                            fontWeight = FontWeight.Bold,
+                            letterSpacing = 1.sp,
+                            color = Terracota
+                        )
+                    )
+                }
+            }
+            item {
+                LazyRow(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+                    items(nextBooks, key = { it.id }) { b ->
+                        Column(
+                            horizontalAlignment = Alignment.CenterHorizontally,
+                            modifier = Modifier.width(80.dp)
+                        ) {
+                            Cover(title = b.title, author = b.author, coverUrl = b.coverUrl, width = 64.dp, height = 96.dp)
+                            Spacer(modifier = Modifier.height(6.dp))
+                            Text(
+                                text = b.title,
+                                style = MaterialTheme.typography.labelSmall.copy(color = Ink),
+                                maxLines = 2,
+                                overflow = TextOverflow.Ellipsis,
+                                textAlign = TextAlign.Center
                             )
                         }
                     }
@@ -705,7 +773,168 @@ fun VotacaoTab(
                 modifier = Modifier.fillMaxWidth(),
                 variant = TbButtonVariant.Outline
             )
+            if (isAdmin && activeRound != null) {
+                Spacer(modifier = Modifier.height(8.dp))
+                TbButton(
+                    text = "Encerrar votação agora",
+                    onClick = { showCloseDialog = true },
+                    modifier = Modifier.fillMaxWidth(),
+                    variant = TbButtonVariant.Outline
+                )
+            }
             Spacer(modifier = Modifier.height(32.dp))
+        }
+    }
+
+    // Sheet de justificativa
+    if (justificationSheetFor != null) {
+        val bookId = justificationSheetFor!!
+        val sug = suggestionsByBookId[bookId]
+        val author = members.find { it.id == sug?.suggestedByUserId }
+        ModalBottomSheet(
+            onDismissRequest = { justificationSheetFor = null },
+            containerColor = MaterialTheme.colorScheme.surface
+        ) {
+            Column(
+                modifier = Modifier.fillMaxWidth().padding(24.dp),
+                verticalArrangement = Arrangement.spacedBy(16.dp)
+            ) {
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(10.dp)
+                ) {
+                    Avatar(name = author?.nome ?: "Membro", avatarUrl = author?.avatarUrl ?: "", size = 32.dp)
+                    Text(
+                        text = "${author?.nome ?: "Membro"} sugeriu",
+                        style = MaterialTheme.typography.bodyLarge.copy(fontWeight = FontWeight.SemiBold)
+                    )
+                }
+                Text(
+                    text = "\"${sug?.justificativa ?: ""}\"",
+                    style = MaterialTheme.typography.bodyMedium.copy(
+                        color = InkSoft,
+                        lineHeight = 20.sp
+                    )
+                )
+                TbButton(
+                    text = "Fechar",
+                    onClick = { justificationSheetFor = null },
+                    variant = TbButtonVariant.Outline,
+                    modifier = Modifier.fillMaxWidth()
+                )
+            }
+        }
+    }
+
+    // Dialog: encerrar votação
+    if (showCloseDialog) {
+        AlertDialog(
+            onDismissRequest = { showCloseDialog = false },
+            title = { Text("Encerrar votação?") },
+            text = {
+                Text(
+                    "Encerrar agora vai escolher os ${activeRound?.nLivros ?: 1} livro(s) mais votado(s). O atual passa para a estante. Sem volta.",
+                    style = MaterialTheme.typography.bodyMedium
+                )
+            },
+            confirmButton = {
+                TextButton(onClick = {
+                    viewModel.closeActiveVotingRound()
+                    showCloseDialog = false
+                }) {
+                    Text("Encerrar", color = Terracota, fontWeight = FontWeight.SemiBold)
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = { showCloseDialog = false }) {
+                    Text("Cancelar", color = Muted)
+                }
+            }
+        )
+    }
+
+    // Sheet: abrir votação
+    if (showOpenSheet) {
+        OpenVotingSheet(
+            onDismiss = { showOpenSheet = false },
+            onConfirm = { n, dias, cadencia ->
+                viewModel.openVotingRound(n, dias, cadencia)
+                showOpenSheet = false
+            }
+        )
+    }
+}
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+private fun OpenVotingSheet(
+    onDismiss: () -> Unit,
+    onConfirm: (nLivros: Int, durationDays: Int, cadencia: String) -> Unit
+) {
+    var n by remember { mutableStateOf(1) }
+    var dias by remember { mutableStateOf(7) }
+    var cadencia by remember { mutableStateOf("unica") }
+
+    ModalBottomSheet(
+        onDismissRequest = onDismiss,
+        containerColor = MaterialTheme.colorScheme.surface
+    ) {
+        Column(
+            modifier = Modifier.fillMaxWidth().padding(24.dp),
+            verticalArrangement = Arrangement.spacedBy(20.dp)
+        ) {
+            Text(
+                "Abrir votação do clube",
+                style = MaterialTheme.typography.headlineLarge.copy(fontSize = 20.sp)
+            )
+
+            Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                Text("Quantos livros vamos escolher?", style = MaterialTheme.typography.bodyLarge.copy(fontWeight = FontWeight.SemiBold))
+                Row(
+                    horizontalArrangement = Arrangement.spacedBy(12.dp),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    TbButton(text = "−", onClick = { if (n > 1) n-- }, variant = TbButtonVariant.Outline, size = TbButtonSize.Sm)
+                    Text("$n", style = MaterialTheme.typography.headlineLarge.copy(fontSize = 22.sp))
+                    TbButton(text = "+", onClick = { if (n < 12) n++ }, variant = TbButtonVariant.Outline, size = TbButtonSize.Sm)
+                }
+            }
+
+            Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                Text("Por quanto tempo a votação fica aberta?", style = MaterialTheme.typography.bodyLarge.copy(fontWeight = FontWeight.SemiBold))
+                Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                    listOf(3, 7, 14, 30).forEach { d ->
+                        val selected = dias == d
+                        Box(modifier = Modifier.clickable { dias = d }) {
+                            Pill(
+                                text = "$d dias",
+                                variant = if (selected) PillVariant.OliveDeep else PillVariant.Default
+                            )
+                        }
+                    }
+                }
+            }
+
+            Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                Text("Qual a cadência?", style = MaterialTheme.typography.bodyLarge.copy(fontWeight = FontWeight.SemiBold))
+                Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                    listOf("unica" to "Única", "semanal" to "Semanal", "quinzenal" to "Quinzenal", "mensal" to "Mensal").forEach { (key, label) ->
+                        val selected = cadencia == key
+                        Box(modifier = Modifier.clickable { cadencia = key }) {
+                            Pill(
+                                text = label,
+                                variant = if (selected) PillVariant.OliveDeep else PillVariant.Default
+                            )
+                        }
+                    }
+                }
+            }
+
+            Row(horizontalArrangement = Arrangement.spacedBy(12.dp), modifier = Modifier.fillMaxWidth()) {
+                TbButton(text = "Cancelar", onClick = onDismiss, variant = TbButtonVariant.Outline, modifier = Modifier.weight(1f))
+                TbButton(text = "Abrir votação", onClick = { onConfirm(n, dias, cadencia) }, variant = TbButtonVariant.Terra, modifier = Modifier.weight(1f))
+            }
+            Spacer(modifier = Modifier.height(8.dp))
         }
     }
 }
