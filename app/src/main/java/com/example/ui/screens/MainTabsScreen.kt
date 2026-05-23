@@ -952,7 +952,7 @@ fun HomeScreenTab(
                     Column(
                         horizontalAlignment = Alignment.CenterHorizontally,
                         verticalArrangement = Arrangement.spacedBy(8.dp),
-                        modifier = Modifier.width(72.dp)
+                        modifier = Modifier.width(84.dp)
                     ) {
                         Box(
                             contentAlignment = Alignment.BottomCenter,

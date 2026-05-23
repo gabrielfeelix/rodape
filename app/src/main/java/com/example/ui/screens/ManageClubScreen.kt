@@ -10,6 +10,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.outlined.ArrowBack
 import androidx.compose.material.icons.outlined.Add
 import androidx.compose.material.icons.outlined.DateRange
+import androidx.compose.material.icons.outlined.List
 import androidx.compose.material.icons.outlined.MoreVert
 import androidx.compose.material.icons.outlined.Refresh
 import androidx.compose.material3.*
@@ -423,14 +424,88 @@ fun ManageClubScreen(
             item {
                 SectionCard(title = "Livro atual") {
                     if (currentBook != null) {
-                        Text(currentBook!!.title, style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.SemiBold))
-                        Text(currentBook!!.author, style = MaterialTheme.typography.bodySmall.copy(color = Muted))
-                        Text(
-                            "Capítulos: ${chapters.size}",
-                            style = MaterialTheme.typography.labelSmall.copy(color = Muted)
-                        )
+                        val b = currentBook!!
+                        Row(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .clip(RoundedCornerShape(14.dp))
+                                .background(OlivaSoft.copy(alpha = 0.4f))
+                                .padding(12.dp),
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.spacedBy(14.dp)
+                        ) {
+                            com.example.ui.components.Cover(
+                                title = b.title,
+                                author = b.author,
+                                coverUrl = b.coverUrl,
+                                width = 56.dp,
+                                height = 84.dp
+                            )
+                            Column(modifier = Modifier.weight(1f)) {
+                                Text(
+                                    text = "LENDO AGORA",
+                                    style = MaterialTheme.typography.labelSmall.copy(
+                                        fontWeight = FontWeight.Bold,
+                                        color = OlivaDark,
+                                        letterSpacing = 1.sp
+                                    )
+                                )
+                                Spacer(modifier = Modifier.height(2.dp))
+                                Text(
+                                    text = b.title,
+                                    style = MaterialTheme.typography.bodyMedium.copy(
+                                        fontFamily = LiterataFontFamily,
+                                        fontWeight = FontWeight.SemiBold,
+                                        color = Ink
+                                    ),
+                                    maxLines = 2,
+                                    overflow = TextOverflow.Ellipsis
+                                )
+                                Text(
+                                    text = b.author,
+                                    style = MaterialTheme.typography.bodySmall.copy(color = Muted),
+                                    maxLines = 1,
+                                    overflow = TextOverflow.Ellipsis
+                                )
+                                Spacer(modifier = Modifier.height(4.dp))
+                                Row(
+                                    verticalAlignment = Alignment.CenterVertically,
+                                    horizontalArrangement = Arrangement.spacedBy(4.dp)
+                                ) {
+                                    Icon(
+                                        imageVector = Icons.Outlined.List,
+                                        contentDescription = null,
+                                        tint = OlivaMid,
+                                        modifier = Modifier.size(14.dp)
+                                    )
+                                    Text(
+                                        text = "${chapters.size} ${if (chapters.size == 1) "capítulo" else "capítulos"}",
+                                        style = MaterialTheme.typography.labelSmall.copy(color = OlivaDark)
+                                    )
+                                }
+                            }
+                        }
                     } else {
-                        Text("Nenhum livro atual.", style = MaterialTheme.typography.bodySmall.copy(color = Muted))
+                        Column(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .clip(RoundedCornerShape(14.dp))
+                                .background(DividerSoft.copy(alpha = 0.3f))
+                                .padding(20.dp),
+                            horizontalAlignment = Alignment.CenterHorizontally,
+                            verticalArrangement = Arrangement.spacedBy(8.dp)
+                        ) {
+                            Icon(
+                                imageVector = Icons.Outlined.List,
+                                contentDescription = null,
+                                tint = Muted.copy(alpha = 0.6f),
+                                modifier = Modifier.size(36.dp)
+                            )
+                            Text(
+                                text = "Nenhum livro em leitura no momento",
+                                style = MaterialTheme.typography.bodyMedium.copy(color = Muted)
+                            )
+                        }
                     }
                     Spacer(modifier = Modifier.height(12.dp))
                     Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
