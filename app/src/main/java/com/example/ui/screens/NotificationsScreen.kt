@@ -39,9 +39,12 @@ import com.example.ui.viewmodel.MainViewModel
 @Composable
 fun NotificationsScreen(
     viewModel: MainViewModel,
-    onNavigateBack: () -> Unit
+    onNavigateBack: () -> Unit,
+    onNavigateToDiscussion: (chapterId: String, title: String) -> Unit = { _, _ -> },
+    onNavigateToTab: (String) -> Unit = {}
 ) {
     val list by viewModel.notifications.collectAsState()
+    val chapters by viewModel.currentChapters.collectAsState()
 
     Scaffold(
         topBar = {
@@ -142,7 +145,17 @@ fun NotificationsScreen(
                             tipo = notif.tipo,
                             payloadJson = notif.payloadJson,
                             lida = notif.lida,
-                            onClick = { viewModel.markNotificationAsRead(notif.id) }
+                            onClick = {
+                                viewModel.markNotificationAsRead(notif.id)
+                                handleNotificationNavigation(
+                                    tipo = notif.tipo,
+                                    payloadJson = notif.payloadJson,
+                                    chapters = chapters,
+                                    onNavigateToDiscussion = onNavigateToDiscussion,
+                                    onNavigateToTab = onNavigateToTab,
+                                    onNavigateBack = onNavigateBack
+                                )
+                            }
                         )
                     }
                 }
@@ -299,5 +312,48 @@ private fun NotificationItem(
                     .background(Terracota)
             )
         }
+    }
+}
+
+private fun handleNotificationNavigation(
+    tipo: String,
+    payloadJson: String,
+    chapters: List<com.example.data.model.Chapter>,
+    onNavigateToDiscussion: (String, String) -> Unit,
+    onNavigateToTab: (String) -> Unit,
+    onNavigateBack: () -> Unit
+) {
+    when (tipo) {
+        "comment_on_chapter" -> {
+            val chapterId = if (payloadJson.contains("\"chapterId\"")) {
+                payloadJson.substringAfter("\"chapterId\":\"").substringBefore("\"")
+            } else ""
+            if (chapterId.isNotBlank()) {
+                val chapter = chapters.find { it.id == chapterId }
+                val title = chapter?.titulo
+                    ?: if (payloadJson.contains("\"chapterTitle\"")) {
+                        payloadJson.substringAfter("\"chapterTitle\":\"").substringBefore("\"")
+                    } else "Capítulo"
+                onNavigateToDiscussion(chapterId, title)
+            }
+        }
+        "voting_open", "voting_closed", "next_book_decided" -> {
+            onNavigateBack()
+            onNavigateToTab("next")
+        }
+        "meeting_reminder" -> {
+            onNavigateBack()
+            onNavigateToTab("next")
+        }
+        "member_finished" -> {
+            onNavigateBack()
+            onNavigateToTab("book")
+        }
+        "promoted_to_admin", "super_admin_transferred" -> {
+            onNavigateBack()
+            onNavigateToTab("home")
+        }
+        // member_removed e demais: só marca como lida, sem navegação
+        else -> {}
     }
 }

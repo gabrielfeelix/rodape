@@ -87,6 +87,14 @@ fun MainTabsScreen(
     onNavigateToManageClub: () -> Unit = {},
 ) {
     var selectedTab by remember { mutableStateOf("home") }
+    // Observa pedidos externos de troca de tab (ex: notificações navegando)
+    val requestedTab by viewModel.requestedTab.collectAsState()
+    LaunchedEffect(requestedTab) {
+        requestedTab?.let { tab ->
+            selectedTab = tab
+            viewModel.consumeRequestedTab()
+        }
+    }
     var showBottomSheet by remember { mutableStateOf(false) }
 
     val activeClub by viewModel.activeClub.collectAsState()
@@ -114,13 +122,13 @@ fun MainTabsScreen(
                 },
                 title = {
                     val rawName = activeClub?.nome ?: "Tramabook"
-                    val clubName = if (rawName.length > 22) rawName.take(22) + "..." else rawName
+                    val clubName = if (rawName.length > 20) rawName.take(20) + "..." else rawName
                     Row(
                         verticalAlignment = Alignment.CenterVertically,
                         modifier = Modifier
                             .clip(RoundedCornerShape(8.dp))
                             .clickable { showBottomSheet = true }
-                            .padding(horizontal = 4.dp, vertical = 4.dp)
+                            .padding(horizontal = 8.dp, vertical = 6.dp)
                     ) {
                         Text(
                             text = clubName,
@@ -128,16 +136,25 @@ fun MainTabsScreen(
                                 fontWeight = FontWeight.Medium,
                                 color = Terracota,
                                 fontFamily = LiterataFontFamily,
-                                fontSize = 22.sp
+                                fontSize = 20.sp
+                            ),
+                            maxLines = 1,
+                            overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis
+                        )
+                        Spacer(modifier = Modifier.width(6.dp))
+                        Box(
+                            modifier = Modifier
+                                .size(22.dp)
+                                .background(Terracota.copy(alpha = 0.12f), CircleShape),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            Icon(
+                                imageVector = Icons.Outlined.KeyboardArrowDown,
+                                contentDescription = "Trocar de clube",
+                                tint = Terracota,
+                                modifier = Modifier.size(16.dp)
                             )
-                        )
-                        Spacer(modifier = Modifier.width(4.dp))
-                        Icon(
-                            imageVector = Icons.Outlined.KeyboardArrowDown,
-                            contentDescription = "Trocar de clube",
-                            tint = Terracota,
-                            modifier = Modifier.size(16.dp)
-                        )
+                        }
                     }
                 },
                 actions = {

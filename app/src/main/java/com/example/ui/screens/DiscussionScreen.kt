@@ -418,6 +418,7 @@ fun DiscussionScreen(
 
                             if (showRemoveDialog) {
                                 AlertDialog(
+                                    containerColor = MaterialTheme.colorScheme.surface,
                                     onDismissRequest = { showRemoveDialog = false },
                                     title = { Text("Remover comentário?") },
                                     text = {
@@ -529,6 +530,7 @@ fun DiscussionScreen(
     if (selectedCommentToReact != null) {
         val comment = selectedCommentToReact!!
         AlertDialog(
+            containerColor = MaterialTheme.colorScheme.surface,
             onDismissRequest = { selectedCommentToReact = null },
             title = { Text("Adicionar reação", style = MaterialTheme.typography.headlineLarge) },
             text = {

@@ -157,7 +157,12 @@ class MainActivity : ComponentActivity() {
                     composable("notifications") {
                         NotificationsScreen(
                             viewModel = viewModel,
-                            onNavigateBack = { navController.popBackStack() }
+                            onNavigateBack = { navController.popBackStack() },
+                            onNavigateToDiscussion = { chapterId, title ->
+                                val encodedTitle = java.net.URLEncoder.encode(title, "UTF-8")
+                                navController.navigate("discussion/$chapterId/$encodedTitle")
+                            },
+                            onNavigateToTab = { tab -> viewModel.requestTab(tab) }
                         )
                     }
 

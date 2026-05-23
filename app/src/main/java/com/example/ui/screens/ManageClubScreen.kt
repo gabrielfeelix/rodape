@@ -485,6 +485,7 @@ fun ManageClubScreen(
 
     if (showFinishBook) {
         AlertDialog(
+            containerColor = MaterialTheme.colorScheme.surface,
             onDismissRequest = { showFinishBook = false },
             title = { Text("Marcar como finalizado?") },
             text = { Text("O livro atual vai pra estante com data do encontro = hoje.") },
@@ -514,6 +515,7 @@ fun ManageClubScreen(
 
     if (showArchiveClub) {
         AlertDialog(
+            containerColor = MaterialTheme.colorScheme.surface,
             onDismissRequest = { showArchiveClub = false },
             title = { Text("Arquivar '${club?.nome}'?") },
             text = {
@@ -560,7 +562,10 @@ private fun MemberActionSheet(
     onTransferSuper: () -> Unit,
     onRemove: () -> Unit
 ) {
-    ModalBottomSheet(onDismissRequest = onDismiss) {
+    ModalBottomSheet(
+        onDismissRequest = onDismiss,
+        containerColor = MaterialTheme.colorScheme.surface
+    ) {
         Column(
             modifier = Modifier.fillMaxWidth().padding(16.dp),
             verticalArrangement = Arrangement.spacedBy(8.dp)
@@ -592,6 +597,7 @@ private fun ChangeCurrentBookDialog(
 ) {
     val all = (next + suggested).distinctBy { it.id }
     AlertDialog(
+        containerColor = MaterialTheme.colorScheme.surface,
         onDismissRequest = onDismiss,
         title = { Text("Trocar livro atual") },
         text = {

@@ -30,6 +30,7 @@ fun EditClubInfoDialog(
     var privacidade by remember { mutableStateOf(initialPrivacidade) }
 
     AlertDialog(
+        containerColor = MaterialTheme.colorScheme.surface,
         onDismissRequest = onDismiss,
         title = {
             Text(
@@ -112,6 +113,7 @@ fun RemoveMemberDialog(
 ) {
     var motivo by remember { mutableStateOf("") }
     AlertDialog(
+        containerColor = MaterialTheme.colorScheme.surface,
         onDismissRequest = onDismiss,
         title = { Text("Remover $memberName?") },
         text = {
@@ -146,6 +148,7 @@ fun RegenerateCodeDialog(
     onConfirm: () -> Unit
 ) {
     AlertDialog(
+        containerColor = MaterialTheme.colorScheme.surface,
         onDismissRequest = onDismiss,
         title = { Text("Gerar novo código?") },
         text = {
@@ -190,6 +193,7 @@ fun EditMeetingPatternDialog(
     )
 
     AlertDialog(
+        containerColor = MaterialTheme.colorScheme.surface,
         onDismissRequest = onDismiss,
         title = { Text("Padrão de encontros") },
         text = {
@@ -258,6 +262,7 @@ fun EditSingleMeetingDialog(
     var agenda by remember { mutableStateOf(initialAgenda) }
 
     AlertDialog(
+        containerColor = MaterialTheme.colorScheme.surface,
         onDismissRequest = onDismiss,
         title = { Text("Encontro") },
         text = {
@@ -310,6 +315,7 @@ fun CancelMeetingDialog(
     onConfirm: () -> Unit
 ) {
     AlertDialog(
+        containerColor = MaterialTheme.colorScheme.surface,
         onDismissRequest = onDismiss,
         title = { Text("Cancelar encontro?") },
         text = { Text("Os RSVPs serão descartados. Sem volta.") },

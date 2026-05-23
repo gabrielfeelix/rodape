@@ -210,6 +210,13 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
     private val _searchLoading = MutableStateFlow(false)
     val searchLoading: StateFlow<Boolean> = _searchLoading.asStateFlow()
 
+    // Pedido de tab solicitada por outro local (ex: notificações). MainTabs observa e troca.
+    private val _requestedTab = MutableStateFlow<String?>(null)
+    val requestedTab: StateFlow<String?> = _requestedTab.asStateFlow()
+
+    fun requestTab(tab: String) { _requestedTab.value = tab }
+    fun consumeRequestedTab() { _requestedTab.value = null }
+
     init {
         // Initialize & Seed Database if empty
         viewModelScope.launch {

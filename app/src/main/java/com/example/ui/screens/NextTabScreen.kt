@@ -709,6 +709,7 @@ fun VotacaoTab(
                                         }
                                         if (showConfirm) {
                                             AlertDialog(
+                                                containerColor = MaterialTheme.colorScheme.surface,
                                                 onDismissRequest = { showConfirm = false },
                                                 title = { Text("Remover sugestão?") },
                                                 text = { Text("Sugestão e votos serão apagados.") },
@@ -878,6 +879,7 @@ fun VotacaoTab(
     // Dialog: encerrar votação
     if (showCloseDialog) {
         AlertDialog(
+            containerColor = MaterialTheme.colorScheme.surface,
             onDismissRequest = { showCloseDialog = false },
             title = { Text("Encerrar votação?") },
             text = {
