@@ -11,6 +11,7 @@ import com.example.data.model.*
 import com.example.data.repository.TramabookRepository
 import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.launch
+import org.json.JSONArray
 import java.util.UUID
 
 class MainViewModel(application: Application) : AndroidViewModel(application) {
@@ -137,6 +138,44 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
         if (userId != null) repository.getSavedQuotesForUserFlow(userId) else flowOf(emptyList())
     }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
 
+    // --- Fase 4 ---
+    // Active voting round
+    val activeVotingRound: StateFlow<VotingRound?> = activeClubId.flatMapLatest { clubId ->
+        if (clubId != null) repository.getActiveVotingRoundFlow(clubId) else flowOf(null)
+    }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), null)
+
+    // Book suggestions for current club, indexed by bookId
+    val bookSuggestionsByBookId: StateFlow<Map<String, BookSuggestion>> = activeClubId.flatMapLatest { clubId ->
+        if (clubId != null) repository.getBookSuggestionsForClubFlow(clubId).map { list ->
+            list.associateBy { it.bookId }
+        } else flowOf(emptyMap())
+    }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyMap())
+
+    // Next-queue books (status = "next")
+    val nextBooks: StateFlow<List<Book>> = activeClubId.flatMapLatest { clubId ->
+        if (clubId != null) repository.getBookByStatusFlow(clubId, "next") else flowOf(emptyList())
+    }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
+
+    // Is current user admin of the active club?
+    val isCurrentUserAdmin: StateFlow<Boolean> = combine(currentUserId, activeClubId) { uid, cid -> Pair(uid, cid) }
+        .flatMapLatest { (uid, cid) ->
+            if (uid != null && cid != null) {
+                flow {
+                    val m = repository.getClubMember(cid, uid)
+                    emit(m?.papel == "admin")
+                }
+            } else flowOf(false)
+        }
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), false)
+
+    // Mapa bookId -> dataEncontro (do clube ativo, livros finished)
+    val finishedBooksMeetingDates: StateFlow<Map<String, Long?>> = activeClubId.flatMapLatest { clubId ->
+        if (clubId == null) flowOf(emptyMap())
+        else repository.getClubBooksByStatusFlow(clubId, "finished").map { list ->
+            list.associate { it.bookId to it.dataEncontro }
+        }
+    }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyMap())
+
     // Books search results from Open Library
     private val _searchResults = MutableStateFlow<List<OpenLibraryDoc>>(emptyList())
     val searchResults: StateFlow<List<OpenLibraryDoc>> = _searchResults.asStateFlow()
@@ -156,6 +195,9 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
                 dataStoreManager.saveSession("user_voce", "Você", "voce@tramabook.com")
                 dataStoreManager.saveActiveClubId("club_mari")
             }
+            // Dá um respiro pra activeClubId hidratar antes de tentar fechar rodada expirada
+            kotlinx.coroutines.delay(500)
+            maybeAutoCloseExpiredRound()
         }
     }
 
@@ -355,17 +397,174 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
         }
     }
 
-    // --- Votes ---
+    // --- Votes (rodada) ---
     fun voteForBook(bookId: String) {
         viewModelScope.launch {
             val userId = currentUserId.value ?: "user_voce"
             val clubId = activeClubId.value ?: return@launch
-            
-            // clear user previous votes in this club first
-            repository.clearVotesForUserInClub(userId, clubId)
-            
-            // Register vote — votingRoundId é null até Task 10 ligar com a rodada ativa
-            repository.insertVote(Vote(bookId, userId, System.currentTimeMillis(), null))
+            val round = repository.getActiveVotingRound(clubId) ?: return@launch
+
+            // Se já votou neste livro, desfaz
+            val existingForBook = repository.getVotesForRound(round.id)
+                .firstOrNull { it.userId == userId && it.clubBookId == bookId }
+            if (existingForBook != null) {
+                repository.removeUserVoteForBookInRound(userId, round.id, bookId)
+                return@launch
+            }
+
+            // Se atingiu o limite N, não faz nada
+            val count = repository.countUserVotesInRound(userId, round.id)
+            if (count >= round.nLivros) return@launch
+
+            repository.insertVote(Vote(bookId, userId, System.currentTimeMillis(), round.id))
+        }
+    }
+
+    // --- Voting Round actions ---
+    fun openVotingRound(nLivros: Int, durationDays: Int, cadencia: String) {
+        viewModelScope.launch {
+            val clubId = activeClubId.value ?: return@launch
+            val userId = currentUserId.value ?: return@launch
+            // Idempotência: se já existe rodada aberta, ignora
+            val existing = repository.getActiveVotingRound(clubId)
+            if (existing != null) return@launch
+
+            val agora = System.currentTimeMillis()
+            val round = VotingRound(
+                id = "round_${UUID.randomUUID().toString().take(8)}",
+                clubId = clubId,
+                criadoPor = userId,
+                abertaEm = agora,
+                fechaEm = agora + durationDays.toLong() * 24 * 60 * 60 * 1000L,
+                nLivros = nLivros.coerceIn(1, 12),
+                cadencia = cadencia,
+                status = "aberta",
+                vencedoresJson = "[]"
+            )
+            repository.insertVotingRound(round)
+        }
+    }
+
+    fun closeActiveVotingRound() {
+        viewModelScope.launch {
+            val clubId = activeClubId.value ?: return@launch
+            val round = repository.getActiveVotingRound(clubId) ?: return@launch
+            closeRoundInternal(round, clubId)
+        }
+    }
+
+    fun maybeAutoCloseExpiredRound() {
+        viewModelScope.launch {
+            val clubId = activeClubId.value ?: return@launch
+            val round = repository.getActiveVotingRound(clubId) ?: return@launch
+            if (System.currentTimeMillis() >= round.fechaEm) {
+                closeRoundInternal(round, clubId)
+            }
+        }
+    }
+
+    private suspend fun closeRoundInternal(round: VotingRound, clubId: String) {
+        val votes = repository.getVotesForRound(round.id)
+        val suggestions = repository.getBookSuggestionsForClubFlow(clubId)
+            .first()
+            .associateBy { it.bookId }
+
+        val winners = com.example.voting.VotingTally.rank(
+            votes = votes,
+            suggestionsByBookId = suggestions,
+            n = round.nLivros
+        )
+
+        // Marcar current atual como finished com dataEncontro = now
+        val currentList = repository.getBookByStatusFlow(clubId, "current").first()
+        currentList.forEach { b ->
+            repository.updateClubBookStatus(clubId, b.id, "finished")
+            repository.updateClubBookMeetingDate(clubId, b.id, System.currentTimeMillis())
+        }
+
+        // Promover vencedores: 1º vira current, demais viram next
+        winners.forEachIndexed { idx, bookId ->
+            val newStatus = if (idx == 0) "current" else "next"
+            repository.updateClubBookStatus(clubId, bookId, newStatus)
+        }
+
+        // Marcar rodada como fechada
+        val vencedoresJson = JSONArray().apply { winners.forEach { put(it) } }.toString()
+        repository.closeVotingRound(round.id, vencedoresJson)
+
+        // Notificar todos os membros do clube
+        val members = repository.getClubMembersFlow(clubId).first()
+        val titles = winners.mapNotNull { repository.getBook(it)?.title }
+        val payload = JSONArray().apply { titles.forEach { put(it) } }.toString()
+        members.forEach { member ->
+            repository.insertNotification(
+                DbNotification(
+                    id = "ntf_${UUID.randomUUID()}",
+                    userId = member.id,
+                    clubId = clubId,
+                    tipo = "voting_closed",
+                    payloadJson = "{\"titulos\":$payload,\"n\":${winners.size}}",
+                    lida = false,
+                    criadoEm = System.currentTimeMillis()
+                )
+            )
+        }
+    }
+
+    // --- Book detail flows e ações ---
+    fun getBookSummaryFlow(bookId: String): Flow<BookSummary?> =
+        activeClubId.flatMapLatest { clubId ->
+            if (clubId != null) repository.getBookSummaryFlow(bookId, clubId) else flowOf(null)
+        }
+
+    fun getBookRatingsFlow(bookId: String): Flow<List<BookRating>> =
+        activeClubId.flatMapLatest { clubId ->
+            if (clubId != null) repository.getBookRatingsFlow(bookId, clubId) else flowOf(emptyList())
+        }
+
+    fun getBookRatingOfCurrentUserFlow(bookId: String): Flow<BookRating?> =
+        combine(activeClubId, currentUserId) { c, u -> Pair(c, u) }
+            .flatMapLatest { (c, u) ->
+                if (c != null && u != null) repository.getBookRatingOfUserFlow(bookId, c, u)
+                else flowOf(null)
+            }
+
+    fun getBookSuggestionFlow(bookId: String): Flow<BookSuggestion?> =
+        activeClubId.flatMapLatest { clubId ->
+            if (clubId != null) repository.getBookSuggestionFlow(bookId, clubId) else flowOf(null)
+        }
+
+    fun getCommentsForBookFlow(bookId: String): Flow<List<Comment>> =
+        activeClubId.flatMapLatest { clubId ->
+            if (clubId != null) repository.getCommentsForBookFlow(bookId, clubId) else flowOf(emptyList())
+        }
+
+    fun saveBookSummary(bookId: String, texto: String) {
+        viewModelScope.launch {
+            val clubId = activeClubId.value ?: return@launch
+            val userId = currentUserId.value ?: return@launch
+            if (texto.isBlank()) return@launch
+            repository.insertBookSummary(
+                BookSummary(bookId, clubId, texto.trim(), userId, System.currentTimeMillis())
+            )
+        }
+    }
+
+    fun saveBookRating(bookId: String, stars: Int, comment: String) {
+        viewModelScope.launch {
+            val clubId = activeClubId.value ?: return@launch
+            val userId = currentUserId.value ?: return@launch
+            if (stars !in 1..5) return@launch
+            repository.insertBookRating(
+                BookRating(bookId, clubId, userId, stars, comment.trim(), System.currentTimeMillis())
+            )
+        }
+    }
+
+    fun setBookMeetingDate(bookId: String, dataEncontro: Long?) {
+        viewModelScope.launch {
+            val clubId = activeClubId.value ?: return@launch
+            repository.updateClubBookMeetingDate(clubId, bookId, dataEncontro)
         }
     }
 
@@ -407,6 +606,7 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
     fun createBookSuggestion(doc: OpenLibraryDoc, justification: String, onCompleted: () -> Unit) {
         viewModelScope.launch {
             val clubId = activeClubId.value ?: return@launch
+            val userId = currentUserId.value ?: "user_voce"
             val bookId = "book_sug_${UUID.randomUUID().toString().take(6)}"
             val coverId = doc.coverI
             val coverUrl = if (coverId != null) {
@@ -424,11 +624,24 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
                 isbn = doc.isbn?.firstOrNull() ?: ""
             )
             repository.insertBook(newBook)
-            
+
             // Insert suggestion relation
             repository.insertClubBook(ClubBook(clubId, bookId, "suggested", 0, null))
 
-            // Keep justification as first comment or notification element of book
+            // Persistir justificativa de verdade
+            if (justification.isNotBlank()) {
+                repository.insertBookSuggestion(
+                    BookSuggestion(
+                        id = "bs_${UUID.randomUUID().toString().take(8)}",
+                        clubId = clubId,
+                        bookId = bookId,
+                        suggestedByUserId = userId,
+                        justificativa = justification.trim(),
+                        criadoEm = System.currentTimeMillis()
+                    )
+                )
+            }
+
             onCompleted()
         }
     }
