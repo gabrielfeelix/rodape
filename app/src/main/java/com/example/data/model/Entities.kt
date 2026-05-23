@@ -46,7 +46,8 @@ data class ClubBook(
     val clubId: String,
     val bookId: String,
     val status: String, // "current" | "finished" | "suggested" | "next"
-    val ordem: Int
+    val ordem: Int,
+    val dataEncontro: Long?
 )
 
 @Entity(tableName = "chapters")
@@ -86,7 +87,8 @@ data class Reaction(
 data class Vote(
     val clubBookId: String,
     val userId: String,
-    val votedAt: Long
+    val votedAt: Long,
+    val votingRoundId: String?
 )
 
 @Entity(tableName = "meetings")
@@ -126,4 +128,46 @@ data class SavedQuote(
     val texto: String,
     val capituloRef: String,
     val criadoEm: Long
+)
+
+@Entity(tableName = "book_summaries", primaryKeys = ["bookId", "clubId"])
+data class BookSummary(
+    val bookId: String,
+    val clubId: String,
+    val texto: String,
+    val lastEditorId: String,
+    val updatedAt: Long
+)
+
+@Entity(tableName = "book_ratings", primaryKeys = ["bookId", "clubId", "userId"])
+data class BookRating(
+    val bookId: String,
+    val clubId: String,
+    val userId: String,
+    val stars: Int,
+    val comment: String,
+    val updatedAt: Long
+)
+
+@Entity(tableName = "book_suggestions")
+data class BookSuggestion(
+    @PrimaryKey val id: String,
+    val clubId: String,
+    val bookId: String,
+    val suggestedByUserId: String,
+    val justificativa: String,
+    val criadoEm: Long
+)
+
+@Entity(tableName = "voting_rounds")
+data class VotingRound(
+    @PrimaryKey val id: String,
+    val clubId: String,
+    val criadoPor: String,
+    val abertaEm: Long,
+    val fechaEm: Long,
+    val nLivros: Int,
+    val cadencia: String,
+    val status: String,
+    val vencedoresJson: String
 )

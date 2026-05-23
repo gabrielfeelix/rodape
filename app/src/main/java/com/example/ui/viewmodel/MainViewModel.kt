@@ -253,7 +253,7 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
             isbn = "9780141439976"
         )
         repository.insertBook(b)
-        repository.insertClubBook(ClubBook(clubId, b.id, "current", 1))
+        repository.insertClubBook(ClubBook(clubId, b.id, "current", 1, null))
 
         // Populate basic chapters
         val chList = (1..5).map { num ->
@@ -364,8 +364,8 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
             // clear user previous votes in this club first
             repository.clearVotesForUserInClub(userId, clubId)
             
-            // Register vote
-            repository.insertVote(Vote(bookId, userId, System.currentTimeMillis()))
+            // Register vote — votingRoundId é null até Task 10 ligar com a rodada ativa
+            repository.insertVote(Vote(bookId, userId, System.currentTimeMillis(), null))
         }
     }
 
@@ -426,7 +426,7 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
             repository.insertBook(newBook)
             
             // Insert suggestion relation
-            repository.insertClubBook(ClubBook(clubId, bookId, "suggested", 0))
+            repository.insertClubBook(ClubBook(clubId, bookId, "suggested", 0, null))
 
             // Keep justification as first comment or notification element of book
             onCompleted()

@@ -158,7 +158,7 @@ class TramabookRepository(private val dao: TramabookDao) {
             isbn = "9788535911121"
         )
         dao.insertBook(metamorfose)
-        dao.insertClubBook(ClubBook("club_mari", "book_metamorfose", "current", 1))
+        dao.insertClubBook(ClubBook("club_mari", "book_metamorfose", "current", 1, null))
 
         // 13 chapters
         val chs = listOf(
@@ -236,16 +236,16 @@ class TramabookRepository(private val dao: TramabookDao) {
         dao.insertBook(bookWoolf)
         dao.insertBook(bookTimeMachine)
 
-        dao.insertClubBook(ClubBook("club_mari", "sug_1", "suggested", 1))
-        dao.insertClubBook(ClubBook("club_mari", "sug_2", "suggested", 2))
-        dao.insertClubBook(ClubBook("club_mari", "sug_3", "suggested", 3))
+        dao.insertClubBook(ClubBook("club_mari", "sug_1", "suggested", 1, null))
+        dao.insertClubBook(ClubBook("club_mari", "sug_2", "suggested", 2, null))
+        dao.insertClubBook(ClubBook("club_mari", "sug_3", "suggested", 3, null))
 
         // Votes
-        dao.insertVote(Vote("sug_1", "user_marina", System.currentTimeMillis()))
-        dao.insertVote(Vote("sug_1", "user_lucas", System.currentTimeMillis()))
-        dao.insertVote(Vote("sug_1", "user_sofia", System.currentTimeMillis()))
-        dao.insertVote(Vote("sug_2", "user_bia", System.currentTimeMillis()))
-        dao.insertVote(Vote("sug_2", "user_joao", System.currentTimeMillis()))
+        dao.insertVote(Vote("sug_1", "user_marina", System.currentTimeMillis(), "round_mari_1"))
+        dao.insertVote(Vote("sug_1", "user_lucas", System.currentTimeMillis(), "round_mari_1"))
+        dao.insertVote(Vote("sug_1", "user_sofia", System.currentTimeMillis(), "round_mari_1"))
+        dao.insertVote(Vote("sug_2", "user_bia", System.currentTimeMillis(), "round_mari_1"))
+        dao.insertVote(Vote("sug_2", "user_joao", System.currentTimeMillis(), "round_mari_1"))
 
         // 7. Finished books (Estante) matching screenshot exactly
         val bFinished1 = Book("fin_1", "Olhos d'água", "Conceição Evaristo", "https://covers.openlibrary.org/b/id/8359489-M.jpg", "", "")
@@ -256,9 +256,11 @@ class TramabookRepository(private val dao: TramabookDao) {
         dao.insertBook(bFinished2)
         dao.insertBook(bFinished3)
 
-        dao.insertClubBook(ClubBook("club_mari", "fin_1", "finished", 1))
-        dao.insertClubBook(ClubBook("club_mari", "fin_2", "finished", 2))
-        dao.insertClubBook(ClubBook("club_mari", "fin_3", "finished", 3))
+        val agora = System.currentTimeMillis()
+        val umMes = 30L * 24 * 60 * 60 * 1000L
+        dao.insertClubBook(ClubBook("club_mari", "fin_1", "finished", 1, agora - 3 * umMes))
+        dao.insertClubBook(ClubBook("club_mari", "fin_2", "finished", 2, agora - 2 * umMes))
+        dao.insertClubBook(ClubBook("club_mari", "fin_3", "finished", 3, agora - 1 * umMes))
 
         // 8. Visual notifications List
         dao.insertNotification(DbNotification("not_1", "user_voce", "club_mari", "comment_on_chapter", "{\"chapterId\":\"ch_7\",\"chapterTitle\":\"Encontro com Olímpico\",\"userName\":\"Marina\"}", false, System.currentTimeMillis() - 1 * 3600 * 1000))
