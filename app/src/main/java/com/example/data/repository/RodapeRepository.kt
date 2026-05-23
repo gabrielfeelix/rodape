@@ -251,7 +251,12 @@ class RodapeRepository(private val dao: RodapeDao) {
             author = "Clarice Lispector",
             coverUrl = "https://lh3.googleusercontent.com/aida-public/AB6AXuBhPfzTZmY3wRWCswfxpQpV6cnRVtvVQ_clAZ6aRrJwLbSLuuZAznGJWsV8tDhLo1qLI2EKURf-YLHuE5DYluQkjenJqOXMOYVc6BjKHn0KTeuuLg-MnrtT5jEQjgTOmzqdrVd7ae-tzaaCEcIDCentBoirhdfx1PnyHFd7TvarUjbu6_7fTxwE3qxK1rnuTXnYg5vbeIeYj3PLQIO7wV2WPu-Ee1hjpYyAgTA-L9i6pt9R9aM5jH1F1sUeSPOdTV-zhuUxOgCWPB0",
             openlibraryId = "OL26214150M",
-            isbn = "9788535911121"
+            isbn = "9788535911121",
+            isManual = false,
+            totalPaginas = 96,
+            editora = "Rocco",
+            anoPublicacao = 1977,
+            idioma = "pt"
         )
         dao.insertBook(metamorfose)
         dao.insertClubBook(ClubBook("club_mari", "book_metamorfose", "current", 1, null))
@@ -358,9 +363,9 @@ class RodapeRepository(private val dao: RodapeDao) {
         )
 
         // 6. Suggestions matching screenshot exactly
-        val bookEstravagante = Book("sug_1", "Becos da memória", "Conceição Evaristo", "https://covers.openlibrary.org/b/id/8359489-M.jpg", "", "")
-        val bookWoolf = Book("sug_2", "O quinze", "Rachel de Queiroz", "https://covers.openlibrary.org/b/id/10531551-M.jpg", "", "")
-        val bookTimeMachine = Book("sug_3", "A Máquina do Tempo", "H.G. Wells", "https://lh3.googleusercontent.com/aida-public/AB6AXuA30qDj_uGAutNzuhJf1UoXnERY2860xqj5zCrqAYOU2b2zdgvtxIdZGmYqHceK4nnTiYy5WZkVaXZQV25jfbIazcL96ywdPqJtL3AnikceDzM3FX3BxCB_KEBhlg6CRsdbLO0RQr8JcD7M8qTguP83hrTC2kPonrWNJlbx227ZwPU3hMFK83Q1453Tf6w967QAQmzfJTqBjrtfI-gNUdLG9EK1j0NsrKvoBVc5X1TDJswZ5fNU6xSM_YB4JfnzZA166xiLu1iIYvA", "", "")
+        val bookEstravagante = Book("sug_1", "Becos da memória", "Conceição Evaristo", "https://covers.openlibrary.org/b/id/8359489-M.jpg", "", "", false, null, null, null, "pt")
+        val bookWoolf = Book("sug_2", "O quinze", "Rachel de Queiroz", "https://covers.openlibrary.org/b/id/10531551-M.jpg", "", "", false, null, null, null, "pt")
+        val bookTimeMachine = Book("sug_3", "A Máquina do Tempo", "H.G. Wells", "https://lh3.googleusercontent.com/aida-public/AB6AXuA30qDj_uGAutNzuhJf1UoXnERY2860xqj5zCrqAYOU2b2zdgvtxIdZGmYqHceK4nnTiYy5WZkVaXZQV25jfbIazcL96ywdPqJtL3AnikceDzM3FX3BxCB_KEBhlg6CRsdbLO0RQr8JcD7M8qTguP83hrTC2kPonrWNJlbx227ZwPU3hMFK83Q1453Tf6w967QAQmzfJTqBjrtfI-gNUdLG9EK1j0NsrKvoBVc5X1TDJswZ5fNU6xSM_YB4JfnzZA166xiLu1iIYvA", "", "", false, null, null, null, "pt")
 
         dao.insertBook(bookEstravagante)
         dao.insertBook(bookWoolf)
@@ -428,9 +433,9 @@ class RodapeRepository(private val dao: RodapeDao) {
         )
 
         // 7. Finished books (Estante) matching screenshot exactly
-        val bFinished1 = Book("fin_1", "Olhos d'água", "Conceição Evaristo", "https://covers.openlibrary.org/b/id/8359489-M.jpg", "", "")
-        val bFinished2 = Book("fin_2", "Pedro Páramo", "Juan Rulfo", "https://covers.openlibrary.org/b/id/11105432-M.jpg", "", "")
-        val bFinished3 = Book("fin_3", "Torto arado", "Itamar Vieira Junior", "https://covers.openlibrary.org/b/id/12865231-M.jpg", "", "")
+        val bFinished1 = Book("fin_1", "Olhos d'água", "Conceição Evaristo", "https://covers.openlibrary.org/b/id/8359489-M.jpg", "", "", false, null, null, null, "pt")
+        val bFinished2 = Book("fin_2", "Pedro Páramo", "Juan Rulfo", "https://covers.openlibrary.org/b/id/11105432-M.jpg", "", "", false, null, null, null, "pt")
+        val bFinished3 = Book("fin_3", "Torto arado", "Itamar Vieira Junior", "https://covers.openlibrary.org/b/id/12865231-M.jpg", "", "", false, null, null, null, "pt")
 
         dao.insertBook(bFinished1)
         dao.insertBook(bFinished2)

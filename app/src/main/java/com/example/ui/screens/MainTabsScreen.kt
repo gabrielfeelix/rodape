@@ -87,6 +87,7 @@ fun MainTabsScreen(
     onNavigateToFrases: () -> Unit = {},
     onNavigateToManageClub: () -> Unit = {},
     onNavigateToMeetingDetail: (String) -> Unit = {},
+    onNavigateToAbout: () -> Unit = {},
 ) {
     var selectedTab by remember { mutableStateOf("home") }
     // Observa pedidos externos de troca de tab (ex: notificações navegando)
@@ -237,7 +238,8 @@ fun MainTabsScreen(
                     onLogoutCompleted = onLogoutCompleted,
                     onNavigateToTab = { selectedTab = it },
                     onNavigateToJoinClub = onNavigateToJoinClub,
-                    onNavigateToFrases = onNavigateToFrases
+                    onNavigateToFrases = onNavigateToFrases,
+                    onNavigateToAbout = onNavigateToAbout
                 )
             }
         }
@@ -994,9 +996,20 @@ fun HomeScreenTab(
             ) {
                 val currentUserId = viewModel.currentUserId.value ?: "user_voce"
                 val sortedMembers = members.sortedWith(compareBy { it.id != currentUserId })
-                
+
+                // Calcula o mediano dos progressos pra detectar quem está significativamente atrás
+                val currentBookId = currentBook?.id ?: "book_metamorfose"
+                val allChapNums = members.map { m ->
+                    allProgress.find { it.userId == m.id && it.bookId == currentBookId }
+                        ?.currentChapter
+                        ?: 0
+                }.sorted()
+                val medianChap = if (allChapNums.isNotEmpty()) {
+                    allChapNums[allChapNums.size / 2]
+                } else 0
+
                 items(sortedMembers) { member ->
-                    val memberProg = allProgress.find { it.userId == member.id && it.bookId == (currentBook?.id ?: "book_metamorfose") }
+                    val memberProg = allProgress.find { it.userId == member.id && it.bookId == currentBookId }
                     val memChap = memberProg?.currentChapter ?: if (member.id == "user_marina") 9 else if (member.id == "user_sofia") 13 else 8
                     val totalChaps = chapters.size
 
@@ -1004,6 +1017,8 @@ fun HomeScreenTab(
                     val displayName = if (isCurrentUser) "Você" else member.nome.substringBefore(" ")
 
                     val finished = totalChaps > 0 && memChap >= totalChaps
+                    // "No próprio ritmo" se ≥3 caps atrás do mediano da galera (tom acolhedor)
+                    val noProprioRitmo = !finished && totalChaps > 0 && medianChap - memChap >= 3
 
                     Column(
                         horizontalAlignment = Alignment.CenterHorizontally,
@@ -1024,8 +1039,16 @@ fun HomeScreenTab(
                             // Small progress badge below avatar
                             Box(modifier = Modifier.offset(y = 10.dp)) {
                                 Pill(
-                                    text = if (finished) "Terminou" else "Cap. $memChap",
-                                    variant = if (finished) PillVariant.OliveDeep else PillVariant.Default
+                                    text = when {
+                                        finished -> "Terminou"
+                                        noProprioRitmo -> "No ritmo"
+                                        else -> "Cap. $memChap"
+                                    },
+                                    variant = when {
+                                        finished -> PillVariant.OliveDeep
+                                        noProprioRitmo -> PillVariant.Default
+                                        else -> PillVariant.Default
+                                    }
                                 )
                             }
                         }
@@ -1569,7 +1592,8 @@ fun ProfileScreenTab(
     onLogoutCompleted: () -> Unit,
     onNavigateToTab: (String) -> Unit,
     onNavigateToJoinClub: () -> Unit,
-    onNavigateToFrases: () -> Unit
+    onNavigateToFrases: () -> Unit,
+    onNavigateToAbout: () -> Unit = {}
 ) {
     val name by viewModel.userName.collectAsState()
     val email by viewModel.userEmail.collectAsState()
@@ -2004,6 +2028,46 @@ fun ProfileScreenTab(
                             }
                         }
                     }
+                }
+            }
+
+            // ── Item "Sobre o Rodapé" ───────────────────────────────────
+            item {
+                Spacer(modifier = Modifier.height(8.dp))
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .clip(RoundedCornerShape(14.dp))
+                        .border(0.5.dp, Divider, RoundedCornerShape(14.dp))
+                        .clickable { onNavigateToAbout() }
+                        .padding(horizontal = 16.dp, vertical = 14.dp),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Text(
+                        text = "ℹ️",
+                        style = MaterialTheme.typography.titleMedium
+                    )
+                    Spacer(modifier = Modifier.width(12.dp))
+                    Column(modifier = Modifier.weight(1f)) {
+                        Text(
+                            text = "Sobre o Rodapé",
+                            style = MaterialTheme.typography.bodyMedium.copy(
+                                fontFamily = LiterataFontFamily,
+                                fontWeight = FontWeight.SemiBold,
+                                color = Ink
+                            )
+                        )
+                        Text(
+                            text = "Versão, direitos autorais, privacidade",
+                            style = MaterialTheme.typography.labelSmall.copy(color = Muted)
+                        )
+                    }
+                    Icon(
+                        imageVector = Icons.AutoMirrored.Outlined.KeyboardArrowRight,
+                        contentDescription = null,
+                        tint = Muted,
+                        modifier = Modifier.size(18.dp)
+                    )
                 }
             }
 

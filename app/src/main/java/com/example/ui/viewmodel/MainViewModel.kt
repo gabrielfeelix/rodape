@@ -237,8 +237,14 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
     }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyMap())
 
     // Books search results from Open Library
+    // Backcompat: SuggestScreen ainda usa pro cross-check / criar suggestion via createBookSuggestion(doc).
+    // Mantém List<OpenLibraryDoc> pra preservar a chamada existente.
+    // O novo searchResultsUnified (abaixo) é a versão completa com Google Books incluído.
     private val _searchResults = MutableStateFlow<List<OpenLibraryDoc>>(emptyList())
     val searchResults: StateFlow<List<OpenLibraryDoc>> = _searchResults.asStateFlow()
+
+    private val _searchResultsUnified = MutableStateFlow<List<com.example.data.search.UnifiedBookResult>>(emptyList())
+    val searchResultsUnified: StateFlow<List<com.example.data.search.UnifiedBookResult>> = _searchResultsUnified.asStateFlow()
 
     private val _searchLoading = MutableStateFlow(false)
     val searchLoading: StateFlow<Boolean> = _searchLoading.asStateFlow()
@@ -360,7 +366,12 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
             author = "H.G. Wells",
             coverUrl = "https://lh3.googleusercontent.com/aida-public/AB6AXu30qDj_uGAutNzuhJf1UoXnERY2860xqj5zCrqAYOU2b2zdgvtxIdZGmYqHceK4nnTiYy5WZkVaXZQV25jfbIazcL96ywdPqJtL3AnikceDzM3FX3BxCB_KEBhlg6CRsdbLO0RQr8JcD7M8qTguP83hrTC2kPonrWNJlbx227ZwPU3hMFK83Q1453Tf6w967QAQmzfJTqBjrtfI-gNUdLG9EK1j0NsrKvoBVc5X1TDJswZ5fNU6xSM_YB4JfnzZA166xiLu1iIYvA",
             openlibraryId = "OL12345M",
-            isbn = "9780141439976"
+            isbn = "9780141439976",
+            isManual = false,
+            totalPaginas = null,
+            editora = null,
+            anoPublicacao = 1895,
+            idioma = "pt"
         )
         repository.insertBook(b)
         repository.insertClubBook(ClubBook(clubId, b.id, "current", 1, null))
@@ -661,21 +672,44 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
     }
 
     // --- Book suggestions search ---
+    /**
+     * Busca unificada (OL + GB fallback). Alimenta _searchResultsUnified pra Suggest.
+     * Também alimenta _searchResults (OpenLibraryDoc) por backcompat com cross-check
+     * de autor — só os resultados que vieram de OL têm representação como Doc.
+     */
     fun searchOpenLibrary(query: String) {
         val q = query.trim()
         if (q.isEmpty()) {
             _searchResults.value = emptyList()
+            _searchResultsUnified.value = emptyList()
             return
         }
 
         _searchLoading.value = true
         viewModelScope.launch {
             try {
-                val response = OpenLibraryApi.service.searchBooks(q)
-                _searchResults.value = response.docs ?: emptyList()
+                // Busca unificada
+                val unified = com.example.data.search.BookSearchService.searchBooks(q)
+                _searchResultsUnified.value = unified
+
+                // Pra backcompat com createBookSuggestion(doc), alimenta _searchResults
+                // só com os de OL convertidos pra OpenLibraryDoc
+                val olDocs = unified
+                    .filter { it.source == com.example.data.search.UnifiedBookResult.Source.OPEN_LIBRARY }
+                    .map { u ->
+                        OpenLibraryDoc(
+                            title = u.title,
+                            authorName = listOf(u.author),
+                            firstPublishYear = u.firstPublishYear,
+                            coverI = u.openlibraryRawCoverI,
+                            isbn = u.isbn?.let { listOf(it) }
+                        )
+                    }
+                _searchResults.value = olDocs
             } catch (e: Exception) {
                 e.printStackTrace()
                 _searchResults.value = emptyList()
+                _searchResultsUnified.value = emptyList()
             } finally {
                 _searchLoading.value = false
             }
@@ -709,7 +743,12 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
                 author = finalAuthor,
                 coverUrl = coverUrl,
                 openlibraryId = "",
-                isbn = doc.isbn?.firstOrNull() ?: ""
+                isbn = doc.isbn?.firstOrNull() ?: "",
+                isManual = false,
+                totalPaginas = null,
+                editora = null,
+                anoPublicacao = doc.firstPublishYear,
+                idioma = "pt"
             )
             repository.insertBook(newBook)
 
@@ -731,6 +770,48 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
             }
 
             onCompleted()
+        }
+    }
+
+    /**
+     * Cadastro manual de livro — quando nenhuma API achou.
+     * Cria Book com isManual=true + ClubBook como "suggested".
+     * Retorna o bookId via callback pra UI navegar/selecionar de volta.
+     */
+    fun createManualBook(
+        title: String,
+        author: String,
+        isbn: String?,
+        anoPublicacao: Int?,
+        editora: String?,
+        totalPaginas: Int?,
+        idioma: String,
+        coverPathOrUrl: String,
+        onCreated: (bookId: String) -> Unit
+    ) {
+        viewModelScope.launch {
+            val clubId = activeClubId.value ?: return@launch
+            if (title.isBlank() || author.isBlank()) return@launch
+            val bookId = "book_man_${UUID.randomUUID().toString().take(8)}"
+            val cleanIsbn = isbn?.filter { it.isDigit() } ?: ""
+
+            val newBook = Book(
+                id = bookId,
+                title = title.trim(),
+                author = author.trim(),
+                coverUrl = coverPathOrUrl,
+                openlibraryId = "",
+                isbn = cleanIsbn,
+                isManual = true,
+                totalPaginas = totalPaginas,
+                editora = editora?.trim()?.takeIf { it.isNotBlank() },
+                anoPublicacao = anoPublicacao,
+                idioma = idioma.ifBlank { "pt" }
+            )
+            repository.insertBook(newBook)
+            repository.insertClubBook(ClubBook(clubId, bookId, "suggested", 0, null))
+            bumpEngagement()
+            onCreated(bookId)
         }
     }
 

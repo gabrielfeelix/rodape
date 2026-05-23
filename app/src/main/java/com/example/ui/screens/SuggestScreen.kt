@@ -39,7 +39,8 @@ import kotlinx.coroutines.delay
 @Composable
 fun SuggestScreen(
     viewModel: MainViewModel,
-    onNavigateBack: () -> Unit
+    onNavigateBack: () -> Unit,
+    onNavigateToAddManual: () -> Unit = {}
 ) {
     var query by remember { mutableStateOf("") }
     val searchResults by viewModel.searchResults.collectAsState()
@@ -185,20 +186,32 @@ fun SuggestScreen(
                     CircularProgressIndicator(color = Terracota)
                 }
             } else if (filteredResults.isEmpty()) {
-                Box(
+                Column(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .weight(1f),
-                    contentAlignment = Alignment.Center
+                        .weight(1f)
+                        .padding(horizontal = 16.dp),
+                    verticalArrangement = Arrangement.Center,
+                    horizontalAlignment = Alignment.CenterHorizontally
                 ) {
                     Text(
                         text = if (query.trim().length < 3)
                             "Comece a digitar pra encontrar livros."
                         else
-                            "Nenhum livro de catálogo completo localizado.",
+                            "Não achamos esse livro nas buscas.",
                         style = MaterialTheme.typography.bodyLarge,
-                        color = Muted
+                        color = Muted,
+                        textAlign = androidx.compose.ui.text.style.TextAlign.Center
                     )
+                    if (query.trim().length >= 3) {
+                        Spacer(modifier = Modifier.height(20.dp))
+                        TbButton(
+                            text = "📚 Cadastrar manualmente",
+                            onClick = onNavigateToAddManual,
+                            variant = TbButtonVariant.Terra,
+                            modifier = Modifier.fillMaxWidth(0.8f)
+                        )
+                    }
                 }
             } else {
                 LazyColumn(
@@ -291,6 +304,32 @@ fun SuggestScreen(
                                     )
                                 }
                             }
+                        }
+                    }
+
+                    // Rodapé da lista: link discreto "Não achei meu livro"
+                    item {
+                        Spacer(modifier = Modifier.height(12.dp))
+                        Row(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .clip(RoundedCornerShape(12.dp))
+                                .clickable { onNavigateToAddManual() }
+                                .padding(vertical = 14.dp),
+                            horizontalArrangement = Arrangement.Center,
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Text(
+                                text = "Não achei meu livro · ",
+                                style = MaterialTheme.typography.bodyMedium.copy(color = Muted)
+                            )
+                            Text(
+                                text = "cadastrar manualmente",
+                                style = MaterialTheme.typography.bodyMedium.copy(
+                                    color = Terracota,
+                                    fontWeight = FontWeight.SemiBold
+                                )
+                            )
                         }
                     }
                 }

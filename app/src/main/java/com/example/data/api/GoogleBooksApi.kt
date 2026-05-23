@@ -13,10 +13,26 @@ data class GoogleBooksVolume(
 )
 
 @JsonClass(generateAdapter = true)
+data class GoogleBooksImageLinks(
+    @Json(name = "thumbnail") val thumbnail: String?,
+    @Json(name = "smallThumbnail") val smallThumbnail: String?
+)
+
+@JsonClass(generateAdapter = true)
+data class GoogleBooksIndustryIdentifier(
+    @Json(name = "type") val type: String?,
+    @Json(name = "identifier") val identifier: String?
+)
+
+@JsonClass(generateAdapter = true)
 data class GoogleBooksVolumeInfo(
     @Json(name = "title") val title: String?,
     @Json(name = "authors") val authors: List<String>?,
-    @Json(name = "description") val description: String?
+    @Json(name = "description") val description: String?,
+    @Json(name = "imageLinks") val imageLinks: GoogleBooksImageLinks?,
+    @Json(name = "industryIdentifiers") val industryIdentifiers: List<GoogleBooksIndustryIdentifier>?,
+    @Json(name = "publishedDate") val publishedDate: String?,
+    @Json(name = "publisher") val publisher: String?
 )
 
 @JsonClass(generateAdapter = true)
@@ -26,7 +42,12 @@ data class GoogleBooksSearchResponse(
 
 interface GoogleBooksService {
     @GET("books/v1/volumes")
-    suspend fun search(@Query("q") query: String): GoogleBooksSearchResponse
+    suspend fun search(
+        @Query("q") query: String,
+        @Query("langRestrict") langRestrict: String? = null,  // ex: "pt"
+        @Query("printType") printType: String? = null,        // "books" pra excluir magazines
+        @Query("maxResults") maxResults: Int = 20
+    ): GoogleBooksSearchResponse
 }
 
 object GoogleBooksApi {

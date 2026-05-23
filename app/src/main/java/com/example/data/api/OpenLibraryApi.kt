@@ -25,7 +25,9 @@ interface OpenLibraryService {
     @GET("search.json")
     suspend fun searchBooks(
         @Query("q") query: String,
-        @Query("limit") limit: Int = 15
+        @Query("language") language: String? = null,   // ex: "por" pra português
+        @Query("subject") subject: String? = null,     // ex: "fiction", "brazilian literature"
+        @Query("limit") limit: Int = 20
     ): OpenLibrarySearchResponse
 }
 

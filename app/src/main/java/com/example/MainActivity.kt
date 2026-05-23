@@ -122,7 +122,8 @@ class MainActivity : ComponentActivity() {
                             onNavigateToBookDetail = { bookId -> navController.navigate("book_detail/$bookId") },
                             onNavigateToFrases = { navController.navigate("frases") },
                             onNavigateToManageClub = { navController.navigate("manage_club") },
-                            onNavigateToMeetingDetail = { mid -> navController.navigate("meeting_detail/$mid") }
+                            onNavigateToMeetingDetail = { mid -> navController.navigate("meeting_detail/$mid") },
+                            onNavigateToAbout = { navController.navigate("about") }
                         )
                     }
 
@@ -201,6 +202,25 @@ class MainActivity : ComponentActivity() {
                     composable("suggest_book") {
                         SuggestScreen(
                             viewModel = viewModel,
+                            onNavigateBack = { navController.popBackStack() },
+                            onNavigateToAddManual = { navController.navigate("add_book_manual") }
+                        )
+                    }
+
+                    composable("add_book_manual") {
+                        AddBookManualScreen(
+                            viewModel = viewModel,
+                            onNavigateBack = { navController.popBackStack() },
+                            onBookCreated = {
+                                // Volta pra Suggest após criar — popBackStack 2x não funciona limpo
+                                // então usa navigate com popUpTo na Suggest pra recriar a tela vazia
+                                navController.popBackStack()
+                            }
+                        )
+                    }
+
+                    composable("about") {
+                        AboutScreen(
                             onNavigateBack = { navController.popBackStack() }
                         )
                     }

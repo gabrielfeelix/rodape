@@ -37,9 +37,14 @@ data class Book(
     @PrimaryKey val id: String,
     val title: String,
     val author: String,
-    val coverUrl: String,
+    val coverUrl: String,            // https://... | file:///... | "" (placeholder com iniciais)
     val openlibraryId: String,
-    val isbn: String
+    val isbn: String,
+    val isManual: Boolean,           // true se foi cadastrado manualmente pelo usuário
+    val totalPaginas: Int?,          // opcional — reservado pra calculadora literária (7c)
+    val editora: String?,            // opcional cadastro manual
+    val anoPublicacao: Int?,         // opcional cadastro manual
+    val idioma: String?              // default "pt"
 )
 
 @Entity(tableName = "club_books", primaryKeys = ["clubId", "bookId"])
