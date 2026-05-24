@@ -4,6 +4,7 @@ import android.content.Context
 import androidx.room.Database
 import androidx.room.Room
 import androidx.room.RoomDatabase
+import com.example.BuildConfig
 import com.example.data.model.*
 
 @Database(
@@ -53,11 +54,19 @@ abstract class AppDatabase : RoomDatabase() {
             INSTANCE ?: Room.databaseBuilder(
                 context.applicationContext,
                 AppDatabase::class.java,
-                "rodape-cache.db"
+                "tramabook-cache.db"
             )
-                // Migration strategy: durante dev, drop-and-recreate. Em producao
-                // futura, escrever Migration explicito por versao.
-                .fallbackToDestructiveMigration(dropAllTables = true)
+                .apply {
+                    // Em DEBUG: drop-and-recreate facilita iteracao rapida.
+                    // Em RELEASE: jamais destruir. Schemas novos PRECISAM de Migration
+                    // explicito senao a fila de PendingMutation (mutations offline ainda
+                    // nao enviadas) seria apagada e o usuario perderia dado real.
+                    // Sem migration registrada, app crasha visivelmente em vez de
+                    // silenciosamente destruir dados.
+                    if (BuildConfig.DEBUG) {
+                        fallbackToDestructiveMigration(dropAllTables = true)
+                    }
+                }
                 .build()
                 .also { INSTANCE = it }
         }

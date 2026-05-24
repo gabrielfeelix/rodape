@@ -168,18 +168,22 @@ class MainActivity : ComponentActivity() {
                     composable("create_club") {
                         CreateClubScreen(
                             onNavigateBack = { navController.popBackStack() },
-                            onCreateCompleted = { nome, descricao, cor, privacidade ->
-                                viewModel.createClub(nome, descricao, cor, privacidade) { _ ->
-                                    // popUpTo na propria rota corrente + inclusive=true remove
-                                    // create_club do back stack e cai em main_tabs (que sempre
-                                    // existe). NAO usar popUpTo("welcome") — falha silenciosa
-                                    // quando welcome nao esta no back stack (usuario logado
-                                    // direto via cold start) e causa comportamento bizarro.
-                                    navController.navigate("main_tabs") {
-                                        popUpTo("create_club") { inclusive = true }
-                                        launchSingleTop = true
-                                    }
-                                }
+                            onCreateCompleted = { nome, descricao, cor, privacidade, onError ->
+                                viewModel.createClub(
+                                    nome, descricao, cor, privacidade,
+                                    onCompleted = { _ ->
+                                        // popUpTo na propria rota corrente + inclusive=true remove
+                                        // create_club do back stack e cai em main_tabs (que sempre
+                                        // existe). NAO usar popUpTo("welcome") — falha silenciosa
+                                        // quando welcome nao esta no back stack (usuario logado
+                                        // direto via cold start) e causa comportamento bizarro.
+                                        navController.navigate("main_tabs") {
+                                            popUpTo("create_club") { inclusive = true }
+                                            launchSingleTop = true
+                                        }
+                                    },
+                                    onError = onError,
+                                )
                             }
                         )
                     }

@@ -352,12 +352,16 @@ fun LoginScreen(
 @Composable
 fun CreateClubScreen(
     onNavigateBack: () -> Unit,
-    onCreateCompleted: (nome: String, descricao: String, cor: String, privacidade: String) -> Unit
+    // O segundo callback recebe (onError: (String) -> Unit) pra UI poder
+    // sair do estado de loading e mostrar a mensagem.
+    onCreateCompleted: (nome: String, descricao: String, cor: String, privacidade: String, onError: (String) -> Unit) -> Unit
 ) {
     var name by remember { mutableStateOf("") }
     var description by remember { mutableStateOf("") }
     var privacy by remember { mutableStateOf("convidados") }
     var selectedColorIndex by remember { mutableStateOf(0) }
+    var isSubmitting by remember { mutableStateOf(false) }
+    var errorMsg by remember { mutableStateOf<String?>(null) }
 
     val isNameValid = name.trim().length >= 3
 
@@ -662,16 +666,34 @@ fun CreateClubScreen(
 
             item {
                 Spacer(modifier = Modifier.height(16.dp))
+                if (errorMsg != null) {
+                    Text(
+                        text = errorMsg!!,
+                        style = MaterialTheme.typography.bodySmall.copy(
+                            color = MaterialTheme.colorScheme.error
+                        ),
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(bottom = 8.dp)
+                    )
+                }
                 TbButton(
-                    text = "Criar clube",
+                    text = if (isSubmitting) "Criando…" else "Criar clube",
                     onClick = {
-                        if (isNameValid) {
-                            onCreateCompleted(name, description, selectedColorIndex.toString(), privacy)
+                        if (isNameValid && !isSubmitting) {
+                            isSubmitting = true
+                            errorMsg = null
+                            onCreateCompleted(
+                                name, description, selectedColorIndex.toString(), privacy
+                            ) { msg ->
+                                isSubmitting = false
+                                errorMsg = msg
+                            }
                         }
                     },
                     variant = TbButtonVariant.Terra,
                     size = TbButtonSize.Lg,
-                    enabled = isNameValid,
+                    enabled = isNameValid && !isSubmitting,
                     modifier = Modifier.fillMaxWidth()
                 )
                 Spacer(modifier = Modifier.height(40.dp))

@@ -353,7 +353,14 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
     }
 
     // --- Club Actions ---
-    fun createClub(nome: String, descricao: String, cor: String, privacidade: String, onCompleted: (String) -> Unit) {
+    fun createClub(
+        nome: String,
+        descricao: String,
+        cor: String,
+        privacidade: String,
+        onCompleted: (String) -> Unit,
+        onError: (String) -> Unit = {},
+    ) {
         viewModelScope.launch {
             try {
                 // RPC: cria clube + super_admin member + invite code unico, atomicamente.
@@ -361,7 +368,14 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
                 _activeClubId.value = clubId
                 onCompleted(clubId)
             } catch (e: Exception) {
-                e.printStackTrace()
+                android.util.Log.e("Tramabook/VM", "createClub falhou", e)
+                // Mensagem amigavel pra UI parar de mostrar loading e exibir o erro.
+                onError(
+                    com.example.ui.auth.AuthErrors.friendly(
+                        e,
+                        fallback = "Nao consegui criar o clube. Tente de novo em instantes."
+                    )
+                )
             }
         }
     }
@@ -636,7 +650,7 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
                     }
                 _searchResults.value = olDocs
             } catch (e: Exception) {
-                e.printStackTrace()
+                android.util.Log.e("Tramabook/VM", "Operacao falhou silenciosamente", e)
                 _searchResults.value = emptyList()
                 _searchResultsUnified.value = emptyList()
             } finally {
@@ -1066,7 +1080,7 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
                     onResult(gbAuthor.trim())
                 }
             } catch (e: Exception) {
-                e.printStackTrace()
+                android.util.Log.e("Tramabook/VM", "Operacao falhou silenciosamente", e)
                 onResult(null)
             }
         }
@@ -1087,7 +1101,7 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
                 val validated = com.example.voting.ChapterFetcher.validate(candidates)
                 onResult(validated)
             } catch (e: Exception) {
-                e.printStackTrace()
+                android.util.Log.e("Tramabook/VM", "Operacao falhou silenciosamente", e)
                 onResult(com.example.voting.ChapterFetchResult.Failed)
             }
         }
