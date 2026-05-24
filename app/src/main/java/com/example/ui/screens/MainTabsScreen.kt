@@ -661,9 +661,18 @@ fun HomeScreenTab(
             }
         }
 
-        // Section: Próximo encontro card (Image 1 Left Card 1)
+        // Section: Próximo encontro card. Tres estados:
+        //  - latestMeeting carregando (clube tem encontros mas ainda nao baixou): skeleton
+        //  - latestMeeting null pos-carregar: "Nenhum proximo encontro agendado"
+        //  - latestMeeting != null: card real
+        // Como nao temos sinal de loading explicito, heuristica: se members ja tem
+        // dado mas meeting ainda nao, assumimos ainda carregando — caso comum em cold-start
+        // depois que o select de members chegou primeiro.
         item {
-            if (meeting == null) {
+            val stillLoadingMeeting = meeting == null && members.isEmpty()
+            if (stillLoadingMeeting) {
+                com.example.ui.components.SkeletonMeetingCard()
+            } else if (meeting == null) {
                 Box(
                     modifier = Modifier
                         .fillMaxWidth()

@@ -684,6 +684,26 @@ class RemoteRepository(private val supabase: SupabaseClient = Supabase.client) {
     // Permite reuso entre coletores e desligamento limpo.
     private val realtimeJobs = mutableMapOf<String, Job>()
 
+    // Reload registry: chave (table) -> set de reload() ativos.
+    // Apos uma mutation local (insert/update/delete), chamamos
+    // notifyLocalMutation(table) que dispara TODOS os reloads dessa tabela
+    // imediatamente — sem esperar Realtime WebSocket. Optimistic-lite:
+    // a mudanca aparece em ~200ms (RTT) em vez de ~500ms (websocket roundtrip).
+    private val tableReloaders = mutableMapOf<String, MutableSet<suspend () -> Unit>>()
+
+    private fun registerReloader(table: String, reload: suspend () -> Unit) {
+        tableReloaders.getOrPut(table) { mutableSetOf() }.add(reload)
+    }
+
+    /** Chamar APOS uma mutation bem-sucedida (insert/update/delete) na tabela.
+     *  Dispara reload de todas as caches que escutam essa tabela.
+     *  Realtime tambem vai disparar, mas com latencia maior — este e o fast path. */
+    private fun notifyLocalMutation(table: String) {
+        tableReloaders[table]?.forEach { reload ->
+            scope.launch { runCatching { reload() } }
+        }
+    }
+
     /**
      * Subscribe na tabela [table]. Quando receber qualquer mudanca que case
      * com [filterColumn]=[filterValue] (se fornecidos), chama [reload].
@@ -695,6 +715,9 @@ class RemoteRepository(private val supabase: SupabaseClient = Supabase.client) {
         filterValue: String? = null,
         reload: suspend () -> Unit,
     ) {
+        // Sempre registra o reloader pra fast-path local (mutations imediatas).
+        registerReloader(table, reload)
+
         val key = "$table:${filterColumn ?: "*"}=${filterValue ?: "*"}"
         if (realtimeJobs[key]?.isActive == true) return
 
@@ -770,6 +793,7 @@ class RemoteRepository(private val supabase: SupabaseClient = Supabase.client) {
                     avatarKey = user.avatarUrl.ifBlank { "preset:leitor" },
                 )
             )
+            notifyLocalMutation("profiles")
         }
     }
 
@@ -1023,6 +1047,7 @@ class RemoteRepository(private val supabase: SupabaseClient = Supabase.client) {
                     eq("user_id", userId)
                 }
             }
+            notifyLocalMutation("club_members")
         }
     }
 
@@ -1034,6 +1059,7 @@ class RemoteRepository(private val supabase: SupabaseClient = Supabase.client) {
                     eq("user_id", userId)
                 }
             }
+            notifyLocalMutation("club_members")
         }
     }
 
@@ -1186,6 +1212,7 @@ class RemoteRepository(private val supabase: SupabaseClient = Supabase.client) {
                     eq("book_id", bookId)
                 }
             }
+            notifyLocalMutation("club_books")
         }
     }
 
@@ -1316,6 +1343,7 @@ class RemoteRepository(private val supabase: SupabaseClient = Supabase.client) {
                     texto = comment.texto,
                 )
             )
+            notifyLocalMutation("comments")
         }
     }
 
@@ -1396,6 +1424,7 @@ class RemoteRepository(private val supabase: SupabaseClient = Supabase.client) {
     suspend fun insertReaction(reaction: Reaction) {
         runCatching {
             supabase.from("reactions").upsert(reaction.toDto())
+            notifyLocalMutation("reactions")
         }
     }
 
@@ -1408,6 +1437,7 @@ class RemoteRepository(private val supabase: SupabaseClient = Supabase.client) {
                     eq("emoji", reaction.emoji)
                 }
             }
+            notifyLocalMutation("reactions")
         }
     }
 
@@ -1463,6 +1493,7 @@ class RemoteRepository(private val supabase: SupabaseClient = Supabase.client) {
                     bookId = vote.clubBookId,
                 )
             )
+            notifyLocalMutation("votes")
         }
     }
 
@@ -1521,6 +1552,7 @@ class RemoteRepository(private val supabase: SupabaseClient = Supabase.client) {
                     eq("book_id", bookId)
                 }
             }
+            notifyLocalMutation("votes")
         }
     }
 
@@ -1548,6 +1580,7 @@ class RemoteRepository(private val supabase: SupabaseClient = Supabase.client) {
                     status = round.status,
                 )
             )
+            notifyLocalMutation("voting_rounds")
         }
     }
 
@@ -1578,6 +1611,9 @@ class RemoteRepository(private val supabase: SupabaseClient = Supabase.client) {
         // Mas o MainViewModel hoje ja faz parte desse trabalho manualmente, entao usamos
         // a RPC + ignoramos o vencedoresJson legado.
         closeVotingRoundViaRpc(id)
+        notifyLocalMutation("voting_rounds")
+        notifyLocalMutation("club_books") // RPC promoveu vencedor (next/current)
+        notifyLocalMutation("notifications") // RPC criou notifs pros membros
     }
 
     // ============================================================
@@ -1790,6 +1826,7 @@ class RemoteRepository(private val supabase: SupabaseClient = Supabase.client) {
                     status = rsvpToEnum(rsvp.status),
                 )
             )
+            notifyLocalMutation("meeting_rsvps")
         }
     }
 
@@ -1880,6 +1917,7 @@ class RemoteRepository(private val supabase: SupabaseClient = Supabase.client) {
                     lastEditorId = minutes.lastEditorId.ifBlank { null },
                 )
             )
+            notifyLocalMutation("meeting_minutes")
         }
     }
 
@@ -1953,6 +1991,7 @@ class RemoteRepository(private val supabase: SupabaseClient = Supabase.client) {
             supabase.from("notifications").update({ set("lida", true) }) {
                 filter { eq("user_id", userId) }
             }
+            notifyLocalMutation("notifications")
         }
     }
 
@@ -1961,6 +2000,7 @@ class RemoteRepository(private val supabase: SupabaseClient = Supabase.client) {
             supabase.from("notifications").update({ set("lida", true) }) {
                 filter { eq("id", id) }
             }
+            notifyLocalMutation("notifications")
         }
     }
 
@@ -2047,6 +2087,7 @@ class RemoteRepository(private val supabase: SupabaseClient = Supabase.client) {
                     lastEditorId = summary.lastEditorId.ifBlank { null },
                 )
             )
+            notifyLocalMutation("book_summaries")
         }
     }
 
