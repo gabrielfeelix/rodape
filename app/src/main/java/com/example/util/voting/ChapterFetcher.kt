@@ -1,4 +1,4 @@
-package com.example.voting
+package com.example.util.voting
 
 sealed class ChapterFetchResult {
     data class Success(val chapters: List<Pair<Int, String>>) : ChapterFetchResult()

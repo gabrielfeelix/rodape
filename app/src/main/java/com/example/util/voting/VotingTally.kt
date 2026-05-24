@@ -1,4 +1,4 @@
-package com.example.voting
+package com.example.util.voting
 
 import com.example.data.model.BookSuggestion
 import com.example.data.model.Vote

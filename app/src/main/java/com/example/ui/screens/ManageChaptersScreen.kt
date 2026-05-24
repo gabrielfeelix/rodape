@@ -21,7 +21,7 @@ import com.example.ui.components.TbButtonVariant
 import com.example.ui.components.RodapeCard
 import com.example.ui.theme.*
 import com.example.ui.viewmodel.MainViewModel
-import com.example.voting.ChapterFetchResult
+import com.example.util.voting.ChapterFetchResult
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable

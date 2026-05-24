@@ -7,8 +7,10 @@ import androidx.datastore.preferences.core.booleanPreferencesKey
 import androidx.datastore.preferences.core.edit
 import androidx.datastore.preferences.core.floatPreferencesKey
 import androidx.datastore.preferences.core.intPreferencesKey
+import androidx.datastore.preferences.core.stringPreferencesKey
 import androidx.datastore.preferences.preferencesDataStore
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.map
 
 val Context.dataStore: DataStore<Preferences> by preferencesDataStore(name = "rodape_prefs")
@@ -34,6 +36,11 @@ class DataStoreManager(private val context: Context) {
         val RATED_APP_KEY = booleanPreferencesKey("rated_app")
         val ENGAGEMENT_COUNT_KEY = intPreferencesKey("engagement_count")
         val FONT_SCALE_KEY = floatPreferencesKey("font_scale")
+        // ID do ultimo user que logou neste device. Usado pra detectar troca
+        // de conta no mesmo aparelho e forcar limpeza do cache Room antes que
+        // o usuario novo veja dados do antigo. Nao e segredo (auth.uid()),
+        // mas mesmo assim fica so localmente.
+        val LAST_USER_ID_KEY = stringPreferencesKey("last_user_id")
     }
 
     val ratedAppFlow: Flow<Boolean> = context.dataStore.data.map { prefs ->
@@ -73,5 +80,17 @@ class DataStoreManager(private val context: Context) {
      */
     suspend fun clearSession() {
         // no-op: sessao agora vive em Supabase Auth, nao no DataStore.
+    }
+
+    /** Le o ultimo userId persistido neste device (ou null se nunca logou). */
+    suspend fun lastUserId(): String? =
+        context.dataStore.data.first()[LAST_USER_ID_KEY]
+
+    /** Persiste o userId atual. Chamar no login E depois de limpar cache. */
+    suspend fun setLastUserId(userId: String?) {
+        context.dataStore.edit { prefs ->
+            if (userId == null) prefs.remove(LAST_USER_ID_KEY)
+            else prefs[LAST_USER_ID_KEY] = userId
+        }
     }
 }

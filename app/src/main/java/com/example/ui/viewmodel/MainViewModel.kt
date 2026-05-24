@@ -274,6 +274,26 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
     init {
         // App nasce vazio em producao — sem seed, sem auto-login fake.
         //
+        // Defesa em profundidade contra leak de dados entre contas no mesmo
+        // device: quando detectamos que o userId logado e DIFERENTE do que
+        // persistimos no ultimo cold-start, limpamos o cache Room antes de
+        // qualquer fluxo comecar a ler dele. Cobre o caso de o app ter sido
+        // morto entre signOut() e clearLocalCache() no logout anterior.
+        viewModelScope.launch {
+            currentUserId.collect { newUserId ->
+                if (newUserId == null) return@collect
+                val lastId = runCatching { dataStoreManager.lastUserId() }.getOrNull()
+                if (lastId != null && lastId != newUserId) {
+                    android.util.Log.w(
+                        "Tramabook/VM",
+                        "Troca de usuario detectada ($lastId -> $newUserId). Limpando cache local."
+                    )
+                    runCatching { repository.clearLocalCache() }
+                }
+                runCatching { dataStoreManager.setLastUserId(newUserId) }
+            }
+        }
+
         // Quando o currentUserId mudar (login/logout), auto-seleciona o primeiro
         // clube do usuario como activeClub. Se ele nao for membro de nenhum,
         // activeClubId fica null e a UI mostra estado vazio com CTA de criar/entrar.
@@ -321,6 +341,7 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
             runCatching { authRepository.signOut() }
             dataStoreManager.clearSession()
             runCatching { repository.clearLocalCache() }
+            runCatching { dataStoreManager.setLastUserId(null) }
             _activeClubId.value = null
             onCompleted()
         }
@@ -334,6 +355,7 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
             dataStoreManager.clearSession()
             // Limpa Room — evita vazar dados entre contas no mesmo device.
             runCatching { repository.clearLocalCache() }
+            runCatching { dataStoreManager.setLastUserId(null) }
             _activeClubId.value = null
             onCompleted()
         }
@@ -1086,7 +1108,7 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
         }
     }
 
-    fun fetchChaptersOnline(book: Book, onResult: (com.example.voting.ChapterFetchResult) -> Unit) {
+    fun fetchChaptersOnline(book: Book, onResult: (com.example.util.voting.ChapterFetchResult) -> Unit) {
         viewModelScope.launch {
             try {
                 val query = if (book.isbn.isNotBlank()) "isbn:${book.isbn}"
@@ -1097,12 +1119,12 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
                     ?.volumeInfo
                     ?.description
                     .orEmpty()
-                val candidates = com.example.voting.ChapterFetcher.extractFromText(desc)
-                val validated = com.example.voting.ChapterFetcher.validate(candidates)
+                val candidates = com.example.util.voting.ChapterFetcher.extractFromText(desc)
+                val validated = com.example.util.voting.ChapterFetcher.validate(candidates)
                 onResult(validated)
             } catch (e: Exception) {
                 android.util.Log.e("Tramabook/VM", "Operacao falhou silenciosamente", e)
-                onResult(com.example.voting.ChapterFetchResult.Failed)
+                onResult(com.example.util.voting.ChapterFetchResult.Failed)
             }
         }
     }
