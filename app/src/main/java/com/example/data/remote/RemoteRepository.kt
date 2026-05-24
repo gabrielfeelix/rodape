@@ -655,13 +655,25 @@ private data class MeetingNoteInsertDto(
 // onde nao tem, a tela fica vazia momentaneamente — sem crash.
 // ============================================================================
 
-class RemoteRepository(private val supabase: SupabaseClient = Supabase.client) {
+class RemoteRepository(
+    appContext: android.content.Context,
+    private val supabase: SupabaseClient = Supabase.client,
+) {
 
     private val json = Json { ignoreUnknownKeys = true; coerceInputValues = true }
+
+    // Single source of truth = Room. UI le do Room (instantaneo, offline ok),
+    // background sync popula Room a partir do Supabase.
+    private val dao = com.example.data.db.AppDatabase.get(appContext).rodapeDao()
 
     // Scope interno do repo pra refreshes "fire-and-forget" das caches reativas.
     // SupervisorJob: falha de uma corotina nao cancela as outras.
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
+
+    /** Apaga o cache local — chamar no logout pra nao vazar dados entre contas. */
+    suspend fun clearLocalCache() {
+        dao.clearAll()
+    }
 
     // ============================================================
     // REALTIME HELPER
@@ -752,33 +764,32 @@ class RemoteRepository(private val supabase: SupabaseClient = Supabase.client) {
     // USERS / PROFILES
     // ============================================================
 
-    private val userCache = mutableMapOf<String, MutableStateFlow<User?>>()
-
     fun getUserFlow(userId: String): Flow<User?> {
-        val flow = userCache.getOrPut(userId) { stateOf<User?>(null) }
-        // Fire-and-forget refresh; coletor recebe quando voltar
-        scope.launch {
-            runCatching { flow.value = getUser(userId) }
-        }
-        return flow.asStateFlow()
+        val reload: suspend () -> Unit = { syncUser(userId) }
+        scope.launch { runCatching { reload() } }
+        ensureRealtime("profiles", filterColumn = "id", filterValue = userId, reload = reload)
+        return dao.userFlow(userId)
     }
 
-    suspend fun getUser(userId: String): User? = runCatching {
-        supabase.from("profiles").select {
-            filter { eq("id", userId) }
-            limit(1)
-        }.decodeSingleOrNull<ProfileDto>()?.toDomain()
-    }.getOrNull()
-
-    fun getAllUsersFlow(): Flow<List<User>> {
-        val flow = stateOf<List<User>>(emptyList())
-        scope.launch {
-            flow.value = runCatching {
-                supabase.from("profiles").select().decodeList<ProfileDto>().map { it.toDomain() }
-            }.getOrDefault(emptyList())
-        }
-        return flow.asStateFlow()
+    private suspend fun syncUser(userId: String) {
+        val u = runCatching {
+            supabase.from("profiles").select {
+                filter { eq("id", userId) }
+                limit(1)
+            }.decodeSingleOrNull<ProfileDto>()?.toDomain()
+        }.getOrNull()
+        if (u != null) dao.upsertUser(u)
     }
+
+    suspend fun getUser(userId: String): User? {
+        // Snapshot: prefere Room (rapido), busca remoto se nao tem.
+        dao.user(userId)?.let { return it }
+        syncUser(userId)
+        return dao.user(userId)
+    }
+
+    /** Nao usado hoje (RLS limita visibilidade); mantido como stub vazio. */
+    fun getAllUsersFlow(): Flow<List<User>> = kotlinx.coroutines.flow.flowOf(emptyList())
 
     suspend fun insertUser(user: User) {
         // Apenas atualiza profile do USUARIO LOGADO (RLS bloqueia outros).
@@ -819,43 +830,59 @@ class RemoteRepository(private val supabase: SupabaseClient = Supabase.client) {
     // CLUBS
     // ============================================================
 
-    private val clubCache = mutableMapOf<String, MutableStateFlow<Club?>>()
-
     fun getClubFlow(clubId: String): Flow<Club?> {
-        val flow = clubCache.getOrPut(clubId) { stateOf<Club?>(null) }
-        scope.launch {
-            flow.value = getClub(clubId)
-        }
-        return flow.asStateFlow()
+        val reload: suspend () -> Unit = { syncClub(clubId) }
+        scope.launch { runCatching { reload() } }
+        ensureRealtime("clubs", filterColumn = "id", filterValue = clubId, reload = reload)
+        return dao.clubFlow(clubId)
     }
 
-    suspend fun getClub(clubId: String): Club? = runCatching {
-        supabase.from("clubs").select {
-            filter { eq("id", clubId) }
-            limit(1)
-        }.decodeSingleOrNull<ClubDto>()?.toDomain()
-    }.getOrNull()
+    private suspend fun syncClub(clubId: String) {
+        val c = runCatching {
+            supabase.from("clubs").select {
+                filter { eq("id", clubId) }
+                limit(1)
+            }.decodeSingleOrNull<ClubDto>()?.toDomain()
+        }.getOrNull()
+        if (c != null) dao.upsertClub(c)
+    }
+
+    suspend fun getClub(clubId: String): Club? {
+        dao.club(clubId)?.let { return it }
+        syncClub(clubId)
+        return dao.club(clubId)
+    }
 
     suspend fun getClubByCodigo(codigo: String): Club? = runCatching {
-        supabase.from("clubs").select {
+        // Pra entrar em clube por codigo, busca direto no servidor (clube pode
+        // nao estar no cache local porque user nao e membro ainda).
+        val club = supabase.from("clubs").select {
             filter { eq("codigo", codigo) }
             limit(1)
         }.decodeSingleOrNull<ClubDto>()?.toDomain()
+        // Nao cacheamos — RLS deve impedir acesso se nao for membro.
+        club
     }.getOrNull()
 
-    private val clubsForUserCache = mutableMapOf<String, MutableStateFlow<List<Club>>>()
-
     fun getClubsForUser(userId: String): Flow<List<Club>> {
-        val flow = clubsForUserCache.getOrPut(userId) { stateOf<List<Club>>(emptyList()) }
-        scope.launch {
-            flow.value = getClubsForUserList(userId)
+        val reload: suspend () -> Unit = { syncClubsForUser() }
+        scope.launch { runCatching { reload() } }
+        // Reagir a mudancas em club_members (entrar/sair de clube) e em clubs (renomeacao).
+        ensureRealtime("club_members", filterColumn = "user_id", filterValue = userId, reload = reload)
+        ensureRealtime("clubs", reload = reload)
+        return dao.clubsActiveFlow()
+    }
+
+    private suspend fun syncClubsForUser() {
+        runCatching {
+            val list = supabase.from("clubs").select().decodeList<ClubDto>().map { it.toDomain() }
+            // Substitui: o que sumiu do servidor (saiu do clube) some local tambem.
+            dao.upsertClubs(list)
+            dao.pruneClubsExcept(list.map { it.id })
         }
-        return flow.asStateFlow()
     }
 
     suspend fun getClubsForUserList(userId: String): List<Club> = runCatching {
-        // RLS: usuario so ve clubs em que e membro. SELECT direto retorna tudo a que ele
-        // tem acesso. Filtra arquivados.
         supabase.from("clubs").select {
             filter { eq("arquivado", false) }
         }.decodeList<ClubDto>().map { it.toDomain() }
@@ -988,36 +1015,51 @@ class RemoteRepository(private val supabase: SupabaseClient = Supabase.client) {
     }
 
     fun getClubMembersFlow(clubId: String): Flow<List<User>> {
-        val flow = stateOf<List<User>>(emptyList())
-        val reload: suspend () -> Unit = {
-            flow.value = runCatching {
-                // JOIN: club_members -> profiles (postgrest embedding)
-                supabase.from("club_members").select(Columns.raw("user_id, profiles!inner(*)")) {
-                    filter { eq("club_id", clubId) }
-                }.decodeList<JoinMemberProfile>().map { it.profile.toDomain() }
-            }.getOrDefault(emptyList())
-        }
-        scope.launch { reload() }
-        // Realtime: novo membro entra/sai, ou perfil de membro existente muda.
+        val reload: suspend () -> Unit = { syncClubMembers(clubId) }
+        scope.launch { runCatching { reload() } }
         ensureRealtime("club_members", filterColumn = "club_id", filterValue = clubId, reload = reload)
-        return flow.asStateFlow()
+        return dao.memberUsersInClubFlow(clubId)
+    }
+
+    private suspend fun syncClubMembers(clubId: String) {
+        runCatching {
+            val rows = supabase.from("club_members").select(Columns.raw("user_id, papel, entrou_em, profiles!inner(*)")) {
+                filter { eq("club_id", clubId) }
+            }.decodeList<JoinMemberProfile>()
+            val users = rows.map { it.profile.toDomain() }
+            val members = rows.map { row ->
+                ClubMember(
+                    clubId = clubId,
+                    userId = row.userId,
+                    papel = row.papel ?: "member",
+                    entrouEm = row.entrouEm.fromIso(),
+                )
+            }
+            dao.replaceMembersInClub(clubId, members, users)
+        }
     }
 
     @Serializable
     private data class JoinMemberProfile(
         @SerialName("user_id") val userId: String,
+        val papel: String? = null,
+        @SerialName("entrou_em") val entrouEm: String? = null,
         @SerialName("profiles") val profile: ProfileDto,
     )
 
-    suspend fun getClubMember(clubId: String, userId: String): ClubMember? = runCatching {
-        supabase.from("club_members").select {
-            filter {
-                eq("club_id", clubId)
-                eq("user_id", userId)
-            }
-            limit(1)
-        }.decodeSingleOrNull<ClubMemberDto>()?.toDomain()
-    }.getOrNull()
+    suspend fun getClubMember(clubId: String, userId: String): ClubMember? {
+        dao.member(clubId, userId)?.let { return it }
+        return runCatching {
+            supabase.from("club_members").select {
+                filter {
+                    eq("club_id", clubId)
+                    eq("user_id", userId)
+                }
+                limit(1)
+            }.decodeSingleOrNull<ClubMemberDto>()?.toDomain()
+                ?.also { dao.upsertMembers(listOf(it)) }
+        }.getOrNull()
+    }
 
     suspend fun getClubMembersListOrderedByJoin(clubId: String): List<ClubMember> = runCatching {
         supabase.from("club_members").select {
@@ -1027,14 +1069,10 @@ class RemoteRepository(private val supabase: SupabaseClient = Supabase.client) {
     }.getOrDefault(emptyList())
 
     fun getClubMembersRawFlow(clubId: String): Flow<List<ClubMember>> {
-        val flow = stateOf<List<ClubMember>>(emptyList())
-        val reload: suspend () -> Unit = {
-            flow.value = getClubMembersListOrderedByJoin(clubId)
-        }
-        scope.launch { reload() }
-        // Realtime: papel de membro pode mudar (promote/demote) ou ser removido.
+        val reload: suspend () -> Unit = { syncClubMembers(clubId) }
+        scope.launch { runCatching { reload() } }
         ensureRealtime("club_members", filterColumn = "club_id", filterValue = clubId, reload = reload)
-        return flow.asStateFlow()
+        return dao.membersInClubFlow(clubId)
     }
 
     suspend fun updateMemberPapel(clubId: String, userId: String, papel: String) {
@@ -1070,16 +1108,16 @@ class RemoteRepository(private val supabase: SupabaseClient = Supabase.client) {
     }
 
     fun getMemberRemovalsForClubFlow(clubId: String): Flow<List<MemberRemoval>> {
-        val flow = stateOf<List<MemberRemoval>>(emptyList())
         scope.launch {
-            flow.value = runCatching {
-                supabase.from("member_removals").select {
+            runCatching {
+                val list = supabase.from("member_removals").select {
                     filter { eq("club_id", clubId) }
                     order("removed_at", Order.DESCENDING)
                 }.decodeList<MemberRemovalDto>().map { it.toDomain() }
-            }.getOrDefault(emptyList())
+                dao.upsertMemberRemovals(list)
+            }
         }
-        return flow.asStateFlow()
+        return dao.memberRemovalsForClubFlow(clubId)
     }
 
     // ============================================================
@@ -1115,15 +1153,15 @@ class RemoteRepository(private val supabase: SupabaseClient = Supabase.client) {
     }
 
     fun getArchivedClubsForUserFlow(userId: String): Flow<List<Club>> {
-        val flow = stateOf<List<Club>>(emptyList())
         scope.launch {
-            flow.value = runCatching {
-                supabase.from("clubs").select {
+            runCatching {
+                val list = supabase.from("clubs").select {
                     filter { eq("arquivado", true) }
                 }.decodeList<ClubDto>().map { it.toDomain() }
-            }.getOrDefault(emptyList())
+                dao.upsertClubs(list)
+            }
         }
-        return flow.asStateFlow()
+        return dao.clubsArchivedFlow()
     }
 
     // ============================================================
@@ -1133,6 +1171,7 @@ class RemoteRepository(private val supabase: SupabaseClient = Supabase.client) {
     suspend fun insertBook(book: Book) {
         runCatching {
             supabase.from("books").upsert(book.toInsertDto())
+            dao.upsertBook(book)
             notifyLocalMutation("books")
         }
     }
@@ -1165,52 +1204,52 @@ class RemoteRepository(private val supabase: SupabaseClient = Supabase.client) {
     suspend fun insertClubBook(clubBook: ClubBook) {
         runCatching {
             supabase.from("club_books").upsert(clubBook.toDto())
+            dao.upsertClubBook(clubBook)
+            notifyLocalMutation("club_books")
         }
     }
 
     fun getBookByStatusFlow(clubId: String, status: String): Flow<List<Book>> {
-        val flow = stateOf<List<Book>>(emptyList())
-        val reload: suspend () -> Unit = {
-            flow.value = runCatching {
-                supabase.from("club_books").select(Columns.raw("book_id, status, books!inner(*)")) {
-                    filter {
-                        eq("club_id", clubId)
-                        eq("status", status)
-                    }
-                }.decodeList<JoinClubBookBook>().map { it.book.toDomain() }
-            }.getOrDefault(emptyList())
-        }
-        scope.launch { reload() }
-        // Realtime: status do livro muda quando admin promove next->current,
-        // marca finished, ou voting_round fecha promovendo vencedor.
+        val reload: suspend () -> Unit = { syncClubBooks(clubId) }
+        scope.launch { runCatching { reload() } }
         ensureRealtime("club_books", filterColumn = "club_id", filterValue = clubId, reload = reload)
-        return flow.asStateFlow()
+        return dao.booksByStatusFlow(clubId, status)
+    }
+
+    private suspend fun syncClubBooks(clubId: String) {
+        runCatching {
+            val rows = supabase.from("club_books").select(Columns.raw("book_id, status, ordem, data_encontro, books!inner(*)")) {
+                filter { eq("club_id", clubId) }
+            }.decodeList<JoinClubBookFull>()
+            val books = rows.map { it.book.toDomain() }
+            val clubBooks = rows.map { row ->
+                ClubBook(
+                    clubId = clubId,
+                    bookId = row.bookId,
+                    status = row.status,
+                    ordem = row.ordem,
+                    dataEncontro = row.dataEncontro?.fromIso(),
+                )
+            }
+            dao.replaceClubBooksInClub(clubId, clubBooks, books)
+        }
     }
 
     @Serializable
-    private data class JoinClubBookBook(
+    private data class JoinClubBookFull(
         @SerialName("book_id") val bookId: String,
         val status: String,
+        val ordem: Int = 0,
+        @SerialName("data_encontro") val dataEncontro: String? = null,
         @SerialName("books") val book: BookDto,
     )
 
     fun getClubBooksFlow(clubId: String): Flow<List<Book>> {
-        val flow = stateOf<List<Book>>(emptyList())
-        scope.launch {
-            flow.value = runCatching {
-                supabase.from("club_books").select(Columns.raw("book_id, books!inner(*)")) {
-                    filter { eq("club_id", clubId) }
-                }.decodeList<JoinClubBookBookAll>().map { it.book.toDomain() }
-            }.getOrDefault(emptyList())
-        }
-        return flow.asStateFlow()
+        val reload: suspend () -> Unit = { syncClubBooks(clubId) }
+        scope.launch { runCatching { reload() } }
+        ensureRealtime("club_books", filterColumn = "club_id", filterValue = clubId, reload = reload)
+        return dao.clubBooksFlow(clubId)
     }
-
-    @Serializable
-    private data class JoinClubBookBookAll(
-        @SerialName("book_id") val bookId: String,
-        @SerialName("books") val book: BookDto,
-    )
 
     suspend fun getClubBookStatus(clubId: String, bookId: String): String? = runCatching {
         supabase.from("club_books").select(Columns.raw("status")) {
@@ -1225,12 +1264,16 @@ class RemoteRepository(private val supabase: SupabaseClient = Supabase.client) {
     @Serializable
     private data class StatusOnlyDto(val status: String)
 
-    suspend fun getBook(id: String): Book? = runCatching {
-        supabase.from("books").select {
-            filter { eq("id", id) }
-            limit(1)
-        }.decodeSingleOrNull<BookDto>()?.toDomain()
-    }.getOrNull()
+    suspend fun getBook(id: String): Book? {
+        dao.book(id)?.let { return it }
+        return runCatching {
+            supabase.from("books").select {
+                filter { eq("id", id) }
+                limit(1)
+            }.decodeSingleOrNull<BookDto>()?.toDomain()
+                ?.also { dao.upsertBook(it) }
+        }.getOrNull()
+    }
 
     suspend fun updateClubBookStatus(clubId: String, bookId: String, status: String) {
         runCatching {
@@ -1240,6 +1283,7 @@ class RemoteRepository(private val supabase: SupabaseClient = Supabase.client) {
                     eq("book_id", bookId)
                 }
             }
+            // Cache local sera atualizado via notifyLocalMutation -> syncClubBooks.
             notifyLocalMutation("club_books")
         }
     }
@@ -1254,10 +1298,20 @@ class RemoteRepository(private val supabase: SupabaseClient = Supabase.client) {
                     eq("book_id", bookId)
                 }
             }
+            notifyLocalMutation("club_books")
         }
     }
 
     fun getClubBooksByStatusFlow(clubId: String, status: String): Flow<List<ClubBook>> {
+        val reload: suspend () -> Unit = { syncClubBooks(clubId) }
+        scope.launch { runCatching { reload() } }
+        ensureRealtime("club_books", filterColumn = "club_id", filterValue = clubId, reload = reload)
+        return dao.clubBooksByStatusFlow(clubId, status)
+    }
+
+    // Helper antigo abaixo removido — `syncClubBooks` cuida de tudo via Room.
+    @Suppress("UNUSED")
+    private fun _oldClubBooksByStatusFlow(clubId: String, status: String): Flow<List<ClubBook>> {
         val flow = stateOf<List<ClubBook>>(emptyList())
         scope.launch {
             flow.value = runCatching {
@@ -1280,6 +1334,8 @@ class RemoteRepository(private val supabase: SupabaseClient = Supabase.client) {
                     eq("book_id", bookId)
                 }
             }
+            dao.deleteClubBook(clubId, bookId)
+            notifyLocalMutation("club_books")
         }
     }
 
@@ -1291,20 +1347,21 @@ class RemoteRepository(private val supabase: SupabaseClient = Supabase.client) {
         if (chapters.isEmpty()) return
         runCatching {
             supabase.from("chapters").upsert(chapters.map { it.toDto() })
+            dao.upsertChapters(chapters)
         }
     }
 
     fun getChaptersForBookFlow(bookId: String): Flow<List<Chapter>> {
-        val flow = stateOf<List<Chapter>>(emptyList())
         scope.launch {
-            flow.value = runCatching {
-                supabase.from("chapters").select {
+            runCatching {
+                val list = supabase.from("chapters").select {
                     filter { eq("book_id", bookId) }
                     order("numero", Order.ASCENDING)
                 }.decodeList<ChapterDto>().map { it.toDomain() }
-            }.getOrDefault(emptyList())
+                dao.upsertChapters(list)
+            }
         }
-        return flow.asStateFlow()
+        return dao.chaptersForBookFlow(bookId)
     }
 
     suspend fun deleteChaptersForBook(bookId: String) {
@@ -1312,6 +1369,7 @@ class RemoteRepository(private val supabase: SupabaseClient = Supabase.client) {
             supabase.from("chapters").delete {
                 filter { eq("book_id", bookId) }
             }
+            dao.deleteChaptersForBook(bookId)
         }
     }
 
@@ -1322,38 +1380,57 @@ class RemoteRepository(private val supabase: SupabaseClient = Supabase.client) {
     suspend fun insertUserProgress(progress: UserProgress) {
         runCatching {
             supabase.from("user_progress").upsert(progress.toDto())
+            dao.upsertProgress(progress)
+            notifyLocalMutation("user_progress")
         }
     }
 
     fun getUserProgressFlow(userId: String, clubId: String, bookId: String): Flow<UserProgress?> {
-        val flow = stateOf<UserProgress?>(null)
-        scope.launch {
-            flow.value = getUserProgress(userId, clubId, bookId)
+        val reload: suspend () -> Unit = {
+            val p = runCatching {
+                supabase.from("user_progress").select {
+                    filter {
+                        eq("user_id", userId)
+                        eq("club_id", clubId)
+                        eq("book_id", bookId)
+                    }
+                    limit(1)
+                }.decodeSingleOrNull<UserProgressDto>()?.toDomain()
+            }.getOrNull()
+            if (p != null) dao.upsertProgress(p)
         }
-        return flow.asStateFlow()
+        scope.launch { runCatching { reload() } }
+        ensureRealtime("user_progress", filterColumn = "user_id", filterValue = userId, reload = reload)
+        return dao.progressFlow(userId, clubId, bookId)
     }
 
-    suspend fun getUserProgress(userId: String, clubId: String, bookId: String): UserProgress? = runCatching {
-        supabase.from("user_progress").select {
-            filter {
-                eq("user_id", userId)
-                eq("club_id", clubId)
-                eq("book_id", bookId)
-            }
-            limit(1)
-        }.decodeSingleOrNull<UserProgressDto>()?.toDomain()
-    }.getOrNull()
+    suspend fun getUserProgress(userId: String, clubId: String, bookId: String): UserProgress? {
+        dao.progress(userId, clubId, bookId)?.let { return it }
+        return runCatching {
+            supabase.from("user_progress").select {
+                filter {
+                    eq("user_id", userId)
+                    eq("club_id", clubId)
+                    eq("book_id", bookId)
+                }
+                limit(1)
+            }.decodeSingleOrNull<UserProgressDto>()?.toDomain()
+                ?.also { dao.upsertProgress(it) }
+        }.getOrNull()
+    }
 
     fun getAllProgressForClubFlow(clubId: String): Flow<List<UserProgress>> {
-        val flow = stateOf<List<UserProgress>>(emptyList())
-        scope.launch {
-            flow.value = runCatching {
-                supabase.from("user_progress").select {
+        val reload: suspend () -> Unit = {
+            runCatching {
+                val list = supabase.from("user_progress").select {
                     filter { eq("club_id", clubId) }
                 }.decodeList<UserProgressDto>().map { it.toDomain() }
-            }.getOrDefault(emptyList())
+                dao.upsertProgresses(list)
+            }
         }
-        return flow.asStateFlow()
+        scope.launch { runCatching { reload() } }
+        ensureRealtime("user_progress", reload = reload)
+        return dao.allProgressForClubFlow(clubId)
     }
 
     // ============================================================
@@ -1371,44 +1448,47 @@ class RemoteRepository(private val supabase: SupabaseClient = Supabase.client) {
                     texto = comment.texto,
                 )
             )
+            // Optimistic local insert (sera substituido por sync real em ms).
+            dao.upsertComment(comment)
             notifyLocalMutation("comments")
         }
     }
 
     fun getCommentsForChapterFlow(chapterId: String, clubId: String): Flow<List<Comment>> {
-        val flow = stateOf<List<Comment>>(emptyList())
-        val reload: suspend () -> Unit = {
-            flow.value = runCatching {
-                supabase.from("comments").select {
-                    filter {
-                        eq("chapter_id", chapterId)
-                        eq("club_id", clubId)
-                    }
-                    order("created_at", Order.ASCENDING)
-                }.decodeList<CommentDto>().map { it.toDomain() }
-            }.getOrDefault(emptyList())
-        }
-        scope.launch { reload() }
-        // Realtime: novo comentario em qualquer capitulo do clube re-carrega
-        // (filtramos por club_id; chapter_id e refinamento cliente-side).
+        val reload: suspend () -> Unit = { syncCommentsForChapter(chapterId, clubId) }
+        scope.launch { runCatching { reload() } }
         ensureRealtime("comments", filterColumn = "club_id", filterValue = clubId, reload = reload)
-        return flow.asStateFlow()
+        return dao.commentsForChapterFlow(chapterId, clubId)
+    }
+
+    private suspend fun syncCommentsForChapter(chapterId: String, clubId: String) {
+        runCatching {
+            val list = supabase.from("comments").select {
+                filter {
+                    eq("chapter_id", chapterId)
+                    eq("club_id", clubId)
+                }
+                order("created_at", Order.ASCENDING)
+            }.decodeList<CommentDto>().map { it.toDomain() }
+            dao.replaceCommentsInChapter(chapterId, clubId, list)
+        }
     }
 
     fun getCommentsForBookFlow(bookId: String, clubId: String): Flow<List<Comment>> {
-        val flow = stateOf<List<Comment>>(emptyList())
         scope.launch {
-            flow.value = runCatching {
+            runCatching {
                 // Join via embed pra trazer chapter.numero pra ordenacao
-                supabase.from("comments").select(Columns.raw("*, chapters!inner(numero,book_id)")) {
+                val list = supabase.from("comments").select(Columns.raw("*, chapters!inner(numero,book_id)")) {
                     filter {
                         eq("club_id", clubId)
                         eq("chapters.book_id", bookId)
                     }
                 }.decodeList<CommentDto>().map { it.toDomain() }
-            }.getOrDefault(emptyList())
+                dao.upsertComments(list)
+            }
         }
-        return flow.asStateFlow()
+        // Reactive flow do Room ja faz JOIN com chapters via DAO query
+        return dao.commentsForBookFlow(bookId, clubId)
     }
 
     suspend fun softRemoveComment(commentId: String, removidoPor: String, motivo: String) {
@@ -1418,6 +1498,7 @@ class RemoteRepository(private val supabase: SupabaseClient = Supabase.client) {
                 set("removido_por", removidoPor)
                 set("motivo_remocao", motivo)
             }) { filter { eq("id", commentId) } }
+            notifyLocalMutation("comments")
         }
     }
 
@@ -1428,23 +1509,24 @@ class RemoteRepository(private val supabase: SupabaseClient = Supabase.client) {
                 set("removido_por", JsonNull)
                 set("motivo_remocao", JsonNull)
             }) { filter { eq("id", commentId) } }
+            notifyLocalMutation("comments")
         }
     }
 
     fun getRemovedCommentsForClubFlow(clubId: String): Flow<List<Comment>> {
-        val flow = stateOf<List<Comment>>(emptyList())
         scope.launch {
-            flow.value = runCatching {
-                supabase.from("comments").select {
+            runCatching {
+                val list = supabase.from("comments").select {
                     filter {
                         eq("club_id", clubId)
                         eq("removido", true)
                     }
                     order("created_at", Order.DESCENDING)
                 }.decodeList<CommentDto>().map { it.toDomain() }
-            }.getOrDefault(emptyList())
+                dao.upsertComments(list)
+            }
         }
-        return flow.asStateFlow()
+        return dao.removedCommentsForClubFlow(clubId)
     }
 
     // ---- reactions ----
@@ -1452,6 +1534,7 @@ class RemoteRepository(private val supabase: SupabaseClient = Supabase.client) {
     suspend fun insertReaction(reaction: Reaction) {
         runCatching {
             supabase.from("reactions").upsert(reaction.toDto())
+            dao.upsertReaction(reaction)
             notifyLocalMutation("reactions")
         }
     }
@@ -1465,43 +1548,42 @@ class RemoteRepository(private val supabase: SupabaseClient = Supabase.client) {
                     eq("emoji", reaction.emoji)
                 }
             }
+            dao.deleteReaction(reaction.commentId, reaction.userId, reaction.emoji)
             notifyLocalMutation("reactions")
         }
     }
 
     fun getReactionsForCommentFlow(commentId: String): Flow<List<Reaction>> {
-        val flow = stateOf<List<Reaction>>(emptyList())
         val reload: suspend () -> Unit = {
-            flow.value = runCatching {
-                supabase.from("reactions").select {
+            runCatching {
+                val list = supabase.from("reactions").select {
                     filter { eq("comment_id", commentId) }
                 }.decodeList<ReactionDto>().map { it.toDomain() }
-            }.getOrDefault(emptyList())
+                dao.replaceReactionsForComment(commentId, list)
+            }
         }
-        scope.launch { reload() }
+        scope.launch { runCatching { reload() } }
         ensureRealtime("reactions", filterColumn = "comment_id", filterValue = commentId, reload = reload)
-        return flow.asStateFlow()
+        return dao.reactionsForCommentFlow(commentId)
     }
 
     fun getReactionsForChapterFlow(chapterId: String): Flow<List<Reaction>> {
-        val flow = stateOf<List<Reaction>>(emptyList())
         val reload: suspend () -> Unit = {
-            flow.value = runCatching {
-                // Pega comment_ids do capitulo, depois reactions desses comments.
+            runCatching {
                 val commentIds = supabase.from("comments").select(Columns.raw("id")) {
                     filter { eq("chapter_id", chapterId) }
                 }.decodeList<IdOnlyDto>().map { it.id }
-                if (commentIds.isEmpty()) emptyList()
-                else supabase.from("reactions").select {
-                    filter { isIn("comment_id", commentIds) }
-                }.decodeList<ReactionDto>().map { it.toDomain() }
-            }.getOrDefault(emptyList())
+                if (commentIds.isNotEmpty()) {
+                    val list = supabase.from("reactions").select {
+                        filter { isIn("comment_id", commentIds) }
+                    }.decodeList<ReactionDto>().map { it.toDomain() }
+                    dao.upsertReactions(list)
+                }
+            }
         }
-        scope.launch { reload() }
-        // Realtime: a tabela reactions nao tem chapter_id direto, escutamos
-        // ALL reactions e recarregamos. Volume tipicamente baixo.
+        scope.launch { runCatching { reload() } }
         ensureRealtime("reactions", reload = reload)
-        return flow.asStateFlow()
+        return dao.reactionsForChapterFlow(chapterId)
     }
 
     @Serializable
@@ -1521,13 +1603,13 @@ class RemoteRepository(private val supabase: SupabaseClient = Supabase.client) {
                     bookId = vote.clubBookId,
                 )
             )
+            dao.upsertVotes(listOf(vote))
             notifyLocalMutation("votes")
         }
     }
 
     suspend fun clearVotesForUserInClub(userId: String, clubId: String) {
         runCatching {
-            // Pega rounds desse clube
             val roundIds = supabase.from("voting_rounds").select(Columns.raw("id")) {
                 filter { eq("club_id", clubId) }
             }.decodeList<IdOnlyDto>().map { it.id }
@@ -1538,10 +1620,12 @@ class RemoteRepository(private val supabase: SupabaseClient = Supabase.client) {
                     isIn("voting_round_id", roundIds)
                 }
             }
+            notifyLocalMutation("votes")
         }
     }
 
     fun getVotesForClubFlow(clubId: String): Flow<List<Vote>> {
+        // Sem cache local especifico — esse flow nao e critico (UI tem flow por round).
         val flow = stateOf<List<Vote>>(emptyList())
         scope.launch {
             flow.value = runCatching {
@@ -1558,18 +1642,30 @@ class RemoteRepository(private val supabase: SupabaseClient = Supabase.client) {
     }
 
     fun getVotesForRoundFlow(roundId: String): Flow<List<Vote>> {
-        val flow = stateOf<List<Vote>>(emptyList())
-        val reload: suspend () -> Unit = { flow.value = getVotesForRound(roundId) }
-        scope.launch { reload() }
+        val reload: suspend () -> Unit = {
+            runCatching {
+                val list = supabase.from("votes").select {
+                    filter { eq("voting_round_id", roundId) }
+                }.decodeList<VoteDto>().map { it.toDomain() }
+                dao.replaceVotesInRound(roundId, list)
+            }
+        }
+        scope.launch { runCatching { reload() } }
         ensureRealtime("votes", filterColumn = "voting_round_id", filterValue = roundId, reload = reload)
-        return flow.asStateFlow()
+        return dao.votesForRoundFlow(roundId)
     }
 
-    suspend fun getVotesForRound(roundId: String): List<Vote> = runCatching {
-        supabase.from("votes").select {
-            filter { eq("voting_round_id", roundId) }
-        }.decodeList<VoteDto>().map { it.toDomain() }
-    }.getOrDefault(emptyList())
+    suspend fun getVotesForRound(roundId: String): List<Vote> {
+        // Prefere Room; se vazio, busca remoto
+        val cached = dao.votesForRound(roundId)
+        if (cached.isNotEmpty()) return cached
+        return runCatching {
+            supabase.from("votes").select {
+                filter { eq("voting_round_id", roundId) }
+            }.decodeList<VoteDto>().map { it.toDomain() }
+                .also { dao.upsertVotes(it) }
+        }.getOrDefault(emptyList())
+    }
 
     suspend fun removeUserVoteForBookInRound(userId: String, roundId: String, bookId: String) {
         runCatching {
@@ -1580,6 +1676,7 @@ class RemoteRepository(private val supabase: SupabaseClient = Supabase.client) {
                     eq("book_id", bookId)
                 }
             }
+            // O sync via Realtime/notifyLocalMutation vai limpar via replace.
             notifyLocalMutation("votes")
         }
     }
@@ -1608,19 +1705,21 @@ class RemoteRepository(private val supabase: SupabaseClient = Supabase.client) {
                     status = round.status,
                 )
             )
+            dao.upsertVotingRound(round)
             notifyLocalMutation("voting_rounds")
         }
     }
 
     fun getActiveVotingRoundFlow(clubId: String): Flow<VotingRound?> {
-        val flow = stateOf<VotingRound?>(null)
         val reload: suspend () -> Unit = {
-            flow.value = getActiveVotingRound(clubId)
+            runCatching {
+                val r = getActiveVotingRound(clubId)
+                if (r != null) dao.upsertVotingRound(r)
+            }
         }
-        scope.launch { reload() }
-        // Realtime: admin abre/fecha round, ou auto_close_expired ja fechou.
+        scope.launch { runCatching { reload() } }
         ensureRealtime("voting_rounds", filterColumn = "club_id", filterValue = clubId, reload = reload)
-        return flow.asStateFlow()
+        return dao.activeRoundForClubFlow(clubId)
     }
 
     suspend fun getActiveVotingRound(clubId: String): VotingRound? = runCatching {
@@ -1659,35 +1758,39 @@ class RemoteRepository(private val supabase: SupabaseClient = Supabase.client) {
                     justificativa = suggestion.justificativa.ifBlank { null },
                 )
             )
+            dao.upsertBookSuggestions(listOf(suggestion))
+            notifyLocalMutation("book_suggestions")
         }
     }
 
     fun getBookSuggestionFlow(bookId: String, clubId: String): Flow<BookSuggestion?> {
-        val flow = stateOf<BookSuggestion?>(null)
         scope.launch {
-            flow.value = runCatching {
-                supabase.from("book_suggestions").select {
+            runCatching {
+                val s = supabase.from("book_suggestions").select {
                     filter {
                         eq("book_id", bookId)
                         eq("club_id", clubId)
                     }
                     limit(1)
                 }.decodeSingleOrNull<BookSuggestionDto>()?.toDomain()
-            }.getOrNull()
+                if (s != null) dao.upsertBookSuggestions(listOf(s))
+            }
         }
-        return flow.asStateFlow()
+        return dao.bookSuggestionFlow(clubId, bookId)
     }
 
     fun getBookSuggestionsForClubFlow(clubId: String): Flow<List<BookSuggestion>> {
-        val flow = stateOf<List<BookSuggestion>>(emptyList())
-        scope.launch {
-            flow.value = runCatching {
-                supabase.from("book_suggestions").select {
+        val reload: suspend () -> Unit = {
+            runCatching {
+                val list = supabase.from("book_suggestions").select {
                     filter { eq("club_id", clubId) }
                 }.decodeList<BookSuggestionDto>().map { it.toDomain() }
-            }.getOrDefault(emptyList())
+                dao.replaceBookSuggestionsInClub(clubId, list)
+            }
         }
-        return flow.asStateFlow()
+        scope.launch { runCatching { reload() } }
+        ensureRealtime("book_suggestions", filterColumn = "club_id", filterValue = clubId, reload = reload)
+        return dao.bookSuggestionsForClubFlow(clubId)
     }
 
     suspend fun deleteBookSuggestion(bookId: String, clubId: String) {
@@ -1698,12 +1801,15 @@ class RemoteRepository(private val supabase: SupabaseClient = Supabase.client) {
                     eq("club_id", clubId)
                 }
             }
+            dao.deleteBookSuggestion(clubId, bookId)
+            notifyLocalMutation("book_suggestions")
         }
     }
 
     suspend fun deleteVotesForBook(bookId: String) {
         runCatching {
             supabase.from("votes").delete { filter { eq("book_id", bookId) } }
+            notifyLocalMutation("votes")
         }
     }
 
@@ -1712,7 +1818,6 @@ class RemoteRepository(private val supabase: SupabaseClient = Supabase.client) {
     // ============================================================
 
     suspend fun insertMeeting(meeting: Meeting) {
-        // Converte "data + hora" (legacy) pra timestamptz. Fallback: agora.
         val dataIso = parseMeetingDateTime(meeting.data, meeting.hora) ?: System.currentTimeMillis().toIso()
         runCatching {
             supabase.from("meetings").upsert(
@@ -1728,6 +1833,8 @@ class RemoteRepository(private val supabase: SupabaseClient = Supabase.client) {
                     status = meeting.status,
                 )
             )
+            dao.upsertMeetings(listOf(meeting))
+            notifyLocalMutation("meetings")
         }
     }
 
@@ -1747,70 +1854,56 @@ class RemoteRepository(private val supabase: SupabaseClient = Supabase.client) {
         }.getOrNull()
     }
 
-    fun getLatestMeetingFlow(clubId: String): Flow<Meeting?> {
-        val flow = stateOf<Meeting?>(null)
-        scope.launch {
-            flow.value = runCatching {
-                supabase.from("meetings").select {
-                    filter { eq("club_id", clubId) }
-                    order("data", Order.DESCENDING)
-                    limit(1)
-                }.decodeSingleOrNull<MeetingDto>()?.toDomain()
-            }.getOrNull()
+    private suspend fun syncMeetingsForClub(clubId: String) {
+        runCatching {
+            val list = supabase.from("meetings").select {
+                filter { eq("club_id", clubId) }
+                order("data", Order.DESCENDING)
+            }.decodeList<MeetingDto>().map { it.toDomain() }
+            dao.replaceMeetingsInClub(clubId, list)
         }
-        return flow.asStateFlow()
+    }
+
+    fun getLatestMeetingFlow(clubId: String): Flow<Meeting?> {
+        val reload: suspend () -> Unit = { syncMeetingsForClub(clubId) }
+        scope.launch { runCatching { reload() } }
+        ensureRealtime("meetings", filterColumn = "club_id", filterValue = clubId, reload = reload)
+        return dao.latestMeetingForClubFlow(clubId)
     }
 
     fun getAllMeetingsFlow(clubId: String): Flow<List<Meeting>> {
-        val flow = stateOf<List<Meeting>>(emptyList())
-        scope.launch {
-            flow.value = runCatching {
-                supabase.from("meetings").select {
-                    filter { eq("club_id", clubId) }
-                    order("data", Order.DESCENDING)
-                }.decodeList<MeetingDto>().map { it.toDomain() }
-            }.getOrDefault(emptyList())
-        }
-        return flow.asStateFlow()
+        val reload: suspend () -> Unit = { syncMeetingsForClub(clubId) }
+        scope.launch { runCatching { reload() } }
+        ensureRealtime("meetings", filterColumn = "club_id", filterValue = clubId, reload = reload)
+        return dao.meetingsForClubFlow(clubId)
     }
 
     fun getScheduledMeetingsForClubFlow(clubId: String): Flow<List<Meeting>> {
-        val flow = stateOf<List<Meeting>>(emptyList())
-        scope.launch {
-            flow.value = runCatching {
-                supabase.from("meetings").select {
-                    filter {
-                        eq("club_id", clubId)
-                        eq("status", "agendado")
-                    }
-                    order("data", Order.ASCENDING)
-                }.decodeList<MeetingDto>().map { it.toDomain() }
-            }.getOrDefault(emptyList())
-        }
-        return flow.asStateFlow()
+        val reload: suspend () -> Unit = { syncMeetingsForClub(clubId) }
+        scope.launch { runCatching { reload() } }
+        ensureRealtime("meetings", filterColumn = "club_id", filterValue = clubId, reload = reload)
+        return dao.scheduledMeetingsForClubFlow(clubId)
     }
 
-    suspend fun getMeetingById(meetingId: String): Meeting? = runCatching {
-        supabase.from("meetings").select {
-            filter { eq("id", meetingId) }
-            limit(1)
-        }.decodeSingleOrNull<MeetingDto>()?.toDomain()
-    }.getOrNull()
+    suspend fun getMeetingById(meetingId: String): Meeting? {
+        dao.meetingById(meetingId)?.let { return it }
+        return runCatching {
+            supabase.from("meetings").select {
+                filter { eq("id", meetingId) }
+                limit(1)
+            }.decodeSingleOrNull<MeetingDto>()?.toDomain()
+                ?.also { dao.upsertMeetings(listOf(it)) }
+        }.getOrNull()
+    }
 
     fun getMeetingByIdFlow(meetingId: String): Flow<Meeting?> {
-        val flow = stateOf<Meeting?>(null)
-        scope.launch {
-            flow.value = getMeetingById(meetingId)
-        }
-        return flow.asStateFlow()
+        scope.launch { runCatching { getMeetingById(meetingId) } }
+        return dao.meetingByIdFlow(meetingId)
     }
 
     fun getMeetingsForBookFlow(clubId: String, bookId: String): Flow<List<Meeting>> {
-        val flow = stateOf<List<Meeting>>(emptyList())
-        scope.launch {
-            flow.value = getMeetingsForBookList(clubId, bookId)
-        }
-        return flow.asStateFlow()
+        scope.launch { runCatching { syncMeetingsForClub(clubId) } }
+        return dao.meetingsForBookFlow(clubId, bookId)
     }
 
     suspend fun getMeetingsForBookList(clubId: String, bookId: String): List<Meeting> = runCatching {
@@ -1821,6 +1914,7 @@ class RemoteRepository(private val supabase: SupabaseClient = Supabase.client) {
             }
             order("data", Order.ASCENDING)
         }.decodeList<MeetingDto>().map { it.toDomain() }
+            .also { dao.upsertMeetings(it) }
     }.getOrDefault(emptyList())
 
     suspend fun updateMeetingStatus(meetingId: String, status: String) {
@@ -1828,18 +1922,23 @@ class RemoteRepository(private val supabase: SupabaseClient = Supabase.client) {
             supabase.from("meetings").update({ set("status", status) }) {
                 filter { eq("id", meetingId) }
             }
+            notifyLocalMutation("meetings")
         }
     }
 
     suspend fun deleteMeeting(meetingId: String) {
         runCatching {
             supabase.from("meetings").delete { filter { eq("id", meetingId) } }
+            dao.deleteMeeting(meetingId)
+            notifyLocalMutation("meetings")
         }
     }
 
     suspend fun deleteRsvpsForMeeting(meetingId: String) {
         runCatching {
             supabase.from("meeting_rsvps").delete { filter { eq("meeting_id", meetingId) } }
+            dao.deleteAllRsvpsForMeeting(meetingId)
+            notifyLocalMutation("meeting_rsvps")
         }
     }
 
@@ -1854,38 +1953,39 @@ class RemoteRepository(private val supabase: SupabaseClient = Supabase.client) {
                     status = rsvpToEnum(rsvp.status),
                 )
             )
+            dao.upsertMeetingRsvp(rsvp)
             notifyLocalMutation("meeting_rsvps")
         }
     }
 
     fun getRsvpsForMeetingFlow(meetingId: String): Flow<List<MeetingRsvp>> {
-        val flow = stateOf<List<MeetingRsvp>>(emptyList())
         val reload: suspend () -> Unit = {
-            flow.value = runCatching {
-                supabase.from("meeting_rsvps").select {
+            runCatching {
+                val list = supabase.from("meeting_rsvps").select {
                     filter { eq("meeting_id", meetingId) }
                 }.decodeList<MeetingRsvpDto>().map { it.toDomain() }
-            }.getOrDefault(emptyList())
+                dao.replaceRsvpsForMeeting(meetingId, list)
+            }
         }
-        scope.launch { reload() }
+        scope.launch { runCatching { reload() } }
         ensureRealtime("meeting_rsvps", filterColumn = "meeting_id", filterValue = meetingId, reload = reload)
-        return flow.asStateFlow()
+        return dao.rsvpsForMeetingFlow(meetingId)
     }
 
     fun getRsvpForMeetingOfUserFlow(meetingId: String, userId: String): Flow<MeetingRsvp?> {
-        val flow = stateOf<MeetingRsvp?>(null)
         scope.launch {
-            flow.value = runCatching {
-                supabase.from("meeting_rsvps").select {
+            runCatching {
+                val r = supabase.from("meeting_rsvps").select {
                     filter {
                         eq("meeting_id", meetingId)
                         eq("user_id", userId)
                     }
                     limit(1)
                 }.decodeSingleOrNull<MeetingRsvpDto>()?.toDomain()
-            }.getOrNull()
+                if (r != null) dao.upsertMeetingRsvp(r)
+            }
         }
-        return flow.asStateFlow()
+        return dao.rsvpOfUserForMeetingFlow(meetingId, userId)
     }
 
     // ---- meeting_patterns ----
@@ -1905,15 +2005,19 @@ class RemoteRepository(private val supabase: SupabaseClient = Supabase.client) {
                     valorRecorrencia = pattern.valorRecorrencia,
                 )
             )
+            dao.upsertMeetingPattern(pattern)
+            notifyLocalMutation("meeting_patterns")
         }
     }
 
     fun getActiveMeetingPatternFlow(clubId: String): Flow<MeetingPattern?> {
-        val flow = stateOf<MeetingPattern?>(null)
         scope.launch {
-            flow.value = getActiveMeetingPattern(clubId)
+            runCatching {
+                val p = getActiveMeetingPattern(clubId)
+                if (p != null) dao.upsertMeetingPattern(p)
+            }
         }
-        return flow.asStateFlow()
+        return dao.activeMeetingPatternForClubFlow(clubId)
     }
 
     suspend fun getActiveMeetingPattern(clubId: String): MeetingPattern? = runCatching {
@@ -1931,6 +2035,7 @@ class RemoteRepository(private val supabase: SupabaseClient = Supabase.client) {
             supabase.from("meeting_patterns").update({ set("ativo", false) }) {
                 filter { eq("club_id", clubId) }
             }
+            notifyLocalMutation("meeting_patterns")
         }
     }
 
@@ -1950,19 +2055,18 @@ class RemoteRepository(private val supabase: SupabaseClient = Supabase.client) {
     }
 
     fun getMeetingMinutesFlow(meetingId: String): Flow<MeetingMinutes?> {
-        val flow = stateOf<MeetingMinutes?>(null)
         val reload: suspend () -> Unit = {
-            flow.value = runCatching {
-                supabase.from("meeting_minutes").select {
+            runCatching {
+                val m = supabase.from("meeting_minutes").select {
                     filter { eq("meeting_id", meetingId) }
                     limit(1)
                 }.decodeSingleOrNull<MeetingMinutesDto>()?.toDomain()
-            }.getOrNull()
+                if (m != null) dao.upsertMeetingMinutes(m)
+            }
         }
-        scope.launch { reload() }
-        // Realtime: ata colaborativa muda em tempo real entre admins.
+        scope.launch { runCatching { reload() } }
         ensureRealtime("meeting_minutes", filterColumn = "meeting_id", filterValue = meetingId, reload = reload)
-        return flow.asStateFlow()
+        return dao.meetingMinutesFlow(meetingId)
     }
 
     suspend fun insertMeetingNote(note: MeetingNote) {
@@ -1974,23 +2078,25 @@ class RemoteRepository(private val supabase: SupabaseClient = Supabase.client) {
                     texto = note.texto,
                 )
             )
+            dao.upsertMeetingNote(note)
+            notifyLocalMutation("meeting_notes")
         }
     }
 
     fun getMeetingNoteFlow(meetingId: String, userId: String): Flow<MeetingNote?> {
-        val flow = stateOf<MeetingNote?>(null)
         scope.launch {
-            flow.value = runCatching {
-                supabase.from("meeting_notes").select {
+            runCatching {
+                val n = supabase.from("meeting_notes").select {
                     filter {
                         eq("meeting_id", meetingId)
                         eq("user_id", userId)
                     }
                     limit(1)
                 }.decodeSingleOrNull<MeetingNoteDto>()?.toDomain()
-            }.getOrNull()
+                if (n != null) dao.upsertMeetingNote(n)
+            }
         }
-        return flow.asStateFlow()
+        return dao.meetingNoteOfUserFlow(meetingId, userId)
     }
 
     // ============================================================
@@ -2011,6 +2117,8 @@ class RemoteRepository(private val supabase: SupabaseClient = Supabase.client) {
                     lida = notification.lida,
                 )
             )
+            dao.upsertNotifications(listOf(notification))
+            notifyLocalMutation("notifications")
         }
     }
 
@@ -2033,18 +2141,18 @@ class RemoteRepository(private val supabase: SupabaseClient = Supabase.client) {
     }
 
     fun getNotificationsFlow(userId: String): Flow<List<DbNotification>> {
-        val flow = stateOf<List<DbNotification>>(emptyList())
         val reload: suspend () -> Unit = {
-            flow.value = runCatching {
-                supabase.from("notifications").select {
+            runCatching {
+                val list = supabase.from("notifications").select {
                     filter { eq("user_id", userId) }
                     order("created_at", Order.DESCENDING)
                 }.decodeList<NotificationDto>().map { it.toDomain() }
-            }.getOrDefault(emptyList())
+                dao.replaceNotificationsForUser(userId, list)
+            }
         }
-        scope.launch { reload() }
+        scope.launch { runCatching { reload() } }
         ensureRealtime("notifications", filterColumn = "user_id", filterValue = userId, reload = reload)
-        return flow.asStateFlow()
+        return dao.notificationsForUserFlow(userId)
     }
 
     // ============================================================
@@ -2063,42 +2171,48 @@ class RemoteRepository(private val supabase: SupabaseClient = Supabase.client) {
                     capituloRef = quote.capituloRef.ifBlank { null },
                 )
             )
+            dao.upsertSavedQuotes(listOf(quote))
+            notifyLocalMutation("saved_quotes")
         }
     }
 
     suspend fun deleteSavedQuote(quote: SavedQuote) {
         runCatching {
             supabase.from("saved_quotes").delete { filter { eq("id", quote.id) } }
+            dao.deleteSavedQuote(quote.id)
+            notifyLocalMutation("saved_quotes")
         }
     }
 
     fun getSavedQuotesForUserFlow(userId: String): Flow<List<SavedQuote>> {
-        val flow = stateOf<List<SavedQuote>>(emptyList())
-        scope.launch {
-            flow.value = runCatching {
-                supabase.from("saved_quotes").select {
+        val reload: suspend () -> Unit = {
+            runCatching {
+                val list = supabase.from("saved_quotes").select {
                     filter { eq("user_id", userId) }
                     order("created_at", Order.DESCENDING)
                 }.decodeList<SavedQuoteDto>().map { it.toDomain() }
-            }.getOrDefault(emptyList())
+                dao.replaceSavedQuotesForUser(userId, list)
+            }
         }
-        return flow.asStateFlow()
+        scope.launch { runCatching { reload() } }
+        ensureRealtime("saved_quotes", filterColumn = "user_id", filterValue = userId, reload = reload)
+        return dao.savedQuotesForUserFlow(userId)
     }
 
     fun getSavedQuotesForBookFlow(userId: String, bookId: String): Flow<List<SavedQuote>> {
-        val flow = stateOf<List<SavedQuote>>(emptyList())
         scope.launch {
-            flow.value = runCatching {
-                supabase.from("saved_quotes").select {
+            runCatching {
+                val list = supabase.from("saved_quotes").select {
                     filter {
                         eq("user_id", userId)
                         eq("book_id", bookId)
                     }
                     order("created_at", Order.DESCENDING)
                 }.decodeList<SavedQuoteDto>().map { it.toDomain() }
-            }.getOrDefault(emptyList())
+                dao.upsertSavedQuotes(list)
+            }
         }
-        return flow.asStateFlow()
+        return dao.savedQuotesForBookFlow(userId, bookId)
     }
 
     // ============================================================
@@ -2115,27 +2229,27 @@ class RemoteRepository(private val supabase: SupabaseClient = Supabase.client) {
                     lastEditorId = summary.lastEditorId.ifBlank { null },
                 )
             )
+            dao.upsertBookSummary(summary)
             notifyLocalMutation("book_summaries")
         }
     }
 
     fun getBookSummaryFlow(bookId: String, clubId: String): Flow<BookSummary?> {
-        val flow = stateOf<BookSummary?>(null)
         val reload: suspend () -> Unit = {
-            flow.value = runCatching {
-                supabase.from("book_summaries").select {
+            runCatching {
+                val s = supabase.from("book_summaries").select {
                     filter {
                         eq("book_id", bookId)
                         eq("club_id", clubId)
                     }
                     limit(1)
                 }.decodeSingleOrNull<BookSummaryDto>()?.toDomain()
-            }.getOrNull()
+                if (s != null) dao.upsertBookSummary(s)
+            }
         }
-        scope.launch { reload() }
-        // Realtime: resumo wiki muda quando qualquer membro edita.
+        scope.launch { runCatching { reload() } }
         ensureRealtime("book_summaries", filterColumn = "club_id", filterValue = clubId, reload = reload)
-        return flow.asStateFlow()
+        return dao.bookSummaryFlow(bookId, clubId)
     }
 
     suspend fun insertBookRating(rating: BookRating) {
@@ -2149,29 +2263,33 @@ class RemoteRepository(private val supabase: SupabaseClient = Supabase.client) {
                     comment = rating.comment,
                 )
             )
+            dao.upsertBookRatings(listOf(rating))
+            notifyLocalMutation("book_ratings")
         }
     }
 
     fun getBookRatingsFlow(bookId: String, clubId: String): Flow<List<BookRating>> {
-        val flow = stateOf<List<BookRating>>(emptyList())
-        scope.launch {
-            flow.value = runCatching {
-                supabase.from("book_ratings").select {
+        val reload: suspend () -> Unit = {
+            runCatching {
+                val list = supabase.from("book_ratings").select {
                     filter {
                         eq("book_id", bookId)
                         eq("club_id", clubId)
                     }
                 }.decodeList<BookRatingDto>().map { it.toDomain() }
-            }.getOrDefault(emptyList())
+                dao.upsertBookRatings(list)
+                dao.pruneBookRatingsExcept(bookId, clubId, list.map { it.userId })
+            }
         }
-        return flow.asStateFlow()
+        scope.launch { runCatching { reload() } }
+        ensureRealtime("book_ratings", filterColumn = "club_id", filterValue = clubId, reload = reload)
+        return dao.bookRatingsFlow(bookId, clubId)
     }
 
     fun getBookRatingOfUserFlow(bookId: String, clubId: String, userId: String): Flow<BookRating?> {
-        val flow = stateOf<BookRating?>(null)
         scope.launch {
-            flow.value = runCatching {
-                supabase.from("book_ratings").select {
+            runCatching {
+                val r = supabase.from("book_ratings").select {
                     filter {
                         eq("book_id", bookId)
                         eq("club_id", clubId)
@@ -2179,9 +2297,10 @@ class RemoteRepository(private val supabase: SupabaseClient = Supabase.client) {
                     }
                     limit(1)
                 }.decodeSingleOrNull<BookRatingDto>()?.toDomain()
-            }.getOrNull()
+                if (r != null) dao.upsertBookRatings(listOf(r))
+            }
         }
-        return flow.asStateFlow()
+        return dao.bookRatingOfUserFlow(bookId, clubId, userId)
     }
 
     // ============================================================

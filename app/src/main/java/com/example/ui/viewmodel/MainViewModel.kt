@@ -17,7 +17,7 @@ import java.util.UUID
 
 class MainViewModel(application: Application) : AndroidViewModel(application) {
 
-    private val repository = RemoteRepository()
+    private val repository = RemoteRepository(application.applicationContext)
     private val dataStoreManager = DataStoreManager(application)
     private val authRepository = AuthRepository()
 
@@ -320,6 +320,7 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
         viewModelScope.launch {
             runCatching { authRepository.signOut() }
             dataStoreManager.clearSession()
+            runCatching { repository.clearLocalCache() }
             _activeClubId.value = null
             onCompleted()
         }
@@ -331,6 +332,9 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
         viewModelScope.launch {
             runCatching { authRepository.signOut() }
             dataStoreManager.clearSession()
+            // Limpa Room — evita vazar dados entre contas no mesmo device.
+            runCatching { repository.clearLocalCache() }
+            _activeClubId.value = null
             onCompleted()
         }
     }
