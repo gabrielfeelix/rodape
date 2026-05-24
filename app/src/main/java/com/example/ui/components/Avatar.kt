@@ -87,6 +87,11 @@ private val presetAvatars: Map<String, PresetAvatar> = mapOf(
         drawableRes = R.drawable.avatar_leitor,
         bgColor = Color(0xFFE5EBDA).copy(alpha = 0.85f), // verde-folha levemente diluído
         displayName = "Leitor"
+    ),
+    "preset:leitora" to PresetAvatar(
+        drawableRes = R.drawable.avatar_leitora,
+        bgColor = Color(0xFFF5E8E0), // rosado-cremoso — neutro feminino, combina com tom de pele
+        displayName = "Leitora"
     )
 )
 
