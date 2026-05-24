@@ -1,4 +1,4 @@
-# Checklist Play Store — Tramabook v1.0.0
+# Checklist Play Store — Rodapé v1.0.0
 
 > Tudo que **eu (Claude)** automatizei já está marcado ✅. O que sobrou exige
 > ação humana (conta Google Play, ativos visuais, painéis externos). Cada item
@@ -8,9 +8,9 @@
 
 ## ✅ Já pronto no repo
 
-- [x] `applicationId = app.tramabook`
+- [x] `applicationId = app.rodape`
 - [x] `versionCode = 1`, `versionName = "1.0.0"`
-- [x] App label "Tramabook" em `strings.xml`
+- [x] App label "Rodapé" em `strings.xml`
 - [x] AAB assinado em `app/build/outputs/bundle/release/app-release.aab` (~21 MB)
 - [x] APK release pra smoke test em `app/build/outputs/apk/release/app-release.apk` (~15 MB)
 - [x] R8 ativo: minify + shrinkResources + crunchPngs
@@ -38,26 +38,21 @@ anexado.
   (precisa converter `.md` pra `.html` ou usar Jekyll, que renderiza
   Markdown automaticamente).
 - **Permalink raw do GitHub:** `https://raw.githubusercontent.com/gabrielfeelix/rodape/master/docs/privacy/privacy-policy.md` — funciona, mas é cru e a Google às vezes recusa.
-- **Subdomínio próprio:** `https://tramabook.app/privacy` se você comprar o
+- **Subdomínio próprio:** `https://rodape.app/privacy` se você comprar o
   domínio. Mais profissional.
 
 **Recomendado:** GitHub Pages. Tempo: 5 min.
 
-### 2. Atualizar redirect URLs no painel do Supabase
+### 2. Confirmar redirect URLs no painel do Supabase
 
-O deep link mudou de `app.rodape://login-callback` pra
-**`app.tramabook://login-callback`**. Sem atualizar, magic link de email não
-volta pro app.
+Sem isso o magic link de confirmação de email não consegue voltar pro app.
 
 **Onde:** Supabase Dashboard → Authentication → URL Configuration →
 **Redirect URLs**
 
-**Adicionar:**
-- `app.tramabook://login-callback`
-- `app.tramabook.debug://login-callback` (pra builds debug)
-
-**Remover (depois de confirmar produção):**
+**Deve conter:**
 - `app.rodape://login-callback`
+- `app.rodape.debug://login-callback` (pra builds debug)
 
 ### 3. Cadastrar SHA-1 do upload keystore no Google Cloud Console
 
@@ -79,11 +74,11 @@ keytool -list -v -keystore my-upload-key.jks -alias upload | grep -E "SHA1:|SHA2
 
 **Onde colar:** Google Cloud Console → APIs & Services → Credentials →
 Android Client ID de produção → adicionar SHA-1 fingerprint + applicationId
-`app.tramabook`.
+`app.rodape`.
 
 Se ainda não existe Android Client de produção, criar um novo:
 - Tipo: Android
-- Package name: `app.tramabook`
+- Package name: `app.rodape`
 - SHA-1: (do keystore acima)
 
 E adicionar o novo ID ao `.env` como `GOOGLE_ANDROID_CLIENT_ID_PROD=...`
@@ -111,7 +106,7 @@ SHA-1. Cadastrar no Google Cloud Console igual ao passo 3.
 
 ### 6. Criar o app no console
 
-- App name: **Tramabook**
+- App name: **Rodapé**
 - Default language: **Português (Brasil) — pt-BR**
 - App or game: **App**
 - Free or paid: **Free**
@@ -122,13 +117,13 @@ SHA-1. Cadastrar no Google Cloud Console igual ao passo 3.
 Conteúdo já pronto pra colar:
 
 **Título curto (30 chars):**
-> Tramabook — clube de leitura
+> Rodapé — clube de leitura
 
 **Descrição curta (80 chars):**
 > Leiam juntos no seu clube. Sugira livros, vote, comente capítulos e marquem encontros.
 
 **Descrição completa (4000 chars):**
-> 📚 **Tramabook** é o app feito pra clubes de leitura privados.
+> 📚 **Rodapé** é o app feito pra clubes de leitura privados.
 >
 > Reúna os amigos da leitura num clube só seu. Sugiram livros, votem no próximo, leiam no ritmo de vocês e discutam capítulo por capítulo sem medo de spoiler — quem ainda não chegou no capítulo X simplesmente não vê o que rolou lá.
 >
@@ -191,7 +186,7 @@ Declarar exatamente o que coletamos. Modelo:
 - **Práticas de segurança:**
   - ✅ Dados criptografados em trânsito (HTTPS)
   - ✅ Usuário pode solicitar exclusão
-  - ❌ Política de retenção: enviado por email pra `feedback@tramabook.app`
+  - ❌ Política de retenção: enviado por email pra `feedback@rodape.app`
 - **Atende guidelines de Family policy:** não direcionado a crianças <13
 
 ---

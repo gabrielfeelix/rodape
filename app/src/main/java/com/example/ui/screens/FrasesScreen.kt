@@ -75,7 +75,7 @@ fun FrasesScreen(
                             val payload = buildExportPayload(quotes, clubBooks)
                             shareTextContent(
                                 context = context,
-                                subject = "Minhas frases salvas no Tramabook",
+                                subject = "Minhas frases salvas no Rodapé",
                                 text = payload
                             )
                         }) {
@@ -198,7 +198,7 @@ private fun buildExportPayload(
     quotes: List<com.example.data.model.SavedQuote>,
     clubBooks: List<com.example.data.model.Book>
 ): String = buildString {
-    append("📖 Frases salvas no Tramabook\n")
+    append("📖 Frases salvas no Rodapé\n")
     append("─".repeat(28))
     append("\n\n")
     quotes.forEach { q ->
@@ -208,5 +208,5 @@ private fun buildExportPayload(
         if (q.capituloRef.isNotBlank()) append(" · ${q.capituloRef}")
         append(" · ${formatShortDate(q.criadoEm)}\n\n")
     }
-    append("(${quotes.size} ${if (quotes.size == 1) "frase" else "frases"} exportadas pelo app Tramabook)")
+    append("(${quotes.size} ${if (quotes.size == 1) "frase" else "frases"} exportadas pelo app Rodapé)")
 }

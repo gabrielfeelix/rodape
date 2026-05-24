@@ -31,7 +31,7 @@ object Supabase {
         ) {
             install(Auth) {
                 flowType = FlowType.PKCE
-                scheme = "app.tramabook"
+                scheme = "app.rodape"
                 host = "login-callback"
             }
             install(Postgrest)

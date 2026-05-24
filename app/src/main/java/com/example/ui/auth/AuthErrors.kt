@@ -19,7 +19,7 @@ object AuthErrors {
         return when {
             // Senha fraca
             lower.contains("weak_password") || lower.contains("password should contain") ->
-                "Senha muito fraca. Use letras maiusculas, minusculas, numeros e simbolos (ex: Trama@123)."
+                "Senha muito fraca. Use letras maiusculas, minusculas, numeros e simbolos (ex: Rodape@123)."
             lower.contains("password should be at least") ->
                 "Senha curta demais (minimo 8 caracteres)."
 

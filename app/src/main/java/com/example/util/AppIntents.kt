@@ -7,7 +7,7 @@ import android.net.Uri
 
 /**
  * Abre a página do app na Play Store. Se Play Store não estiver instalada,
- * abre no navegador. Usa o `packageName` em runtime (resolve pra `app.tramabook`
+ * abre no navegador. Usa o `packageName` em runtime (resolve pra `app.rodape`
  * em release), sem hardcode.
  */
 fun openPlayStorePage(context: Context, packageName: String = context.packageName) {
@@ -30,8 +30,8 @@ fun openPlayStorePage(context: Context, packageName: String = context.packageNam
  */
 fun openEmailFeedback(
     context: Context,
-    to: String = "feedback@tramabook.app",
-    subject: String = "Feedback do Tramabook",
+    to: String = "feedback@rodape.app",
+    subject: String = "Feedback do Rodapé",
     body: String = ""
 ) {
     val uri = Uri.parse(
@@ -70,10 +70,10 @@ fun shareTextContent(context: Context, subject: String, text: String) {
  */
 fun shareClubInvite(context: Context, clubName: String, codigo: String) {
     val text = buildString {
-        append("📚 Quer ler comigo no Tramabook?\n\n")
+        append("📚 Quer ler comigo no Rodapé?\n\n")
         append("Entra no clube \"$clubName\" com o código:\n\n")
         append("$codigo\n\n")
-        append("(É só baixar o Tramabook e tocar em \"Entrar num clube\".)")
+        append("(É só baixar o Rodapé e tocar em \"Entrar num clube\".)")
     }
     val intent = Intent(Intent.ACTION_SEND).apply {
         type = "text/plain"

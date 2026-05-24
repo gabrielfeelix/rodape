@@ -27,7 +27,7 @@ import java.util.Locale
  */
 object CrashLogger {
 
-    private const val TAG = "Tramabook/CrashLogger"
+    private const val TAG = "Rodape/CrashLogger"
     private const val CRASH_DIR = "crashes"
     private const val MAX_FILES = 10
 
@@ -54,7 +54,7 @@ object CrashLogger {
 
         file.writeText(
             buildString {
-                appendLine("=== Tramabook crash ===")
+                appendLine("=== Rodape crash ===")
                 appendLine("Quando: ${Date()}")
                 appendLine("App: ${BuildConfig.VERSION_NAME} (build ${BuildConfig.VERSION_CODE}, ${BuildConfig.BUILD_TYPE})")
                 appendLine("Device: ${Build.MANUFACTURER} ${Build.MODEL} (Android ${Build.VERSION.RELEASE} / SDK ${Build.VERSION.SDK_INT})")

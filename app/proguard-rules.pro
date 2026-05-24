@@ -1,5 +1,5 @@
 # =============================================================================
-# Tramabook — Regras de R8/ProGuard pra release
+# Rodape — Regras de R8/ProGuard pra release
 # =============================================================================
 # R8 esta ativo (isMinifyEnabled = true). Sem essas regras o app crasha em
 # release por reflexao: Moshi codegen, kotlinx.serialization, Supabase-kt, Ktor.

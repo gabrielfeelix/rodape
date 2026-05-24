@@ -63,7 +63,7 @@ real. Reorganizar pra `features/auth/`, `features/clube/`,
 `colorScheme.primary` prejudica dark mode/alto contraste futuro.
 
 **Por que não agora:**
-- Spec original (2026-05-21-tramabook-redesign-design.md) decidiu
+- Spec original (2026-05-21-rodape-redesign-design.md) decidiu
   **só tema claro**, fidelidade ao protótipo React. Dark mode/alto
   contraste estão **explicitamente fora de escopo** da v1.0.
 - Quando dark mode entrar, vai exigir redesign de todas as cores —
@@ -75,7 +75,7 @@ v1.2+). Aí migra tokens pra um `ColorScheme` próprio que muda com
 
 ---
 
-## 5. Cache Room por usuário (`tramabook-cache-{userId}.db`)
+## 5. Cache Room por usuário (`rodape-cache-{userId}.db`)
 
 **Crítica:** banco global é compartilhado entre contas; se logout
 falhar parcialmente, próximo usuário no mesmo device pode ver lixo.

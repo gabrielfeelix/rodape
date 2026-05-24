@@ -1,8 +1,8 @@
-# Política de Privacidade — Tramabook
+# Política de Privacidade — Rodapé
 
 **Última atualização:** 24 de maio de 2026
 
-O Tramabook (`app.tramabook`) é um aplicativo Android para clubes de leitura
+O Rodapé (`app.rodape`) é um aplicativo Android para clubes de leitura
 privados. Esta política descreve quais dados coletamos, como usamos e quais são
 seus direitos.
 
@@ -15,9 +15,9 @@ seus direitos.
 
 ## 1. Quem somos
 
-- **Nome do app:** Tramabook
+- **Nome do app:** Rodapé
 - **Desenvolvedor:** Gabriel Felix
-- **Contato:** [feedback@tramabook.app](mailto:feedback@tramabook.app)
+- **Contato:** [feedback@rodape.app](mailto:feedback@rodape.app)
 
 ## 2. Dados que coletamos
 
@@ -99,7 +99,7 @@ pra operar o app:
 
 - Seu conteúdo fica armazenado enquanto sua conta estiver ativa.
 - Para **excluir sua conta e todos os seus dados**, envie um email para
-  [feedback@tramabook.app](mailto:feedback@tramabook.app) com o assunto
+  [feedback@rodape.app](mailto:feedback@rodape.app) com o assunto
   "Excluir minha conta". Processamos em até 30 dias.
 - Conteúdo que você postou em clubes pode permanecer visível pros outros
   membros (ex: comentários em capítulos), mas será anonimizado.
@@ -115,7 +115,7 @@ Você tem direito a:
 - **Revogar consentimento** a qualquer momento
 
 Para exercer qualquer direito, envie email pra
-[feedback@tramabook.app](mailto:feedback@tramabook.app).
+[feedback@rodape.app](mailto:feedback@rodape.app).
 
 ## 8. Segurança
 
@@ -131,7 +131,7 @@ Para exercer qualquer direito, envie email pra
 
 ## 9. Crianças
 
-O Tramabook não é direcionado a menores de 13 anos. Não coletamos
+O Rodapé não é direcionado a menores de 13 anos. Não coletamos
 deliberadamente dados de crianças. Se você é responsável por um menor que
 criou conta no app, entre em contato pra remoção.
 
@@ -143,4 +143,4 @@ sempre fica neste link: https://github.com/gabrielfeelix/rodape/blob/master/docs
 ## 11. Contato
 
 Dúvidas, sugestões, exclusão de conta:
-[feedback@tramabook.app](mailto:feedback@tramabook.app)
+[feedback@rodape.app](mailto:feedback@rodape.app)

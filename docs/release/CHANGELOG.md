@@ -1,4 +1,4 @@
-# Changelog — Tramabook
+# Changelog — Rodapé
 
 ## v1.0.0 — 2026-05-24 (build 1)
 

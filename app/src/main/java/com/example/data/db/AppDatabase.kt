@@ -54,7 +54,7 @@ abstract class AppDatabase : RoomDatabase() {
             INSTANCE ?: Room.databaseBuilder(
                 context.applicationContext,
                 AppDatabase::class.java,
-                "tramabook-cache.db"
+                "rodape-cache.db"
             )
                 .apply {
                     // Em DEBUG: drop-and-recreate facilita iteracao rapida.
