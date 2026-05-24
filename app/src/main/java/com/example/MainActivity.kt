@@ -6,15 +6,22 @@ import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import androidx.activity.viewModels
+import com.example.data.remote.AuthRepository
 import com.example.data.remote.Supabase
+import com.example.ui.auth.GoogleSignInHelper
 import io.github.jan.supabase.auth.handleDeeplinks
+import io.github.jan.supabase.auth.status.SessionSource
+import io.github.jan.supabase.auth.status.SessionStatus
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.material3.Surface
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.ui.Modifier
 import androidx.compose.runtime.CompositionLocalProvider
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.remember
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.unit.Density
 import androidx.navigation.compose.NavHost
@@ -46,12 +53,21 @@ class MainActivity : ComponentActivity() {
                     color = MaterialTheme.colorScheme.background
                 ) {
                     val navController = rememberNavController()
-                    val currentUserId by viewModel.currentUserId.collectAsState()
+                    val supabaseUserId by viewModel.supabaseUserId.collectAsState()
+                    val sessionStatus by viewModel.sessionStatus.collectAsState()
 
-                    val startDestination = if (currentUserId != null) {
-                        "main_tabs"
-                    } else {
-                        "welcome"
+                    val startDestination = if (supabaseUserId != null) "main_tabs" else "welcome"
+
+                    // Quando o usuario abre o link de "esqueci minha senha", o Supabase
+                    // hidrata uma sessao temporaria com source == External. Redirecionamos
+                    // pra tela de definir nova senha.
+                    LaunchedEffect(sessionStatus) {
+                        val s = sessionStatus
+                        if (s is SessionStatus.Authenticated && s.source is SessionSource.External) {
+                            navController.navigate("reset_password") {
+                                popUpTo("welcome") { inclusive = false }
+                            }
+                        }
                     }
 
                     NavHost(
@@ -67,15 +83,60 @@ class MainActivity : ComponentActivity() {
                     }
 
                     composable("login") {
+                        val ctx = LocalContext.current
+                        val authRepo = remember { AuthRepository() }
+                        val google = remember { GoogleSignInHelper(ctx) }
                         LoginScreen(
                             onNavigateBack = { navController.popBackStack() },
-                            onLoginSuccess = { name, email ->
-                                viewModel.login(name, email) {
-                                    navController.navigate("main_tabs") {
-                                        popUpTo("welcome") { inclusive = true }
-                                    }
+                            onNavigateToSignUp = { navController.navigate("signup") },
+                            onNavigateToForgotPassword = { navController.navigate("forgot_password") },
+                            onSignInWithEmail = { email, password ->
+                                runCatching { authRepo.signInWithEmail(email, password) }
+                            },
+                            onSignInWithGoogle = {
+                                runCatching {
+                                    val token = google.getGoogleIdToken()
+                                    authRepo.signInWithGoogleIdToken(token.idToken, token.rawNonce)
                                 }
-                            }
+                            },
+                            onSignedIn = {
+                                navController.navigate("main_tabs") {
+                                    popUpTo("welcome") { inclusive = true }
+                                }
+                            },
+                        )
+                    }
+
+                    composable("signup") {
+                        val authRepo = remember { AuthRepository() }
+                        SignUpScreen(
+                            onNavigateBack = { navController.popBackStack() },
+                            onSignUp = { email, password, name ->
+                                runCatching { authRepo.signUpWithEmail(email, password, name) }
+                            },
+                            onSignedUp = {
+                                navController.popBackStack(route = "login", inclusive = false)
+                            },
+                        )
+                    }
+
+                    composable("forgot_password") {
+                        val authRepo = remember { AuthRepository() }
+                        ForgotPasswordScreen(
+                            onNavigateBack = { navController.popBackStack() },
+                            onSendReset = { email -> runCatching { authRepo.sendPasswordResetEmail(email) } },
+                        )
+                    }
+
+                    composable("reset_password") {
+                        val authRepo = remember { AuthRepository() }
+                        ResetPasswordScreen(
+                            onUpdatePassword = { newPassword -> runCatching { authRepo.updatePassword(newPassword) } },
+                            onPasswordUpdated = {
+                                navController.navigate("main_tabs") {
+                                    popUpTo("welcome") { inclusive = true }
+                                }
+                            },
                         )
                     }
 
