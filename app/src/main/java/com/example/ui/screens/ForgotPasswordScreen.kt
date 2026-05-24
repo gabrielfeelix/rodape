@@ -90,7 +90,7 @@ fun ForgotPasswordScreen(
                                     isLoading = false
                                     r.fold(
                                         onSuccess = { sent = true },
-                                        onFailure = { errorMsg = it.message ?: "Falha ao enviar email" },
+                                        onFailure = { errorMsg = com.example.ui.auth.AuthErrors.friendly(it, "Falha ao enviar email") },
                                     )
                                 }
                             },

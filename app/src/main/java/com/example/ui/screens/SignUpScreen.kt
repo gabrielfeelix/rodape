@@ -35,9 +35,15 @@ fun SignUpScreen(
     var showConfirmHint by remember { mutableStateOf(false) }
     val scope = rememberCoroutineScope()
 
+    // Validacao local espelha a regra do servidor (Auth -> Password requirements:
+    // Lowercase + Uppercase + Digits + Symbols, min 8 chars).
     val nameValid = name.trim().length >= 2
     val emailValid = email.contains("@") && email.length >= 5
-    val pwValid = password.length >= 6
+    val pwValid = password.length >= 8 &&
+        password.any { it.isLowerCase() } &&
+        password.any { it.isUpperCase() } &&
+        password.any { it.isDigit() } &&
+        password.any { !it.isLetterOrDigit() }
     val formValid = nameValid && emailValid && pwValid
 
     Scaffold(
@@ -108,7 +114,13 @@ fun SignUpScreen(
                         OutlinedTextField(
                             value = password,
                             onValueChange = { password = it; errorMsg = null },
-                            label = { Text("Senha (6+ caracteres)") },
+                            label = { Text("Senha") },
+                            supportingText = {
+                                Text(
+                                    "8+ caracteres com maiusculas, minusculas, numeros e simbolos (ex: Rodape@123)",
+                                    style = MaterialTheme.typography.bodySmall
+                                )
+                            },
                             singleLine = true,
                             keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Password),
                             visualTransformation = PasswordVisualTransformation(),
@@ -131,7 +143,7 @@ fun SignUpScreen(
                                     isLoading = false
                                     r.fold(
                                         onSuccess = { showConfirmHint = true },
-                                        onFailure = { errorMsg = it.message ?: "Falha ao criar conta" },
+                                        onFailure = { errorMsg = com.example.ui.auth.AuthErrors.friendly(it, "Falha ao criar conta") },
                                     )
                                 }
                             },

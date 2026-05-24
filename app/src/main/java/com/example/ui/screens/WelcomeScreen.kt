@@ -266,7 +266,7 @@ fun LoginScreen(
                                 isLoading = false
                                 result.fold(
                                     onSuccess = { onSignedIn() },
-                                    onFailure = { errorMsg = it.message ?: "Falha ao entrar" },
+                                    onFailure = { errorMsg = com.example.ui.auth.AuthErrors.friendly(it, "Falha ao entrar") },
                                 )
                             }
                         },
@@ -307,7 +307,7 @@ fun LoginScreen(
                                 isLoading = false
                                 result.fold(
                                     onSuccess = { onSignedIn() },
-                                    onFailure = { errorMsg = it.message ?: "Falha no Google Sign-In" },
+                                    onFailure = { errorMsg = com.example.ui.auth.AuthErrors.friendly(it, "Falha no Google Sign-In") },
                                 )
                             }
                         },

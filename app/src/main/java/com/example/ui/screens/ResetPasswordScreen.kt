@@ -73,7 +73,7 @@ fun ResetPasswordScreen(
                                 isLoading = false
                                 r.fold(
                                     onSuccess = { onPasswordUpdated() },
-                                    onFailure = { errorMsg = it.message ?: "Falha ao redefinir senha" },
+                                    onFailure = { errorMsg = com.example.ui.auth.AuthErrors.friendly(it, "Falha ao redefinir senha") },
                                 )
                             }
                         },
