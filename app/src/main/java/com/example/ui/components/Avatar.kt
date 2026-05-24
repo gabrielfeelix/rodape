@@ -6,7 +6,6 @@ import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.CircleShape
@@ -26,7 +25,6 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import coil.compose.SubcomposeAsyncImage
 import com.example.R
-import com.example.ui.theme.OlivaSoft
 
 // 8 cores — origem: claude-design/tokens.jsx (Avatar).
 private val avatarColors = listOf(
@@ -37,70 +35,58 @@ private val avatarColors = listOf(
 /**
  * Avatares ilustrados — esquema "preset:<id>" no Book/User.avatarUrl.
  *
- * Cada preset declara seus próprios fatores visuais porque ilustrações têm
- * proporções diferentes (busto compacto ~1:1 vs figura inteira ~1:2). O
- * círculo de fundo sempre tem [size]; a ilustração escala/posiciona em cima.
- *
- * - [widthFactor]: largura da imagem relativa ao [size] do círculo (1.0 = mesma)
- * - [heightFactor]: altura da imagem relativa ao [size] (pode ser >1 pra estourar)
- * - [verticalOffsetFactor]: deslocamento vertical (negativo sobe, fração de [size])
+ * Cada preset usa o mesmo bounding box (DEFAULT_WIDTH_FACTOR x DEFAULT_HEIGHT_FACTOR)
+ * pra garantir peso visual uniforme no grid. Ilustrações de proporções diferentes
+ * (busto vs figura inteira) são acomodadas via ContentScale.Fit dentro do box.
  */
 private data class PresetAvatar(
     val drawableRes: Int,
     val bgColor: Color,
-    val displayName: String,
-    val widthFactor: Float = 1.15f,
-    val heightFactor: Float = 1.30f,
-    val verticalOffsetFactor: Float = 0f
+    val displayName: String
 )
+
+// Fatores padronizados pra todos os avatares terem peso visual equivalente no grid.
+// Ilustrações com figura inteira (Don Quixote, Joana d'Arc, Leitor) ficam mais
+// compactas mas mostradas integralmente via ContentScale.Fit; ilustrações de busto
+// (Pequeno Príncipe, Pétalas, Indígena, Detetive) ocupam o mesmo bounding box.
+private const val DEFAULT_WIDTH_FACTOR = 1.20f
+private const val DEFAULT_HEIGHT_FACTOR = 1.50f
 
 private val presetAvatars: Map<String, PresetAvatar> = mapOf(
     "preset:pequeno_principe" to PresetAvatar(
         drawableRes = R.drawable.avatar_pequeno_principe,
         bgColor = Color(0xFFE5EBDA), // OlivaSoft
-        displayName = "Pequeno Príncipe",
-        widthFactor = 1.15f,
-        heightFactor = 1.30f
+        displayName = "Pequeno Príncipe"
     ),
     "preset:don_quixote" to PresetAvatar(
         drawableRes = R.drawable.avatar_don_quixote,
         bgColor = Color(0xFFFBE5DA), // TerracotaSoft — combina com armadura/cavaleiro
-        displayName = "Don Quixote",
-        // Figura inteira ~1:1.7 — ocupa mais altura pra ver da cabeça até o meio do corpo
-        widthFactor = 1.30f,
-        heightFactor = 2.10f
+        displayName = "Don Quixote"
     ),
     "preset:petalas" to PresetAvatar(
         drawableRes = R.drawable.avatar_petalas,
         bgColor = Color(0xFFF1E3BE), // Mustard soft — combina com pétalas/jardim
-        displayName = "Pétalas",
-        // Busto ~1:1 (igual o Pequeno Príncipe)
-        widthFactor = 1.15f,
-        heightFactor = 1.30f
+        displayName = "Pétalas"
     ),
     "preset:indigena" to PresetAvatar(
         drawableRes = R.drawable.avatar_indigena,
-        bgColor = Color(0xFFD7DCE2), // Ink soft (clube ink) — céu/horizonte, contrasta sem brigar com paleta
-        displayName = "Indígena",
-        // Busto 1:1 perfeito
-        widthFactor = 1.15f,
-        heightFactor = 1.30f
+        bgColor = Color(0xFFD7DCE2), // Ink soft — céu/horizonte, contrasta com a paleta
+        displayName = "Indígena"
     ),
     "preset:detetive" to PresetAvatar(
         drawableRes = R.drawable.avatar_detetive,
         bgColor = Color(0xFFD9D9CF), // Tertiary soft — tom noir/clássico
-        displayName = "Detetive",
-        // Busto ~1:1.1 — um pouco mais de altura pra acomodar chapéu/lupa
-        widthFactor = 1.18f,
-        heightFactor = 1.45f
+        displayName = "Detetive"
     ),
     "preset:joana_darc" to PresetAvatar(
         drawableRes = R.drawable.avatar_joana_darc,
         bgColor = Color(0xFFEBDCE4), // Plum soft — combina com a bandeira azul-real
-        displayName = "Joana d'Arc",
-        // Figura inteira em pé + lança subindo bem alto
-        widthFactor = 1.30f,
-        heightFactor = 2.10f
+        displayName = "Joana d'Arc"
+    ),
+    "preset:leitor" to PresetAvatar(
+        drawableRes = R.drawable.avatar_leitor,
+        bgColor = Color(0xFFE5EBDA).copy(alpha = 0.85f), // verde-folha levemente diluído
+        displayName = "Leitor"
     )
 )
 
@@ -164,10 +150,10 @@ private fun PresetAvatarView(
     ring: Color?,
     name: String
 ) {
-    // Container externo precisa caber o estouro da ilustração. Largura igual ao
-    // widthFactor, altura igual ao heightFactor — ambos relativos ao size do círculo.
-    val containerWidth = size * preset.widthFactor.coerceAtLeast(1f)
-    val containerHeight = size * preset.heightFactor.coerceAtLeast(1f)
+    // Bounding box uniforme pra todos os avatares ilustrados — garante
+    // proporcionalidade visual no grid. Ilustração se ajusta dentro via Fit.
+    val containerWidth = size * DEFAULT_WIDTH_FACTOR
+    val containerHeight = size * DEFAULT_HEIGHT_FACTOR
     Box(
         modifier = modifier
             .width(containerWidth)
@@ -191,9 +177,8 @@ private fun PresetAvatarView(
             painter = painterResource(id = preset.drawableRes),
             contentDescription = null,
             modifier = Modifier
-                .width(size * preset.widthFactor)
-                .height(containerHeight)
-                .offset(y = size * preset.verticalOffsetFactor),
+                .width(containerWidth)
+                .height(containerHeight),
             contentScale = ContentScale.Fit
         )
     }

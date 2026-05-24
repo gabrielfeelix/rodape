@@ -2266,9 +2266,8 @@ fun EditProfileView(
     var email by remember { mutableStateOf(initialEmail) }
     var avatarUrl by remember { mutableStateOf(initialAvatarUrl) }
 
-    // Avatares disponíveis: primeiros 6 são ilustrados (drawables),
-    // os 3 últimos são iniciais coloridas (esquema antigo).
-    // Renderizado como grid 3x3 (9 slots).
+    // Avatares disponíveis: 7 ilustrados (drawables) + 3 iniciais coloridas.
+    // Renderizado como grid 4 colunas x 3 linhas (deixa 2 slots vazios no final).
     val presetNames = listOf(
         "preset:pequeno_principe",
         "preset:don_quixote",
@@ -2276,6 +2275,7 @@ fun EditProfileView(
         "preset:indigena",
         "preset:detetive",
         "preset:joana_darc",
+        "preset:leitor",
         "Júlia",
         "Leo",
         "Helena"
@@ -2344,15 +2344,16 @@ fun EditProfileView(
                 modifier = Modifier.fillMaxWidth()
             )
             Spacer(modifier = Modifier.height(10.dp))
-            // Grid 3x3 — comporta 9 avatares (6 ilustrados + 3 iniciais)
-            // Cada linha tem altura fixa pra comportar avatares com lança (Joana 2.10x)
-            val rows = presetNames.chunked(3)
-            Column(verticalArrangement = Arrangement.spacedBy(14.dp)) {
+            // Grid 4 colunas x 3 linhas (12 slots; sobram 2 vazios pra simetria)
+            // Como todos os avatares ilustrados agora têm mesmo bounding box (1.20w x 1.50h),
+            // o peso visual é uniforme — independente da proporção da arte original.
+            val rows = presetNames.chunked(4)
+            Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
                 rows.forEach { rowPresets ->
                     Row(
                         modifier = Modifier
                             .fillMaxWidth()
-                            .height(120.dp),
+                            .height(76.dp),
                         horizontalArrangement = Arrangement.SpaceEvenly,
                         verticalAlignment = Alignment.Bottom
                     ) {
@@ -2366,22 +2367,27 @@ fun EditProfileView(
                                 "preset:indigena" -> "Indígena"
                                 "preset:detetive" -> "Detetive"
                                 "preset:joana_darc" -> "Joana d'Arc"
+                                "preset:leitor" -> "Leitor"
                                 else -> preset
                             }
                             Box(
                                 modifier = Modifier
-                                    .width(72.dp)
-                                    .height(120.dp)
+                                    .width(56.dp)
+                                    .height(76.dp)
                                     .clickable { avatarUrl = preset },
                                 contentAlignment = Alignment.BottomCenter
                             ) {
                                 Avatar(
                                     name = displayLabel,
                                     avatarUrl = if (isIllustrated) preset else "",
-                                    size = 56.dp,
+                                    size = 44.dp,
                                     ring = if (isSelected) Ink else null
                                 )
                             }
+                        }
+                        // Preenche espaços vazios na última linha pra manter alinhamento
+                        repeat(4 - rowPresets.size) {
+                            Box(modifier = Modifier.width(56.dp).height(76.dp))
                         }
                     }
                 }
