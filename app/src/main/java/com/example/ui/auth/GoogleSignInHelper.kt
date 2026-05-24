@@ -5,15 +5,19 @@ import androidx.credentials.CredentialManager
 import androidx.credentials.CustomCredential
 import androidx.credentials.GetCredentialRequest
 import com.example.BuildConfig
-import com.google.android.libraries.identity.googleid.GetGoogleIdOption
+import com.google.android.libraries.identity.googleid.GetSignInWithGoogleOption
 import com.google.android.libraries.identity.googleid.GoogleIdTokenCredential
 import com.google.android.libraries.identity.googleid.GoogleIdTokenCredential.Companion.TYPE_GOOGLE_ID_TOKEN_CREDENTIAL
 import java.security.MessageDigest
 import java.util.UUID
 
 /**
- * Encapsula o fluxo Credential Manager -> GoogleIdToken.
- * Retorna o idToken bruto + o nonce raw (cliente passa ambos pro Supabase).
+ * Encapsula o fluxo "Sign in with Google" via Credential Manager.
+ *
+ * Usa `GetSignInWithGoogleOption` (botao explicito de Sign-In) em vez do
+ * `GetGoogleIdOption` (que e One Tap-style, mostra bottom sheet leve e
+ * pode parecer "logar sem perguntar"). O usuario sempre ve o picker
+ * cheio e confirma qual conta usar.
  */
 class GoogleSignInHelper(private val context: Context) {
 
@@ -23,12 +27,7 @@ class GoogleSignInHelper(private val context: Context) {
         val rawNonce = UUID.randomUUID().toString()
         val hashedNonce = hashSha256(rawNonce)
 
-        val option = GetGoogleIdOption.Builder()
-            .setServerClientId(BuildConfig.GOOGLE_WEB_CLIENT_ID)
-            .setFilterByAuthorizedAccounts(false)
-            // Auto-select pula o picker quando so tem uma conta — desabilitamos
-            // pra sempre mostrar o picker e deixar o usuario escolher (melhor UX).
-            .setAutoSelectEnabled(false)
+        val option = GetSignInWithGoogleOption.Builder(BuildConfig.GOOGLE_WEB_CLIENT_ID)
             .setNonce(hashedNonce)
             .build()
 
