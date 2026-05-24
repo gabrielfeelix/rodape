@@ -668,7 +668,7 @@ fun VotacaoTab(
     val suggestionsByBookId by viewModel.bookSuggestionsByBookId.collectAsState()
     val isAdmin by viewModel.isCurrentUserAdmin.collectAsState()
 
-    val currentUserId = viewModel.currentUserId.collectAsState().value ?: "user_voce"
+    val currentUserId = viewModel.currentUserId.collectAsState().value ?: ""
 
     val totalVotes = votes.size
 

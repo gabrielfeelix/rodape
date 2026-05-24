@@ -258,6 +258,7 @@ fun MainTabsScreen(
                     onLogoutCompleted = onLogoutCompleted,
                     onNavigateToTab = { selectedTab = it },
                     onNavigateToJoinClub = onNavigateToJoinClub,
+                    onNavigateToCreateClub = onNavigateToCreateClub,
                     onNavigateToFrases = onNavigateToFrases,
                     onNavigateToAbout = onNavigateToAbout
                 )
@@ -432,11 +433,19 @@ fun MainTabsScreen(
                 Spacer(modifier = Modifier.height(16.dp))
 
                 TbButton(
+                    text = "+ Criar outro clube",
+                    onClick = { showBottomSheet = false; onNavigateToCreateClub() },
+                    variant = TbButtonVariant.Terra,
+                    size = TbButtonSize.Md,
+                    modifier = Modifier.fillMaxWidth().padding(top = 8.dp),
+                )
+
+                TbButton(
                     text = "+ Entrar em outro clube",
                     onClick = { showBottomSheet = false; onNavigateToJoinClub() },
                     variant = TbButtonVariant.Outline,
                     size = TbButtonSize.Md,
-                    modifier = Modifier.fillMaxWidth().padding(vertical = 8.dp),
+                    modifier = Modifier.fillMaxWidth().padding(top = 8.dp, bottom = 8.dp),
                 )
             }
         }
@@ -757,7 +766,7 @@ fun HomeScreenTab(
                                 Spacer(modifier = Modifier.height(4.dp))
 
                                 Text(
-                                    text = meeting?.agenda?.ifEmpty { "Discussão: A Hora da Estrela" } ?: "Discussão: A Hora da Estrela",
+                                    text = meeting?.agenda?.ifEmpty { "Próximo encontro do clube" } ?: "Próximo encontro do clube",
                                     style = MaterialTheme.typography.titleMedium.copy(
                                         fontFamily = LiterataFontFamily,
                                         fontSize = 18.sp,
@@ -869,7 +878,7 @@ fun HomeScreenTab(
                             }
 
                             // RSVP Toggle — pill-style button
-                            val isParticipating = rsvps.any { it.userId == (viewModel.currentUserId.value ?: "user_voce") && it.status == "Vou" }
+                            val isParticipating = rsvps.any { it.userId == viewModel.currentUserId.value && it.status == "Vou" }
                             Box(
                                 modifier = Modifier
                                     .clip(RoundedCornerShape(16.dp))
@@ -895,8 +904,40 @@ fun HomeScreenTab(
             }
         }
 
-        // Section: Tua Leitura Row Card (Image 1 Left Card 2)
-        item {
+        // Section: Tua Leitura Row Card. So aparece quando ha livro "current".
+        // Sem livro, mostra CTA pra sugerir/escolher livro.
+        if (currentBook == null) {
+            item {
+                RodapeCard(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .clickable { onNavigateToTab("next") },
+                    contentPadding = PaddingValues(20.dp)
+                ) {
+                    Column(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalAlignment = Alignment.CenterHorizontally,
+                        verticalArrangement = Arrangement.spacedBy(8.dp)
+                    ) {
+                        Text(
+                            text = "Nenhum livro escolhido ainda",
+                            style = MaterialTheme.typography.titleMedium.copy(
+                                fontFamily = LiterataFontFamily,
+                                fontWeight = FontWeight.SemiBold
+                            )
+                        )
+                        Text(
+                            text = "Que tal sugerir o primeiro?",
+                            style = MaterialTheme.typography.bodyMedium.copy(
+                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                            ),
+                            textAlign = TextAlign.Center
+                        )
+                    }
+                }
+            }
+        } else item {
+            val book = currentBook!!  // smart cast nao funciona em property delegate
             RodapeCard(
                 modifier = Modifier
                     .fillMaxWidth()
@@ -909,9 +950,9 @@ fun HomeScreenTab(
                     horizontalArrangement = Arrangement.spacedBy(16.dp)
                 ) {
                     Cover(
-                        title = currentBook?.title ?: "A Hora da Estrela",
-                        author = currentBook?.author ?: "",
-                        coverUrl = currentBook?.coverUrl ?: "",
+                        title = book.title,
+                        author = book.author,
+                        coverUrl = book.coverUrl,
                         width = 48.dp,
                         height = 72.dp
                     )
@@ -919,7 +960,7 @@ fun HomeScreenTab(
                     Column(
                         modifier = Modifier.weight(1f)
                     ) {
-                        val bookTitle = currentBook?.title ?: "A Hora da Estrela"
+                        val bookTitle = book.title
                         val totalChaps = chapters.size
                         val curChap = currentChapIndex
                         val readingLabel = if (totalChaps > 0) "TUA LEITURA · CAP. $curChap/$totalChaps"
@@ -980,8 +1021,9 @@ fun HomeScreenTab(
             }
         }
 
-        // Section: Onde a galera tá list (Image 1 Left bottom)
-        item {
+        // Section: Onde a galera tá. So faz sentido com livro escolhido
+        // (a posicao da galera e medida em capitulos do livro current).
+        if (currentBook != null) item {
             Row(
                 modifier = Modifier
                     .fillMaxWidth()
@@ -1008,17 +1050,17 @@ fun HomeScreenTab(
             }
         }
 
-        item {
+        if (currentBook != null) item {
+            val currentBookId = currentBook!!.id  // smart cast nao funciona em property delegate
             LazyRow(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.spacedBy(16.dp),
                 contentPadding = PaddingValues(bottom = 12.dp)
             ) {
-                val currentUserId = viewModel.currentUserId.value ?: "user_voce"
+                val currentUserId = viewModel.currentUserId.value
                 val sortedMembers = members.sortedWith(compareBy { it.id != currentUserId })
 
                 // Calcula o mediano dos progressos pra detectar quem está significativamente atrás
-                val currentBookId = currentBook?.id ?: "book_metamorfose"
                 val allChapNums = members.map { m ->
                     allProgress.find { it.userId == m.id && it.bookId == currentBookId }
                         ?.currentChapter
@@ -1030,7 +1072,7 @@ fun HomeScreenTab(
 
                 items(sortedMembers) { member ->
                     val memberProg = allProgress.find { it.userId == member.id && it.bookId == currentBookId }
-                    val memChap = memberProg?.currentChapter ?: if (member.id == "user_marina") 9 else if (member.id == "user_sofia") 13 else 8
+                    val memChap = memberProg?.currentChapter ?: 0
                     val totalChaps = chapters.size
 
                     val isCurrentUser = member.id == currentUserId
@@ -1627,6 +1669,7 @@ fun ProfileScreenTab(
     onLogoutCompleted: () -> Unit,
     onNavigateToTab: (String) -> Unit,
     onNavigateToJoinClub: () -> Unit,
+    onNavigateToCreateClub: () -> Unit,
     onNavigateToFrases: () -> Unit,
     onNavigateToAbout: () -> Unit = {}
 ) {
@@ -1898,7 +1941,40 @@ fun ProfileScreenTab(
                         }
                     }
 
-                    // "+ Entrar em outro clube" — dashed outline button
+                    // "+ Criar outro clube" — destaque terracota (acao primaria)
+                    Box(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .clip(RoundedCornerShape(16.dp))
+                            .background(Terracota)
+                            .clickable { onNavigateToCreateClub() }
+                            .padding(vertical = 14.dp),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Row(
+                            horizontalArrangement = Arrangement.spacedBy(8.dp),
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Icon(
+                                imageVector = Icons.Outlined.Add,
+                                contentDescription = null,
+                                tint = Cream,
+                                modifier = Modifier.size(16.dp)
+                            )
+                            Text(
+                                text = "Criar outro clube",
+                                style = MaterialTheme.typography.bodyMedium.copy(
+                                    fontFamily = InterFontFamily,
+                                    fontWeight = FontWeight.SemiBold,
+                                    color = Cream
+                                )
+                            )
+                        }
+                    }
+
+                    Spacer(modifier = Modifier.height(8.dp))
+
+                    // "+ Entrar em outro clube" — outline secundario
                     Box(
                         modifier = Modifier
                             .fillMaxWidth()
