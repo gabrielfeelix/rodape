@@ -108,9 +108,10 @@ fun MainTabsScreen(
     val activeClub by viewModel.activeClub.collectAsState()
     val allClubs by viewModel.allClubs.collectAsState()
     val currentUser by viewModel.currentUser.collectAsState()
-    val unreadNotificationsCount by viewModel.notifications.map { notifs ->
-        notifs.count { !it.lida }
-    }.collectAsState(initial = 0)
+    val unreadFlow = remember(viewModel.notifications) {
+        viewModel.notifications.map { notifs -> notifs.count { !it.lida } }
+    }
+    val unreadNotificationsCount by unreadFlow.collectAsState(initial = 0)
     val isAdmin by viewModel.isCurrentUserAdmin.collectAsState()
 
     Scaffold(
