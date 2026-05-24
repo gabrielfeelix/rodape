@@ -77,6 +77,22 @@ private val presetAvatars: Map<String, PresetAvatar> = mapOf(
         // Busto ~1:1 (igual o Pequeno Príncipe)
         widthFactor = 1.15f,
         heightFactor = 1.30f
+    ),
+    "preset:indigena" to PresetAvatar(
+        drawableRes = R.drawable.avatar_indigena,
+        bgColor = Color(0xFFD7DCE2), // Ink soft (clube ink) — céu/horizonte, contrasta sem brigar com paleta
+        displayName = "Indígena",
+        // Busto 1:1 perfeito
+        widthFactor = 1.15f,
+        heightFactor = 1.30f
+    ),
+    "preset:detetive" to PresetAvatar(
+        drawableRes = R.drawable.avatar_detetive,
+        bgColor = Color(0xFFD9D9CF), // Tertiary soft — tom noir/clássico
+        displayName = "Detetive",
+        // Busto ~1:1.1 — um pouco mais de altura pra acomodar chapéu/lupa
+        widthFactor = 1.18f,
+        heightFactor = 1.45f
     )
 )
 

@@ -2266,12 +2266,15 @@ fun EditProfileView(
     var email by remember { mutableStateOf(initialEmail) }
     var avatarUrl by remember { mutableStateOf(initialAvatarUrl) }
 
-    // Avatares disponíveis: primeiros 3 são ilustrados (drawables);
-    // os outros 3 são iniciais coloridas (esquema antigo)
+    // Avatares disponíveis: primeiros 5 são ilustrados (drawables),
+    // os 3 últimos são iniciais coloridas (esquema antigo).
+    // Renderizado como grid 2x4 (8 slots).
     val presetNames = listOf(
         "preset:pequeno_principe",
         "preset:don_quixote",
         "preset:petalas",
+        "preset:indigena",
+        "preset:detetive",
         "Júlia",
         "Leo",
         "Helena"
@@ -2340,36 +2343,44 @@ fun EditProfileView(
                 modifier = Modifier.fillMaxWidth()
             )
             Spacer(modifier = Modifier.height(10.dp))
-            // Altura fixa pra todas as células — comporta o avatar mais alto (Don Quixote 2.10x)
-            Row(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .height(96.dp),
-                horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment = Alignment.Bottom
-            ) {
-                presetNames.forEach { preset ->
-                    val isSelected = avatarUrl == preset
-                    val isIllustrated = preset.startsWith("preset:")
-                    val displayLabel = when (preset) {
-                        "preset:pequeno_principe" -> "Pequeno Príncipe"
-                        "preset:don_quixote" -> "Don Quixote"
-                        "preset:petalas" -> "Pétalas"
-                        else -> preset
-                    }
-                    Box(
+            // Grid 2x4 — comporta 8 avatares (5 ilustrados + 3 iniciais)
+            // Cada linha tem altura fixa 96dp pra comportar o avatar mais alto (Don Quixote 2.10x)
+            val rows = presetNames.chunked(4)
+            Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
+                rows.forEach { rowPresets ->
+                    Row(
                         modifier = Modifier
-                            .width(48.dp)
-                            .height(96.dp)
-                            .clickable { avatarUrl = preset },
-                        contentAlignment = Alignment.BottomCenter
+                            .fillMaxWidth()
+                            .height(96.dp),
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                        verticalAlignment = Alignment.Bottom
                     ) {
-                        Avatar(
-                            name = displayLabel,
-                            avatarUrl = if (isIllustrated) preset else "",
-                            size = 44.dp,
-                            ring = if (isSelected) Ink else null
-                        )
+                        rowPresets.forEach { preset ->
+                            val isSelected = avatarUrl == preset
+                            val isIllustrated = preset.startsWith("preset:")
+                            val displayLabel = when (preset) {
+                                "preset:pequeno_principe" -> "Pequeno Príncipe"
+                                "preset:don_quixote" -> "Don Quixote"
+                                "preset:petalas" -> "Pétalas"
+                                "preset:indigena" -> "Indígena"
+                                "preset:detetive" -> "Detetive"
+                                else -> preset
+                            }
+                            Box(
+                                modifier = Modifier
+                                    .width(56.dp)
+                                    .height(96.dp)
+                                    .clickable { avatarUrl = preset },
+                                contentAlignment = Alignment.BottomCenter
+                            ) {
+                                Avatar(
+                                    name = displayLabel,
+                                    avatarUrl = if (isIllustrated) preset else "",
+                                    size = 48.dp,
+                                    ring = if (isSelected) Ink else null
+                                )
+                            }
+                        }
                     }
                 }
             }
