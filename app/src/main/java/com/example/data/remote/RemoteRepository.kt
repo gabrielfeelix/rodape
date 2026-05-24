@@ -665,6 +665,7 @@ class RemoteRepository(
     // Single source of truth = Room. UI le do Room (instantaneo, offline ok),
     // background sync popula Room a partir do Supabase.
     private val dao = com.example.data.db.AppDatabase.get(appContext).rodapeDao()
+    private val pendingDao = com.example.data.db.AppDatabase.get(appContext).pendingMutationDao()
 
     // Scope interno do repo pra refreshes "fire-and-forget" das caches reativas.
     // SupervisorJob: falha de uma corotina nao cancela as outras.
@@ -673,6 +674,7 @@ class RemoteRepository(
     /** Apaga o cache local — chamar no logout pra nao vazar dados entre contas. */
     suspend fun clearLocalCache() {
         dao.clearAll()
+        pendingDao.clear()
         lastSyncAt.clear()
     }
 
@@ -712,6 +714,141 @@ class RemoteRepository(
         const val FAST = 5_000L      // 5s — chat ativo, votos em rodada aberta
         const val MED = 30_000L      // 30s — listas de clube, livros
         const val SLOW = 300_000L    // 5min — perfis, catalogo de books
+    }
+
+    // ============================================================
+    // WRITE QUEUE OFFLINE (Nivel 3A)
+    // ============================================================
+    //
+    // Quando uma mutation HTTP falha (sem internet, 5xx), gravamos em
+    // pending_mutations no Room. O optimistic update local ja foi aplicado,
+    // entao UI mostra a mudanca como se fosse permanente. Quando rede volta,
+    // tryDrainQueue() reenvia tudo em ordem cronologica.
+    //
+    // Padrao de uso nos mutations:
+    //   runRemote { supabase.from("X").upsert(...) } returningOn(failure) {
+    //       enqueue("kind", payload)
+    //   }
+
+    private val mutationHandlers = mutableMapOf<String, suspend (String) -> Unit>()
+
+    /**
+     * Registra um handler que sabe re-executar uma mutation de [kind] a partir
+     * do payload serializado. Chamado durante init pra cada tipo de mutation
+     * que queremos retentar offline.
+     */
+    private fun registerHandler(kind: String, handler: suspend (String) -> Unit) {
+        mutationHandlers[kind] = handler
+    }
+
+    /** Grava uma mutation pendente pra retry futuro. */
+    private suspend fun enqueueMutation(kind: String, payload: String) {
+        pendingDao.insert(
+            com.example.data.db.PendingMutation(
+                id = java.util.UUID.randomUUID().toString(),
+                kind = kind,
+                payload = payload,
+                createdAt = System.currentTimeMillis(),
+            )
+        )
+    }
+
+    /**
+     * Envelope idiomatico: tenta executar [block] remoto; se lancar, grava na
+     * queue. Use isso em todos os mutations criticos.
+     */
+    private suspend fun tryRemoteOrEnqueue(
+        kind: String,
+        payload: String,
+        block: suspend () -> Unit,
+    ) {
+        runCatching { block() }.onFailure { enqueueMutation(kind, payload) }
+    }
+
+    /** Drena a fila — chamada quando rede volta ou em sync periodico. */
+    suspend fun tryDrainPendingQueue() {
+        val all = pendingDao.all()
+        for (m in all) {
+            val handler = mutationHandlers[m.kind] ?: continue
+            runCatching { handler(m.payload) }
+                .onSuccess { pendingDao.delete(m.id) }
+                .onFailure { pendingDao.markFailed(m.id, it.message) }
+        }
+    }
+
+    /** StateFlow do tamanho da fila pra UI mostrar badge "X pendentes". */
+    val pendingMutationsCount: Flow<Int> = pendingDao.countFlow()
+
+    init {
+        // Registra handlers conhecidos. Payload e JSON ad-hoc por kind.
+        registerHandler("insert_comment") { json ->
+            val obj = this.json.parseToJsonElement(json) as JsonObject
+            supabase.from("comments").upsert(
+                CommentInsertDto(
+                    id = obj["id"]!!.toString().trim('"'),
+                    chapterId = obj["chapterId"]!!.toString().trim('"'),
+                    clubId = obj["clubId"]!!.toString().trim('"'),
+                    userId = obj["userId"]!!.toString().trim('"'),
+                    texto = obj["texto"]!!.toString().trim('"'),
+                )
+            )
+        }
+        registerHandler("insert_reaction") { json ->
+            val obj = this.json.parseToJsonElement(json) as JsonObject
+            supabase.from("reactions").upsert(
+                ReactionDto(
+                    commentId = obj["commentId"]!!.toString().trim('"'),
+                    userId = obj["userId"]!!.toString().trim('"'),
+                    emoji = obj["emoji"]!!.toString().trim('"'),
+                )
+            )
+        }
+        registerHandler("delete_reaction") { json ->
+            val obj = this.json.parseToJsonElement(json) as JsonObject
+            supabase.from("reactions").delete {
+                filter {
+                    eq("comment_id", obj["commentId"]!!.toString().trim('"'))
+                    eq("user_id", obj["userId"]!!.toString().trim('"'))
+                    eq("emoji", obj["emoji"]!!.toString().trim('"'))
+                }
+            }
+        }
+        registerHandler("insert_meeting_rsvp") { json ->
+            val obj = this.json.parseToJsonElement(json) as JsonObject
+            supabase.from("meeting_rsvps").upsert(
+                MeetingRsvpInsertDto(
+                    meetingId = obj["meetingId"]!!.toString().trim('"'),
+                    userId = obj["userId"]!!.toString().trim('"'),
+                    status = obj["status"]!!.toString().trim('"'),
+                )
+            )
+        }
+        registerHandler("insert_vote") { json ->
+            val obj = this.json.parseToJsonElement(json) as JsonObject
+            supabase.from("votes").upsert(
+                VoteInsertDto(
+                    votingRoundId = obj["votingRoundId"]!!.toString().trim('"'),
+                    userId = obj["userId"]!!.toString().trim('"'),
+                    bookId = obj["bookId"]!!.toString().trim('"'),
+                )
+            )
+        }
+        registerHandler("insert_saved_quote") { json ->
+            val obj = this.json.parseToJsonElement(json) as JsonObject
+            supabase.from("saved_quotes").upsert(
+                SavedQuoteInsertDto(
+                    id = obj["id"]!!.toString().trim('"'),
+                    userId = obj["userId"]!!.toString().trim('"'),
+                    clubId = obj["clubId"]!!.toString().trim('"'),
+                    bookId = obj["bookId"]!!.toString().trim('"'),
+                    texto = obj["texto"]!!.toString().trim('"'),
+                    capituloRef = obj["capituloRef"]?.toString()?.trim('"'),
+                )
+            )
+        }
+
+        // Tenta drenar logo no init (caso tenha sobrado fila da sessao anterior).
+        scope.launch { runCatching { tryDrainPendingQueue() } }
     }
 
     // ============================================================
@@ -1481,7 +1618,12 @@ class RemoteRepository(
     // ============================================================
 
     suspend fun insertComment(comment: Comment) {
-        runCatching {
+        // 1. Optimistic local PRIMEIRO — UI ja mostra
+        dao.upsertComment(comment)
+        notifyLocalMutation("comments")
+        // 2. Tenta HTTP — se falhar, queue
+        val payload = """{"id":"${comment.id}","chapterId":"${comment.chapterId}","clubId":"${comment.clubId}","userId":"${comment.userId}","texto":"${comment.texto.escapeJson()}"}"""
+        tryRemoteOrEnqueue("insert_comment", payload) {
             supabase.from("comments").upsert(
                 CommentInsertDto(
                     id = comment.id,
@@ -1491,11 +1633,16 @@ class RemoteRepository(
                     texto = comment.texto,
                 )
             )
-            // Optimistic local insert (sera substituido por sync real em ms).
-            dao.upsertComment(comment)
-            notifyLocalMutation("comments")
         }
     }
+
+    /** Escapa caracteres especiais pra string JSON. */
+    private fun String.escapeJson(): String = this
+        .replace("\\", "\\\\")
+        .replace("\"", "\\\"")
+        .replace("\n", "\\n")
+        .replace("\r", "\\r")
+        .replace("\t", "\\t")
 
     fun getCommentsForChapterFlow(chapterId: String, clubId: String): Flow<List<Comment>> {
         val key = "comments:ch:$chapterId"
@@ -1576,15 +1723,19 @@ class RemoteRepository(
     // ---- reactions ----
 
     suspend fun insertReaction(reaction: Reaction) {
-        runCatching {
+        dao.upsertReaction(reaction)
+        notifyLocalMutation("reactions")
+        val payload = """{"commentId":"${reaction.commentId}","userId":"${reaction.userId}","emoji":"${reaction.emoji}"}"""
+        tryRemoteOrEnqueue("insert_reaction", payload) {
             supabase.from("reactions").upsert(reaction.toDto())
-            dao.upsertReaction(reaction)
-            notifyLocalMutation("reactions")
         }
     }
 
     suspend fun deleteReaction(reaction: Reaction) {
-        runCatching {
+        dao.deleteReaction(reaction.commentId, reaction.userId, reaction.emoji)
+        notifyLocalMutation("reactions")
+        val payload = """{"commentId":"${reaction.commentId}","userId":"${reaction.userId}","emoji":"${reaction.emoji}"}"""
+        tryRemoteOrEnqueue("delete_reaction", payload) {
             supabase.from("reactions").delete {
                 filter {
                     eq("comment_id", reaction.commentId)
@@ -1592,8 +1743,6 @@ class RemoteRepository(
                     eq("emoji", reaction.emoji)
                 }
             }
-            dao.deleteReaction(reaction.commentId, reaction.userId, reaction.emoji)
-            notifyLocalMutation("reactions")
         }
     }
 
@@ -1639,7 +1788,10 @@ class RemoteRepository(
 
     suspend fun insertVote(vote: Vote) {
         val roundId = vote.votingRoundId ?: return
-        runCatching {
+        dao.upsertVotes(listOf(vote))
+        notifyLocalMutation("votes")
+        val payload = """{"votingRoundId":"$roundId","userId":"${vote.userId}","bookId":"${vote.clubBookId}"}"""
+        tryRemoteOrEnqueue("insert_vote", payload) {
             supabase.from("votes").upsert(
                 VoteInsertDto(
                     votingRoundId = roundId,
@@ -1647,8 +1799,6 @@ class RemoteRepository(
                     bookId = vote.clubBookId,
                 )
             )
-            dao.upsertVotes(listOf(vote))
-            notifyLocalMutation("votes")
         }
     }
 
@@ -1989,16 +2139,18 @@ class RemoteRepository(
     // ---- meeting_rsvps ----
 
     suspend fun insertMeetingRsvp(rsvp: MeetingRsvp) {
-        runCatching {
+        dao.upsertMeetingRsvp(rsvp)
+        notifyLocalMutation("meeting_rsvps")
+        val statusEnum = rsvpToEnum(rsvp.status)
+        val payload = """{"meetingId":"${rsvp.meetingId}","userId":"${rsvp.userId}","status":"$statusEnum"}"""
+        tryRemoteOrEnqueue("insert_meeting_rsvp", payload) {
             supabase.from("meeting_rsvps").upsert(
                 MeetingRsvpInsertDto(
                     meetingId = rsvp.meetingId,
                     userId = rsvp.userId,
-                    status = rsvpToEnum(rsvp.status),
+                    status = statusEnum,
                 )
             )
-            dao.upsertMeetingRsvp(rsvp)
-            notifyLocalMutation("meeting_rsvps")
         }
     }
 
@@ -2204,7 +2356,11 @@ class RemoteRepository(
     // ============================================================
 
     suspend fun insertSavedQuote(quote: SavedQuote) {
-        runCatching {
+        dao.upsertSavedQuotes(listOf(quote))
+        notifyLocalMutation("saved_quotes")
+        val cap = quote.capituloRef.escapeJson()
+        val payload = """{"id":"${quote.id}","userId":"${quote.userId}","clubId":"${quote.clubId}","bookId":"${quote.bookId}","texto":"${quote.texto.escapeJson()}","capituloRef":"$cap"}"""
+        tryRemoteOrEnqueue("insert_saved_quote", payload) {
             supabase.from("saved_quotes").upsert(
                 SavedQuoteInsertDto(
                     id = quote.id,
@@ -2215,8 +2371,6 @@ class RemoteRepository(
                     capituloRef = quote.capituloRef.ifBlank { null },
                 )
             )
-            dao.upsertSavedQuotes(listOf(quote))
-            notifyLocalMutation("saved_quotes")
         }
     }
 

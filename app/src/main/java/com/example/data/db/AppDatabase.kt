@@ -30,13 +30,15 @@ import com.example.data.model.*
         MemberRemoval::class,
         MeetingMinutes::class,
         MeetingNote::class,
+        PendingMutation::class,
     ],
-    version = 1,
+    version = 2,
     exportSchema = true,
 )
 abstract class AppDatabase : RoomDatabase() {
 
     abstract fun rodapeDao(): RodapeDao
+    abstract fun pendingMutationDao(): PendingMutationDao
 
     companion object {
         @Volatile private var INSTANCE: AppDatabase? = null
