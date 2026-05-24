@@ -1,6 +1,7 @@
 plugins {
   alias(libs.plugins.android.application)
   alias(libs.plugins.kotlin.compose)
+  alias(libs.plugins.kotlin.serialization)
   alias(libs.plugins.google.devtools.ksp)
   alias(libs.plugins.roborazzi)
   alias(libs.plugins.secrets)
@@ -48,6 +49,7 @@ android {
     }
   }
   compileOptions {
+    isCoreLibraryDesugaringEnabled = true
     sourceCompatibility = JavaVersion.VERSION_11
     targetCompatibility = JavaVersion.VERSION_11
   }
@@ -119,4 +121,21 @@ dependencies {
   debugImplementation(libs.androidx.compose.ui.tooling)
   "ksp"(libs.androidx.room.compiler)
   "ksp"(libs.moshi.kotlin.codegen)
+
+  // --- Supabase ---
+  implementation(platform(libs.supabase.bom))
+  implementation(libs.supabase.auth.kt)
+  implementation(libs.supabase.postgrest.kt)
+  implementation(libs.supabase.realtime.kt)
+  implementation(libs.supabase.storage.kt)
+  implementation(libs.ktor.client.cio)
+  implementation(libs.kotlinx.serialization.json)
+
+  // --- Google Sign-In via Credential Manager ---
+  implementation(libs.androidx.credentials)
+  implementation(libs.androidx.credentials.play.services.auth)
+  implementation(libs.googleid)
+
+  // --- Core library desugaring (java.time em minSdk 24) ---
+  coreLibraryDesugaring(libs.desugar.jdk.libs)
 }
