@@ -6,10 +6,9 @@ import androidx.lifecycle.viewModelScope
 import com.example.data.DataStoreManager
 import com.example.data.api.OpenLibraryApi
 import com.example.data.api.OpenLibraryDoc
-import com.example.data.db.AppDatabase
 import com.example.data.model.*
 import com.example.data.remote.AuthRepository
-import com.example.data.repository.RodapeRepository
+import com.example.data.remote.RemoteRepository
 import io.github.jan.supabase.auth.status.SessionStatus
 import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.launch
@@ -18,12 +17,11 @@ import java.util.UUID
 
 class MainViewModel(application: Application) : AndroidViewModel(application) {
 
-    private val database = AppDatabase.getDatabase(application)
-    private val repository = RodapeRepository(database.rodapeDao())
+    private val repository = RemoteRepository()
     private val dataStoreManager = DataStoreManager(application)
     private val authRepository = AuthRepository()
 
-    // --- Supabase session (paralelo ao DataStore antigo — DataStore some na 9C) ---
+    // --- Supabase session ---
     val sessionStatus: StateFlow<SessionStatus> = authRepository.sessionStatus
 
     val supabaseUserId: StateFlow<String?> = authRepository.currentUserIdFlow
@@ -38,22 +36,21 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
     val supabaseEmail: StateFlow<String?> = authRepository.currentEmailFlow
         .stateIn(viewModelScope, SharingStarted.Eagerly, null)
 
-    // Session state
-    val currentUserId: StateFlow<String?> = dataStoreManager.userIdFlow
-        .stateIn(viewModelScope, SharingStarted.Eagerly, null)
+    // currentUserId agora derivado direto do Supabase Auth (sem DataStore).
+    val currentUserId: StateFlow<String?> = supabaseUserId
 
     val currentUser: StateFlow<User?> = currentUserId.flatMapLatest { userId ->
         if (userId != null) repository.getUserFlow(userId) else flowOf(null)
     }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), null)
 
-    val userName: StateFlow<String?> = dataStoreManager.userNameFlow
-        .stateIn(viewModelScope, SharingStarted.Eagerly, null)
+    // Legacy: telas antigas leem userName/userEmail. Mapeamos pra Supabase.
+    val userName: StateFlow<String?> = supabaseDisplayName
+    val userEmail: StateFlow<String?> = supabaseEmail
 
-    val userEmail: StateFlow<String?> = dataStoreManager.userEmailFlow
-        .stateIn(viewModelScope, SharingStarted.Eagerly, null)
-
-    val activeClubId: StateFlow<String?> = dataStoreManager.activeClubIdFlow
-        .stateIn(viewModelScope, SharingStarted.Eagerly, null)
+    // activeClubId vira state em memoria. Auto-inicializado com o primeiro clube
+    // ao logar; persiste so durante a sessao do app (cold-start cai no primeiro).
+    private val _activeClubId = MutableStateFlow<String?>(null)
+    val activeClubId: StateFlow<String?> = _activeClubId.asStateFlow()
 
     // App-level prefs (avaliação na Play Store + contador de engajamento)
     val ratedApp: StateFlow<Boolean> = dataStoreManager.ratedAppFlow
@@ -275,63 +272,40 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
     fun consumeRequestedTab() { _requestedTab.value = null }
 
     init {
-        // Initialize & Seed Database if empty
+        // App nasce vazio em producao — sem seed, sem auto-login fake.
+        //
+        // Quando o currentUserId mudar (login/logout), auto-seleciona o primeiro
+        // clube do usuario como activeClub. Se ele nao for membro de nenhum,
+        // activeClubId fica null e a UI mostra estado vazio com CTA de criar/entrar.
         viewModelScope.launch {
-            repository.seedDatabase()
-            // Auto login with default demo user "Você" if session is empty and seed just completed
-            dataStoreManager.userIdFlow.first()?.let {
-                // Already logged in
-            } ?: run {
-                // Log in default demo user "Você" to show pristine preloaded data!
-                dataStoreManager.saveSession("user_voce", "Você", "voce@rodape.com")
-                dataStoreManager.saveActiveClubId("club_mari")
+            allClubs.collect { clubs ->
+                val current = _activeClubId.value
+                if (clubs.isEmpty()) {
+                    _activeClubId.value = null
+                } else if (current == null || clubs.none { it.id == current }) {
+                    _activeClubId.value = clubs.first().id
+                }
             }
-            // Dá um respiro pra activeClubId hidratar antes de tentar fechar rodada expirada
+        }
+        viewModelScope.launch {
             kotlinx.coroutines.delay(500)
             maybeAutoCloseExpiredRound()
         }
     }
 
     // --- Authentication Actions ---
+    // O login real e feito por AuthRepository (email/senha + Google). Esta funcao
+    // existe como compat com chamadas antigas (alguns lugares ainda invocam).
     fun login(name: String, email: String, onCompleted: () -> Unit) {
-        viewModelScope.launch {
-            val isDemo = email.equals("voce@rodape.com", ignoreCase = true)
-            val userId = if (isDemo) "user_voce" else "user_${UUID.randomUUID().toString().take(6)}"
-            val userName = if (isDemo) "Você" else name
-            
-            // Avatar inicial: preset aleatório dos 12 ilustrados (usuário pode trocar no Perfil)
-            val randomPresets = listOf(
-                "preset:pequeno_principe", "preset:don_quixote", "preset:petalas",
-                "preset:indigena", "preset:detetive", "preset:joana_darc",
-                "preset:leitor", "preset:leitora", "preset:mago",
-                "preset:emilia", "preset:fantasma", "preset:alice"
-            )
-            val newUser = User(
-                userId,
-                userName,
-                email,
-                if (isDemo) "preset:leitora" else randomPresets.random()
-            )
-            repository.insertUser(newUser)
-
-            dataStoreManager.saveSession(userId, userName, email)
-            
-            // Check if user already in any clubs
-            val clubs = repository.getClubsForUserList(userId)
-            if (clubs.isNotEmpty()) {
-                dataStoreManager.saveActiveClubId(clubs.first().id)
-            } else {
-                if (isDemo) {
-                    dataStoreManager.saveActiveClubId("club_mari")
-                }
-            }
-            onCompleted()
-        }
+        // 9B: no-op compat. Login real e via AuthRepository nas telas de auth.
+        onCompleted()
     }
 
     fun logout(onCompleted: () -> Unit) {
         viewModelScope.launch {
+            runCatching { authRepository.signOut() }
             dataStoreManager.clearSession()
+            _activeClubId.value = null
             onCompleted()
         }
     }
@@ -347,112 +321,52 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
     }
 
     fun selectActiveClub(clubId: String) {
-        viewModelScope.launch {
-            dataStoreManager.saveActiveClubId(clubId)
-        }
+        _activeClubId.value = clubId
     }
 
     fun updateUserProfile(nome: String, email: String, avatarUrl: String) {
         viewModelScope.launch {
-            val userId = currentUserId.value ?: "user_voce"
+            val userId = currentUserId.value ?: return@launch
+            // email do supabase auth.users e gerido pelo Supabase; aqui so atualiza profile.
             val updatedUser = User(userId, nome, email, avatarUrl)
             repository.insertUser(updatedUser)
-            dataStoreManager.saveSession(userId, nome, email)
         }
     }
 
     // --- Club Actions ---
     fun createClub(nome: String, descricao: String, cor: String, privacidade: String, onCompleted: (String) -> Unit) {
         viewModelScope.launch {
-            val creatorId = currentUserId.value ?: "user_voce"
-            val clubId = "club_${UUID.randomUUID().toString().take(6)}"
-            val uniqueCode = (1..6).map { "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789".random() }.joinToString("")
-            
-            val newClub = Club(
-                id = clubId,
-                nome = nome,
-                descricao = descricao,
-                codigo = uniqueCode,
-                cor = cor,
-                privacidade = privacidade,
-                criadorId = creatorId,
-                criadoEm = System.currentTimeMillis(),
-                arquivado = false
-            )
-            repository.insertClub(newClub)
-
-            // creator vira super_admin do clube
-            repository.insertClubMember(ClubMember(clubId, creatorId, "super_admin", System.currentTimeMillis()))
-            
-            // Auto seed the new club with basic initial books/meetings so user is not stuck on empty screens
-            seedNewClubData(clubId)
-
-            dataStoreManager.saveActiveClubId(clubId)
-            onCompleted(clubId)
+            try {
+                // RPC: cria clube + super_admin member + invite code unico, atomicamente.
+                val clubId = repository.createClubViaRpc(nome, descricao, cor, privacidade)
+                _activeClubId.value = clubId
+                onCompleted(clubId)
+            } catch (e: Exception) {
+                e.printStackTrace()
+            }
         }
-    }
-
-    private suspend fun seedNewClubData(clubId: String) {
-        // Seed default book: "A Máquina do Tempo" or another masterpiece
-        val b = Book(
-            id = "book_time_machine_${clubId}",
-            title = "A Máquina do Tempo",
-            author = "H.G. Wells",
-            coverUrl = "https://lh3.googleusercontent.com/aida-public/AB6AXu30qDj_uGAutNzuhJf1UoXnERY2860xqj5zCrqAYOU2b2zdgvtxIdZGmYqHceK4nnTiYy5WZkVaXZQV25jfbIazcL96ywdPqJtL3AnikceDzM3FX3BxCB_KEBhlg6CRsdbLO0RQr8JcD7M8qTguP83hrTC2kPonrWNJlbx227ZwPU3hMFK83Q1453Tf6w967QAQmzfJTqBjrtfI-gNUdLG9EK1j0NsrKvoBVc5X1TDJswZ5fNU6xSM_YB4JfnzZA166xiLu1iIYvA",
-            openlibraryId = "OL12345M",
-            isbn = "9780141439976",
-            isManual = false,
-            totalPaginas = null,
-            editora = null,
-            anoPublicacao = 1895,
-            idioma = "pt"
-        )
-        repository.insertBook(b)
-        repository.insertClubBook(ClubBook(clubId, b.id, "current", 1, null))
-
-        // Populate basic chapters
-        val chList = (1..5).map { num ->
-            Chapter("ch_${num}_${clubId}", b.id, num, "Capítulo $num")
-        }
-        repository.insertChapters(chList)
-
-        // Init default user progress to Chapter 1
-        repository.insertUserProgress(UserProgress(currentUserId.value ?: "user_voce", clubId, b.id, 1))
-
-        // Create standard meeting
-        val meet = Meeting(
-            id = "meet_${clubId}",
-            clubId = clubId,
-            data = "Próxima semana",
-            hora = "20h",
-            local = "Online / Discussão por chamada",
-            agenda = "Conectar, bater papo e discutir capítulo 1\nEscolher as metas de leitura",
-            bookId = null,
-            chapterStart = null,
-            chapterEnd = null,
-            status = "agendado"
-        )
-        repository.insertMeeting(meet)
     }
 
     fun joinClubWithCode(code: String, onCompleted: (Boolean, String?) -> Unit) {
         viewModelScope.launch {
-            val userId = currentUserId.value ?: "user_voce"
-            val club = repository.getClubByCodigo(code.uppercase().trim())
-            if (club != null) {
-                // Enroll as member
-                repository.insertClubMember(ClubMember(club.id, userId, "member", System.currentTimeMillis()))
-                dataStoreManager.saveActiveClubId(club.id)
-                
-                // Add default book progress for this new user
-                val curBooks = database.rodapeDao().getBookByStatusFlow(club.id, "current").firstOrNull()
-                curBooks?.firstOrNull()?.let { b ->
-                    repository.insertUserProgress(UserProgress(userId, club.id, b.id, 1))
+            try {
+                val clubId = repository.joinClubWithCodeViaRpc(code)
+                if (clubId != null) {
+                    _activeClubId.value = clubId
+                    // Inicializa progresso no livro atual, se existir.
+                    val curBooks = repository.getBookByStatusFlow(clubId, "current").first()
+                    val userId = currentUserId.value
+                    curBooks.firstOrNull()?.let { b ->
+                        if (userId != null) {
+                            repository.insertUserProgress(UserProgress(userId, clubId, b.id, 1))
+                        }
+                    }
+                    onCompleted(true, null)
+                } else {
+                    onCompleted(false, "Esse código não tá certo. Confere com quem te chamou.")
                 }
-
-                onCompleted(true, null)
-            } else {
-                onCompleted(false, "Esse código não tá certo. Confere com quem te chamou.")
+            } catch (e: Exception) {
+                onCompleted(false, e.message ?: "Esse código não tá certo. Confere com quem te chamou.")
             }
         }
     }
@@ -506,8 +420,8 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
 
     fun toggleReaction(commentId: String, emoji: String) {
         viewModelScope.launch {
-            val userId = currentUserId.value ?: "user_voce"
-            val existing = database.rodapeDao().getReactionsForCommentFlow(commentId).first().find {
+            val userId = currentUserId.value ?: return@launch
+            val existing = repository.getReactionsForCommentFlow(commentId).first().find {
                 it.userId == userId && it.emoji == emoji
             }
             if (existing != null) {
@@ -586,51 +500,12 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
     }
 
     private suspend fun closeRoundInternal(round: VotingRound, clubId: String) {
-        val votes = repository.getVotesForRound(round.id)
-        val suggestions = repository.getBookSuggestionsForClubFlow(clubId)
-            .first()
-            .associateBy { it.bookId }
-
-        val winners = com.example.voting.VotingTally.rank(
-            votes = votes,
-            suggestionsByBookId = suggestions,
-            n = round.nLivros
-        )
-
-        // Marcar current atual como finished com dataEncontro = now
-        val currentList = repository.getBookByStatusFlow(clubId, "current").first()
-        currentList.forEach { b ->
-            repository.updateClubBookStatus(clubId, b.id, "finished")
-            repository.updateClubBookMeetingDate(clubId, b.id, System.currentTimeMillis())
-        }
-
-        // Promover vencedores: 1º vira current, demais viram next
-        winners.forEachIndexed { idx, bookId ->
-            val newStatus = if (idx == 0) "current" else "next"
-            repository.updateClubBookStatus(clubId, bookId, newStatus)
-        }
-
-        // Marcar rodada como fechada
-        val vencedoresJson = JSONArray().apply { winners.forEach { put(it) } }.toString()
-        repository.closeVotingRound(round.id, vencedoresJson)
-
-        // Notificar todos os membros do clube
-        val members = repository.getClubMembersFlow(clubId).first()
-        val titles = winners.mapNotNull { repository.getBook(it)?.title }
-        val payload = JSONArray().apply { titles.forEach { put(it) } }.toString()
-        members.forEach { member ->
-            repository.insertNotification(
-                DbNotification(
-                    id = "ntf_${UUID.randomUUID()}",
-                    userId = member.id,
-                    clubId = clubId,
-                    tipo = "voting_closed",
-                    payloadJson = "{\"titulos\":$payload,\"n\":${winners.size}}",
-                    lida = false,
-                    criadoEm = System.currentTimeMillis()
-                )
-            )
-        }
+        // RPC close_voting_round faz tudo no servidor:
+        //  - marca current atual como finished
+        //  - promove vencedores (1º current, demais next)
+        //  - cria notificacoes pra todos membros
+        //  - marca round como fechada
+        repository.closeVotingRoundViaRpc(round.id)
     }
 
     // --- Book detail flows e ações ---
@@ -902,8 +777,7 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
     fun regenerateInviteCode(onResult: (String) -> Unit = {}) {
         viewModelScope.launch {
             val clubId = activeClubId.value ?: return@launch
-            val newCode = (1..6).map { "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789".random() }.joinToString("")
-            repository.updateClubCodigo(clubId, newCode)
+            val newCode = repository.regenerateInviteCodeViaRpc(clubId)
             onResult(newCode)
         }
     }
@@ -911,99 +785,28 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
     fun promoteMemberToAdmin(targetUserId: String) {
         viewModelScope.launch {
             val clubId = activeClubId.value ?: return@launch
-            if (currentUserPapel.value != "super_admin") return@launch
-            val target = repository.getClubMember(clubId, targetUserId) ?: return@launch
-            if (target.papel != "member") return@launch
-            repository.updateMemberPapel(clubId, targetUserId, "admin")
-
-            val clubName = activeClub.value?.nome ?: ""
-            val promotedBy = currentUser.value?.nome ?: ""
-            repository.insertNotification(
-                DbNotification(
-                    id = "ntf_${UUID.randomUUID()}",
-                    userId = targetUserId,
-                    clubId = clubId,
-                    tipo = "promoted_to_admin",
-                    payloadJson = "{\"clubName\":\"$clubName\",\"promotedBy\":\"$promotedBy\"}",
-                    lida = false,
-                    criadoEm = System.currentTimeMillis()
-                )
-            )
+            repository.promoteMemberViaRpc(clubId, targetUserId)
         }
     }
 
     fun demoteAdminToMember(targetUserId: String) {
         viewModelScope.launch {
             val clubId = activeClubId.value ?: return@launch
-            if (currentUserPapel.value != "super_admin") return@launch
-            val target = repository.getClubMember(clubId, targetUserId) ?: return@launch
-            if (target.papel != "admin") return@launch
-            repository.updateMemberPapel(clubId, targetUserId, "member")
+            repository.demoteAdminViaRpc(clubId, targetUserId)
         }
     }
 
     fun transferSuperAdmin(toAdminUserId: String) {
         viewModelScope.launch {
             val clubId = activeClubId.value ?: return@launch
-            val meId = currentUserId.value ?: return@launch
-            if (currentUserPapel.value != "super_admin") return@launch
-            val target = repository.getClubMember(clubId, toAdminUserId) ?: return@launch
-            if (target.papel != "admin") return@launch
-
-            repository.updateMemberPapel(clubId, meId, "admin")
-            repository.updateMemberPapel(clubId, toAdminUserId, "super_admin")
-
-            val clubName = activeClub.value?.nome ?: ""
-            val fromUserName = currentUser.value?.nome ?: ""
-            repository.insertNotification(
-                DbNotification(
-                    id = "ntf_${UUID.randomUUID()}",
-                    userId = toAdminUserId,
-                    clubId = clubId,
-                    tipo = "super_admin_transferred",
-                    payloadJson = "{\"clubName\":\"$clubName\",\"fromUser\":\"$fromUserName\"}",
-                    lida = false,
-                    criadoEm = System.currentTimeMillis()
-                )
-            )
+            repository.transferSuperAdminViaRpc(clubId, toAdminUserId)
         }
     }
 
     fun removeMember(targetUserId: String, motivo: String) {
         viewModelScope.launch {
             val clubId = activeClubId.value ?: return@launch
-            val meId = currentUserId.value ?: return@launch
-            if (currentUserPapel.value !in setOf("admin", "super_admin")) return@launch
-            if (targetUserId == meId) return@launch
-            val target = repository.getClubMember(clubId, targetUserId) ?: return@launch
-            if (target.papel == "super_admin") return@launch
-
-            repository.insertMemberRemoval(
-                MemberRemoval(
-                    id = "rem_${UUID.randomUUID()}",
-                    clubId = clubId,
-                    userId = targetUserId,
-                    removedByUserId = meId,
-                    motivo = motivo.trim(),
-                    removedAt = System.currentTimeMillis()
-                )
-            )
-
-            repository.deleteClubMember(clubId, targetUserId)
-
-            val clubName = activeClub.value?.nome ?: ""
-            val motivoEscapado = motivo.trim().replace("\\", "\\\\").replace("\"", "\\\"")
-            repository.insertNotification(
-                DbNotification(
-                    id = "ntf_${UUID.randomUUID()}",
-                    userId = targetUserId,
-                    clubId = clubId,
-                    tipo = "member_removed",
-                    payloadJson = "{\"clubName\":\"$clubName\",\"motivo\":\"$motivoEscapado\"}",
-                    lida = false,
-                    criadoEm = System.currentTimeMillis()
-                )
-            )
+            repository.removeMemberViaRpc(clubId, targetUserId, motivo.trim())
         }
     }
 
@@ -1011,39 +814,15 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
         viewModelScope.launch {
             val clubId = activeClubId.value ?: return@launch
             val meId = currentUserId.value ?: return@launch
-            val me = repository.getClubMember(clubId, meId) ?: return@launch
-
-            if (me.papel == "super_admin") {
-                val members = repository.getClubMembersListOrderedByJoin(clubId)
-                val firstAdmin = members.firstOrNull { it.userId != meId && it.papel == "admin" }
-                if (firstAdmin == null) {
-                    onBlocked("Você é o único administrador. Promova alguém a admin antes de sair, ou arquive o clube.")
-                    return@launch
-                }
-                repository.updateMemberPapel(clubId, firstAdmin.userId, "super_admin")
-                val clubName = activeClub.value?.nome ?: ""
-                val myName = currentUser.value?.nome ?: ""
-                repository.insertNotification(
-                    DbNotification(
-                        id = "ntf_${UUID.randomUUID()}",
-                        userId = firstAdmin.userId,
-                        clubId = clubId,
-                        tipo = "super_admin_transferred",
-                        payloadJson = "{\"clubName\":\"$clubName\",\"fromUser\":\"$myName\"}",
-                        lida = false,
-                        criadoEm = System.currentTimeMillis()
-                    )
-                )
+            try {
+                repository.leaveClubViaRpc(clubId)
+                val outros = repository.getClubsForUserList(meId)
+                _activeClubId.value = outros.firstOrNull()?.id
+                onDone()
+            } catch (e: Exception) {
+                // RPC leave_club levanta exception se super_admin sozinho — repassa msg.
+                onBlocked(e.message ?: "Não foi possível sair do clube.")
             }
-
-            repository.deleteClubMember(clubId, meId)
-            val outros = repository.getClubsForUserList(meId)
-            if (outros.isNotEmpty()) {
-                dataStoreManager.saveActiveClubId(outros.first().id)
-            } else {
-                dataStoreManager.saveActiveClubId("")
-            }
-            onDone()
         }
     }
 
@@ -1198,11 +977,7 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
             repository.updateClubArquivado(clubId, true)
             val uid = currentUserId.value ?: return@launch
             val outros = repository.getClubsForUserList(uid)
-            if (outros.isNotEmpty()) {
-                dataStoreManager.saveActiveClubId(outros.first().id)
-            } else {
-                dataStoreManager.saveActiveClubId("")
-            }
+            _activeClubId.value = outros.firstOrNull()?.id
         }
     }
 
@@ -1212,7 +987,7 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
             val member = repository.getClubMember(clubId, uid) ?: return@launch
             if (member.papel != "super_admin") return@launch
             repository.updateClubArquivado(clubId, false)
-            dataStoreManager.saveActiveClubId(clubId)
+            _activeClubId.value = clubId
         }
     }
 
