@@ -10,7 +10,6 @@ import com.example.data.remote.AuthRepository
 import com.example.data.remote.Supabase
 import com.example.ui.auth.GoogleSignInHelper
 import io.github.jan.supabase.auth.handleDeeplinks
-import io.github.jan.supabase.auth.status.SessionSource
 import io.github.jan.supabase.auth.status.SessionStatus
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.material3.Surface
@@ -59,11 +58,14 @@ class MainActivity : ComponentActivity() {
                     val startDestination = if (supabaseUserId != null) "main_tabs" else "welcome"
 
                     // Quando o usuario abre o link de "esqueci minha senha", o Supabase
-                    // hidrata uma sessao temporaria com source == External. Redirecionamos
-                    // pra tela de definir nova senha.
+                    // hidrata uma sessao com `session.type == "recovery"`. Esse e o sinal
+                    // correto pra mostrar reset_password — checar pelo `SessionSource`
+                    // confundia com Google OAuth (que tambem usa deep link e marca
+                    // source como External), causando o app a redirecionar pra reset
+                    // mesmo quando o usuario so estava criando clube ou navegando.
                     LaunchedEffect(sessionStatus) {
                         val s = sessionStatus
-                        if (s is SessionStatus.Authenticated && s.source is SessionSource.External) {
+                        if (s is SessionStatus.Authenticated && s.session.type == "recovery") {
                             navController.navigate("reset_password") {
                                 popUpTo("welcome") { inclusive = false }
                             }
