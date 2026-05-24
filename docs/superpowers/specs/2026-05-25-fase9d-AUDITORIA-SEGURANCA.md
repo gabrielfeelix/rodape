@@ -95,23 +95,30 @@ CREATE INDEX IF NOT EXISTS meeting_notes_user_idx
 
 ---
 
-## ⚠️ Problema de configuração — PRECISA DE VOCÊ (1 minuto no painel)
+## ⚠️ Configuração de Auth — ajustes no painel (Authentication → Providers → Email)
 
-### Leaked Password Protection Disabled
+### O que foi feito em 2026-05-25:
+
+- ✅ **Minimum password length**: aumentado de 6 → 8 (default Supabase é fraco)
+- ✅ **Secure password change**: habilitado (impede troca de senha sem reauth recente)
+- ✅ **Require current password when updating**: habilitado (digita senha atual ao trocar)
+- ✅ **Captcha protection**: DESABILITADO (estava ON sem hCaptcha secret — causava falhas
+  silenciosas). Reabilitar quando configurar conta no hcaptcha.com e fornecer secret.
+
+### Leaked Password Protection (HIBP) — bloqueado pelo plano Free
 
 Supabase tem integração com [HaveIBeenPwned.org](https://haveibeenpwned.com) que
-bloqueia senhas que apareceram em vazamentos públicos. **Está desabilitado**.
+bloqueia senhas conhecidas em vazamentos públicos. **Esse feature é Pro plan ($25/mês)
+e acima** — não disponível no Free plan.
 
-**Como ligar:**
+**Decisão pragmática**: deixar OFF até migrar pra Pro. Não é crítico nesta fase.
 
-1. Abrir painel: https://supabase.com/dashboard/project/zfbywoeajebvasnsrzfh/auth/policies
-2. Menu lateral: **Authentication → Policies → Password Strength**
-3. Toggle **"Check passwords against HaveIBeenPwned"** = ON
-4. Salvar
-
-Recomendado também:
-- **Minimum password length**: 8 (default é 6 — fraco demais)
-- **Required characters**: pelo menos 1 letra + 1 número
+### Já estavam OK:
+- Confirm email: ON (obrigatorio confirmar email no cadastro)
+- Secure email change: ON (confirma email novo E antigo)
+- Allow new users to sign up: ON
+- Allow anonymous sign-ins: OFF (sem risco de spam)
+- Allow manual linking: OFF
 
 ---
 
