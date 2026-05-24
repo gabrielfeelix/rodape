@@ -7,39 +7,33 @@ import androidx.datastore.preferences.core.booleanPreferencesKey
 import androidx.datastore.preferences.core.edit
 import androidx.datastore.preferences.core.floatPreferencesKey
 import androidx.datastore.preferences.core.intPreferencesKey
-import androidx.datastore.preferences.core.stringPreferencesKey
 import androidx.datastore.preferences.preferencesDataStore
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.map
 
 val Context.dataStore: DataStore<Preferences> by preferencesDataStore(name = "rodape_prefs")
 
+/**
+ * Preferencias locais do device — NUNCA sessao do usuario.
+ *
+ * Sessao (userId/nome/email/active club) vive em:
+ *  - Supabase Auth (sessionStatus): identidade real
+ *  - AuthRepository.currentDisplayNameFlow / currentEmailFlow: dados do JWT
+ *  - MainViewModel._activeClubId: estado em memoria (nao persiste cold-start)
+ *
+ * Aqui ficam so preferencias do device-app:
+ *  - rated_app: usuario ja avaliou na Play Store?
+ *  - engagement_count: contador pro prompt de avaliacao
+ *  - font_scale: escala de fonte preferida neste dispositivo (super-pessoal,
+ *    nao faz sentido sincronizar — telefone pequeno pode preferir fonte maior
+ *    que o mesmo usuario no tablet)
+ */
 class DataStoreManager(private val context: Context) {
 
     companion object {
-        val USER_ID_KEY = stringPreferencesKey("user_id")
-        val USER_NAME_KEY = stringPreferencesKey("user_name")
-        val USER_EMAIL_KEY = stringPreferencesKey("user_email")
-        val ACTIVE_CLUB_ID_KEY = stringPreferencesKey("active_club_id")
         val RATED_APP_KEY = booleanPreferencesKey("rated_app")
         val ENGAGEMENT_COUNT_KEY = intPreferencesKey("engagement_count")
         val FONT_SCALE_KEY = floatPreferencesKey("font_scale")
-    }
-
-    val userIdFlow: Flow<String?> = context.dataStore.data.map { prefs ->
-        prefs[USER_ID_KEY]
-    }
-
-    val userNameFlow: Flow<String?> = context.dataStore.data.map { prefs ->
-        prefs[USER_NAME_KEY]
-    }
-
-    val userEmailFlow: Flow<String?> = context.dataStore.data.map { prefs ->
-        prefs[USER_EMAIL_KEY]
-    }
-
-    val activeClubIdFlow: Flow<String?> = context.dataStore.data.map { prefs ->
-        prefs[ACTIVE_CLUB_ID_KEY]
     }
 
     val ratedAppFlow: Flow<Boolean> = context.dataStore.data.map { prefs ->
@@ -72,27 +66,12 @@ class DataStoreManager(private val context: Context) {
         }
     }
 
-    suspend fun saveSession(userId: String, name: String, email: String) {
-        context.dataStore.edit { prefs ->
-            prefs[USER_ID_KEY] = userId
-            prefs[USER_NAME_KEY] = name
-            prefs[USER_EMAIL_KEY] = email
-        }
-    }
-
-    suspend fun saveActiveClubId(clubId: String) {
-        context.dataStore.edit { prefs ->
-            prefs[ACTIVE_CLUB_ID_KEY] = clubId
-        }
-    }
-
+    /**
+     * Compat: chamado por funcoes antigas (`MainViewModel.logout`). Como nao
+     * temos mais nada de sessao aqui, esta fun e no-op. Existe apenas pra
+     * preservar a interface — o signOut real e feito por `AuthRepository`.
+     */
     suspend fun clearSession() {
-        // Mantém RATED_APP_KEY e ENGAGEMENT_COUNT_KEY: preferências do app não dependem da sessão
-        context.dataStore.edit { prefs ->
-            prefs.remove(USER_ID_KEY)
-            prefs.remove(USER_NAME_KEY)
-            prefs.remove(USER_EMAIL_KEY)
-            prefs.remove(ACTIVE_CLUB_ID_KEY)
-        }
+        // no-op: sessao agora vive em Supabase Auth, nao no DataStore.
     }
 }
