@@ -55,6 +55,7 @@ import androidx.compose.ui.text.buildAnnotatedString
 import androidx.compose.ui.text.font.FontStyle
 import androidx.compose.ui.text.withStyle
 import kotlinx.coroutines.delay
+import kotlinx.coroutines.launch
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -174,17 +175,21 @@ fun WelcomeScreen(
 @Composable
 fun LoginScreen(
     onNavigateBack: () -> Unit,
-    onLoginSuccess: (name: String, email: String) -> Unit
+    onNavigateToSignUp: () -> Unit,
+    onNavigateToForgotPassword: () -> Unit,
+    onSignInWithEmail: suspend (email: String, password: String) -> Result<Unit>,
+    onSignInWithGoogle: suspend () -> Result<Unit>,
+    onSignedIn: () -> Unit,
 ) {
-    var isSignUp by remember { mutableStateOf(false) }
-    var name by remember { mutableStateOf("") }
     var email by remember { mutableStateOf("") }
     var password by remember { mutableStateOf("") }
+    var isLoading by remember { mutableStateOf(false) }
+    var errorMsg by remember { mutableStateOf<String?>(null) }
+    val scope = rememberCoroutineScope()
 
     val isEmailValid = email.contains("@") && email.length >= 5
     val isPasswordValid = password.length >= 6
-    val isNameValid = !isSignUp || name.trim().length >= 2
-    val isFormValid = isEmailValid && isPasswordValid && isNameValid
+    val isFormValid = isEmailValid && isPasswordValid
 
     Scaffold(
         topBar = {
@@ -213,276 +218,135 @@ fun LoginScreen(
         ) {
             item {
                 Spacer(modifier = Modifier.height(24.dp))
-
                 RodapeCard(
                     modifier = Modifier.fillMaxWidth(),
                     contentPadding = androidx.compose.foundation.layout.PaddingValues(20.dp)
                 ) {
                     Text(
-                        text = if (isSignUp) "Criar conta" else "Bem-vindo de volta",
+                        text = "Bem-vindo de volta",
                         style = MaterialTheme.typography.displaySmall,
                         modifier = Modifier.fillMaxWidth(),
                         textAlign = TextAlign.Center
                     )
-
                     Spacer(modifier = Modifier.height(16.dp))
 
-                    if (!isSignUp) {
-                        Card(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .padding(vertical = 4.dp),
-                            colors = CardDefaults.cardColors(containerColor = OlivaSoft),
-                            border = BorderStroke(1.dp, OlivaDark.copy(alpha = 0.2f)),
-                            shape = RoundedCornerShape(12.dp)
-                        ) {
-                            Row(
-                                modifier = Modifier.padding(12.dp),
-                                verticalAlignment = Alignment.CenterVertically
-                            ) {
-                                Icon(
-                                    imageVector = Icons.Outlined.AccountCircle,
-                                    contentDescription = "Dica",
-                                    tint = OlivaDark,
-                                    modifier = Modifier.size(24.dp)
-                                )
-                                Spacer(modifier = Modifier.width(12.dp))
-                                Text(
-                                    text = "Dica: Para ver o app cheio de conteúdo (Clubes, discussões, progresso), use o botão de atalho abaixo ou digite o email: voce@rodape.com",
-                                    style = MaterialTheme.typography.bodyMedium.copy(color = OlivaDark, fontWeight = FontWeight.Medium),
-                                    modifier = Modifier.weight(1f)
-                                )
-                            }
-                        }
-                    }
-
-                    Spacer(modifier = Modifier.height(16.dp))
-
-                    // Segmented control
-                    Row(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .height(52.dp)
-                            .background(PaperDeep, RoundedCornerShape(26.dp))
-                            .border(0.5.dp, Divider, RoundedCornerShape(26.dp))
-                            .padding(4.dp),
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        Box(
-                            modifier = Modifier
-                                .weight(1f)
-                                .fillMaxHeight()
-                                .background(
-                                    if (!isSignUp) CardSurface else Color.Transparent,
-                                    RoundedCornerShape(22.dp)
-                                )
-                                .clickable { isSignUp = false },
-                            contentAlignment = Alignment.Center
-                        ) {
-                            Text(
-                                "Entrar",
-                                color = if (!isSignUp) Ink else Muted,
-                                style = MaterialTheme.typography.bodyLarge.copy(fontWeight = FontWeight.Medium)
-                            )
-                        }
-
-                        Box(
-                            modifier = Modifier
-                                .weight(1f)
-                                .fillMaxHeight()
-                                .background(
-                                    if (isSignUp) CardSurface else Color.Transparent,
-                                    RoundedCornerShape(22.dp)
-                                )
-                                .clickable { isSignUp = true },
-                            contentAlignment = Alignment.Center
-                        ) {
-                            Text(
-                                "Criar conta",
-                                color = if (isSignUp) Ink else Muted,
-                                style = MaterialTheme.typography.bodyLarge.copy(fontWeight = FontWeight.Medium)
-                            )
-                        }
-                    }
-
-                    Spacer(modifier = Modifier.height(24.dp))
-
-                    if (isSignUp) {
-                        Text(
-                            text = "Nome".uppercase(),
-                            style = MaterialTheme.typography.labelMedium.copy(color = Tertiary),
-                            modifier = Modifier.fillMaxWidth()
-                        )
-                        Spacer(modifier = Modifier.height(8.dp))
-                        OutlinedTextField(
-                            value = name,
-                            onValueChange = { name = it },
-                            placeholder = { Text("Seu nome") },
-                            modifier = Modifier.fillMaxWidth(),
-                            shape = RoundedCornerShape(14.dp),
-                            colors = OutlinedTextFieldDefaults.colors(
-                                focusedBorderColor = Terracota,
-                                unfocusedBorderColor = Divider,
-                                focusedContainerColor = Cream,
-                                unfocusedContainerColor = Cream
-                            )
-                        )
-                        Spacer(modifier = Modifier.height(16.dp))
-                    }
-
-                    Text(
-                        text = "Email".uppercase(),
-                        style = MaterialTheme.typography.labelMedium.copy(color = Tertiary),
-                        modifier = Modifier.fillMaxWidth()
-                    )
-                    Spacer(modifier = Modifier.height(8.dp))
                     OutlinedTextField(
                         value = email,
-                        onValueChange = { email = it },
-                        placeholder = { Text("Seu email") },
-                        modifier = Modifier.fillMaxWidth(),
-                        shape = RoundedCornerShape(14.dp),
+                        onValueChange = { email = it.trim(); errorMsg = null },
+                        label = { Text("Email") },
+                        singleLine = true,
                         keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Email),
-                        colors = OutlinedTextFieldDefaults.colors(
-                            focusedBorderColor = Terracota,
-                            unfocusedBorderColor = Divider,
-                            focusedContainerColor = Cream,
-                            unfocusedContainerColor = Cream
-                        )
+                        modifier = Modifier.fillMaxWidth(),
+                        enabled = !isLoading,
                     )
+                    Spacer(modifier = Modifier.height(12.dp))
 
-                    Spacer(modifier = Modifier.height(16.dp))
-
-                    Text(
-                        text = "Senha".uppercase(),
-                        style = MaterialTheme.typography.labelMedium.copy(color = Tertiary),
-                        modifier = Modifier.fillMaxWidth()
-                    )
-                    Spacer(modifier = Modifier.height(8.dp))
                     OutlinedTextField(
                         value = password,
-                        onValueChange = { password = it },
-                        placeholder = { Text("Mínimo 6 caracteres") },
+                        onValueChange = { password = it; errorMsg = null },
+                        label = { Text("Senha") },
+                        singleLine = true,
+                        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Password),
                         visualTransformation = PasswordVisualTransformation(),
                         modifier = Modifier.fillMaxWidth(),
-                        shape = RoundedCornerShape(14.dp),
-                        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Password),
-                        colors = OutlinedTextFieldDefaults.colors(
-                            focusedBorderColor = Terracota,
-                            unfocusedBorderColor = Divider,
-                            focusedContainerColor = Cream,
-                            unfocusedContainerColor = Cream
-                        )
+                        enabled = !isLoading,
                     )
 
-                    if (!isSignUp) {
-                        Box(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .padding(vertical = 8.dp),
-                            contentAlignment = Alignment.CenterEnd
-                        ) {
-                            Text(
-                                "Esqueci minha senha",
-                                style = MaterialTheme.typography.labelSmall.copy(color = Terracota),
-                                modifier = Modifier.clickable { }
-                            )
-                        }
-                    } else {
-                        Spacer(modifier = Modifier.height(16.dp))
+                    Spacer(modifier = Modifier.height(8.dp))
+                    TextButton(
+                        onClick = onNavigateToForgotPassword,
+                        modifier = Modifier.align(Alignment.End),
+                        enabled = !isLoading,
+                    ) {
+                        Text("Esqueci minha senha", color = Terracota)
+                    }
+
+                    errorMsg?.let {
+                        Spacer(modifier = Modifier.height(8.dp))
+                        Text(it, color = MaterialTheme.colorScheme.error, style = MaterialTheme.typography.bodyMedium)
                     }
 
                     Spacer(modifier = Modifier.height(16.dp))
-
-                    TbButton(
-                        text = if (isSignUp) "Criar conta" else "Entrar",
+                    Button(
                         onClick = {
-                            if (isFormValid) {
-                                val resolvedName = if (isSignUp) name else email.substringBefore("@")
-                                onLoginSuccess(resolvedName, email)
+                            isLoading = true
+                            errorMsg = null
+                            scope.launch {
+                                val result = onSignInWithEmail(email, password)
+                                isLoading = false
+                                result.fold(
+                                    onSuccess = { onSignedIn() },
+                                    onFailure = { errorMsg = it.message ?: "Falha ao entrar" },
+                                )
                             }
                         },
-                        variant = TbButtonVariant.Terra,
-                        size = TbButtonSize.Lg,
-                        modifier = Modifier.fillMaxWidth(),
-                        enabled = isFormValid
-                    )
-
-                    Spacer(modifier = Modifier.height(24.dp))
-
-                    Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        HorizontalDivider(
-                            modifier = Modifier.weight(1f),
-                            color = Divider
-                        )
-                        Text(
-                            text = "ou",
-                            style = MaterialTheme.typography.labelSmall.copy(color = Muted),
-                            modifier = Modifier.padding(horizontal = 16.dp)
-                        )
-                        HorizontalDivider(
-                            modifier = Modifier.weight(1f),
-                            color = Divider
-                        )
-                    }
-
-                    Spacer(modifier = Modifier.height(24.dp))
-
-                    // dev-only: botão com ícone, mantido fora do TbButton de propósito
-                    Button(
-                        onClick = { onLoginSuccess("Você", "voce@rodape.com") },
+                        enabled = isFormValid && !isLoading,
                         modifier = Modifier
                             .fillMaxWidth()
                             .height(52.dp),
                         shape = RoundedCornerShape(26.dp),
-                        colors = ButtonDefaults.buttonColors(containerColor = Terracota)
+                        colors = ButtonDefaults.buttonColors(containerColor = Terracota),
                     ) {
-                        Image(
-                            painter = painterResource(id = R.drawable.ic_logo),
-                            contentDescription = "Logo",
-                            modifier = Modifier.size(28.dp),
-                            colorFilter = androidx.compose.ui.graphics.ColorFilter.tint(Color.White)
-                        )
-                        Spacer(modifier = Modifier.width(10.dp))
-                        Text(
-                            text = "Entrar na Conta de Teste (Completa)",
-                            style = MaterialTheme.typography.bodyLarge.copy(
-                                fontWeight = FontWeight.Bold,
-                                color = Color.White
+                        if (isLoading) {
+                            CircularProgressIndicator(
+                                color = Color.White,
+                                strokeWidth = 2.dp,
+                                modifier = Modifier.size(20.dp),
                             )
-                        )
+                        } else {
+                            Text(
+                                "Entrar",
+                                style = MaterialTheme.typography.bodyLarge.copy(
+                                    fontWeight = FontWeight.Bold,
+                                    color = Color.White,
+                                ),
+                            )
+                        }
                     }
 
                     Spacer(modifier = Modifier.height(12.dp))
-
-                    // dev-only: botão com ícone, mantido fora do TbButton de propósito
                     OutlinedButton(
-                        onClick = { onLoginSuccess("Convidado Google", "demo@google.com") },
+                        onClick = {
+                            isLoading = true
+                            errorMsg = null
+                            scope.launch {
+                                val result = onSignInWithGoogle()
+                                isLoading = false
+                                result.fold(
+                                    onSuccess = { onSignedIn() },
+                                    onFailure = { errorMsg = it.message ?: "Falha no Google Sign-In" },
+                                )
+                            }
+                        },
+                        enabled = !isLoading,
                         modifier = Modifier
                             .fillMaxWidth()
                             .height(52.dp),
                         shape = RoundedCornerShape(26.dp),
-                        border = BorderStroke(1.dp, Divider)
+                        border = BorderStroke(1.dp, Divider),
                     ) {
                         Icon(
                             imageVector = Icons.Outlined.AccountCircle,
-                            contentDescription = "Google Icon",
+                            contentDescription = "Google",
                             tint = Ink,
-                            modifier = Modifier.size(24.dp)
+                            modifier = Modifier.size(24.dp),
                         )
                         Spacer(modifier = Modifier.width(12.dp))
                         Text(
-                            text = "Continuar com Google (Novo)",
+                            "Continuar com Google",
                             style = MaterialTheme.typography.bodyLarge.copy(
                                 fontWeight = FontWeight.Medium,
-                                color = Ink
-                            )
+                                color = Ink,
+                            ),
                         )
                     }
+
+                    Spacer(modifier = Modifier.height(16.dp))
+                    TextButton(onClick = onNavigateToSignUp, enabled = !isLoading) {
+                        Text("Ainda não tem conta? Cadastre-se", color = OlivaDark)
+                    }
                 }
+                Spacer(modifier = Modifier.height(48.dp))
             }
         }
     }
