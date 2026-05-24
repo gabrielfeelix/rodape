@@ -291,6 +291,21 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
             kotlinx.coroutines.delay(500)
             maybeAutoCloseExpiredRound()
         }
+
+        // Avatar inicial inteligente: quando detectamos profile com avatar default
+        // 'preset:leitor' (que o trigger handle_new_user usa pra todos), escolhe um
+        // preset adequado ao nome (genero pelo primeiro nome). So roda 1 vez por user.
+        viewModelScope.launch {
+            currentUser.collect { user ->
+                if (user != null && user.avatarUrl == "preset:leitor") {
+                    val sugerido = com.example.ui.components.AvatarPicker.pickFor(user.nome)
+                    if (sugerido != "preset:leitor") {
+                        // Atualiza so o avatar — preserva o resto do profile.
+                        repository.insertUser(user.copy(avatarUrl = sugerido))
+                    }
+                }
+            }
+        }
     }
 
     // --- Authentication Actions ---
@@ -374,7 +389,7 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
     // --- Book / Chapter progress actions ---
     fun updateBookProgress(bookId: String, currentChapter: Int) {
         viewModelScope.launch {
-            val userId = currentUserId.value ?: "user_voce"
+            val userId = currentUserId.value ?: return@launch
             val clubId = activeClubId.value ?: return@launch
             repository.insertUserProgress(UserProgress(userId, clubId, bookId, currentChapter))
         }
@@ -388,12 +403,13 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
 
     fun getSavedQuotesForBook(bookId: String): Flow<List<SavedQuote>> =
         currentUserId.flatMapLatest { userId ->
-            repository.getSavedQuotesForBookFlow(userId ?: "user_voce", bookId)
+            if (userId != null) repository.getSavedQuotesForBookFlow(userId, bookId)
+            else flowOf(emptyList())
         }
 
     fun sendComment(chapterId: String, content: String) {
         viewModelScope.launch {
-            val userId = currentUserId.value ?: "user_voce"
+            val userId = currentUserId.value ?: return@launch
             val clubId = activeClubId.value ?: return@launch
             
             val commentId = "com_${UUID.randomUUID()}"
@@ -435,7 +451,7 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
     // --- Votes (rodada) ---
     fun voteForBook(bookId: String) {
         viewModelScope.launch {
-            val userId = currentUserId.value ?: "user_voce"
+            val userId = currentUserId.value ?: return@launch
             val clubId = activeClubId.value ?: return@launch
             val round = repository.getActiveVotingRound(clubId) ?: return@launch
 
@@ -569,14 +585,14 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
     // --- RSVP ---
     fun rsvpMeeting(meetingId: String, status: String) {
         viewModelScope.launch {
-            val userId = currentUserId.value ?: "user_voce"
+            val userId = currentUserId.value ?: return@launch
             repository.insertMeetingRsvp(MeetingRsvp(meetingId, userId, status))
             bumpEngagement()
         }
     }
 
     fun getRsvpOfUser(meetingId: String): Flow<MeetingRsvp?> {
-        val userId = currentUserId.value ?: "user_voce"
+        val userId = currentUserId.value ?: return flowOf(null)
         return repository.getRsvpForMeetingOfUserFlow(meetingId, userId)
     }
 
@@ -633,7 +649,7 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
     ) {
         viewModelScope.launch {
             val clubId = activeClubId.value ?: return@launch
-            val userId = currentUserId.value ?: "user_voce"
+            val userId = currentUserId.value ?: return@launch
             val bookId = "book_sug_${UUID.randomUUID().toString().take(6)}"
             val coverId = doc.coverI
             val coverUrl = if (coverId != null) {
@@ -727,7 +743,7 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
     // --- Notifications actions ---
     fun markAllNotificationsAsRead() {
         viewModelScope.launch {
-            val userId = currentUserId.value ?: "user_voce"
+            val userId = currentUserId.value ?: return@launch
             repository.markAllNotificationsAsRead(userId)
         }
     }
@@ -742,10 +758,12 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
     fun saveQuote(bookId: String, texto: String, capituloRef: String) {
         viewModelScope.launch {
             if (texto.isBlank()) return@launch
+            val userId = currentUserId.value ?: return@launch
+            val clubId = activeClubId.value ?: return@launch
             val quote = SavedQuote(
                 id = "quote_${UUID.randomUUID()}",
-                userId = currentUserId.value ?: "user_voce",
-                clubId = activeClubId.value ?: "",
+                userId = userId,
+                clubId = clubId,
                 bookId = bookId,
                 texto = texto.trim(),
                 capituloRef = capituloRef,
