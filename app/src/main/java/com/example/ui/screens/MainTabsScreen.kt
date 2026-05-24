@@ -2266,15 +2266,16 @@ fun EditProfileView(
     var email by remember { mutableStateOf(initialEmail) }
     var avatarUrl by remember { mutableStateOf(initialAvatarUrl) }
 
-    // Avatares disponíveis: primeiros 5 são ilustrados (drawables),
+    // Avatares disponíveis: primeiros 6 são ilustrados (drawables),
     // os 3 últimos são iniciais coloridas (esquema antigo).
-    // Renderizado como grid 2x4 (8 slots).
+    // Renderizado como grid 3x3 (9 slots).
     val presetNames = listOf(
         "preset:pequeno_principe",
         "preset:don_quixote",
         "preset:petalas",
         "preset:indigena",
         "preset:detetive",
+        "preset:joana_darc",
         "Júlia",
         "Leo",
         "Helena"
@@ -2343,16 +2344,16 @@ fun EditProfileView(
                 modifier = Modifier.fillMaxWidth()
             )
             Spacer(modifier = Modifier.height(10.dp))
-            // Grid 2x4 — comporta 8 avatares (5 ilustrados + 3 iniciais)
-            // Cada linha tem altura fixa 96dp pra comportar o avatar mais alto (Don Quixote 2.10x)
-            val rows = presetNames.chunked(4)
-            Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
+            // Grid 3x3 — comporta 9 avatares (6 ilustrados + 3 iniciais)
+            // Cada linha tem altura fixa pra comportar avatares com lança (Joana 2.10x)
+            val rows = presetNames.chunked(3)
+            Column(verticalArrangement = Arrangement.spacedBy(14.dp)) {
                 rows.forEach { rowPresets ->
                     Row(
                         modifier = Modifier
                             .fillMaxWidth()
-                            .height(96.dp),
-                        horizontalArrangement = Arrangement.SpaceBetween,
+                            .height(120.dp),
+                        horizontalArrangement = Arrangement.SpaceEvenly,
                         verticalAlignment = Alignment.Bottom
                     ) {
                         rowPresets.forEach { preset ->
@@ -2364,19 +2365,20 @@ fun EditProfileView(
                                 "preset:petalas" -> "Pétalas"
                                 "preset:indigena" -> "Indígena"
                                 "preset:detetive" -> "Detetive"
+                                "preset:joana_darc" -> "Joana d'Arc"
                                 else -> preset
                             }
                             Box(
                                 modifier = Modifier
-                                    .width(56.dp)
-                                    .height(96.dp)
+                                    .width(72.dp)
+                                    .height(120.dp)
                                     .clickable { avatarUrl = preset },
                                 contentAlignment = Alignment.BottomCenter
                             ) {
                                 Avatar(
                                     name = displayLabel,
                                     avatarUrl = if (isIllustrated) preset else "",
-                                    size = 48.dp,
+                                    size = 56.dp,
                                     ring = if (isSelected) Ink else null
                                 )
                             }

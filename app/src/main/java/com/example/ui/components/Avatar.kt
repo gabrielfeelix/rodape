@@ -93,6 +93,14 @@ private val presetAvatars: Map<String, PresetAvatar> = mapOf(
         // Busto ~1:1.1 — um pouco mais de altura pra acomodar chapéu/lupa
         widthFactor = 1.18f,
         heightFactor = 1.45f
+    ),
+    "preset:joana_darc" to PresetAvatar(
+        drawableRes = R.drawable.avatar_joana_darc,
+        bgColor = Color(0xFFEBDCE4), // Plum soft — combina com a bandeira azul-real
+        displayName = "Joana d'Arc",
+        // Figura inteira em pé + lança subindo bem alto
+        widthFactor = 1.30f,
+        heightFactor = 2.10f
     )
 )
 
