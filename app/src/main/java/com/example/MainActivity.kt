@@ -77,8 +77,7 @@ class MainActivity : ComponentActivity() {
                     composable("welcome") {
                         WelcomeScreen(
                             onNavigateToLogin = { navController.navigate("login") },
-                            onNavigateToCreateClub = { navController.navigate("create_club") },
-                            onNavigateToJoinClub = { navController.navigate("join_club") }
+                            onNavigateToSignUp = { navController.navigate("signup") },
                         )
                     }
 
@@ -186,6 +185,7 @@ class MainActivity : ComponentActivity() {
                             },
                             onNavigateToSuggestBook = { navController.navigate("suggest_book") },
                             onNavigateToJoinClub = { navController.navigate("join_club") },
+                            onNavigateToCreateClub = { navController.navigate("create_club") },
                             onLogoutCompleted = {
                                 navController.navigate("welcome") {
                                     popUpTo("main_tabs") { inclusive = true }

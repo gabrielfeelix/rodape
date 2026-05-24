@@ -82,6 +82,7 @@ fun MainTabsScreen(
     onNavigateToDiscussion: (String, String) -> Unit,
     onNavigateToSuggestBook: () -> Unit,
     onNavigateToJoinClub: () -> Unit,
+    onNavigateToCreateClub: () -> Unit,
     onLogoutCompleted: () -> Unit,
     onNavigateToBookDetail: (String) -> Unit = {},
     onNavigateToFrases: () -> Unit = {},
@@ -108,11 +109,29 @@ fun MainTabsScreen(
     val activeClub by viewModel.activeClub.collectAsState()
     val allClubs by viewModel.allClubs.collectAsState()
     val currentUser by viewModel.currentUser.collectAsState()
+    val supaName by viewModel.supabaseDisplayName.collectAsState()
     val unreadFlow = remember(viewModel.notifications) {
         viewModel.notifications.map { notifs -> notifs.count { !it.lida } }
     }
     val unreadNotificationsCount by unreadFlow.collectAsState(initial = 0)
     val isAdmin by viewModel.isCurrentUserAdmin.collectAsState()
+
+    // Estado vazio: usuario logado mas nao tem clubes. Mostra CTAs em vez das tabs
+    // (as tabs todas dependem de um clube ativo — sem clube, todas mostrariam vazio).
+    if (allClubs.isEmpty()) {
+        val firstName = (supaName ?: currentUser?.nome)?.substringBefore(" ")
+        NoClubsEmptyState(
+            userFirstName = firstName,
+            onCreateClub = onNavigateToCreateClub,
+            onJoinClub = onNavigateToJoinClub,
+            onSignOut = {
+                viewModel.signOutSupabase {
+                    onLogoutCompleted()
+                }
+            },
+        )
+        return
+    }
 
     Scaffold(
         topBar = {

@@ -61,8 +61,7 @@ import kotlinx.coroutines.launch
 @Composable
 fun WelcomeScreen(
     onNavigateToLogin: () -> Unit,
-    onNavigateToCreateClub: () -> Unit,
-    onNavigateToJoinClub: () -> Unit
+    onNavigateToSignUp: () -> Unit,
 ) {
     var visible by remember { mutableStateOf(false) }
 
@@ -132,7 +131,9 @@ fun WelcomeScreen(
                 }
             }
 
-            // Buttons
+            // Botoes de auth: o app exige autenticacao real (Supabase Auth + RLS),
+            // entao Welcome so oferece Entrar/Criar conta. Apos login, os botoes
+            // de Criar/Entrar em clube aparecem dentro do app no estado vazio.
             Column(
                 modifier = Modifier
                     .fillMaxWidth()
@@ -141,30 +142,19 @@ fun WelcomeScreen(
                 horizontalAlignment = Alignment.CenterHorizontally
             ) {
                 TbButton(
-                    text = "Criar um clube",
-                    onClick = onNavigateToCreateClub,
+                    text = "Entrar",
+                    onClick = onNavigateToLogin,
                     variant = TbButtonVariant.Terra,
                     size = TbButtonSize.Lg,
                     modifier = Modifier.fillMaxWidth()
                 )
 
                 TbButton(
-                    text = "Entrar num clube",
-                    onClick = onNavigateToJoinClub,
+                    text = "Criar conta",
+                    onClick = onNavigateToSignUp,
                     variant = TbButtonVariant.Outline,
                     size = TbButtonSize.Lg,
                     modifier = Modifier.fillMaxWidth()
-                )
-
-                Text(
-                    text = "Já tenho conta",
-                    style = MaterialTheme.typography.bodyLarge.copy(
-                        fontWeight = FontWeight.Medium,
-                        color = Terracota
-                    ),
-                    modifier = Modifier
-                        .clickable { onNavigateToLogin() }
-                        .padding(vertical = 12.dp, horizontal = 24.dp)
                 )
             }
         }
