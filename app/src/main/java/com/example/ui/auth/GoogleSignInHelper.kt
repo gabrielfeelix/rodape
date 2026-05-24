@@ -26,7 +26,9 @@ class GoogleSignInHelper(private val context: Context) {
         val option = GetGoogleIdOption.Builder()
             .setServerClientId(BuildConfig.GOOGLE_WEB_CLIENT_ID)
             .setFilterByAuthorizedAccounts(false)
-            .setAutoSelectEnabled(true)
+            // Auto-select pula o picker quando so tem uma conta — desabilitamos
+            // pra sempre mostrar o picker e deixar o usuario escolher (melhor UX).
+            .setAutoSelectEnabled(false)
             .setNonce(hashedNonce)
             .build()
 

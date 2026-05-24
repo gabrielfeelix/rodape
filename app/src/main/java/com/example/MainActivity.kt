@@ -96,7 +96,14 @@ class MainActivity : ComponentActivity() {
                             onSignInWithGoogle = {
                                 runCatching {
                                     val token = google.getGoogleIdToken()
+                                    android.util.Log.d("Rodape/Auth", "Got Google ID token (length=${token.idToken.length}), enviando pro Supabase...")
                                     authRepo.signInWithGoogleIdToken(token.idToken, token.rawNonce)
+                                    android.util.Log.d("Rodape/Auth", "Supabase aceitou o Google ID token. Sessao ativa.")
+                                    Unit
+                                }.also { r ->
+                                    r.exceptionOrNull()?.let { e ->
+                                        android.util.Log.e("Rodape/Auth", "Google Sign-In falhou: ${e.message}", e)
+                                    }
                                 }
                             },
                             onSignedIn = {
