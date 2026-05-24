@@ -1,5 +1,6 @@
 package com.example.data.remote
 
+import com.example.BuildConfig
 import com.example.data.model.*
 import io.github.jan.supabase.SupabaseClient
 import io.github.jan.supabase.postgrest.from
@@ -10,6 +11,7 @@ import io.github.jan.supabase.realtime.PostgresAction
 import io.github.jan.supabase.realtime.RealtimeChannel
 import io.github.jan.supabase.realtime.channel
 import io.github.jan.supabase.realtime.postgresChangeFlow
+import io.github.jan.supabase.storage.storage
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
@@ -1131,8 +1133,34 @@ class RemoteRepository(private val supabase: SupabaseClient = Supabase.client) {
     suspend fun insertBook(book: Book) {
         runCatching {
             supabase.from("books").upsert(book.toInsertDto())
+            notifyLocalMutation("books")
         }
     }
+
+    /**
+     * Sobe bytes da capa pro bucket `book-covers` no path `<clubId>/<bookId>.jpg`.
+     * Retorna URL pra usar em `books.cover_url`.
+     *
+     * Bucket e privado — geramos signed URL com expiracao longa (1 ano) e a guardamos
+     * no banco. Quando expirar, regeneramos. Pra clubes ativos isso significa que
+     * a URL sempre esta valida na pratica.
+     *
+     * Path por clube garante isolamento via RLS: so members do clube podem
+     * ler/escrever ali (policy book_covers_*_members).
+     */
+    suspend fun uploadBookCover(clubId: String, bookId: String, bytes: ByteArray): String? = runCatching {
+        val path = "$clubId/$bookId.jpg"
+        val bucket = supabase.storage.from("book-covers")
+        // Upload sobreescreve se ja existir (caso usuario troque a capa).
+        bucket.upload(path, bytes) {
+            upsert = true
+            contentType = io.ktor.http.ContentType.Image.JPEG
+        }
+        // Signed URL valida por 1 ano (max permitido pelo Supabase Storage).
+        val signedUrl = bucket.createSignedUrl(path, kotlin.time.Duration.parse("365d"))
+        // signed URL ja vem com prefixo do servidor
+        "${BuildConfig.SUPABASE_URL}$signedUrl"
+    }.getOrNull()
 
     suspend fun insertClubBook(clubBook: ClubBook) {
         runCatching {

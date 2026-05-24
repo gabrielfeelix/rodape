@@ -412,7 +412,7 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
             val userId = currentUserId.value ?: return@launch
             val clubId = activeClubId.value ?: return@launch
             
-            val commentId = "com_${UUID.randomUUID()}"
+            val commentId = UUID.randomUUID().toString()
             val newComment = Comment(
                 id = commentId,
                 chapterId = chapterId,
@@ -483,7 +483,7 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
 
             val agora = System.currentTimeMillis()
             val round = VotingRound(
-                id = "round_${UUID.randomUUID().toString().take(8)}",
+                id = UUID.randomUUID().toString(),
                 clubId = clubId,
                 criadoPor = userId,
                 abertaEm = agora,
@@ -650,7 +650,7 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
         viewModelScope.launch {
             val clubId = activeClubId.value ?: return@launch
             val userId = currentUserId.value ?: return@launch
-            val bookId = "book_sug_${UUID.randomUUID().toString().take(6)}"
+            val bookId = UUID.randomUUID().toString()
             val coverId = doc.coverI
             val coverUrl = if (coverId != null) {
                 "https://covers.openlibrary.org/b/id/${coverId}-M.jpg"
@@ -684,7 +684,7 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
             if (justification.isNotBlank()) {
                 repository.insertBookSuggestion(
                     BookSuggestion(
-                        id = "bs_${UUID.randomUUID().toString().take(8)}",
+                        id = UUID.randomUUID().toString(),
                         clubId = clubId,
                         bookId = bookId,
                         suggestedByUserId = userId,
@@ -717,14 +717,31 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
         viewModelScope.launch {
             val clubId = activeClubId.value ?: return@launch
             if (title.isBlank() || author.isBlank()) return@launch
-            val bookId = "book_man_${UUID.randomUUID().toString().take(8)}"
+            val bookId = UUID.randomUUID().toString()
             val cleanIsbn = isbn?.filter { it.isDigit() } ?: ""
+
+            // Se coverPathOrUrl e file:// local, sobe pro bucket book-covers
+            // e usa o signed URL no banco. Se ja for http(s), passa direto.
+            val finalCoverUrl = when {
+                coverPathOrUrl.startsWith("file://") -> {
+                    val ctx = getApplication<Application>().applicationContext
+                    val uri = android.net.Uri.parse(coverPathOrUrl)
+                    val bytes = runCatching {
+                        ctx.contentResolver.openInputStream(uri)?.use { it.readBytes() }
+                    }.getOrNull()
+                    if (bytes != null) {
+                        repository.uploadBookCover(clubId, bookId, bytes) ?: ""
+                    } else ""
+                }
+                coverPathOrUrl.startsWith("http") -> coverPathOrUrl
+                else -> coverPathOrUrl  // ja e signed url ou path
+            }
 
             val newBook = Book(
                 id = bookId,
                 title = title.trim(),
                 author = author.trim(),
-                coverUrl = coverPathOrUrl,
+                coverUrl = finalCoverUrl,
                 openlibraryId = "",
                 isbn = cleanIsbn,
                 isManual = true,
@@ -761,7 +778,7 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
             val userId = currentUserId.value ?: return@launch
             val clubId = activeClubId.value ?: return@launch
             val quote = SavedQuote(
-                id = "quote_${UUID.randomUUID()}",
+                id = UUID.randomUUID().toString(),
                 userId = userId,
                 clubId = clubId,
                 bookId = bookId,
@@ -893,7 +910,7 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
         viewModelScope.launch {
             val clubId = activeClubId.value ?: return@launch
             if (currentUserPapel.value !in setOf("admin", "super_admin")) return@launch
-            val id = meetingId ?: "meet_${UUID.randomUUID().toString().take(8)}"
+            val id = meetingId ?: UUID.randomUUID().toString()
             // Preserva status atual se já existe, senão "agendado"
             val existing = repository.getMeetingById(id)
             repository.insertMeeting(
@@ -1162,7 +1179,7 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
                     members.forEach { m ->
                         repository.insertNotification(
                             DbNotification(
-                                id = "ntf_${UUID.randomUUID()}",
+                                id = UUID.randomUUID().toString(),
                                 userId = m.id,
                                 clubId = clubId,
                                 tipo = "book_finished",
