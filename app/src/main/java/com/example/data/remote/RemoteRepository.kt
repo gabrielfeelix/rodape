@@ -656,7 +656,7 @@ private data class MeetingNoteInsertDto(
 // ============================================================================
 
 class RemoteRepository(
-    appContext: android.content.Context,
+    private val appContext: android.content.Context,
     private val supabase: SupabaseClient = Supabase.client,
 ) {
 
@@ -751,6 +751,8 @@ class RemoteRepository(
                 createdAt = System.currentTimeMillis(),
             )
         )
+        // Pede pro WorkManager tentar drenar assim que houver rede.
+        com.example.data.sync.DrainQueueWorker.schedule(appContext)
     }
 
     /**
