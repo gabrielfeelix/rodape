@@ -1,10 +1,13 @@
 package com.example
 
+import android.content.Intent
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import androidx.activity.viewModels
+import com.example.data.remote.Supabase
+import io.github.jan.supabase.auth.handleDeeplinks
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.material3.Surface
 import androidx.compose.material3.MaterialTheme
@@ -26,6 +29,7 @@ class MainActivity : ComponentActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        Supabase.client.handleDeeplinks(intent)
         // Triggering fresh compilation and preview deployment for the user
         enableEdgeToEdge()
         setContent {
@@ -229,5 +233,10 @@ class MainActivity : ComponentActivity() {
             }
             } // CompositionLocalProvider
         }
+    }
+
+    override fun onNewIntent(intent: Intent) {
+        super.onNewIntent(intent)
+        Supabase.client.handleDeeplinks(intent)
     }
 }
