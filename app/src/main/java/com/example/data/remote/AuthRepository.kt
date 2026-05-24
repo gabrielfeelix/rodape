@@ -12,6 +12,8 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.map
 import kotlinx.serialization.json.JsonPrimitive
 import kotlinx.serialization.json.buildJsonObject
+import kotlinx.serialization.json.contentOrNull
+import kotlinx.serialization.json.jsonPrimitive
 
 /**
  * Wrapper fino sobre Supabase Auth. Cada metodo propaga excecoes —
@@ -24,6 +26,22 @@ class AuthRepository(private val supabase: SupabaseClient = Supabase.client) {
     /** UUID do usuario logado, ou null se nao autenticado. */
     val currentUserIdFlow: Flow<String?> = sessionStatus.map { status ->
         (status as? SessionStatus.Authenticated)?.session?.user?.id
+    }
+
+    /** Email do usuario logado (de auth.users), ou null. */
+    val currentEmailFlow: Flow<String?> = sessionStatus.map { status ->
+        (status as? SessionStatus.Authenticated)?.session?.user?.email
+    }
+
+    /** Nome de exibicao do usuario logado: prefere user_metadata.full_name
+     *  (preenchido por cadastro email/senha ou pelo Google), cai pro email
+     *  antes do @ se nao houver. Null se nao autenticado. */
+    val currentDisplayNameFlow: Flow<String?> = sessionStatus.map { status ->
+        val user = (status as? SessionStatus.Authenticated)?.session?.user ?: return@map null
+        val meta = user.userMetadata
+        val fullName = runCatching { meta?.get("full_name")?.jsonPrimitive?.contentOrNull }.getOrNull()
+        val name = runCatching { meta?.get("name")?.jsonPrimitive?.contentOrNull }.getOrNull()
+        fullName ?: name ?: user.email?.substringBefore("@")
     }
 
     /** Snapshot do usuario logado (null se nao autenticado). */

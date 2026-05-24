@@ -144,6 +144,11 @@ dependencies {
   implementation(libs.androidx.credentials.play.services.auth)
   implementation(libs.googleid)
 
+  // --- Material Components (View XML) — necessario pro tema base
+  // Theme.Material3.DayNight.NoActionBar usado por dialogs nativos
+  // (Credential Manager / Google Sign-In bottom sheet). UI Compose nao usa.
+  implementation(libs.material)
+
   // --- Core library desugaring (java.time em minSdk 24) ---
   coreLibraryDesugaring(libs.desugar.jdk.libs)
 }

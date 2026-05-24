@@ -1,5 +1,9 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
 
-    <style name="Theme.MyApplication" parent="android:Theme.DeviceDefault.NoActionBar" />
+    <!-- Tema base: Material3 DayNight. Garante que dialogs nativos
+         (Credential Manager / Google Sign-In, file pickers, etc.) recebem
+         tinting correto de botoes/textos. A UI Compose do app usa
+         MyApplicationTheme custom e nao depende deste tema. -->
+    <style name="Theme.MyApplication" parent="Theme.Material3.DayNight.NoActionBar" />
 </resources>

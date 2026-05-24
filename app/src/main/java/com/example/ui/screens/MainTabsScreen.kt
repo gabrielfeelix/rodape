@@ -1122,8 +1122,13 @@ fun HomeScreenTab(
 // Private helper to gracefully get the welcome first name or nickname
 @Composable
 private fun currentUserFirst(viewModel: MainViewModel): String {
+    // Prefere o nome do JWT Supabase (auth.user_metadata.full_name), que esta
+    // disponivel imediatamente apos login (sem depender do Room antigo).
+    // Cai pro currentUser (Room) durante a transicao 9A->9B e pra "Leitor(a)"
+    // como ultima opcao se nem o JWT trouxe nome.
+    val supaName by viewModel.supabaseDisplayName.collectAsState()
     val currentUser by viewModel.currentUser.collectAsState()
-    val name = currentUser?.nome ?: "Bia"
+    val name = supaName ?: currentUser?.nome ?: "Leitor(a)"
     return name.substringBefore(" ")
 }
 

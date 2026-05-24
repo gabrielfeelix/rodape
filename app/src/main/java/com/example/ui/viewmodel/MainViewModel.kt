@@ -29,6 +29,15 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
     val supabaseUserId: StateFlow<String?> = authRepository.currentUserIdFlow
         .stateIn(viewModelScope, SharingStarted.Eagerly, null)
 
+    /** Nome do usuario logado vindo direto do JWT do Supabase (user_metadata.full_name).
+     *  Disponivel imediatamente apos login (sem precisar query no Postgres).
+     *  Cai pra null se nao autenticado. */
+    val supabaseDisplayName: StateFlow<String?> = authRepository.currentDisplayNameFlow
+        .stateIn(viewModelScope, SharingStarted.Eagerly, null)
+
+    val supabaseEmail: StateFlow<String?> = authRepository.currentEmailFlow
+        .stateIn(viewModelScope, SharingStarted.Eagerly, null)
+
     // Session state
     val currentUserId: StateFlow<String?> = dataStoreManager.userIdFlow
         .stateIn(viewModelScope, SharingStarted.Eagerly, null)
