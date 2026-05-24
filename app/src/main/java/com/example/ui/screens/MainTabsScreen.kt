@@ -1640,7 +1640,9 @@ fun ProfileScreenTab(
                     Row(
                         verticalAlignment = Alignment.CenterVertically,
                         horizontalArrangement = Arrangement.spacedBy(16.dp),
-                        modifier = Modifier.weight(1f)
+                        modifier = Modifier
+                            .weight(1f)
+                            .clickable { isEditingProfile = true }
                     ) {
                         Avatar(
                             name = name ?: "Você",
@@ -1660,14 +1662,11 @@ fun ProfileScreenTab(
                                 text = email ?: "contato@rodape.com",
                                 style = MaterialTheme.typography.bodyLarge.copy(color = Muted)
                             )
+                            Text(
+                                text = "Tocar pra editar",
+                                style = MaterialTheme.typography.labelSmall.copy(color = Terracota)
+                            )
                         }
-                    }
-                    IconButton(onClick = { isEditingProfile = true }) {
-                        Icon(
-                            imageVector = Icons.Outlined.Edit,
-                            contentDescription = "Editar Perfil",
-                            tint = Terracota
-                        )
                     }
                 }
             }
@@ -2307,32 +2306,13 @@ fun EditProfileView(
             )
         }
 
-        // ── Large avatar preview with edit badge ──
+        // ── Large avatar preview ──
         item {
-            Box(
-                modifier = Modifier.size(100.dp),
-                contentAlignment = Alignment.BottomEnd
-            ) {
-                Avatar(
-                    name = name.ifEmpty { "Você" },
-                    avatarUrl = avatarUrl,
-                    size = 100.dp
-                )
-                Box(
-                    modifier = Modifier
-                        .size(32.dp)
-                        .background(Oliva, CircleShape)
-                        .border(3.dp, CardSoft, CircleShape),
-                    contentAlignment = Alignment.Center
-                ) {
-                    Icon(
-                        imageVector = Icons.Outlined.Edit,
-                        contentDescription = "Selecionar avatar",
-                        tint = Cream,
-                        modifier = Modifier.size(14.dp)
-                    )
-                }
-            }
+            Avatar(
+                name = name.ifEmpty { "Você" },
+                avatarUrl = avatarUrl,
+                size = 100.dp
+            )
         }
 
         // ── Preset avatar grid ──
@@ -2400,11 +2380,15 @@ fun EditProfileView(
             }
         }
 
-        // ── Nome field ──
+        // ── Nome field (exige nome + sobrenome) ──
         item {
+            val nameParts = name.trim().split(Regex("\\s+")).filter { it.isNotBlank() }
+            val nameTouched = name.isNotEmpty()
+            val hasFullName = nameParts.size >= 2 && nameParts.all { it.length >= 2 }
+            val nameError = nameTouched && !hasFullName
             Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
                 Text(
-                    text = "NOME",
+                    text = "NOME COMPLETO",
                     style = MaterialTheme.typography.labelMedium.copy(
                         fontFamily = InterFontFamily,
                         fontWeight = FontWeight.SemiBold,
@@ -2414,10 +2398,11 @@ fun EditProfileView(
                 OutlinedTextField(
                     value = name,
                     onValueChange = { name = it },
-                    placeholder = { Text("Seu nome de leitor", color = Muted) },
+                    placeholder = { Text("Nome e sobrenome", color = Muted) },
                     modifier = Modifier.fillMaxWidth(),
                     shape = RoundedCornerShape(14.dp),
                     singleLine = true,
+                    isError = nameError,
                     colors = OutlinedTextFieldDefaults.colors(
                         focusedBorderColor = Terracota,
                         unfocusedBorderColor = Divider,
@@ -2427,6 +2412,12 @@ fun EditProfileView(
                         unfocusedTextColor = Ink
                     )
                 )
+                if (nameError) {
+                    Text(
+                        text = "Coloca nome e sobrenome (ex: Maria Silva)",
+                        style = MaterialTheme.typography.labelSmall.copy(color = Terracota)
+                    )
+                }
             }
         }
 
@@ -2474,15 +2465,19 @@ fun EditProfileView(
                     size = TbButtonSize.Lg,
                     modifier = Modifier.weight(1f)
                 )
+                val nameParts = name.trim().split(Regex("\\s+")).filter { it.isNotBlank() }
+                val hasFullName = nameParts.size >= 2 && nameParts.all { it.length >= 2 }
+                val emailLooksValid = email.contains("@") && email.length >= 5
                 TbButton(
                     text = "Salvar",
                     onClick = {
-                        if (name.isNotBlank() && email.isNotBlank()) {
-                            onSave(name, email, avatarUrl)
+                        if (hasFullName && emailLooksValid) {
+                            onSave(name.trim(), email.trim(), avatarUrl)
                         }
                     },
                     variant = TbButtonVariant.Terra,
                     size = TbButtonSize.Lg,
+                    enabled = hasFullName && emailLooksValid,
                     modifier = Modifier.weight(1f)
                 )
             }
