@@ -8,7 +8,9 @@ import com.example.data.api.OpenLibraryApi
 import com.example.data.api.OpenLibraryDoc
 import com.example.data.db.AppDatabase
 import com.example.data.model.*
+import com.example.data.remote.AuthRepository
 import com.example.data.repository.RodapeRepository
+import io.github.jan.supabase.auth.status.SessionStatus
 import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.launch
 import org.json.JSONArray
@@ -19,6 +21,13 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
     private val database = AppDatabase.getDatabase(application)
     private val repository = RodapeRepository(database.rodapeDao())
     private val dataStoreManager = DataStoreManager(application)
+    private val authRepository = AuthRepository()
+
+    // --- Supabase session (paralelo ao DataStore antigo — DataStore some na 9C) ---
+    val sessionStatus: StateFlow<SessionStatus> = authRepository.sessionStatus
+
+    val supabaseUserId: StateFlow<String?> = authRepository.currentUserIdFlow
+        .stateIn(viewModelScope, SharingStarted.Eagerly, null)
 
     // Session state
     val currentUserId: StateFlow<String?> = dataStoreManager.userIdFlow
@@ -313,6 +322,16 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
 
     fun logout(onCompleted: () -> Unit) {
         viewModelScope.launch {
+            dataStoreManager.clearSession()
+            onCompleted()
+        }
+    }
+
+    /** Logout que tambem encerra a sessao Supabase. UI antiga ainda pode chamar `logout()`
+     *  durante a 9A — esse wrapper sera o canal unico apos a 9B/9C. */
+    fun signOutSupabase(onCompleted: () -> Unit) {
+        viewModelScope.launch {
+            runCatching { authRepository.signOut() }
             dataStoreManager.clearSession()
             onCompleted()
         }
