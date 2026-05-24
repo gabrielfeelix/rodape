@@ -6,12 +6,19 @@ import io.github.jan.supabase.postgrest.from
 import io.github.jan.supabase.postgrest.postgrest
 import io.github.jan.supabase.postgrest.query.Columns
 import io.github.jan.supabase.postgrest.query.Order
+import io.github.jan.supabase.realtime.PostgresAction
+import io.github.jan.supabase.realtime.RealtimeChannel
+import io.github.jan.supabase.realtime.channel
+import io.github.jan.supabase.realtime.postgresChangeFlow
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.Job
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.launchIn
+import kotlinx.coroutines.flow.onEach
 import kotlinx.coroutines.launch
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
@@ -654,6 +661,62 @@ class RemoteRepository(private val supabase: SupabaseClient = Supabase.client) {
     // SupervisorJob: falha de uma corotina nao cancela as outras.
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
 
+    // ============================================================
+    // REALTIME HELPER
+    // ============================================================
+    //
+    // Estrategia: pra cada (tabela, filtro) registramos UMA subscription
+    // postgres_changes que invalida a cache ao receber INSERT/UPDATE/DELETE.
+    // Quando invalida, o caller passa um `reload` suspend que refaz o SELECT
+    // e atualiza o StateFlow.
+    //
+    // Por que reload em vez de aplicar o diff? Mais robusto:
+    //  - ordenacao server-side e preservada
+    //  - tolera mensagens perdidas/duplicadas
+    //  - tolera filtros complexos (JOIN via FK) que Realtime nao expressa
+    //  - schema-agnostic — funciona pra todas as 22 tabelas igual
+    //
+    // Custo: 1 GET extra por evento. Aceitavel em volume baixo (clube tem
+    // dezenas de membros, nao milhoes). Pra escala maior, futura otimizacao
+    // pode aplicar diff diretamente.
+
+    // Tracking: chave (table + filtro) -> Job da subscription ativa.
+    // Permite reuso entre coletores e desligamento limpo.
+    private val realtimeJobs = mutableMapOf<String, Job>()
+
+    /**
+     * Subscribe na tabela [table]. Quando receber qualquer mudanca que case
+     * com [filterColumn]=[filterValue] (se fornecidos), chama [reload].
+     * Idempotente: chamar 2x com mesma chave reusa a subscription existente.
+     */
+    private fun ensureRealtime(
+        table: String,
+        filterColumn: String? = null,
+        filterValue: String? = null,
+        reload: suspend () -> Unit,
+    ) {
+        val key = "$table:${filterColumn ?: "*"}=${filterValue ?: "*"}"
+        if (realtimeJobs[key]?.isActive == true) return
+
+        val job = scope.launch {
+            runCatching {
+                val ch = supabase.channel("rodape-rt-$key")
+                val flow = ch.postgresChangeFlow<PostgresAction>(schema = "public") {
+                    this.table = table
+                    if (filterColumn != null && filterValue != null) {
+                        filter(filterColumn, io.github.jan.supabase.postgrest.query.filter.FilterOperator.EQ, filterValue)
+                    }
+                }
+                flow.onEach { _ ->
+                    // Qualquer evento dispara reload — simples e robusto.
+                    runCatching { reload() }
+                }.launchIn(scope)
+                ch.subscribe()
+            }
+        }
+        realtimeJobs[key] = job
+    }
+
     // ----------------------- Caches reativas -----------------------
     // Polling-based: cada Flow tem uma cache MutableStateFlow que e refreshada
     // sob demanda. Acoes de mutacao chamam refresh() depois pra UI atualizar.
@@ -900,7 +963,7 @@ class RemoteRepository(private val supabase: SupabaseClient = Supabase.client) {
 
     fun getClubMembersFlow(clubId: String): Flow<List<User>> {
         val flow = stateOf<List<User>>(emptyList())
-        scope.launch {
+        val reload: suspend () -> Unit = {
             flow.value = runCatching {
                 // JOIN: club_members -> profiles (postgrest embedding)
                 supabase.from("club_members").select(Columns.raw("user_id, profiles!inner(*)")) {
@@ -908,6 +971,9 @@ class RemoteRepository(private val supabase: SupabaseClient = Supabase.client) {
                 }.decodeList<JoinMemberProfile>().map { it.profile.toDomain() }
             }.getOrDefault(emptyList())
         }
+        scope.launch { reload() }
+        // Realtime: novo membro entra/sai, ou perfil de membro existente muda.
+        ensureRealtime("club_members", filterColumn = "club_id", filterValue = clubId, reload = reload)
         return flow.asStateFlow()
     }
 
@@ -936,9 +1002,12 @@ class RemoteRepository(private val supabase: SupabaseClient = Supabase.client) {
 
     fun getClubMembersRawFlow(clubId: String): Flow<List<ClubMember>> {
         val flow = stateOf<List<ClubMember>>(emptyList())
-        scope.launch {
+        val reload: suspend () -> Unit = {
             flow.value = getClubMembersListOrderedByJoin(clubId)
         }
+        scope.launch { reload() }
+        // Realtime: papel de membro pode mudar (promote/demote) ou ser removido.
+        ensureRealtime("club_members", filterColumn = "club_id", filterValue = clubId, reload = reload)
         return flow.asStateFlow()
     }
 
@@ -1047,7 +1116,7 @@ class RemoteRepository(private val supabase: SupabaseClient = Supabase.client) {
 
     fun getBookByStatusFlow(clubId: String, status: String): Flow<List<Book>> {
         val flow = stateOf<List<Book>>(emptyList())
-        scope.launch {
+        val reload: suspend () -> Unit = {
             flow.value = runCatching {
                 supabase.from("club_books").select(Columns.raw("book_id, status, books!inner(*)")) {
                     filter {
@@ -1057,6 +1126,10 @@ class RemoteRepository(private val supabase: SupabaseClient = Supabase.client) {
                 }.decodeList<JoinClubBookBook>().map { it.book.toDomain() }
             }.getOrDefault(emptyList())
         }
+        scope.launch { reload() }
+        // Realtime: status do livro muda quando admin promove next->current,
+        // marca finished, ou voting_round fecha promovendo vencedor.
+        ensureRealtime("club_books", filterColumn = "club_id", filterValue = clubId, reload = reload)
         return flow.asStateFlow()
     }
 
@@ -1248,7 +1321,7 @@ class RemoteRepository(private val supabase: SupabaseClient = Supabase.client) {
 
     fun getCommentsForChapterFlow(chapterId: String, clubId: String): Flow<List<Comment>> {
         val flow = stateOf<List<Comment>>(emptyList())
-        scope.launch {
+        val reload: suspend () -> Unit = {
             flow.value = runCatching {
                 supabase.from("comments").select {
                     filter {
@@ -1259,6 +1332,10 @@ class RemoteRepository(private val supabase: SupabaseClient = Supabase.client) {
                 }.decodeList<CommentDto>().map { it.toDomain() }
             }.getOrDefault(emptyList())
         }
+        scope.launch { reload() }
+        // Realtime: novo comentario em qualquer capitulo do clube re-carrega
+        // (filtramos por club_id; chapter_id e refinamento cliente-side).
+        ensureRealtime("comments", filterColumn = "club_id", filterValue = clubId, reload = reload)
         return flow.asStateFlow()
     }
 
@@ -1336,19 +1413,21 @@ class RemoteRepository(private val supabase: SupabaseClient = Supabase.client) {
 
     fun getReactionsForCommentFlow(commentId: String): Flow<List<Reaction>> {
         val flow = stateOf<List<Reaction>>(emptyList())
-        scope.launch {
+        val reload: suspend () -> Unit = {
             flow.value = runCatching {
                 supabase.from("reactions").select {
                     filter { eq("comment_id", commentId) }
                 }.decodeList<ReactionDto>().map { it.toDomain() }
             }.getOrDefault(emptyList())
         }
+        scope.launch { reload() }
+        ensureRealtime("reactions", filterColumn = "comment_id", filterValue = commentId, reload = reload)
         return flow.asStateFlow()
     }
 
     fun getReactionsForChapterFlow(chapterId: String): Flow<List<Reaction>> {
         val flow = stateOf<List<Reaction>>(emptyList())
-        scope.launch {
+        val reload: suspend () -> Unit = {
             flow.value = runCatching {
                 // Pega comment_ids do capitulo, depois reactions desses comments.
                 val commentIds = supabase.from("comments").select(Columns.raw("id")) {
@@ -1360,6 +1439,10 @@ class RemoteRepository(private val supabase: SupabaseClient = Supabase.client) {
                 }.decodeList<ReactionDto>().map { it.toDomain() }
             }.getOrDefault(emptyList())
         }
+        scope.launch { reload() }
+        // Realtime: a tabela reactions nao tem chapter_id direto, escutamos
+        // ALL reactions e recarregamos. Volume tipicamente baixo.
+        ensureRealtime("reactions", reload = reload)
         return flow.asStateFlow()
     }
 
@@ -1417,9 +1500,9 @@ class RemoteRepository(private val supabase: SupabaseClient = Supabase.client) {
 
     fun getVotesForRoundFlow(roundId: String): Flow<List<Vote>> {
         val flow = stateOf<List<Vote>>(emptyList())
-        scope.launch {
-            flow.value = getVotesForRound(roundId)
-        }
+        val reload: suspend () -> Unit = { flow.value = getVotesForRound(roundId) }
+        scope.launch { reload() }
+        ensureRealtime("votes", filterColumn = "voting_round_id", filterValue = roundId, reload = reload)
         return flow.asStateFlow()
     }
 
@@ -1470,9 +1553,12 @@ class RemoteRepository(private val supabase: SupabaseClient = Supabase.client) {
 
     fun getActiveVotingRoundFlow(clubId: String): Flow<VotingRound?> {
         val flow = stateOf<VotingRound?>(null)
-        scope.launch {
+        val reload: suspend () -> Unit = {
             flow.value = getActiveVotingRound(clubId)
         }
+        scope.launch { reload() }
+        // Realtime: admin abre/fecha round, ou auto_close_expired ja fechou.
+        ensureRealtime("voting_rounds", filterColumn = "club_id", filterValue = clubId, reload = reload)
         return flow.asStateFlow()
     }
 
@@ -1709,13 +1795,15 @@ class RemoteRepository(private val supabase: SupabaseClient = Supabase.client) {
 
     fun getRsvpsForMeetingFlow(meetingId: String): Flow<List<MeetingRsvp>> {
         val flow = stateOf<List<MeetingRsvp>>(emptyList())
-        scope.launch {
+        val reload: suspend () -> Unit = {
             flow.value = runCatching {
                 supabase.from("meeting_rsvps").select {
                     filter { eq("meeting_id", meetingId) }
                 }.decodeList<MeetingRsvpDto>().map { it.toDomain() }
             }.getOrDefault(emptyList())
         }
+        scope.launch { reload() }
+        ensureRealtime("meeting_rsvps", filterColumn = "meeting_id", filterValue = meetingId, reload = reload)
         return flow.asStateFlow()
     }
 
@@ -1797,7 +1885,7 @@ class RemoteRepository(private val supabase: SupabaseClient = Supabase.client) {
 
     fun getMeetingMinutesFlow(meetingId: String): Flow<MeetingMinutes?> {
         val flow = stateOf<MeetingMinutes?>(null)
-        scope.launch {
+        val reload: suspend () -> Unit = {
             flow.value = runCatching {
                 supabase.from("meeting_minutes").select {
                     filter { eq("meeting_id", meetingId) }
@@ -1805,6 +1893,9 @@ class RemoteRepository(private val supabase: SupabaseClient = Supabase.client) {
                 }.decodeSingleOrNull<MeetingMinutesDto>()?.toDomain()
             }.getOrNull()
         }
+        scope.launch { reload() }
+        // Realtime: ata colaborativa muda em tempo real entre admins.
+        ensureRealtime("meeting_minutes", filterColumn = "meeting_id", filterValue = meetingId, reload = reload)
         return flow.asStateFlow()
     }
 
@@ -1875,7 +1966,7 @@ class RemoteRepository(private val supabase: SupabaseClient = Supabase.client) {
 
     fun getNotificationsFlow(userId: String): Flow<List<DbNotification>> {
         val flow = stateOf<List<DbNotification>>(emptyList())
-        scope.launch {
+        val reload: suspend () -> Unit = {
             flow.value = runCatching {
                 supabase.from("notifications").select {
                     filter { eq("user_id", userId) }
@@ -1883,6 +1974,8 @@ class RemoteRepository(private val supabase: SupabaseClient = Supabase.client) {
                 }.decodeList<NotificationDto>().map { it.toDomain() }
             }.getOrDefault(emptyList())
         }
+        scope.launch { reload() }
+        ensureRealtime("notifications", filterColumn = "user_id", filterValue = userId, reload = reload)
         return flow.asStateFlow()
     }
 
@@ -1959,7 +2052,7 @@ class RemoteRepository(private val supabase: SupabaseClient = Supabase.client) {
 
     fun getBookSummaryFlow(bookId: String, clubId: String): Flow<BookSummary?> {
         val flow = stateOf<BookSummary?>(null)
-        scope.launch {
+        val reload: suspend () -> Unit = {
             flow.value = runCatching {
                 supabase.from("book_summaries").select {
                     filter {
@@ -1970,6 +2063,9 @@ class RemoteRepository(private val supabase: SupabaseClient = Supabase.client) {
                 }.decodeSingleOrNull<BookSummaryDto>()?.toDomain()
             }.getOrNull()
         }
+        scope.launch { reload() }
+        // Realtime: resumo wiki muda quando qualquer membro edita.
+        ensureRealtime("book_summaries", filterColumn = "club_id", filterValue = clubId, reload = reload)
         return flow.asStateFlow()
     }
 
