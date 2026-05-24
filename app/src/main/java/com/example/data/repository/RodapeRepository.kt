@@ -188,31 +188,31 @@ class RodapeRepository(private val dao: RodapeDao) {
         )
         val marina = User(
             "user_marina",
-            "Marina",
+            "Marina Soares",
             "marina@rodape.com",
             "preset:petalas"
         )
         val rafael = User(
             "user_lucas",
-            "Rafael",
+            "Rafael Tavares",
             "rafael@rodape.com",
             "preset:mago"
         )
         val julia = User(
             "user_sofia",
-            "Júlia",
+            "Júlia Mendes",
             "julia@rodape.com",
             "preset:alice"
         )
         val leo = User(
             "user_bia",
-            "Leo",
+            "Leo Carvalho",
             "leo@rodape.com",
             "preset:leitor"
         )
         val joao = User(
             "user_joao",
-            "João",
+            "João Ribeiro",
             "joao@rodape.com",
             "preset:don_quixote"
         )

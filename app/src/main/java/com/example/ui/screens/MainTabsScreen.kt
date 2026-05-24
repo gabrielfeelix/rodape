@@ -1014,7 +1014,17 @@ fun HomeScreenTab(
                     val totalChaps = chapters.size
 
                     val isCurrentUser = member.id == currentUserId
-                    val displayName = if (isCurrentUser) "Você" else member.nome.substringBefore(" ")
+                    val displayName = if (isCurrentUser) {
+                        "Você"
+                    } else {
+                        // Primeiro nome + inicial do sobrenome (ex: "Marina S.")
+                        // Cabe no card de 84dp sem espremer o vizinho.
+                        val parts = member.nome.trim().split(" ").filter { it.isNotBlank() }
+                        when {
+                            parts.size >= 2 -> "${parts[0]} ${parts[1].first()}."
+                            else -> parts.firstOrNull() ?: member.nome
+                        }
+                    }
 
                     val finished = totalChaps > 0 && memChap >= totalChaps
                     // "No próprio ritmo" se ≥3 caps atrás do mediano da galera (tom acolhedor)
