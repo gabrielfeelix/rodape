@@ -12,11 +12,11 @@ android {
   compileSdk { version = release(36) { minorApiLevel = 1 } }
 
   defaultConfig {
-    applicationId = "app.rodape"
+    applicationId = "app.tramabook"
     minSdk = 24
     targetSdk = 36
     versionCode = 1
-    versionName = "1.0"
+    versionName = "1.0.0"
 
     testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
   }
@@ -39,12 +39,21 @@ android {
 
   buildTypes {
     release {
-      isCrunchPngs = false
-      isMinifyEnabled = false
+      // R8 ativo: encolhe codigo, otimiza, ofusca, e remove recursos nao usados.
+      // Regras em proguard-rules.pro mantem o que e carregado por reflexao
+      // (Supabase/Ktor/Moshi/Room/WorkManager).
+      isCrunchPngs = true
+      isMinifyEnabled = true
+      isShrinkResources = true
       proguardFiles(getDefaultProguardFile("proguard-android-optimize.txt"), "proguard-rules.pro")
       signingConfig = signingConfigs.getByName("release")
     }
     debug {
+      // Debug fica sem minify pra iteracao rapida e stack traces limpos.
+      isMinifyEnabled = false
+      isShrinkResources = false
+      applicationIdSuffix = ".debug"
+      versionNameSuffix = "-debug"
       signingConfig = signingConfigs.getByName("debugConfig")
     }
   }

@@ -149,7 +149,7 @@ fun MainTabsScreen(
                     }
                 },
                 title = {
-                    val rawName = activeClub?.nome ?: "Rodapé"
+                    val rawName = activeClub?.nome ?: "Tramabook"
                     val clubName = if (rawName.length > 20) rawName.take(20) + "..." else rawName
                     Row(
                         verticalAlignment = Alignment.CenterVertically,
@@ -275,7 +275,7 @@ fun MainTabsScreen(
             containerColor = MaterialTheme.colorScheme.surface,
             title = {
                 Text(
-                    "Curtindo o Rodapé? ⭐",
+                    "Curtindo o Tramabook? ⭐",
                     style = MaterialTheme.typography.titleLarge.copy(
                         fontFamily = LiterataFontFamily,
                         fontWeight = FontWeight.SemiBold

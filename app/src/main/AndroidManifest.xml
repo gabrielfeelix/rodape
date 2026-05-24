@@ -9,7 +9,7 @@
 
     <application
         android:name=".RodapeApp"
-        android:allowBackup="true"
+        android:allowBackup="false"
         android:dataExtractionRules="@xml/data_extraction_rules"
         android:fullBackupContent="@xml/backup_rules"
         android:icon="@mipmap/ic_launcher"
@@ -31,7 +31,7 @@
                 <action android:name="android.intent.action.VIEW" />
                 <category android:name="android.intent.category.DEFAULT" />
                 <category android:name="android.intent.category.BROWSABLE" />
-                <data android:scheme="app.rodape" android:host="login-callback" />
+                <data android:scheme="app.tramabook" android:host="login-callback" />
             </intent-filter>
         </activity>
     </application>
