@@ -1,3 +1,5 @@
+import java.util.Properties
+
 plugins {
   alias(libs.plugins.android.application)
   alias(libs.plugins.kotlin.compose)
@@ -6,6 +8,20 @@ plugins {
   alias(libs.plugins.roborazzi)
   alias(libs.plugins.secrets)
 }
+
+// Le segredos de assinatura do .env raiz (gitignored) com fallback pra
+// System.getenv (CI/servidor de build). Senhas NUNCA vao pro BuildConfig
+// — sao usadas apenas no SigningConfig em tempo de build do Gradle.
+val signingEnv: Properties = Properties().apply {
+  val envFile = rootProject.file(".env")
+  if (envFile.exists()) {
+    envFile.inputStream().use { load(it) }
+  }
+}
+
+fun signingSecret(key: String): String? =
+  signingEnv.getProperty(key)?.takeIf { it.isNotBlank() }
+    ?: System.getenv(key)?.takeIf { it.isNotBlank() }
 
 android {
   namespace = "com.example"
@@ -23,11 +39,11 @@ android {
 
   signingConfigs {
     create("release") {
-      val keystorePath = System.getenv("KEYSTORE_PATH") ?: "${rootDir}/my-upload-key.jks"
+      val keystorePath = signingSecret("KEYSTORE_PATH") ?: "${rootDir}/my-upload-key.jks"
       storeFile = file(keystorePath)
-      storePassword = System.getenv("STORE_PASSWORD")
+      storePassword = signingSecret("STORE_PASSWORD")
       keyAlias = "upload"
-      keyPassword = System.getenv("KEY_PASSWORD")
+      keyPassword = signingSecret("KEY_PASSWORD")
     }
     create("debugConfig") {
       storeFile = file("${rootDir}/debug.keystore")
@@ -87,6 +103,11 @@ secrets {
   ignoreList.add("SUPABASE_SERVICE_ROLE")
   ignoreList.add("SUPABASE_SECRET_KEY")
   ignoreList.add("GOOGLE_WEB_CLIENT_SECRET")
+  // Senhas do keystore: jamais devem ir pro BuildConfig (vazariam no APK).
+  // O signingConfig le essas direto via System.getenv() em runtime de build.
+  ignoreList.add("KEYSTORE_PATH")
+  ignoreList.add("STORE_PASSWORD")
+  ignoreList.add("KEY_PASSWORD")
 }
 
 // Some unused dependencies are commented out below instead of being removed.
