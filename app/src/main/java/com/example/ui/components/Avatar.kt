@@ -102,6 +102,16 @@ private val presetAvatars: Map<String, PresetAvatar> = mapOf(
         drawableRes = R.drawable.avatar_emilia,
         bgColor = Color(0xFFF1EFE6), // DividerSoft — neutro creme pra não competir com a boneca colorida
         displayName = "Emília"
+    ),
+    "preset:fantasma" to PresetAvatar(
+        drawableRes = R.drawable.avatar_fantasma,
+        bgColor = Color(0xFF2A3340), // azul-noite — contraste pro fantasma claro
+        displayName = "Fantasma"
+    ),
+    "preset:alice" to PresetAvatar(
+        drawableRes = R.drawable.avatar_alice,
+        bgColor = Color(0xFFD8E7D9), // verde-menta suave — País das Maravilhas
+        displayName = "Alice"
     )
 )
 

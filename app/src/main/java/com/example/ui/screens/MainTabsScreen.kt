@@ -2265,8 +2265,8 @@ fun EditProfileView(
     var email by remember { mutableStateOf(initialEmail) }
     var avatarUrl by remember { mutableStateOf(initialAvatarUrl) }
 
-    // Avatares disponíveis: 10 ilustrados (drawables) + 3 iniciais coloridas.
-    // Renderizado como grid 4 colunas x 4 linhas (16 slots, 3 vazios no final).
+    // Avatares disponíveis: 12 ilustrados (drawables) + 3 iniciais coloridas.
+    // Renderizado como grid 4 colunas x 4 linhas (16 slots, 1 vazio no final).
     val presetNames = listOf(
         "preset:pequeno_principe",
         "preset:don_quixote",
@@ -2278,6 +2278,8 @@ fun EditProfileView(
         "preset:leitora",
         "preset:mago",
         "preset:emilia",
+        "preset:fantasma",
+        "preset:alice",
         "Júlia",
         "Leo",
         "Helena"
@@ -2354,6 +2356,8 @@ fun EditProfileView(
                                 "preset:leitora" -> "Leitora"
                                 "preset:mago" -> "Mago"
                                 "preset:emilia" -> "Emília"
+                                "preset:fantasma" -> "Fantasma"
+                                "preset:alice" -> "Alice"
                                 else -> preset
                             }
                             Box(
