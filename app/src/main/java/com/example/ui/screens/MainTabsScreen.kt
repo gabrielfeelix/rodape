@@ -2266,8 +2266,8 @@ fun EditProfileView(
     var email by remember { mutableStateOf(initialEmail) }
     var avatarUrl by remember { mutableStateOf(initialAvatarUrl) }
 
-    // Avatares disponíveis: 12 ilustrados (drawables) + 3 iniciais coloridas.
-    // Renderizado como grid 4 colunas x 4 linhas (16 slots, 1 vazio no final).
+    // Avatares disponíveis: 12 ilustrados (drawables).
+    // Renderizado como grid 4 colunas x 3 linhas (12 slots cheios).
     val presetNames = listOf(
         "preset:pequeno_principe",
         "preset:don_quixote",
@@ -2280,10 +2280,7 @@ fun EditProfileView(
         "preset:mago",
         "preset:emilia",
         "preset:fantasma",
-        "preset:alice",
-        "Júlia",
-        "Leo",
-        "Helena"
+        "preset:alice"
     )
 
     LazyColumn(
