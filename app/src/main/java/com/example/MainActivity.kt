@@ -52,29 +52,52 @@ class MainActivity : ComponentActivity() {
                     color = MaterialTheme.colorScheme.background
                 ) {
                     val navController = rememberNavController()
-                    val supabaseUserId by viewModel.supabaseUserId.collectAsState()
                     val sessionStatus by viewModel.sessionStatus.collectAsState()
 
-                    val startDestination = if (supabaseUserId != null) "main_tabs" else "welcome"
+                    // SEMPRE iniciar em welcome — esse e estado neutro/seguro. Se a sessao
+                    // ja vier autenticada (cold start com sessao no storage), o LaunchedEffect
+                    // abaixo redireciona pra main_tabs. Isso evita o bug onde:
+                    //  1. App abre, Supabase ainda esta `Initializing` (lendo session do disco)
+                    //  2. startDestination calculado nessa hora vira "welcome" (userId=null)
+                    //  3. Session termina de carregar -> volta pra Authenticated, mas
+                    //     NavHost ja montou em welcome e nao reage a mudancas no startDest.
+                    // Tambem evita race entre logout e recompose.
 
-                    // Quando o usuario abre o link de "esqueci minha senha", o Supabase
-                    // hidrata uma sessao com `session.type == "recovery"`. Esse e o sinal
-                    // correto pra mostrar reset_password — checar pelo `SessionSource`
-                    // confundia com Google OAuth (que tambem usa deep link e marca
-                    // source como External), causando o app a redirecionar pra reset
-                    // mesmo quando o usuario so estava criando clube ou navegando.
                     LaunchedEffect(sessionStatus) {
                         val s = sessionStatus
-                        if (s is SessionStatus.Authenticated && s.session.type == "recovery") {
-                            navController.navigate("reset_password") {
-                                popUpTo("welcome") { inclusive = false }
+                        when {
+                            s is SessionStatus.Authenticated && s.session.type == "recovery" -> {
+                                navController.navigate("reset_password") {
+                                    popUpTo(0) { inclusive = true }
+                                }
                             }
+                            s is SessionStatus.Authenticated -> {
+                                // Logado: garante que esta em main_tabs (idempotente).
+                                val current = navController.currentBackStackEntry?.destination?.route
+                                if (current == "welcome" || current == null) {
+                                    navController.navigate("main_tabs") {
+                                        popUpTo(0) { inclusive = true }
+                                    }
+                                }
+                            }
+                            s is SessionStatus.NotAuthenticated -> {
+                                // Deslogado: garante que esta em welcome.
+                                val current = navController.currentBackStackEntry?.destination?.route
+                                if (current != null && current != "welcome" && current != "login" &&
+                                    current != "signup" && current != "forgot_password" && current != "reset_password") {
+                                    navController.navigate("welcome") {
+                                        popUpTo(0) { inclusive = true }
+                                    }
+                                }
+                            }
+                            // Initializing: nao faz nada, espera resolver.
+                            else -> {}
                         }
                     }
 
                     NavHost(
                         navController = navController,
-                        startDestination = startDestination
+                        startDestination = "welcome"
                     ) {
                     composable("welcome") {
                         WelcomeScreen(
@@ -97,14 +120,8 @@ class MainActivity : ComponentActivity() {
                             onSignInWithGoogle = {
                                 runCatching {
                                     val token = google.getGoogleIdToken()
-                                    android.util.Log.d("Rodape/Auth", "Got Google ID token (length=${token.idToken.length}), enviando pro Supabase...")
                                     authRepo.signInWithGoogleIdToken(token.idToken, token.rawNonce)
-                                    android.util.Log.d("Rodape/Auth", "Supabase aceitou o Google ID token. Sessao ativa.")
                                     Unit
-                                }.also { r ->
-                                    r.exceptionOrNull()?.let { e ->
-                                        android.util.Log.e("Rodape/Auth", "Google Sign-In falhou: ${e.message}", e)
-                                    }
                                 }
                             },
                             onSignedIn = {
@@ -152,9 +169,15 @@ class MainActivity : ComponentActivity() {
                         CreateClubScreen(
                             onNavigateBack = { navController.popBackStack() },
                             onCreateCompleted = { nome, descricao, cor, privacidade ->
-                                viewModel.createClub(nome, descricao, cor, privacidade) {
+                                viewModel.createClub(nome, descricao, cor, privacidade) { _ ->
+                                    // popUpTo na propria rota corrente + inclusive=true remove
+                                    // create_club do back stack e cai em main_tabs (que sempre
+                                    // existe). NAO usar popUpTo("welcome") — falha silenciosa
+                                    // quando welcome nao esta no back stack (usuario logado
+                                    // direto via cold start) e causa comportamento bizarro.
                                     navController.navigate("main_tabs") {
-                                        popUpTo("welcome") { inclusive = true }
+                                        popUpTo("create_club") { inclusive = true }
+                                        launchSingleTop = true
                                     }
                                 }
                             }
