@@ -1640,9 +1640,7 @@ fun ProfileScreenTab(
                     Row(
                         verticalAlignment = Alignment.CenterVertically,
                         horizontalArrangement = Arrangement.spacedBy(16.dp),
-                        modifier = Modifier
-                            .weight(1f)
-                            .clickable { isEditingProfile = true }
+                        modifier = Modifier.weight(1f)
                     ) {
                         Avatar(
                             name = name ?: "Você",
@@ -1662,11 +1660,14 @@ fun ProfileScreenTab(
                                 text = email ?: "contato@rodape.com",
                                 style = MaterialTheme.typography.bodyLarge.copy(color = Muted)
                             )
-                            Text(
-                                text = "Tocar pra editar",
-                                style = MaterialTheme.typography.labelSmall.copy(color = Terracota)
-                            )
                         }
+                    }
+                    IconButton(onClick = { isEditingProfile = true }) {
+                        Icon(
+                            imageVector = Icons.Outlined.Edit,
+                            contentDescription = "Editar Perfil",
+                            tint = Terracota
+                        )
                     }
                 }
             }
