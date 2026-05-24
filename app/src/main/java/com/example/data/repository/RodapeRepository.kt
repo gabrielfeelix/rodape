@@ -178,41 +178,43 @@ class RodapeRepository(private val dao: RodapeDao) {
         if (list.isNotEmpty()) return
 
         // 1. Insert default users (Perfect matching of screenshots profiles/avatars/names)
+        // Avatares dos seed users: presets ilustrados (cada um diferente).
+        // Distribuição manual pra combinar com o nome/gênero do personagem.
         val voceUser = User(
-            "user_voce", 
-            "Beatriz Almeida", 
-            "bla.almeida@gmail.com", 
-            "https://lh3.googleusercontent.com/aida-public/AB6AXuCVScro7b5L7FyxSBjNpeqetGOxXZcJe5_EViRuBb5j15OIqZzjjFE8AD5HxgnDcV__koM3NJtsawXA84KY9YNkGFN7fhPvCmJozzDXIkaDWzjObrvzqA2QOSHYCkvK6No2M6UEtsJXEoOaqY7O0WDiVtrhyaKZIqMxGEdP732KB_qtc7_tWeZHNZ9WEOJp6PTJnWMO-kidNZ_0LEvCMirIjMy140n059Elt4YwhfPZbjqKivR3NRgIsXyLxp8THGS41Y3roxiIJS8"
+            "user_voce",
+            "Beatriz Almeida",
+            "bla.almeida@gmail.com",
+            "preset:leitora"
         )
         val marina = User(
-            "user_marina", 
-            "Marina", 
-            "marina@rodape.com", 
-            "https://lh3.googleusercontent.com/aida-public/AB6AXuDNrQIc-uks79AhvG8KFuLCYcl4DjJUuM52Y5AgBip1lo6uzcbLjEM_b6FRtPOCWtOvRmxCauZY8HUNXHYcxqAq8Ru_uEjttmNSr0hkhe3nGSMc9eKCInzWUUVBjFXu661dJly69n_621424sKASXlLy4qZl02CkvL5jHSh4Ugw0NVyiAQqJZEO1FSQDuAcxYM0uNvorusQRgslEly3FypUo7Gh2-xJdH48tz3k1156ZbBA7wshhsw0aiYXoxM-FkWs649mS3THXPo"
+            "user_marina",
+            "Marina",
+            "marina@rodape.com",
+            "preset:petalas"
         )
         val rafael = User(
-            "user_lucas", 
-            "Rafael", 
-            "rafael@rodape.com", 
-            "https://lh3.googleusercontent.com/aida-public/AB6AXuCZNr2l26igYmRuuPixuo5CSHO1NRgXQjv3z1YeNdPCLPKjS22ay2o4Miv2f79xlBorMuVfPa1OR-NfGojrnPL7eIwFtOcgwodZ9alpIYkPvKmwS56lM0eC1uFEeukUG5OP_aRVaQWVjmHuoXkk0FA7UR3KE-pREvpXywe-4Y90gtdeitqLEXY3j5CldPWEfjyyYGgaYdKilR5HyLMZTNzlNOR_yMGF2ay_P828oiif7padxTiFKgIYlkpQZpU43wuzwAwp3Xu6iQw"
+            "user_lucas",
+            "Rafael",
+            "rafael@rodape.com",
+            "preset:mago"
         )
         val julia = User(
-            "user_sofia", 
-            "Júlia", 
-            "julia@rodape.com", 
-            "https://lh3.googleusercontent.com/aida-public/AB6AXuDmRnrAWaFr7Wx-eXV7PJHdL-IIO1hVWCZ9_j4iHEGuBJ5l771EGpSy5KIkJjGjBG8qjNVxScA2rX1Rmf5mvqI0kh_sGIqmkh1Z1mg4UrGr2MaVmbuEeZqgC6e-y5OBR5ZM0HNEOhUgbWA964sjj8t2iASjEQj3NzdwpwGKE59VqCwdW0DOQZGxO6Ie20T3I_bfSuCihVTOhH6meMGLjWf6paH0fXDOm4w96aQnlLIYJh4EpSOSp35kR5QYlnyG63Vpvu4KTjYLn8c"
+            "user_sofia",
+            "Júlia",
+            "julia@rodape.com",
+            "preset:alice"
         )
         val leo = User(
-            "user_bia", 
-            "Leo", 
-            "leo@rodape.com", 
-            "https://lh3.googleusercontent.com/aida-public/AB6AXuDMijlzVy38WV-sXZNMrfRzKg80WzVzet0p_xPl50BKJlm8Tkq83LzxgPdQef-GP91ARXui7cKs_rLe1gvWL1qDBFyNkZbeFniZyfV6YKjKVIFqSYHmczGRCzd_Ryxq2ApR-W8_obaScXrmMi9bmeflGXiOVKe22Ur_IcyUwtVLar_mEKKs16uaWoCgNCeeiQfoiIlG4aslg8AGW0aLKQqXQofQRiZV7nJJ-RwGgfQva9bgDeugJ7W3-LDPVpcS8mF_KTEDo7OTHc8"
+            "user_bia",
+            "Leo",
+            "leo@rodape.com",
+            "preset:leitor"
         )
         val joao = User(
-            "user_joao", 
-            "João", 
-            "joao@rodape.com", 
-            "https://lh3.googleusercontent.com/aida-public/AB6AXuAbEfpJxbUBzrGk8x1LLdzNG0I3py8eInEEyWmrQvjDGvTtVA7thIUCs6UY4jrgXkv559Vq6PFwIxnyz5RLmakmuALUHqvk5usJUkjqR1MHD56C9hf1iL2YmWWZZOPK1wdoKj-uIK5kCrP5EeGO0YtpMMGq1AJlcmJ2UoEAa_o0k9b_vL5QnMDyKfse4CUron9X8WT4636vfK-219kvqoS_ptvPkLmDpNQAKNrUJR0Q-nxZxCAJjCq-JJjCdXF-xmksNN0oFVdUvXI"
+            "user_joao",
+            "João",
+            "joao@rodape.com",
+            "preset:don_quixote"
         )
 
         dao.insertUser(voceUser)

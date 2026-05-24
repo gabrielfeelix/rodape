@@ -281,12 +281,18 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
             val userId = if (isDemo) "user_voce" else "user_${UUID.randomUUID().toString().take(6)}"
             val userName = if (isDemo) "Você" else name
             
+            // Avatar inicial: preset aleatório dos 12 ilustrados (usuário pode trocar no Perfil)
+            val randomPresets = listOf(
+                "preset:pequeno_principe", "preset:don_quixote", "preset:petalas",
+                "preset:indigena", "preset:detetive", "preset:joana_darc",
+                "preset:leitor", "preset:leitora", "preset:mago",
+                "preset:emilia", "preset:fantasma", "preset:alice"
+            )
             val newUser = User(
-                userId, 
-                userName, 
-                email, 
-                if (isDemo) "https://lh3.googleusercontent.com/aida-public/AB6AXuCVScro7b5L7FyxSBjNpeqetGOxXZcJe5_EViRuBb5j15OIqZzjjFE8AD5HxgnDcV__koM3NJtsawXA84KY9YNkGFN7fhPvCmJozzDXIkaDWzjObrvzqA2QOSHYCkvK6No2M6UEtsJXEoOaqY7O0WDiVtrhyaKZIqMxGEdP732KB_qtc7_tWeZHNZ9WEOJp6PTJnWMO-kidNZ_0LEvCMirIjMy140n059Elt4YwhfPZbjqKivR3NRgIsXyLxp8THGS41Y3roxiIJS8" 
-                else "https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?auto=format&fit=crop&q=80&w=120"
+                userId,
+                userName,
+                email,
+                if (isDemo) "preset:leitora" else randomPresets.random()
             )
             repository.insertUser(newUser)
 
