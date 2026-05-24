@@ -20,6 +20,7 @@ import kotlinx.serialization.json.JsonNull
 import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.buildJsonObject
+import kotlinx.serialization.json.contentOrNull
 import kotlinx.serialization.json.put
 
 // ============================================================================
@@ -776,14 +777,21 @@ class RemoteRepository(private val supabase: SupabaseClient = Supabase.client) {
         // Mantido como no-op pra preservar interface.
     }
 
-    /** RPC: create_club. Retorna o UUID do novo clube. */
+    /** RPC: create_club. Retorna o UUID do novo clube.
+     *
+     *  A funcao Postgres `create_club` esta declarada como `RETURNS clubs`, ou
+     *  seja, devolve a ROW INTEIRA do novo clube como JSON (nao so o UUID).
+     *  Precisamos decodificar como JsonObject e extrair o campo `id`. Bug
+     *  anterior tratava o JSON inteiro como string -> filtros HTTP montavam
+     *  URL invalida (?id=eq.{json...}) -> 400 Bad Request silencioso e clube
+     *  ficava "perdido" pro cliente apesar de criado no banco. */
     suspend fun createClubViaRpc(
         nome: String,
         descricao: String?,
         cor: String,
         privacidade: String,
-    ): String = runCatching {
-        val response = supabase.postgrest.rpc(
+    ): String {
+        val resp = supabase.postgrest.rpc(
             function = "create_club",
             parameters = buildJsonObject {
                 put("p_nome", nome)
@@ -792,17 +800,38 @@ class RemoteRepository(private val supabase: SupabaseClient = Supabase.client) {
                 put("p_privacidade", privacidade)
             },
         ).data
-        // RPC retorna scalar uuid; vem como string JSON ou objeto
-        response.trim('"', ' ', '\n')
-    }.getOrElse { throw it }
+        return extractIdFromRpcRow(resp)
+            ?: error("create_club: resposta sem campo id: $resp")
+    }
 
+    /** RPC: join_club_with_code. Retorna ROW de club_members (campo `club_id`).
+     *  Mesmo padrao do create_club — extrai o id apos parsear. */
     suspend fun joinClubWithCodeViaRpc(codigo: String): String? = runCatching {
         val resp = supabase.postgrest.rpc(
             function = "join_club_with_code",
             parameters = buildJsonObject { put("p_codigo", codigo.uppercase().trim()) }
         ).data
-        resp.trim('"', ' ', '\n').takeIf { it.isNotBlank() && it != "null" }
+        extractFieldFromRpcRow(resp, "club_id")
     }.getOrNull()
+
+    /** Parse helper: pega `id` da row retornada por uma RPC `RETURNS tabela`.
+     *  Resposta vem como JSON: '{"id":"uuid","nome":"...",...}'. Em casos
+     *  raros vem como array de 1 elemento: '[{"id":"uuid",...}]'. Tolera ambos. */
+    private fun extractIdFromRpcRow(raw: String): String? =
+        extractFieldFromRpcRow(raw, "id")
+
+    private fun extractFieldFromRpcRow(raw: String, field: String): String? {
+        if (raw.isBlank() || raw == "null") return null
+        return runCatching {
+            val element = json.parseToJsonElement(raw)
+            val obj = when (element) {
+                is JsonObject -> element
+                is kotlinx.serialization.json.JsonArray -> element.firstOrNull() as? JsonObject
+                else -> null
+            }
+            obj?.get(field)?.let { (it as? kotlinx.serialization.json.JsonPrimitive)?.contentOrNull }
+        }.getOrNull()
+    }
 
     suspend fun leaveClubViaRpc(clubId: String) {
         runCatching {
