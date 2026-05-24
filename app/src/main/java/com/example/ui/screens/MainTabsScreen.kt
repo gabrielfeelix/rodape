@@ -1611,8 +1611,12 @@ fun ProfileScreenTab(
     onNavigateToFrases: () -> Unit,
     onNavigateToAbout: () -> Unit = {}
 ) {
-    val name by viewModel.userName.collectAsState()
-    val email by viewModel.userEmail.collectAsState()
+    val supaName by viewModel.supabaseDisplayName.collectAsState()
+    val supaEmail by viewModel.supabaseEmail.collectAsState()
+    val nameLegacy by viewModel.userName.collectAsState()
+    val emailLegacy by viewModel.userEmail.collectAsState()
+    val name = supaName ?: nameLegacy
+    val email = supaEmail ?: emailLegacy
     val currentUser by viewModel.currentUser.collectAsState()
     val allClubs by viewModel.allClubs.collectAsState()
     val activeClub by viewModel.activeClub.collectAsState()

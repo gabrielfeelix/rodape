@@ -744,51 +744,21 @@ fun JoinClubScreen(
             item {
                 Spacer(modifier = Modifier.height(8.dp))
 
-                // Segmented Control Com código / Com link
-                Row(
+                // Tab unica "Com codigo" — convite por link foi adiado ate ter dominio proprio.
+                // (Quando voltar, restaurar segmented control aqui.)
+                Box(
                     modifier = Modifier
                         .fillMaxWidth()
                         .height(52.dp)
-                        .background(PaperDeep, RoundedCornerShape(26.dp))
-                        .border(0.5.dp, Divider, RoundedCornerShape(26.dp))
-                        .padding(4.dp),
-                    verticalAlignment = Alignment.CenterVertically
+                        .background(CardSurface, RoundedCornerShape(26.dp))
+                        .border(0.5.dp, Divider, RoundedCornerShape(26.dp)),
+                    contentAlignment = Alignment.Center
                 ) {
-                    Box(
-                        modifier = Modifier
-                            .weight(1f)
-                            .fillMaxHeight()
-                            .background(
-                                if (activeTabIsCode) CardSurface else Color.Transparent,
-                                RoundedCornerShape(22.dp)
-                            )
-                            .clickable { activeTabIsCode = true },
-                        contentAlignment = Alignment.Center
-                    ) {
-                        Text(
-                            "Com código",
-                            color = if (activeTabIsCode) Ink else Muted,
-                            style = MaterialTheme.typography.bodyLarge.copy(fontWeight = FontWeight.SemiBold)
-                        )
-                    }
-
-                    Box(
-                        modifier = Modifier
-                            .weight(1f)
-                            .fillMaxHeight()
-                            .background(
-                                if (!activeTabIsCode) CardSurface else Color.Transparent,
-                                RoundedCornerShape(22.dp)
-                            )
-                            .clickable { activeTabIsCode = false },
-                        contentAlignment = Alignment.Center
-                    ) {
-                        Text(
-                            "Com link",
-                            color = if (!activeTabIsCode) Ink else Muted,
-                            style = MaterialTheme.typography.bodyLarge.copy(fontWeight = FontWeight.SemiBold)
-                        )
-                    }
+                    Text(
+                        "Com código",
+                        color = Ink,
+                        style = MaterialTheme.typography.bodyLarge.copy(fontWeight = FontWeight.SemiBold)
+                    )
                 }
             }
 
