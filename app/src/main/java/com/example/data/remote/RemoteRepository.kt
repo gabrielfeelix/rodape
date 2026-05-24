@@ -673,6 +673,45 @@ class RemoteRepository(
     /** Apaga o cache local — chamar no logout pra nao vazar dados entre contas. */
     suspend fun clearLocalCache() {
         dao.clearAll()
+        lastSyncAt.clear()
+    }
+
+    // ============================================================
+    // SYNC INTELIGENTE (Nivel 2B — SWR com TTL)
+    // ============================================================
+    //
+    // Cada par (resource, key) tem um timestamp de ultimo sync. Quando UI pede
+    // um flow, em vez de SEMPRE bater no servidor, checamos se passou o TTL.
+    // Se nao passou, deixa Realtime cuidar — economiza HTTP, bateria e bytes.
+    //
+    // TTL pequeno pra coisas que mudam rapido (comentarios = 10s), grande pra
+    // coisas estaticas (perfis, books catalogo = 5min). notifyLocalMutation e
+    // eventos Realtime sempre fazem refresh — TTL so afeta o "trigger on view".
+
+    private val lastSyncAt = java.util.concurrent.ConcurrentHashMap<String, Long>()
+
+    /** True se ja sincronizou ha menos de [ttlMs] — caller deve pular. */
+    private fun recentlySynced(key: String, ttlMs: Long): Boolean {
+        val last = lastSyncAt[key] ?: return false
+        return System.currentTimeMillis() - last < ttlMs
+    }
+
+    /** Marca um sync como concluido. */
+    private fun markSynced(key: String) {
+        lastSyncAt[key] = System.currentTimeMillis()
+    }
+
+    /** Helper que envolve um sync: pula se TTL nao expirou, marca apos sucesso. */
+    private suspend fun syncOnce(key: String, ttlMs: Long, block: suspend () -> Unit) {
+        if (recentlySynced(key, ttlMs)) return
+        runCatching { block() }.onSuccess { markSynced(key) }
+    }
+
+    // TTLs canonicos: balanceiam frescor vs custo.
+    private object Ttl {
+        const val FAST = 5_000L      // 5s — chat ativo, votos em rodada aberta
+        const val MED = 30_000L      // 30s — listas de clube, livros
+        const val SLOW = 300_000L    // 5min — perfis, catalogo de books
     }
 
     // ============================================================
@@ -765,8 +804,10 @@ class RemoteRepository(
     // ============================================================
 
     fun getUserFlow(userId: String): Flow<User?> {
-        val reload: suspend () -> Unit = { syncUser(userId) }
-        scope.launch { runCatching { reload() } }
+        // Reload manual (via realtime/mutation) ignora TTL — sempre re-busca.
+        val reload: suspend () -> Unit = { syncUser(userId); markSynced("user:$userId") }
+        // Trigger on view: respeita TTL.
+        scope.launch { syncOnce("user:$userId", Ttl.SLOW) { syncUser(userId) } }
         ensureRealtime("profiles", filterColumn = "id", filterValue = userId, reload = reload)
         return dao.userFlow(userId)
     }
@@ -831,8 +872,8 @@ class RemoteRepository(
     // ============================================================
 
     fun getClubFlow(clubId: String): Flow<Club?> {
-        val reload: suspend () -> Unit = { syncClub(clubId) }
-        scope.launch { runCatching { reload() } }
+        val reload: suspend () -> Unit = { syncClub(clubId); markSynced("club:$clubId") }
+        scope.launch { syncOnce("club:$clubId", Ttl.MED) { syncClub(clubId) } }
         ensureRealtime("clubs", filterColumn = "id", filterValue = clubId, reload = reload)
         return dao.clubFlow(clubId)
     }
@@ -865,9 +906,8 @@ class RemoteRepository(
     }.getOrNull()
 
     fun getClubsForUser(userId: String): Flow<List<Club>> {
-        val reload: suspend () -> Unit = { syncClubsForUser() }
-        scope.launch { runCatching { reload() } }
-        // Reagir a mudancas em club_members (entrar/sair de clube) e em clubs (renomeacao).
+        val reload: suspend () -> Unit = { syncClubsForUser(); markSynced("clubs:user:$userId") }
+        scope.launch { syncOnce("clubs:user:$userId", Ttl.MED) { syncClubsForUser() } }
         ensureRealtime("club_members", filterColumn = "user_id", filterValue = userId, reload = reload)
         ensureRealtime("clubs", reload = reload)
         return dao.clubsActiveFlow()
@@ -1015,8 +1055,9 @@ class RemoteRepository(
     }
 
     fun getClubMembersFlow(clubId: String): Flow<List<User>> {
-        val reload: suspend () -> Unit = { syncClubMembers(clubId) }
-        scope.launch { runCatching { reload() } }
+        val key = "members:$clubId"
+        val reload: suspend () -> Unit = { syncClubMembers(clubId); markSynced(key) }
+        scope.launch { syncOnce(key, Ttl.MED) { syncClubMembers(clubId) } }
         ensureRealtime("club_members", filterColumn = "club_id", filterValue = clubId, reload = reload)
         return dao.memberUsersInClubFlow(clubId)
     }
@@ -1210,8 +1251,9 @@ class RemoteRepository(
     }
 
     fun getBookByStatusFlow(clubId: String, status: String): Flow<List<Book>> {
-        val reload: suspend () -> Unit = { syncClubBooks(clubId) }
-        scope.launch { runCatching { reload() } }
+        val key = "clubBooks:$clubId"
+        val reload: suspend () -> Unit = { syncClubBooks(clubId); markSynced(key) }
+        scope.launch { syncOnce(key, Ttl.MED) { syncClubBooks(clubId) } }
         ensureRealtime("club_books", filterColumn = "club_id", filterValue = clubId, reload = reload)
         return dao.booksByStatusFlow(clubId, status)
     }
@@ -1245,8 +1287,9 @@ class RemoteRepository(
     )
 
     fun getClubBooksFlow(clubId: String): Flow<List<Book>> {
-        val reload: suspend () -> Unit = { syncClubBooks(clubId) }
-        scope.launch { runCatching { reload() } }
+        val key = "clubBooks:$clubId"
+        val reload: suspend () -> Unit = { syncClubBooks(clubId); markSynced(key) }
+        scope.launch { syncOnce(key, Ttl.MED) { syncClubBooks(clubId) } }
         ensureRealtime("club_books", filterColumn = "club_id", filterValue = clubId, reload = reload)
         return dao.clubBooksFlow(clubId)
     }
@@ -1455,8 +1498,9 @@ class RemoteRepository(
     }
 
     fun getCommentsForChapterFlow(chapterId: String, clubId: String): Flow<List<Comment>> {
-        val reload: suspend () -> Unit = { syncCommentsForChapter(chapterId, clubId) }
-        scope.launch { runCatching { reload() } }
+        val key = "comments:ch:$chapterId"
+        val reload: suspend () -> Unit = { syncCommentsForChapter(chapterId, clubId); markSynced(key) }
+        scope.launch { syncOnce(key, Ttl.FAST) { syncCommentsForChapter(chapterId, clubId) } }
         ensureRealtime("comments", filterColumn = "club_id", filterValue = clubId, reload = reload)
         return dao.commentsForChapterFlow(chapterId, clubId)
     }
