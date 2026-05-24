@@ -305,6 +305,9 @@ fun LoginScreen(
                     }
 
                     Spacer(modifier = Modifier.height(12.dp))
+                    // Botao oficial Google Sign-In seguindo branding guidelines:
+                    // fundo branco, borda fina cinza, logo G multi-color, texto preto
+                    // em Roboto Medium. https://developers.google.com/identity/branding-guidelines
                     OutlinedButton(
                         onClick = {
                             isLoading = true
@@ -323,20 +326,23 @@ fun LoginScreen(
                             .fillMaxWidth()
                             .height(52.dp),
                         shape = RoundedCornerShape(26.dp),
-                        border = BorderStroke(1.dp, Divider),
+                        border = BorderStroke(1.dp, Color(0xFFDADCE0)),
+                        colors = ButtonDefaults.outlinedButtonColors(
+                            containerColor = Color.White,
+                            contentColor = Color(0xFF1F1F1F),
+                        ),
                     ) {
-                        Icon(
-                            imageVector = Icons.Outlined.AccountCircle,
-                            contentDescription = "Google",
-                            tint = Ink,
-                            modifier = Modifier.size(24.dp),
+                        Image(
+                            painter = painterResource(id = R.drawable.ic_google_g_logo),
+                            contentDescription = null,
+                            modifier = Modifier.size(20.dp),
                         )
                         Spacer(modifier = Modifier.width(12.dp))
                         Text(
                             "Continuar com Google",
                             style = MaterialTheme.typography.bodyLarge.copy(
                                 fontWeight = FontWeight.Medium,
-                                color = Ink,
+                                color = Color(0xFF1F1F1F),
                             ),
                         )
                     }
