@@ -62,9 +62,17 @@ android {
 
 // Configure the Secrets Gradle Plugin to use .env and .env.example files
 // to match the convention used in Web projects.
+//
+// IMPORTANTE: o plugin injeta TODAS as chaves do .env como campos BuildConfig.X,
+// e BuildConfig fica embutido no APK (decompilável). Por isso a ignoreList
+// abaixo barra explicitamente segredos que jamais podem ir pro cliente.
+// Só chaves "publicas/anon" e identificadores são permitidos.
 secrets {
   propertiesFileName = ".env"
   defaultPropertiesFileName = ".env.example"
+  ignoreList.add("SUPABASE_SERVICE_ROLE")
+  ignoreList.add("SUPABASE_SECRET_KEY")
+  ignoreList.add("GOOGLE_WEB_CLIENT_SECRET")
 }
 
 // Some unused dependencies are commented out below instead of being removed.
