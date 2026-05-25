@@ -34,9 +34,19 @@ import com.example.ui.viewmodel.MainViewModel
 fun NextTabScreen(
     viewModel: MainViewModel,
     onNavigateToSuggestBook: () -> Unit,
-    onNavigateToMeetingDetail: (String) -> Unit = {}
+    onNavigateToMeetingDetail: (String) -> Unit = {},
+    initialSubTab: String? = null,
+    onSubTabConsumed: () -> Unit = {},
 ) {
-    var subTab by remember { mutableStateOf("encontro") }
+    var subTab by remember { mutableStateOf(initialSubTab ?: "encontro") }
+    // Se o caller setar initialSubTab depois da composicao inicial (ex: usuario
+    // ja estava em Next > Encontro e clicou num CTA da Home pra Votacao), troca.
+    LaunchedEffect(initialSubTab) {
+        if (initialSubTab != null && initialSubTab != subTab) {
+            subTab = initialSubTab
+            onSubTabConsumed()
+        }
+    }
 
     Column(
         modifier = Modifier.fillMaxSize()

@@ -205,27 +205,46 @@ class MainActivity : ComponentActivity() {
                     }
 
                     composable("main_tabs") {
-                        MainTabsScreen(
-                            viewModel = viewModel,
-                            onNavigateToNotifications = { navController.navigate("notifications") },
-                            onNavigateToDiscussion = { chapterId, title ->
-                                val encodedTitle = java.net.URLEncoder.encode(title, "UTF-8")
-                                navController.navigate("discussion/$chapterId/$encodedTitle")
-                            },
-                            onNavigateToSuggestBook = { navController.navigate("suggest_book") },
-                            onNavigateToJoinClub = { navController.navigate("join_club") },
-                            onNavigateToCreateClub = { navController.navigate("create_club") },
-                            onLogoutCompleted = {
-                                navController.navigate("welcome") {
-                                    popUpTo("main_tabs") { inclusive = true }
-                                }
-                            },
-                            onNavigateToBookDetail = { bookId -> navController.navigate("book_detail/$bookId") },
-                            onNavigateToFrases = { navController.navigate("frases") },
-                            onNavigateToManageClub = { navController.navigate("manage_club") },
-                            onNavigateToMeetingDetail = { mid -> navController.navigate("meeting_detail/$mid") },
-                            onNavigateToAbout = { navController.navigate("about") }
-                        )
+                        // Gate de onboarding: primeiro login deste usuario neste
+                        // device mostra OnboardingScreen (avatar + apelido + fonte).
+                        // Estado vem de DataStore (onboardedUsersFlow) cruzado com
+                        // currentUserId — defensivo contra trocar de conta.
+                        val needsOnboarding by viewModel.needsOnboarding.collectAsState()
+                        val currentUser by viewModel.currentUser.collectAsState()
+                        val supaName by viewModel.supabaseDisplayName.collectAsState()
+                        val fontScale by viewModel.fontScale.collectAsState()
+                        if (needsOnboarding) {
+                            OnboardingScreen(
+                                initialName = currentUser?.nome ?: supaName ?: "",
+                                initialAvatarUrl = currentUser?.avatarUrl ?: "preset:leitor",
+                                initialFontScale = fontScale,
+                                onComplete = { nome, avatarUrl, scale ->
+                                    viewModel.completeOnboarding(nome, avatarUrl, scale)
+                                },
+                            )
+                        } else {
+                            MainTabsScreen(
+                                viewModel = viewModel,
+                                onNavigateToNotifications = { navController.navigate("notifications") },
+                                onNavigateToDiscussion = { chapterId, title ->
+                                    val encodedTitle = java.net.URLEncoder.encode(title, "UTF-8")
+                                    navController.navigate("discussion/$chapterId/$encodedTitle")
+                                },
+                                onNavigateToSuggestBook = { navController.navigate("suggest_book") },
+                                onNavigateToJoinClub = { navController.navigate("join_club") },
+                                onNavigateToCreateClub = { navController.navigate("create_club") },
+                                onLogoutCompleted = {
+                                    navController.navigate("welcome") {
+                                        popUpTo("main_tabs") { inclusive = true }
+                                    }
+                                },
+                                onNavigateToBookDetail = { bookId -> navController.navigate("book_detail/$bookId") },
+                                onNavigateToFrases = { navController.navigate("frases") },
+                                onNavigateToManageClub = { navController.navigate("manage_club") },
+                                onNavigateToMeetingDetail = { mid -> navController.navigate("meeting_detail/$mid") },
+                                onNavigateToAbout = { navController.navigate("about") }
+                            )
+                        }
                     }
 
                     composable("meeting_detail/{meetingId}") { backStackEntry ->

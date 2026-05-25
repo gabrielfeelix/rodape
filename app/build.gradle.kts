@@ -122,7 +122,9 @@ dependencies {
   implementation(libs.androidx.camera.lifecycle)
   implementation(libs.androidx.camera.view)
   implementation(libs.androidx.compose.material.icons.core)
-  // implementation(libs.androidx.compose.material.icons.extended)
+  // Extended traz Book, MenuBook, HowToVote, EventNote, etc. R8 strippa o que
+  // nao e usado, entao o impacto no APK final e ~200KB (vale a pena).
+  implementation(libs.androidx.compose.material.icons.extended)
   implementation(libs.androidx.compose.material3)
   implementation(libs.androidx.compose.ui.google.fonts)
   implementation(libs.androidx.compose.ui)

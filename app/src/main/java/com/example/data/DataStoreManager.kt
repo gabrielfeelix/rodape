@@ -41,6 +41,9 @@ class DataStoreManager(private val context: Context) {
         // o usuario novo veja dados do antigo. Nao e segredo (auth.uid()),
         // mas mesmo assim fica so localmente.
         val LAST_USER_ID_KEY = stringPreferencesKey("last_user_id")
+        // userIds que ja completaram o onboarding pos-primeiro-login.
+        // Armazenado como CSV pra suportar multiplos users no mesmo device.
+        val ONBOARDED_USERS_KEY = stringPreferencesKey("onboarded_users")
     }
 
     val ratedAppFlow: Flow<Boolean> = context.dataStore.data.map { prefs ->
@@ -91,6 +94,20 @@ class DataStoreManager(private val context: Context) {
         context.dataStore.edit { prefs ->
             if (userId == null) prefs.remove(LAST_USER_ID_KEY)
             else prefs[LAST_USER_ID_KEY] = userId
+        }
+    }
+
+    /** Flow do conjunto de userIds que ja viram o onboarding. */
+    val onboardedUsersFlow: Flow<Set<String>> = context.dataStore.data.map { prefs ->
+        prefs[ONBOARDED_USERS_KEY]?.split(",")?.filter { it.isNotBlank() }?.toSet().orEmpty()
+    }
+
+    suspend fun markOnboardingDone(userId: String) {
+        context.dataStore.edit { prefs ->
+            val current = prefs[ONBOARDED_USERS_KEY]
+                ?.split(",")?.filter { it.isNotBlank() }?.toMutableSet() ?: mutableSetOf()
+            current.add(userId)
+            prefs[ONBOARDED_USERS_KEY] = current.joinToString(",")
         }
     }
 }

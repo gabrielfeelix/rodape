@@ -20,7 +20,10 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowDropDown
 import androidx.compose.material.icons.filled.Home
 import androidx.compose.material.icons.filled.Edit
+import androidx.compose.material.icons.filled.HowToVote
 import androidx.compose.material.icons.filled.List
+import androidx.compose.material.icons.filled.LocalLibrary
+import androidx.compose.material.icons.filled.MenuBook
 import androidx.compose.material.icons.filled.Star
 import androidx.compose.material.icons.filled.Person
 import androidx.compose.material.icons.outlined.List
@@ -91,6 +94,9 @@ fun MainTabsScreen(
     onNavigateToAbout: () -> Unit = {},
 ) {
     var selectedTab by remember { mutableStateOf("home") }
+    // Sub-tab inicial pra abrir a Next tab (encontro ou votacao). null = padrao.
+    // Usado por CTAs da Home pra mandar direto pra votacao em vez do default.
+    var pendingNextSubTab by remember { mutableStateOf<String?>(null) }
     // Observa pedidos externos de troca de tab (ex: notificações navegando)
     val requestedTab by viewModel.requestedTab.collectAsState()
     LaunchedEffect(requestedTab) {
@@ -238,7 +244,10 @@ fun MainTabsScreen(
                 "home" -> HomeScreenTab(
                     viewModel = viewModel,
                     onNavigateToDiscussion = onNavigateToDiscussion,
-                    onNavigateToTab = { selectedTab = it }
+                    onNavigateToTab = { tab, sub ->
+                        pendingNextSubTab = sub
+                        selectedTab = tab
+                    },
                 )
                 "book" -> BookDetailScreenTab(
                     viewModel = viewModel,
@@ -247,7 +256,9 @@ fun MainTabsScreen(
                 "next" -> NextTabScreen(
                     viewModel = viewModel,
                     onNavigateToSuggestBook = onNavigateToSuggestBook,
-                    onNavigateToMeetingDetail = onNavigateToMeetingDetail
+                    onNavigateToMeetingDetail = onNavigateToMeetingDetail,
+                    initialSubTab = pendingNextSubTab,
+                    onSubTabConsumed = { pendingNextSubTab = null },
                 )
                 "shelf" -> ShelfTabScreen(
                     viewModel = viewModel,
@@ -485,19 +496,19 @@ fun CustomBottomBar(
                 )
                 BottomBarItem(
                     label = "Livro atual",
-                    icon = if (selectedTab == "book") Icons.Filled.Edit else Icons.Outlined.Edit,
+                    icon = if (selectedTab == "book") Icons.Filled.MenuBook else Icons.Outlined.MenuBook,
                     selected = selectedTab == "book",
                     onClick = { onTabSelected("book") }
                 )
                 BottomBarItem(
                     label = "Próximo",
-                    icon = if (selectedTab == "next") Icons.Filled.Star else Icons.Outlined.Star,
+                    icon = if (selectedTab == "next") Icons.Filled.HowToVote else Icons.Outlined.HowToVote,
                     selected = selectedTab == "next",
                     onClick = { onTabSelected("next") }
                 )
                 BottomBarItem(
                     label = "Estante",
-                    icon = if (selectedTab == "shelf") Icons.Filled.List else Icons.Outlined.List,
+                    icon = if (selectedTab == "shelf") Icons.Filled.LocalLibrary else Icons.Outlined.LocalLibrary,
                     selected = selectedTab == "shelf",
                     onClick = { onTabSelected("shelf") }
                 )
@@ -575,7 +586,8 @@ fun BottomBarItem(
 fun HomeScreenTab(
     viewModel: MainViewModel,
     onNavigateToDiscussion: (String, String) -> Unit,
-    onNavigateToTab: (String) -> Unit
+    // (tab, subTab?) — subTab so faz sentido pra "next" hoje. null pra demais.
+    onNavigateToTab: (String, String?) -> Unit,
 ) {
     val activeClub by viewModel.activeClub.collectAsState()
     val currentBook by viewModel.currentBook.collectAsState()
@@ -583,6 +595,7 @@ fun HomeScreenTab(
     val progress by viewModel.userProgress.collectAsState()
     val allProgress by viewModel.allProgressForClub.collectAsState()
     val members by viewModel.clubMembers.collectAsState()
+    val context = androidx.compose.ui.platform.LocalContext.current
 
     val currentChapIndex = progress?.currentChapter ?: 0
 
@@ -914,34 +927,120 @@ fun HomeScreenTab(
         }
 
         // Section: Tua Leitura Row Card. So aparece quando ha livro "current".
-        // Sem livro, mostra CTA pra sugerir/escolher livro.
+        // Sem livro, mostra 2 CTAs claros — sugerir o primeiro livro (vai pra
+        // Proximo > Votacao, onde a sugestao acontece) e convidar amigos.
         if (currentBook == null) {
             item {
-                RodapeCard(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .clickable { onNavigateToTab("next") },
-                    contentPadding = PaddingValues(20.dp)
+                Column(
+                    modifier = Modifier.fillMaxWidth(),
+                    verticalArrangement = Arrangement.spacedBy(12.dp)
                 ) {
-                    Column(
-                        modifier = Modifier.fillMaxWidth(),
-                        horizontalAlignment = Alignment.CenterHorizontally,
-                        verticalArrangement = Arrangement.spacedBy(8.dp)
+                    // Card 1: sugerir primeiro livro com CARA DE BOTAO (Terracota,
+                    // ilustracao a esquerda + chevron a direita)
+                    RodapeCard(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .clickable { onNavigateToTab("next", "votacao") },
+                        contentPadding = PaddingValues(16.dp)
                     ) {
-                        Text(
-                            text = "Nenhum livro escolhido ainda",
-                            style = MaterialTheme.typography.titleMedium.copy(
-                                fontFamily = LiterataFontFamily,
-                                fontWeight = FontWeight.SemiBold
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.spacedBy(16.dp)
+                        ) {
+                            Box(
+                                modifier = Modifier
+                                    .size(48.dp)
+                                    .clip(RoundedCornerShape(12.dp))
+                                    .background(Terracota.copy(alpha = 0.18f)),
+                                contentAlignment = Alignment.Center,
+                            ) {
+                                Icon(
+                                    imageVector = Icons.Outlined.MenuBook,
+                                    contentDescription = null,
+                                    tint = Terracota,
+                                    modifier = Modifier.size(26.dp)
+                                )
+                            }
+                            Column(modifier = Modifier.weight(1f)) {
+                                Text(
+                                    text = "Sugerir o primeiro livro",
+                                    style = MaterialTheme.typography.titleMedium.copy(
+                                        fontFamily = LiterataFontFamily,
+                                        fontWeight = FontWeight.SemiBold,
+                                        color = Ink
+                                    )
+                                )
+                                Text(
+                                    text = "O clube precisa de uma leitura — comece a votação",
+                                    style = MaterialTheme.typography.bodySmall.copy(color = Muted)
+                                )
+                            }
+                            Icon(
+                                imageVector = Icons.AutoMirrored.Outlined.KeyboardArrowRight,
+                                contentDescription = null,
+                                tint = Terracota,
                             )
-                        )
-                        Text(
-                            text = "Que tal sugerir o primeiro?",
-                            style = MaterialTheme.typography.bodyMedium.copy(
-                                color = MaterialTheme.colorScheme.onSurfaceVariant
-                            ),
-                            textAlign = TextAlign.Center
-                        )
+                        }
+                    }
+
+                    // Card 2: convidar membros — mostra o codigo do clube + botao
+                    // de share. So aparece se ainda nao convidou ninguem (clube
+                    // pequeno). Tambem com cara de botao.
+                    val codigo = activeClub?.codigo.orEmpty()
+                    if (codigo.isNotBlank()) {
+                        RodapeCard(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .clickable {
+                                    com.example.util.shareClubInvite(
+                                        context,
+                                        activeClub?.nome ?: "Rodapé",
+                                        codigo,
+                                    )
+                                },
+                            contentPadding = PaddingValues(16.dp)
+                        ) {
+                            Row(
+                                modifier = Modifier.fillMaxWidth(),
+                                verticalAlignment = Alignment.CenterVertically,
+                                horizontalArrangement = Arrangement.spacedBy(16.dp)
+                            ) {
+                                Box(
+                                    modifier = Modifier
+                                        .size(48.dp)
+                                        .clip(RoundedCornerShape(12.dp))
+                                        .background(Oliva.copy(alpha = 0.18f)),
+                                    contentAlignment = Alignment.Center,
+                                ) {
+                                    Icon(
+                                        imageVector = Icons.Outlined.PersonAdd,
+                                        contentDescription = null,
+                                        tint = OlivaDeep,
+                                        modifier = Modifier.size(26.dp)
+                                    )
+                                }
+                                Column(modifier = Modifier.weight(1f)) {
+                                    Text(
+                                        text = "Convidar alguém pro clube",
+                                        style = MaterialTheme.typography.titleMedium.copy(
+                                            fontFamily = LiterataFontFamily,
+                                            fontWeight = FontWeight.SemiBold,
+                                            color = Ink
+                                        )
+                                    )
+                                    Text(
+                                        text = "Código: $codigo · toque pra compartilhar",
+                                        style = MaterialTheme.typography.bodySmall.copy(color = Muted)
+                                    )
+                                }
+                                Icon(
+                                    imageVector = Icons.Outlined.Share,
+                                    contentDescription = null,
+                                    tint = OlivaDeep,
+                                )
+                            }
+                        }
                     }
                 }
             }
@@ -950,7 +1049,7 @@ fun HomeScreenTab(
             RodapeCard(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .clickable { onNavigateToTab("book") },
+                    .clickable { onNavigateToTab("book", null) },
                 contentPadding = PaddingValues(16.dp)
             ) {
                 Row(
@@ -1692,6 +1791,7 @@ fun ProfileScreenTab(
     val allClubs by viewModel.allClubs.collectAsState()
     val activeClub by viewModel.activeClub.collectAsState()
     val savedQuotes by viewModel.savedQuotes.collectAsState()
+    val finishedBooks by viewModel.finishedBooks.collectAsState()
     val archivedClubs by viewModel.archivedClubsForUser.collectAsState()
     val ratedApp by viewModel.ratedApp.collectAsState()
 
@@ -1769,13 +1869,14 @@ fun ProfileScreenTab(
                     modifier = Modifier.fillMaxWidth(),
                     horizontalArrangement = Arrangement.spacedBy(8.dp)
                 ) {
-                    // Card 1: Livros lidos
+                    // Card 1: Livros lidos (do clube ativo). Quando futuramente o
+                    // app tiver agregacao cross-clube, somar de todos os clubes.
                     RodapeCard(
                         modifier = Modifier.weight(1f),
                         contentPadding = PaddingValues(14.dp)
                     ) {
                         Text(
-                            text = "24",
+                            text = "${finishedBooks.size}",
                             style = MaterialTheme.typography.displaySmall.copy(
                                 fontFamily = LiterataFontFamily,
                                 fontSize = 28.sp,
@@ -2594,16 +2695,27 @@ fun EditProfileView(
                 val nameParts = name.trim().split(Regex("\\s+")).filter { it.isNotBlank() }
                 val hasFullName = nameParts.size >= 2 && nameParts.all { it.length >= 2 }
                 val emailLooksValid = email.contains("@") && email.length >= 5
+                // Habilita Salvar se:
+                //  (a) qualquer campo mudou em relacao ao inicial (avatar, nome
+                //      OU email), E
+                //  (b) os campos editaveis (nome+email) sao validos
+                // Antes so olhava (b), o que prendia o botao desabilitado pra
+                // quem tinha nome curto no Supabase (1 palavra) mesmo querendo
+                // so trocar o avatar.
+                val changedSomething = name != initialName ||
+                    email != initialEmail ||
+                    avatarUrl != initialAvatarUrl
+                val canSave = changedSomething && hasFullName && emailLooksValid
                 TbButton(
                     text = "Salvar",
                     onClick = {
-                        if (hasFullName && emailLooksValid) {
+                        if (canSave) {
                             onSave(name.trim(), email.trim(), avatarUrl)
                         }
                     },
                     variant = TbButtonVariant.Terra,
                     size = TbButtonSize.Lg,
-                    enabled = hasFullName && emailLooksValid,
+                    enabled = canSave,
                     modifier = Modifier.weight(1f)
                 )
             }

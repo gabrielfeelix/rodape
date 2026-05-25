@@ -85,6 +85,28 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
         viewModelScope.launch { dataStoreManager.setFontScale(scale) }
     }
 
+    /** Conjunto de userIds que ja viram o onboarding pos-login neste device. */
+    val onboardedUsers: StateFlow<Set<String>> = dataStoreManager.onboardedUsersFlow
+        .stateIn(viewModelScope, SharingStarted.Eagerly, emptySet())
+
+    /** True quando o user logado ainda precisa ver o onboarding. */
+    val needsOnboarding: StateFlow<Boolean> =
+        combine(currentUserId, onboardedUsers) { uid, set ->
+            uid != null && uid !in set
+        }.stateIn(viewModelScope, SharingStarted.Eagerly, false)
+
+    /** Salva preferencias do onboarding e marca como concluido. */
+    fun completeOnboarding(apelido: String, avatarUrl: String, scale: Float) {
+        viewModelScope.launch {
+            val uid = currentUserId.value ?: return@launch
+            val email = supabaseEmail.value.orEmpty()
+            // Atualiza profile (nome + avatar). Email vem do JWT, nao mexer.
+            runCatching { repository.insertUser(User(uid, apelido, email, avatarUrl)) }
+            dataStoreManager.setFontScale(scale)
+            dataStoreManager.markOnboardingDone(uid)
+        }
+    }
+
     // Clubs
     val allClubs: StateFlow<List<Club>> = currentUserId.flatMapLatest { userId ->
         if (userId != null) repository.getClubsForUser(userId) else flowOf(emptyList())
