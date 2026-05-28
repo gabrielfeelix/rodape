@@ -31,6 +31,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.input.PasswordVisualTransformation
+import androidx.compose.ui.text.input.VisualTransformation
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -101,7 +102,21 @@ fun WelcomeScreen(
                         modifier = Modifier.size(108.dp)
                     )
 
-                    Spacer(modifier = Modifier.height(24.dp))
+                    Spacer(modifier = Modifier.height(16.dp))
+
+                    // Wordmark: nome do app explicito acima da tagline pra fixar
+                    // a marca antes do hero. Literata + Terracota bate o tom
+                    // editorial dos demais wordmarks (login/signup topbar).
+                    Text(
+                        text = "Rodapé",
+                        style = MaterialTheme.typography.headlineLarge.copy(
+                            color = Terracota,
+                            fontWeight = FontWeight.Bold,
+                        ),
+                        textAlign = TextAlign.Center
+                    )
+
+                    Spacer(modifier = Modifier.height(12.dp))
 
                     Text(
                         text = buildAnnotatedString {
@@ -173,6 +188,7 @@ fun LoginScreen(
 ) {
     var email by remember { mutableStateOf("") }
     var password by remember { mutableStateOf("") }
+    var passwordVisible by remember { mutableStateOf(false) }
     var isLoading by remember { mutableStateOf(false) }
     var errorMsg by remember { mutableStateOf<String?>(null) }
     val scope = rememberCoroutineScope()
@@ -237,7 +253,16 @@ fun LoginScreen(
                         label = { Text("Senha") },
                         singleLine = true,
                         keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Password),
-                        visualTransformation = PasswordVisualTransformation(),
+                        visualTransformation = if (passwordVisible) VisualTransformation.None else PasswordVisualTransformation(),
+                        trailingIcon = {
+                            IconButton(onClick = { passwordVisible = !passwordVisible }) {
+                                Icon(
+                                    imageVector = if (passwordVisible) Icons.Outlined.VisibilityOff else Icons.Outlined.Visibility,
+                                    contentDescription = if (passwordVisible) "Ocultar senha" else "Mostrar senha",
+                                    tint = Muted,
+                                )
+                            }
+                        },
                         modifier = Modifier.fillMaxWidth(),
                         enabled = !isLoading,
                     )
@@ -293,6 +318,18 @@ fun LoginScreen(
                             )
                         }
                     }
+
+                    Spacer(modifier = Modifier.height(8.dp))
+                    // Aviso sutil pra explicar o comportamento padrao de sessao
+                    // persistente — o Supabase mantem a sessao no SessionStorage
+                    // ate logout explicito, e o user quer saber disso sem ter
+                    // que clicar num checkbox "lembrar de mim" decorativo.
+                    Text(
+                        text = "Você continuará conectado nesse dispositivo.",
+                        style = MaterialTheme.typography.bodySmall.copy(color = Muted),
+                        textAlign = TextAlign.Center,
+                        modifier = Modifier.fillMaxWidth(),
+                    )
 
                     Spacer(modifier = Modifier.height(12.dp))
                     // Botao oficial Google Sign-In seguindo branding guidelines:

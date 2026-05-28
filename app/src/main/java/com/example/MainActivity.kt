@@ -133,14 +133,34 @@ class MainActivity : ComponentActivity() {
                     }
 
                     composable("signup") {
+                        val ctx = LocalContext.current
                         val authRepo = remember { AuthRepository() }
+                        val google = remember { GoogleSignInHelper(ctx) }
                         SignUpScreen(
                             onNavigateBack = { navController.popBackStack() },
                             onSignUp = { email, password, name ->
                                 runCatching { authRepo.signUpWithEmail(email, password, name) }
                             },
+                            onSignInWithGoogle = {
+                                runCatching {
+                                    val token = google.getGoogleIdToken()
+                                    authRepo.signInWithGoogleIdToken(token.idToken, token.rawNonce)
+                                    Unit
+                                }
+                            },
                             onSignedUp = {
-                                navController.popBackStack(route = "login", inclusive = false)
+                                // popBackStack(route="login") falha silenciosamente se o
+                                // usuario veio Welcome -> SignUp (sem passar por Login).
+                                // navigate explicito popUpTo welcome resolve nos dois caminhos.
+                                navController.navigate("login") {
+                                    popUpTo("welcome") { inclusive = false }
+                                    launchSingleTop = true
+                                }
+                            },
+                            onGoogleSignedIn = {
+                                navController.navigate("main_tabs") {
+                                    popUpTo("welcome") { inclusive = true }
+                                }
                             },
                         )
                     }

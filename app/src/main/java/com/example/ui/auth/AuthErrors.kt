@@ -39,9 +39,16 @@ object AuthErrors {
             lower.contains("invalid grant") ->
                 "Email ou senha incorretos."
 
+            // Google Sign-In: conta existente com outro provider
+            lower.contains("account_not_linked") || lower.contains("identity_not_found") ||
+                lower.contains("account reauth") || lower.contains("user_not_found") ->
+                "Essa conta foi criada com email/senha. Entre usando sua senha — depois voce pode vincular o Google nas configuracoes."
+            lower.contains("oauth") && lower.contains("cancel") ->
+                "Login com Google cancelado."
+
             // Rate limit
             lower.contains("over_email_send_rate_limit") || lower.contains("too many requests") ->
-                "Muitas tentativas. Aguarde um minuto e tente de novo."
+                "Muitas tentativas em pouco tempo. Aguarde alguns minutos antes de tentar de novo."
 
             // Captcha (caso volte a ser habilitado)
             lower.contains("captcha") ->
