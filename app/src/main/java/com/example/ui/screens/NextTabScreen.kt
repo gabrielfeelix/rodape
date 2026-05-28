@@ -1025,7 +1025,7 @@ fun VotacaoTab(
     }
 }
 
-@OptIn(ExperimentalMaterial3Api::class)
+@OptIn(ExperimentalMaterial3Api::class, androidx.compose.foundation.layout.ExperimentalLayoutApi::class)
 @Composable
 private fun OpenVotingSheet(
     onDismiss: () -> Unit,
@@ -1077,8 +1077,21 @@ private fun OpenVotingSheet(
 
             Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
                 Text("Qual a cadência?", style = MaterialTheme.typography.bodyLarge.copy(fontWeight = FontWeight.SemiBold))
-                Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                    listOf("unica" to "Única", "semanal" to "Semanal", "quinzenal" to "Quinzenal", "mensal" to "Mensal").forEach { (key, label) ->
+                // FlowRow pra acomodar 7 opcoes em 2 linhas em phone, 1 linha em tablet.
+                androidx.compose.foundation.layout.FlowRow(
+                    horizontalArrangement = Arrangement.spacedBy(8.dp),
+                    verticalArrangement = Arrangement.spacedBy(8.dp),
+                ) {
+                    val opcoes = listOf(
+                        "unica" to "Única",
+                        "semanal" to "Semanal",
+                        "quinzenal" to "Quinzenal",
+                        "mensal" to "Mensal",
+                        "trimestral" to "Trimestral",
+                        "semestral" to "Semestral",
+                        "anual" to "Anual",
+                    )
+                    opcoes.forEach { (key, label) ->
                         val selected = cadencia == key
                         Box(modifier = Modifier.clickable { cadencia = key }) {
                             Pill(

@@ -42,7 +42,13 @@ private val avatarColors = listOf(
 private data class PresetAvatar(
     val drawableRes: Int,
     val bgColor: Color,
-    val displayName: String
+    val displayName: String,
+    // Scale multiplier por preset pra compensar diferencas de proporcao
+    // do PNG original. Emilia (1065x1600, proporcao alta) e a referencia
+    // de "tamanho ideal" (fator 1.0). Imagens quadradas (Indigena/Leitora,
+    // 1600x1600) ficavam visualmente MAIORES — reduzimos pra 0.78 pra
+    // bater o mesmo peso visual.
+    val scale: Float = 1.0f,
 )
 
 // Fatores padronizados pra todos os avatares terem peso visual equivalente no grid.
@@ -71,7 +77,8 @@ private val presetAvatars: Map<String, PresetAvatar> = mapOf(
     "preset:indigena" to PresetAvatar(
         drawableRes = R.drawable.avatar_indigena,
         bgColor = Color(0xFFD7DCE2), // Ink soft — céu/horizonte, contrasta com a paleta
-        displayName = "Indígena"
+        displayName = "Indígena",
+        scale = 0.78f, // PNG quadrado 1600x1600 ficava maior que os outros
     ),
     "preset:detetive" to PresetAvatar(
         drawableRes = R.drawable.avatar_detetive,
@@ -91,7 +98,8 @@ private val presetAvatars: Map<String, PresetAvatar> = mapOf(
     "preset:leitora" to PresetAvatar(
         drawableRes = R.drawable.avatar_leitora,
         bgColor = Color(0xFFF5E8E0), // rosado-cremoso — neutro feminino, combina com tom de pele
-        displayName = "Leitora"
+        displayName = "Leitora",
+        scale = 0.78f, // PNG quadrado 1600x1600 — mesma compensacao da Indigena
     ),
     "preset:mago" to PresetAvatar(
         drawableRes = R.drawable.avatar_mago,
@@ -197,13 +205,14 @@ private fun PresetAvatarView(
             .background(preset.bgColor)
         Box(modifier = circleMod)
 
-        // Ilustração — sem clip, ancorada na base, ultrapassa o círculo no topo
+        // Ilustração — sem clip, ancorada na base, ultrapassa o círculo no topo.
+        // Aplica scale por preset (Emilia=1.0 e referencia; quadrados=0.78).
         Image(
             painter = painterResource(id = preset.drawableRes),
             contentDescription = null,
             modifier = Modifier
-                .width(containerWidth)
-                .height(containerHeight),
+                .width(containerWidth * preset.scale)
+                .height(containerHeight * preset.scale),
             contentScale = ContentScale.Fit
         )
     }

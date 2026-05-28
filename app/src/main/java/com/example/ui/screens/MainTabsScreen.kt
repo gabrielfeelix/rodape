@@ -629,18 +629,22 @@ fun HomeScreenTab(
                 )
             )
             Spacer(modifier = Modifier.height(4.dp))
+            // Headline contextual: clube vazio (so eu) -> CTA de convidar.
+            // Com membros + sem livro -> "esperando" (status quo).
+            // Com membros + livro current -> tom mais ativo "lendo juntos".
+            val (lead, accent) = when {
+                members.size <= 1 -> "Ainda só você. " to "Bora chamar a galera."
+                currentBook == null -> "A galera tá " to "esperando."
+                else -> "Lendo " to "juntos."
+            }
             Text(
                 text = buildAnnotatedString {
-                    withStyle(SpanStyle(color = Ink)) {
-                        append("A galera tá ")
-                    }
+                    withStyle(SpanStyle(color = Ink)) { append(lead) }
                     withStyle(SpanStyle(
                         fontStyle = FontStyle.Italic,
                         fontFamily = LiterataFontFamily,
                         color = Oliva
-                    )) {
-                        append("esperando.")
-                    }
+                    )) { append(accent) }
                 },
                 style = MaterialTheme.typography.displayMedium.copy(
                     fontFamily = LiterataFontFamily,
@@ -1249,36 +1253,39 @@ fun HomeScreenTab(
             }
         }
 
-        // About the club details bottom drawer representation
-        item {
-            Spacer(modifier = Modifier.height(8.dp))
-            Row(
-                verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.spacedBy(6.dp)
-            ) {
-                Icon(
-                    imageVector = Icons.Outlined.Info,
-                    contentDescription = null,
-                    tint = MaterialTheme.colorScheme.onSurfaceVariant,
-                    modifier = Modifier.size(16.dp)
-                )
-                Text(
-                    text = "SOBRE O CLUBE",
-                    style = MaterialTheme.typography.labelSmall.copy(
-                        fontWeight = FontWeight.Bold,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
+        // About the club — so aparece se ha descricao real preenchida.
+        // Card vazio com lorem-ipsum fake confunde mais do que ajuda.
+        val descricao = activeClub?.descricao?.trim().orEmpty()
+        if (descricao.isNotBlank()) {
+            item {
+                Spacer(modifier = Modifier.height(8.dp))
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(6.dp)
+                ) {
+                    Icon(
+                        imageVector = Icons.Outlined.Info,
+                        contentDescription = null,
+                        tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                        modifier = Modifier.size(16.dp)
                     )
-                )
+                    Text(
+                        text = "SOBRE O CLUBE",
+                        style = MaterialTheme.typography.labelSmall.copy(
+                            fontWeight = FontWeight.Bold,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                    )
+                }
             }
-        }
-
-        item {
-            RodapeCard(modifier = Modifier.fillMaxWidth()) {
-                Text(
-                    text = activeClub?.descricao ?: "Um clubinho clássico de leitura íntima para tomar vinho e conversar livremente sobre livros excelentes.",
-                    style = MaterialTheme.typography.bodyMedium,
-                    color = Muted
-                )
+            item {
+                RodapeCard(modifier = Modifier.fillMaxWidth()) {
+                    Text(
+                        text = descricao,
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = Muted
+                    )
+                }
             }
         }
 

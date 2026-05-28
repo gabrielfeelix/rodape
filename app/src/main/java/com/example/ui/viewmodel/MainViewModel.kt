@@ -299,20 +299,24 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
         // Defesa em profundidade contra leak de dados entre contas no mesmo
         // device: quando detectamos que o userId logado e DIFERENTE do que
         // persistimos no ultimo cold-start, limpamos o cache Room antes de
-        // qualquer fluxo comecar a ler dele. Cobre o caso de o app ter sido
-        // morto entre signOut() e clearLocalCache() no logout anterior.
+        // qualquer fluxo comecar a ler dele. Cobre 3 cenarios:
+        //  1. App morto entre signOut() e clearLocalCache() no logout anterior
+        //  2. Conta nova logando em device que ja teve outra conta antes
+        //  3. Mesmo userId persistido mas diferente do logado agora
+        // Tambem limpa quando NUNCA houve user antes mas o cache nao esta vazio
+        // (instalacao antiga com dados orfaos).
         viewModelScope.launch {
             currentUserId.collect { newUserId ->
                 if (newUserId == null) return@collect
                 val lastId = runCatching { dataStoreManager.lastUserId() }.getOrNull()
-                if (lastId != null && lastId != newUserId) {
+                if (lastId != newUserId) {
                     android.util.Log.w(
                         "Rodape/VM",
-                        "Troca de usuario detectada ($lastId -> $newUserId). Limpando cache local."
+                        "Troca/primeiro login (last=$lastId, new=$newUserId). Limpando cache local."
                     )
                     runCatching { repository.clearLocalCache() }
+                    runCatching { dataStoreManager.setLastUserId(newUserId) }
                 }
-                runCatching { dataStoreManager.setLastUserId(newUserId) }
             }
         }
 

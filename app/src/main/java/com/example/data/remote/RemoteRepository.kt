@@ -1349,11 +1349,14 @@ class RemoteRepository(
     // ============================================================
 
     suspend fun insertBook(book: Book) {
-        runCatching {
-            supabase.from("books").upsert(book.toInsertDto())
-            dao.upsertBook(book)
-            notifyLocalMutation("books")
-        }
+        // Optimistic local-first: escreve no Room ANTES de tentar Supabase pra
+        // UI nunca ficar "fantasma" (livro sumiu so porque rede falhou ou rate
+        // limit do Supabase respondeu 429). Se o remoto falhar, loga e segue —
+        // a proxima sync vai reconciliar.
+        dao.upsertBook(book)
+        notifyLocalMutation("books")
+        runCatching { supabase.from("books").upsert(book.toInsertDto()) }
+            .onFailure { android.util.Log.w("Rodape/Repo", "insertBook remote falhou (livro existe local): ${it.message}") }
     }
 
     /**
@@ -1382,11 +1385,11 @@ class RemoteRepository(
     }.getOrNull()
 
     suspend fun insertClubBook(clubBook: ClubBook) {
-        runCatching {
-            supabase.from("club_books").upsert(clubBook.toDto())
-            dao.upsertClubBook(clubBook)
-            notifyLocalMutation("club_books")
-        }
+        // Optimistic local-first (mesmo motivo de insertBook).
+        dao.upsertClubBook(clubBook)
+        notifyLocalMutation("club_books")
+        runCatching { supabase.from("club_books").upsert(clubBook.toDto()) }
+            .onFailure { android.util.Log.w("Rodape/Repo", "insertClubBook remote falhou: ${it.message}") }
     }
 
     fun getBookByStatusFlow(clubId: String, status: String): Flow<List<Book>> {
@@ -1944,6 +1947,9 @@ class RemoteRepository(
     // ============================================================
 
     suspend fun insertBookSuggestion(suggestion: BookSuggestion) {
+        // Optimistic local-first (mesmo motivo de insertBook/insertClubBook).
+        dao.upsertBookSuggestions(listOf(suggestion))
+        notifyLocalMutation("book_suggestions")
         runCatching {
             supabase.from("book_suggestions").upsert(
                 BookSuggestionInsertDto(
@@ -1954,9 +1960,7 @@ class RemoteRepository(
                     justificativa = suggestion.justificativa.ifBlank { null },
                 )
             )
-            dao.upsertBookSuggestions(listOf(suggestion))
-            notifyLocalMutation("book_suggestions")
-        }
+        }.onFailure { android.util.Log.w("Rodape/Repo", "insertBookSuggestion remote falhou: ${it.message}") }
     }
 
     fun getBookSuggestionFlow(bookId: String, clubId: String): Flow<BookSuggestion?> {
