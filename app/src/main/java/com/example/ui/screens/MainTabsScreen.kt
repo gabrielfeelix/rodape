@@ -1773,6 +1773,9 @@ fun ProfileScreenTab(
     var isEditingProfile by remember { mutableStateOf(false) }
     var showLogoutDialog by remember { mutableStateOf(false) }
     var showFeedbackDialog by remember { mutableStateOf(false) }
+    var showLeaveClubDialog by remember { mutableStateOf(false) }
+    var showDeleteAccountDialog by remember { mutableStateOf(false) }
+    var leaveClubError by remember { mutableStateOf<String?>(null) }
 
     if (isEditingProfile) {
         EditProfileView(
@@ -2343,9 +2346,23 @@ fun ProfileScreenTab(
                 }
             }
 
+            // ── Sair do clube (membro comum) ─────────────────────────────
+            if (activeClub != null) {
+                item {
+                    Spacer(modifier = Modifier.height(20.dp))
+                    TbButton(
+                        text = "Sair do clube \"${activeClub!!.nome}\"",
+                        onClick = { leaveClubError = null; showLeaveClubDialog = true },
+                        variant = TbButtonVariant.Outline,
+                        size = TbButtonSize.Lg,
+                        modifier = Modifier.fillMaxWidth()
+                    )
+                }
+            }
+
             // ── Sair da conta ────────────────────────────────────────────
             item {
-                Spacer(modifier = Modifier.height(20.dp))
+                Spacer(modifier = Modifier.height(12.dp))
                 TbButton(
                     text = "Sair da conta",
                     onClick = { showLogoutDialog = true },
@@ -2353,9 +2370,112 @@ fun ProfileScreenTab(
                     size = TbButtonSize.Lg,
                     modifier = Modifier.fillMaxWidth()
                 )
+            }
+
+            // ── Excluir conta (requisito Play Store) ─────────────────────
+            item {
+                Spacer(modifier = Modifier.height(24.dp))
+                Text(
+                    text = "Excluir minha conta",
+                    style = MaterialTheme.typography.bodyMedium.copy(
+                        color = MaterialTheme.colorScheme.error,
+                        fontWeight = FontWeight.Medium
+                    ),
+                    textAlign = TextAlign.Center,
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .clip(RoundedCornerShape(8.dp))
+                        .clickable { showDeleteAccountDialog = true }
+                        .padding(vertical = 8.dp)
+                )
                 Spacer(modifier = Modifier.height(40.dp))
             }
         }
+    }
+
+    // Dialog: sair do clube
+    if (showLeaveClubDialog) {
+        AlertDialog(
+            onDismissRequest = { showLeaveClubDialog = false },
+            containerColor = MaterialTheme.colorScheme.surface,
+            title = { Text("Sair do clube?") },
+            text = {
+                Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                    Text(
+                        "Você deixa de ver a estante, discussões e encontros deste clube. Dá pra voltar depois com o código de convite.",
+                        style = MaterialTheme.typography.bodyMedium.copy(color = Muted)
+                    )
+                    leaveClubError?.let {
+                        Text(it, color = MaterialTheme.colorScheme.error, style = MaterialTheme.typography.bodySmall)
+                    }
+                }
+            },
+            confirmButton = {
+                TextButton(onClick = {
+                    viewModel.leaveActiveClub(
+                        onBlocked = { msg -> leaveClubError = msg },
+                        onDone = { showLeaveClubDialog = false },
+                    )
+                }) { Text("Sair do clube", color = MaterialTheme.colorScheme.error, fontWeight = FontWeight.SemiBold) }
+            },
+            dismissButton = {
+                TextButton(onClick = { showLeaveClubDialog = false }) { Text("Voltar", color = Muted) }
+            },
+        )
+    }
+
+    // Dialog: excluir conta
+    if (showDeleteAccountDialog) {
+        var deleting by remember { mutableStateOf(false) }
+        var deleteError by remember { mutableStateOf<String?>(null) }
+        AlertDialog(
+            onDismissRequest = { if (!deleting) showDeleteAccountDialog = false },
+            containerColor = MaterialTheme.colorScheme.surface,
+            title = { Text("Excluir sua conta?") },
+            text = {
+                Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                    Text(
+                        "Essa ação é permanente. Sua conta, perfil e dados pessoais são removidos. Conteúdo já compartilhado nos clubes pode permanecer anônimo.",
+                        style = MaterialTheme.typography.bodyMedium.copy(color = Muted)
+                    )
+                    deleteError?.let {
+                        Text(it, color = MaterialTheme.colorScheme.error, style = MaterialTheme.typography.bodySmall)
+                    }
+                }
+            },
+            confirmButton = {
+                TextButton(
+                    enabled = !deleting,
+                    onClick = {
+                        deleting = true
+                        deleteError = null
+                        viewModel.deleteAccount(
+                            onDeleted = {
+                                showDeleteAccountDialog = false
+                                onLogoutCompleted()
+                            },
+                            onError = { msg ->
+                                deleting = false
+                                // Fallback honesto: se o RPC ainda não existe, abre
+                                // email pra solicitar a exclusão manualmente.
+                                deleteError = "$msg\nSe persistir, toque em \"Pedir por email\"."
+                            },
+                        )
+                    }
+                ) { Text(if (deleting) "Excluindo…" else "Excluir conta", color = MaterialTheme.colorScheme.error, fontWeight = FontWeight.SemiBold) }
+            },
+            dismissButton = {
+                Row {
+                    TextButton(onClick = {
+                        com.example.util.openEmailFeedback(
+                            context = context,
+                            body = "Quero excluir minha conta do Rodapé (email: ${email ?: "-"})."
+                        )
+                    }) { Text("Pedir por email", color = Muted) }
+                    TextButton(enabled = !deleting, onClick = { showDeleteAccountDialog = false }) { Text("Cancelar", color = Muted) }
+                }
+            },
+        )
     }
 
     // Dialog de feedback

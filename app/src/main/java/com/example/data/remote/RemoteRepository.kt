@@ -1214,6 +1214,16 @@ class RemoteRepository(
         }
     }
 
+    /**
+     * Exclui a propria conta via RPC SECURITY DEFINER `delete_own_account`
+     * (apaga dados do usuario + auth.users). O RPC precisa existir no Supabase
+     * — SQL documentado em docs/release/account-deletion.sql. Propaga a exceptin
+     * pra UI decidir o fallback (email) se o RPC ainda nao estiver criado.
+     */
+    suspend fun deleteOwnAccountViaRpc() {
+        supabase.postgrest.rpc("delete_own_account")
+    }
+
     suspend fun regenerateInviteCodeViaRpc(clubId: String): String = runCatching {
         val resp = supabase.postgrest.rpc(
             "regenerate_invite_code",

@@ -391,6 +391,29 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
         _activeClubId.value = clubId
     }
 
+    /**
+     * Exclui a conta do usuario (requisito da Play Store). Tenta o RPC
+     * server-side; em sucesso, limpa sessao/cache local e desloga. Se o RPC
+     * falhar (ex: ainda nao criado no Supabase), reporta erro pra UI oferecer
+     * o fallback por email — nunca deixa o usuario num beco sem saida.
+     */
+    fun deleteAccount(onDeleted: () -> Unit, onError: (String) -> Unit) {
+        viewModelScope.launch {
+            try {
+                repository.deleteOwnAccountViaRpc()
+            } catch (e: Exception) {
+                onError(e.message ?: "Não foi possível excluir a conta agora.")
+                return@launch
+            }
+            runCatching { authRepository.signOut() }
+            dataStoreManager.clearSession()
+            runCatching { repository.clearLocalCache() }
+            runCatching { dataStoreManager.setLastUserId(null) }
+            _activeClubId.value = null
+            onDeleted()
+        }
+    }
+
     fun updateUserProfile(nome: String, email: String, avatarUrl: String) {
         viewModelScope.launch {
             val userId = currentUserId.value ?: return@launch
