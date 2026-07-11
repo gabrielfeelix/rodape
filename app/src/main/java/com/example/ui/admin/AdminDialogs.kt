@@ -5,6 +5,8 @@ import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.outlined.DateRange
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -408,6 +410,7 @@ fun EditMeetingPatternDialog(
     )
 }
 
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun EditSingleMeetingDialog(
     initialData: String,
@@ -431,8 +434,12 @@ fun EditSingleMeetingDialog(
         chapterEnd: Int?
     ) -> Unit
 ) {
-    var data by remember { mutableStateOf(initialData) }
-    var hora by remember { mutableStateOf(initialHora) }
+    // Data vira DatePicker (antes era texto livre que NUNCA casava com o parser,
+    // e o encontro virava "agora" pra todos). Prefill: tenta ler a data existente.
+    var dateMillis by remember { mutableStateOf(parseMeetingLabelToMillis(initialData)) }
+    var showDatePicker by remember { mutableStateOf(false) }
+    // Hora fica como HH:MM (24h). Sanitiza o valor inicial pra só o começo.
+    var hora by remember { mutableStateOf(sanitizeHora(initialHora)) }
     var local by remember { mutableStateOf(initialLocal) }
     var agenda by remember { mutableStateOf(initialAgenda) }
     // "vincular ao livro atual?" — true se já está vinculado OU se tem livro atual e usuário não desmarcou
@@ -451,19 +458,40 @@ fun EditSingleMeetingDialog(
             ) {
                 item {
                     OutlinedTextField(
-                        value = data,
-                        onValueChange = { data = it },
-                        label = { Text("Data (ex: DOMINGO, 24 DE OUTUBRO)") },
+                        value = dateMillis?.let { formatMillisBr(it) } ?: "",
+                        onValueChange = {},
+                        readOnly = true,
+                        enabled = false,
+                        label = { Text("Data do encontro") },
+                        placeholder = { Text("Toque para escolher") },
+                        trailingIcon = {
+                            Icon(Icons.Outlined.DateRange, contentDescription = null, tint = Muted)
+                        },
                         singleLine = true,
-                        modifier = Modifier.fillMaxWidth()
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .clickable { showDatePicker = true },
+                        colors = OutlinedTextFieldDefaults.colors(
+                            disabledTextColor = Ink,
+                            disabledBorderColor = Divider,
+                            disabledLabelColor = Muted,
+                            disabledTrailingIconColor = Muted,
+                            disabledPlaceholderColor = Muted,
+                        ),
                     )
                 }
                 item {
                     OutlinedTextField(
                         value = hora,
-                        onValueChange = { hora = it.take(12) },
-                        label = { Text("Hora (ex: 19:00 — 21:00)") },
+                        onValueChange = { txt ->
+                            // aceita só dígitos e ":", formato HH:MM
+                            hora = txt.filter { it.isDigit() || it == ':' }.take(5)
+                        },
+                        label = { Text("Hora (24h, ex: 19:00)") },
                         singleLine = true,
+                        keyboardOptions = androidx.compose.foundation.text.KeyboardOptions(
+                            keyboardType = androidx.compose.ui.text.input.KeyboardType.Number
+                        ),
                         modifier = Modifier.fillMaxWidth()
                     )
                 }
@@ -562,15 +590,76 @@ fun EditSingleMeetingDialog(
                         chapterEnd.coerceAtLeast(chapterStart)
                     } else null
                     val effectiveBookId = if (linkedToCurrentBook) currentBookId else null
-                    onSave(data, hora, local, agenda, effectiveBookId, effectiveStart, effectiveEnd)
+                    // Envia data em dd/MM/yyyy (formato que o parser aceita) e hora HH:MM.
+                    val dataOut = dateMillis?.let { formatMillisDdMmYyyy(it) } ?: ""
+                    onSave(dataOut, sanitizeHora(hora), local, agenda, effectiveBookId, effectiveStart, effectiveEnd)
                 },
-                enabled = data.trim().isNotEmpty() && hora.trim().isNotEmpty()
+                enabled = dateMillis != null && isValidHora(hora)
             ) { Text("Salvar", color = Oliva, fontWeight = FontWeight.SemiBold) }
         },
         dismissButton = {
             TextButton(onClick = onDismiss) { Text("Cancelar", color = Muted) }
         }
     )
+
+    if (showDatePicker) {
+        val pickerState = rememberDatePickerState(
+            initialSelectedDateMillis = dateMillis ?: System.currentTimeMillis()
+        )
+        DatePickerDialog(
+            onDismissRequest = { showDatePicker = false },
+            confirmButton = {
+                TextButton(onClick = {
+                    pickerState.selectedDateMillis?.let { dateMillis = it }
+                    showDatePicker = false
+                }) { Text("OK", color = Oliva, fontWeight = FontWeight.SemiBold) }
+            },
+            dismissButton = {
+                TextButton(onClick = { showDatePicker = false }) { Text("Cancelar", color = Muted) }
+            },
+        ) {
+            DatePicker(state = pickerState)
+        }
+    }
+}
+
+// ── Helpers de data/hora do encontro ──
+// O banco guarda um timestamp; o parser do repositório aceita "dd/MM/yyyy" + "HH:MM".
+private val brDate = java.text.SimpleDateFormat("dd/MM/yyyy", java.util.Locale("pt", "BR"))
+private val brDateFriendly = java.text.SimpleDateFormat("EEE, dd 'de' MMM 'de' yyyy", java.util.Locale("pt", "BR"))
+
+private fun formatMillisDdMmYyyy(millis: Long): String = brDate.format(java.util.Date(millis))
+private fun formatMillisBr(millis: Long): String =
+    brDateFriendly.format(java.util.Date(millis)).replaceFirstChar { it.uppercase() }
+
+/** Extrai a 1ª ocorrência de HH:MM; default 19:00. */
+private fun sanitizeHora(raw: String): String {
+    val m = Regex("""(\d{1,2}):(\d{2})""").find(raw) ?: return "19:00"
+    val h = m.groupValues[1].toInt().coerceIn(0, 23)
+    val min = m.groupValues[2].toInt().coerceIn(0, 59)
+    return "%02d:%02d".format(h, min)
+}
+
+private fun isValidHora(raw: String): Boolean = Regex("""^\d{1,2}:\d{2}$""").matches(raw.trim())
+
+/** Lê a data existente (dd/MM/yyyy OU "SEG, 24 DE OUTUBRO DE 2026") pra prefill; null se não der. */
+private fun parseMeetingLabelToMillis(label: String): Long? {
+    if (label.isBlank()) return null
+    // Formato canônico dd/MM/yyyy
+    runCatching { return brDate.parse(label)?.time }.getOrNull()
+    // Formato de exibição: "...DD DE <MES> DE YYYY"
+    val meses = listOf("janeiro","fevereiro","março","abril","maio","junho","julho","agosto","setembro","outubro","novembro","dezembro")
+    val low = label.lowercase()
+    val dia = Regex("""\b(\d{1,2})\b""").find(low)?.groupValues?.get(1)?.toIntOrNull() ?: return null
+    val mesIdx = meses.indexOfFirst { low.contains(it) }
+    if (mesIdx < 0) return null
+    val ano = Regex("""\b(20\d{2})\b""").find(low)?.groupValues?.get(1)?.toIntOrNull()
+        ?: java.util.Calendar.getInstance().get(java.util.Calendar.YEAR)
+    return runCatching {
+        java.util.Calendar.getInstance().apply {
+            clear(); set(ano, mesIdx, dia, 12, 0, 0)
+        }.timeInMillis
+    }.getOrNull()
 }
 
 @Composable
