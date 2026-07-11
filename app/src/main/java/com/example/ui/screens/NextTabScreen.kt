@@ -3,6 +3,8 @@ package com.example.ui.screens
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.selection.selectable
+import androidx.compose.ui.semantics.Role
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyRow
@@ -380,10 +382,15 @@ fun EncontroTab(
                             Box(
                                 modifier = Modifier
                                     .weight(1f)
-                                    .height(44.dp)
+                                    .height(48.dp)
                                     .clip(RoundedCornerShape(22.dp))
                                     .background(if (isSelected) Ink else Color.Transparent)
-                                    .clickable { viewModel.rsvpMeeting(meeting!!.id, statusOption) }
+                                    // A11y: anuncia "selecionado" e papel de opção única.
+                                    .selectable(
+                                        selected = isSelected,
+                                        role = Role.RadioButton,
+                                        onClick = { viewModel.rsvpMeeting(meeting!!.id, statusOption) },
+                                    )
                                     .border(
                                         width = 1.dp,
                                         color = if (isSelected) Color.Transparent else Divider,

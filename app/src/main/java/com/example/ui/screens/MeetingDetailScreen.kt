@@ -2,6 +2,8 @@ package com.example.ui.screens
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.selection.selectable
+import androidx.compose.ui.semantics.Role
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.shape.CircleShape
@@ -201,13 +203,13 @@ fun MeetingDetailScreen(
                                 Box(
                                     modifier = Modifier
                                         .weight(1f)
-                                        .height(40.dp)
+                                        .height(48.dp)
                                         .clip(RoundedCornerShape(20.dp))
                                         .background(if (sel) Ink else androidx.compose.ui.graphics.Color.Transparent)
-                                        .clickable { viewModel.rsvpMeeting(m.id, opt) }
-                                        .then(
-                                            if (!sel) Modifier.background(androidx.compose.ui.graphics.Color.Transparent)
-                                            else Modifier
+                                        .selectable(
+                                            selected = sel,
+                                            role = Role.RadioButton,
+                                            onClick = { viewModel.rsvpMeeting(m.id, opt) },
                                         ),
                                     contentAlignment = Alignment.Center
                                 ) {

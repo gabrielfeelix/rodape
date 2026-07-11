@@ -9,6 +9,7 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.selection.selectable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
@@ -2238,7 +2239,12 @@ fun ProfileScreenTab(
                                         if (selected) Terracota else Divider,
                                         RoundedCornerShape(12.dp)
                                     )
-                                    .clickable { viewModel.setFontScale(scale) }
+                                    .selectable(
+                                        selected = selected,
+                                        role = Role.RadioButton,
+                                        onClick = { viewModel.setFontScale(scale) },
+                                    )
+                                    .semantics { contentDescription = "Tamanho de fonte $label" }
                                     .padding(vertical = 12.dp),
                                 contentAlignment = Alignment.Center
                             ) {
