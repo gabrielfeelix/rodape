@@ -2,6 +2,7 @@ package com.example.voting
 
 import com.example.data.model.BookSuggestion
 import com.example.data.model.Vote
+import com.example.util.voting.VotingTally
 import org.junit.Assert.assertEquals
 import org.junit.Test
 

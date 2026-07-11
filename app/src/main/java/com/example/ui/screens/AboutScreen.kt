@@ -134,7 +134,7 @@ fun AboutScreen(
                         text = "Usando o Rodapé, você concorda em respeitar direitos autorais e " +
                             "usar a ferramenta de boa-fé com seu clube. O app é fornecido como está, " +
                             "sem garantias. Estamos em fase inicial — quebra de funcionalidade pode " +
-                            "acontecer e seus dados ficam só no seu aparelho.",
+                            "acontecer.",
                         style = MaterialTheme.typography.bodyMedium.copy(
                             fontFamily = InterFontFamily,
                             color = InkSoft,
@@ -149,9 +149,12 @@ fun AboutScreen(
                 SectionTitle("PRIVACIDADE")
                 RodapeCard(modifier = Modifier.fillMaxWidth()) {
                     Text(
-                        text = "Seus dados ficam só no seu dispositivo. Não enviamos comentários, " +
-                            "frases, votos ou listas de leitura pra servidor nenhum. Backup é por " +
-                            "sua conta — se desinstalar o app, os dados vão junto.",
+                        text = "O conteúdo do clube (comentários, frases, votos e listas de " +
+                            "leitura) fica num servidor privado (Supabase) pra sincronizar entre " +
+                            "os membros, e é visível só pra quem faz parte do clube. Não há " +
+                            "publicidade nem rastreamento de terceiros. Você pode pedir a exclusão " +
+                            "da sua conta e dos seus dados a qualquer momento. Detalhes na política " +
+                            "de privacidade completa.",
                         style = MaterialTheme.typography.bodyMedium.copy(
                             fontFamily = InterFontFamily,
                             color = InkSoft,

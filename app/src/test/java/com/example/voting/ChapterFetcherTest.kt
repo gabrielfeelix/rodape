@@ -1,5 +1,7 @@
 package com.example.voting
 
+import com.example.util.voting.ChapterFetcher
+import com.example.util.voting.ChapterFetchResult
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
 import org.junit.Test

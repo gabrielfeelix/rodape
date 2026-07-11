@@ -26,7 +26,11 @@ import org.junit.runner.RunWith
 import org.robolectric.RobolectricTestRunner
 import org.robolectric.annotation.Config
 import org.robolectric.annotation.GraphicsMode
+import org.junit.Ignore
 
+// Requer runtime Robolectric (android-all) + baseline Roborazzi. Rode via
+// ./gradlew recordRoborazziDebug num ambiente com rede pra reativar.
+@Ignore("Requer runtime Robolectric/Roborazzi — indisponivel offline")
 @RunWith(RobolectricTestRunner::class)
 @GraphicsMode(GraphicsMode.Mode.NATIVE)
 @Config(qualifiers = RobolectricDeviceQualifiers.Pixel8, sdk = [36])

@@ -103,6 +103,10 @@ secrets {
   ignoreList.add("SUPABASE_SERVICE_ROLE")
   ignoreList.add("SUPABASE_SECRET_KEY")
   ignoreList.add("GOOGLE_WEB_CLIENT_SECRET")
+  // Chave do Gemini (AI Studio) NAO e usada por nenhum codigo do app — barrar
+  // pra nao vazar no BuildConfig/APK. Rotacionar a chave no console (ela ja
+  // esteve embutida em builds anteriores).
+  ignoreList.add("GEMINI_API_KEY")
   // Senhas do keystore: jamais devem ir pro BuildConfig (vazariam no APK).
   // O signingConfig le essas direto via System.getenv() em runtime de build.
   ignoreList.add("KEYSTORE_PATH")
