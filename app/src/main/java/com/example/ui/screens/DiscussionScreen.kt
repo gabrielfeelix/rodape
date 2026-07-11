@@ -384,7 +384,7 @@ fun DiscussionScreen(
                                     Box {
                                         IconButton(
                                             onClick = { showModMenu = true },
-                                            modifier = Modifier.size(32.dp)
+                                            modifier = Modifier.minimumInteractiveComponentSize()
                                         ) {
                                             Icon(
                                                 imageVector = Icons.Outlined.MoreVert,

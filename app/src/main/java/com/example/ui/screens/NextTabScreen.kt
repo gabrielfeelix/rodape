@@ -802,9 +802,9 @@ fun VotacaoTab(
                                         Box {
                                             IconButton(
                                                 onClick = { showMenu = true },
-                                                modifier = Modifier.size(28.dp)
+                                                modifier = Modifier.minimumInteractiveComponentSize()
                                             ) {
-                                                Icon(Icons.Outlined.MoreVert, contentDescription = "Ações", tint = Muted, modifier = Modifier.size(18.dp))
+                                                Icon(Icons.Outlined.MoreVert, contentDescription = "Ações do livro na votação", tint = Muted, modifier = Modifier.size(18.dp))
                                             }
                                             DropdownMenu(expanded = showMenu, onDismissRequest = { showMenu = false }) {
                                                 DropdownMenuItem(

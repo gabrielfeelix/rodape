@@ -41,9 +41,13 @@ class MainActivity : ComponentActivity() {
         setContent {
             val fontScale by viewModel.fontScale.collectAsState()
             val baseDensity = LocalDensity.current
+            // Acessibilidade: COMBINA a escala do sistema (config "Tamanho da fonte"
+            // do Android, essencial pra baixa visão) com o ajuste interno, em vez de
+            // substituí-la. Antes o app descartava baseDensity.fontScale e ignorava
+            // a preferência do sistema.
             val scaledDensity = Density(
                 density = baseDensity.density,
-                fontScale = fontScale
+                fontScale = baseDensity.fontScale * fontScale
             )
             CompositionLocalProvider(LocalDensity provides scaledDensity) {
             MyApplicationTheme {

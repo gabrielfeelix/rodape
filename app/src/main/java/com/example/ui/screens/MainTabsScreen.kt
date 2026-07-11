@@ -75,6 +75,10 @@ import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.PathEffect
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.semantics.heading
+import androidx.compose.ui.semantics.stateDescription
+import androidx.compose.ui.semantics.selected
+import androidx.compose.ui.semantics.Role
 import com.example.ui.viewmodel.MainViewModel
 import com.example.ui.components.Cover
 import com.example.ui.components.Pill
@@ -561,7 +565,11 @@ private fun GlobalHeader(
         }
 
         Box {
-            HeaderCircleButton(onClick = onBell, contentDescription = "Notificações") {
+            HeaderCircleButton(
+                onClick = onBell,
+                contentDescription = if (unreadCount > 0)
+                    "Notificações, $unreadCount não lidas" else "Notificações",
+            ) {
                 Icon(
                     imageVector = RodapeIcons.Bell,
                     contentDescription = null,
@@ -603,11 +611,13 @@ private fun HeaderCircleButton(
 ) {
     Box(
         modifier = Modifier
+            // Alvo de toque de 48dp (o círculo visual continua 40dp)
+            .minimumInteractiveComponentSize()
             .size(40.dp)
             .clip(CircleShape)
             .background(CardSurface)
             .border(1.dp, Divider, CircleShape)
-            .clickable(onClick = onClick)
+            .clickable(onClick = onClick, role = Role.Button)
             .semantics { this.contentDescription = contentDescription },
         contentAlignment = Alignment.Center,
     ) {
@@ -1151,10 +1161,22 @@ fun HomeScreenTab(
                     // oliva sólido = terminou, tracejado = no seu ritmo, ink = na frente.
                     val noSeuRitmo = !finished && totalChaps > 0 && medianChap - memChap >= 3
                     val ahead = !finished && totalChaps > 0 && memChap - medianChap >= 3
+                    val statusText = when {
+                        finished -> "terminou o livro"
+                        noSeuRitmo -> "no seu ritmo"
+                        ahead -> "adiantado"
+                        else -> "no capítulo $memChap"
+                    }
 
                     Column(
                         horizontalAlignment = Alignment.CenterHorizontally,
-                        modifier = Modifier.width(84.dp)
+                        // A11y: TalkBack lê o chip inteiro ("Marina, no capítulo 5")
+                        // em vez de avatar + pill + nome como 3 fragmentos soltos.
+                        modifier = Modifier
+                            .width(84.dp)
+                            .semantics(mergeDescendants = true) {
+                                contentDescription = "$displayName, $statusText"
+                            }
                     ) {
                         Box(
                             contentAlignment = Alignment.BottomCenter,
@@ -2876,7 +2898,11 @@ private fun MeetingTicket(
                 Column(
                     modifier = Modifier
                         .width(110.dp)
-                        .padding(start = 16.dp, end = 16.dp, top = 22.dp, bottom = 24.dp),
+                        .padding(start = 16.dp, end = 16.dp, top = 22.dp, bottom = 24.dp)
+                        // A11y: lê "quinta, 24 de outubro" em vez de 3 fragmentos
+                        .semantics(mergeDescendants = true) {
+                            contentDescription = "$weekday, $dayNumber de $monthName"
+                        },
                     horizontalAlignment = Alignment.CenterHorizontally,
                     verticalArrangement = Arrangement.Center,
                 ) {
@@ -3025,9 +3051,14 @@ private fun MeetingTicket(
 
                 Row(
                     modifier = Modifier
+                        .minimumInteractiveComponentSize()
                         .clip(RoundedCornerShape(999.dp))
                         .background(if (isParticipating) Oliva else Cream)
-                        .clickable(onClick = onRsvp)
+                        .clickable(onClick = onRsvp, role = Role.Button)
+                        .semantics {
+                            selected = isParticipating
+                            stateDescription = if (isParticipating) "presença confirmada" else "não confirmada"
+                        }
                         .padding(horizontal = 14.dp, vertical = 7.dp),
                     verticalAlignment = Alignment.CenterVertically,
                     horizontalArrangement = Arrangement.spacedBy(5.dp),

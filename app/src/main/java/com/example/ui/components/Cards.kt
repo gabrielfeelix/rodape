@@ -16,6 +16,8 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.semantics.heading
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import com.example.ui.theme.CardSurface
@@ -62,7 +64,10 @@ fun TbSectionHeader(
             style = MaterialTheme.typography.headlineMedium,
             maxLines = 1,
             overflow = TextOverflow.Ellipsis,
-            modifier = Modifier.weight(1f),
+            // A11y: título de seção vira heading pra navegação por títulos do TalkBack
+            modifier = Modifier
+                .weight(1f)
+                .semantics { heading() },
         )
         action?.invoke()
     }

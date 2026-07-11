@@ -82,7 +82,8 @@ fun QuoteCard(
                     if (onDelete != null) {
                         IconButton(
                             onClick = onDelete,
-                            modifier = Modifier.size(32.dp),
+                            // Alvo de toque de 48dp (ícone visual continua 18dp)
+                            modifier = Modifier.minimumInteractiveComponentSize(),
                         ) {
                             Icon(
                                 imageVector = Icons.Outlined.Delete,

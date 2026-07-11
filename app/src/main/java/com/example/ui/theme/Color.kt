@@ -25,7 +25,9 @@ val Tertiary = Color(0xFF5B5B53)
 val TertiarySoft = Color(0xFFD9D9CF)
 val Ink = Color(0xFF1B1F1A)
 val InkSoft = Color(0xFF383C36)
-val Muted = Color(0xFF8A8A80)
+// Escurecido de #8A8A80 pra passar WCAG AA (≈4.6:1 sobre Paper). Usado em quase
+// todo texto secundário/legenda/placeholder — era o pior problema de contraste.
+val Muted = Color(0xFF6E6E64)
 
 // Superfícies
 val Paper = Color(0xFFF7F5EE)

@@ -9,6 +9,10 @@ import androidx.camera.lifecycle.ProcessCameraProvider
 import androidx.camera.view.PreviewView
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
+import androidx.compose.ui.semantics.Role
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.role
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -113,6 +117,8 @@ fun CameraCaptureBox(
                 .padding(6.dp)
                 .clip(CircleShape)
                 .background(Terracota)
+                // A11y: o botão era um emoji dentro de um Box clicável sem rótulo.
+                .semantics { contentDescription = "Tirar foto"; role = Role.Button }
                 .clickable {
                     val outFile = File(context.cacheDir, "capture_${System.currentTimeMillis()}.jpg")
                     val output = ImageCapture.OutputFileOptions.Builder(outFile).build()

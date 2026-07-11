@@ -21,8 +21,12 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.outlined.ArrowBack
 import androidx.compose.material.icons.outlined.*
 import androidx.compose.material3.*
+import androidx.compose.foundation.selection.selectable
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
+import androidx.compose.ui.semantics.Role
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.focus.FocusRequester
@@ -548,8 +552,10 @@ fun CreateClubScreen(
                 ) {
                     ClubColors.forEachIndexed { index, clubColor ->
                         val isSelected = selectedColorIndex == index
+                        val colorName = clubColorLabel(clubColor.id)
                         Box(
                             modifier = Modifier
+                                .minimumInteractiveComponentSize()
                                 .size(44.dp)
                                 .border(
                                     width = if (isSelected) 2.dp else 0.dp,
@@ -559,7 +565,13 @@ fun CreateClubScreen(
                                 .padding(4.dp)
                                 .background(clubColor.bg, CircleShape)
                                 .clip(CircleShape)
-                                .clickable { selectedColorIndex = index }
+                                // A11y: swatch sem rótulo é inacessível pra cego.
+                                .selectable(
+                                    selected = isSelected,
+                                    role = Role.RadioButton,
+                                    onClick = { selectedColorIndex = index },
+                                )
+                                .semantics { contentDescription = "Cor $colorName" }
                         )
                     }
                 }
@@ -857,14 +869,19 @@ fun JoinClubScreen(
                                         modifier = Modifier
                                             .weight(1f)
                                             .height(56.dp)
-                                            .focusRequester(focusRequesters[i]),
+                                            .focusRequester(focusRequesters[i])
+                                            // A11y: sem isso o TalkBack anuncia "caixa de
+                                            // edição" 6x sem contexto do código de convite.
+                                            .semantics {
+                                                contentDescription = "Dígito ${i + 1} de 6 do código de convite"
+                                            },
                                         shape = RoundedCornerShape(12.dp),
                                         placeholder = {
                                             Text(
                                                 "-",
                                                 modifier = Modifier.fillMaxWidth(),
                                                 textAlign = TextAlign.Center,
-                                                color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.4f)
+                                                color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.55f)
                                             )
                                         },
                                         textStyle = MaterialTheme.typography.titleMedium.copy(textAlign = TextAlign.Center, fontWeight = FontWeight.Bold),
@@ -998,4 +1015,14 @@ fun JoinClubScreen(
             }
         }
     }
+}
+
+// Nome acessível de cada cor de clube (para TalkBack nos swatches).
+private fun clubColorLabel(id: String): String = when (id) {
+    "olive" -> "verde oliva"
+    "terracotta" -> "terracota"
+    "plum" -> "ameixa"
+    "mustard" -> "mostarda"
+    "ink" -> "azul-tinta"
+    else -> id
 }
