@@ -29,6 +29,7 @@ import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.JsonElement
 import kotlinx.serialization.json.JsonNull
 import kotlinx.serialization.json.JsonObject
+import kotlinx.serialization.json.JsonPrimitive
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.buildJsonObject
 import kotlinx.serialization.json.contentOrNull
@@ -673,8 +674,11 @@ class RemoteRepository(
     // SupervisorJob: falha de uma corotina nao cancela as outras.
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
 
-    /** Apaga o cache local — chamar no logout pra nao vazar dados entre contas. */
+    /** Apaga o cache local — chamar no logout pra nao vazar dados entre contas.
+     *  Antes de limpar, tenta drenar a fila offline uma ultima vez pra nao
+     *  descartar silenciosamente mutations que o usuario achou que salvou. */
     suspend fun clearLocalCache() {
+        runCatching { tryDrainPendingQueue() }
         dao.clearAll()
         pendingDao.clear()
         lastSyncAt.clear()
@@ -732,7 +736,8 @@ class RemoteRepository(
     //       enqueue("kind", payload)
     //   }
 
-    private val mutationHandlers = mutableMapOf<String, suspend (String) -> Unit>()
+    private val mutationHandlers =
+        java.util.concurrent.ConcurrentHashMap<String, suspend (String) -> Unit>()
 
     /**
      * Registra um handler que sabe re-executar uma mutation de [kind] a partir
@@ -769,14 +774,45 @@ class RemoteRepository(
         runCatching { block() }.onFailure { enqueueMutation(kind, payload) }
     }
 
+    // Depois de MAX_DRAIN_ATTEMPTS a mutation vira "dead-letter" e e descartada,
+    // pra nao ficar eternamente presa na fila (poison message) bloqueando o
+    // badge de "pendentes" e reprocessando a cada rede.
+    private val maxDrainAttempts = 5
+
+    /** Heuristica: erro permanente (4xx = payload/permissao invalida) nao adianta
+     *  retentar; erro transitorio (timeout, 5xx, sem rede) sim. Sem depender de
+     *  tipos concretos do SDK, inspeciona a mensagem por status 4xx. */
+    private fun isPermanentError(t: Throwable): Boolean {
+        val msg = (t.message ?: "") + " " + t.toString()
+        return Regex("""\b4\d\d\b""").containsMatchIn(msg)
+    }
+
     /** Drena a fila — chamada quando rede volta ou em sync periodico. */
     suspend fun tryDrainPendingQueue() {
         val all = pendingDao.all()
         for (m in all) {
-            val handler = mutationHandlers[m.kind] ?: continue
+            val handler = mutationHandlers[m.kind]
+            if (handler == null) {
+                // kind desconhecido (versao antiga do app): nunca sera processado.
+                android.util.Log.w("Rodape", "Descartando mutation de kind desconhecido: ${m.kind}")
+                pendingDao.delete(m.id)
+                continue
+            }
             runCatching { handler(m.payload) }
                 .onSuccess { pendingDao.delete(m.id) }
-                .onFailure { pendingDao.markFailed(m.id, it.message) }
+                .onFailure { err ->
+                    val permanent = isPermanentError(err)
+                    val exhausted = m.attempts + 1 >= maxDrainAttempts
+                    if (permanent || exhausted) {
+                        android.util.Log.w(
+                            "Rodape",
+                            "Dead-letter mutation ${m.kind} (permanent=$permanent, attempts=${m.attempts + 1}): ${err.message}"
+                        )
+                        pendingDao.delete(m.id)
+                    } else {
+                        pendingDao.markFailed(m.id, err.message)
+                    }
+                }
         }
     }
 
@@ -801,17 +837,26 @@ class RemoteRepository(
         }
     }
 
+    // Helpers de parse do payload da fila. Antes usava-se
+    // `element.toString().trim('"')`, que devolve a forma JSON-ENCODADA: um texto
+    // com quebra de linha ou aspas era reenviado com `\n`/`\"` literais no banco.
+    // jsonPrimitive.content decodifica corretamente os escapes.
+    private fun JsonObject.str(key: String): String =
+        (this[key] as JsonPrimitive).content
+    private fun JsonObject.strOrNull(key: String): String? =
+        (this[key] as? JsonPrimitive)?.content
+
     init {
         // Registra handlers conhecidos. Payload e JSON ad-hoc por kind.
         registerHandler("insert_comment") { json ->
             val obj = this.json.parseToJsonElement(json) as JsonObject
             supabase.from("comments").upsert(
                 CommentInsertDto(
-                    id = obj["id"]!!.toString().trim('"'),
-                    chapterId = obj["chapterId"]!!.toString().trim('"'),
-                    clubId = obj["clubId"]!!.toString().trim('"'),
-                    userId = obj["userId"]!!.toString().trim('"'),
-                    texto = obj["texto"]!!.toString().trim('"'),
+                    id = obj.str("id"),
+                    chapterId = obj.str("chapterId"),
+                    clubId = obj.str("clubId"),
+                    userId = obj.str("userId"),
+                    texto = obj.str("texto"),
                 )
             )
         }
@@ -819,9 +864,9 @@ class RemoteRepository(
             val obj = this.json.parseToJsonElement(json) as JsonObject
             supabase.from("reactions").upsert(
                 ReactionDto(
-                    commentId = obj["commentId"]!!.toString().trim('"'),
-                    userId = obj["userId"]!!.toString().trim('"'),
-                    emoji = obj["emoji"]!!.toString().trim('"'),
+                    commentId = obj.str("commentId"),
+                    userId = obj.str("userId"),
+                    emoji = obj.str("emoji"),
                 )
             )
         }
@@ -829,9 +874,9 @@ class RemoteRepository(
             val obj = this.json.parseToJsonElement(json) as JsonObject
             supabase.from("reactions").delete {
                 filter {
-                    eq("comment_id", obj["commentId"]!!.toString().trim('"'))
-                    eq("user_id", obj["userId"]!!.toString().trim('"'))
-                    eq("emoji", obj["emoji"]!!.toString().trim('"'))
+                    eq("comment_id", obj.str("commentId"))
+                    eq("user_id", obj.str("userId"))
+                    eq("emoji", obj.str("emoji"))
                 }
             }
         }
@@ -839,9 +884,9 @@ class RemoteRepository(
             val obj = this.json.parseToJsonElement(json) as JsonObject
             supabase.from("meeting_rsvps").upsert(
                 MeetingRsvpInsertDto(
-                    meetingId = obj["meetingId"]!!.toString().trim('"'),
-                    userId = obj["userId"]!!.toString().trim('"'),
-                    status = obj["status"]!!.toString().trim('"'),
+                    meetingId = obj.str("meetingId"),
+                    userId = obj.str("userId"),
+                    status = obj.str("status"),
                 )
             )
         }
@@ -849,9 +894,9 @@ class RemoteRepository(
             val obj = this.json.parseToJsonElement(json) as JsonObject
             supabase.from("votes").upsert(
                 VoteInsertDto(
-                    votingRoundId = obj["votingRoundId"]!!.toString().trim('"'),
-                    userId = obj["userId"]!!.toString().trim('"'),
-                    bookId = obj["bookId"]!!.toString().trim('"'),
+                    votingRoundId = obj.str("votingRoundId"),
+                    userId = obj.str("userId"),
+                    bookId = obj.str("bookId"),
                 )
             )
         }
@@ -859,12 +904,23 @@ class RemoteRepository(
             val obj = this.json.parseToJsonElement(json) as JsonObject
             supabase.from("saved_quotes").upsert(
                 SavedQuoteInsertDto(
-                    id = obj["id"]!!.toString().trim('"'),
-                    userId = obj["userId"]!!.toString().trim('"'),
-                    clubId = obj["clubId"]!!.toString().trim('"'),
-                    bookId = obj["bookId"]!!.toString().trim('"'),
-                    texto = obj["texto"]!!.toString().trim('"'),
-                    capituloRef = obj["capituloRef"]?.toString()?.trim('"'),
+                    id = obj.str("id"),
+                    userId = obj.str("userId"),
+                    clubId = obj.str("clubId"),
+                    bookId = obj.str("bookId"),
+                    texto = obj.str("texto"),
+                    capituloRef = obj.strOrNull("capituloRef"),
+                )
+            )
+        }
+        registerHandler("upsert_user_progress") { json ->
+            val obj = this.json.parseToJsonElement(json) as JsonObject
+            supabase.from("user_progress").upsert(
+                UserProgressDto(
+                    userId = obj.str("userId"),
+                    clubId = obj.str("clubId"),
+                    bookId = obj.str("bookId"),
+                    currentChapter = obj.str("currentChapter").toInt(),
                 )
             )
         }
@@ -894,17 +950,21 @@ class RemoteRepository(
 
     // Tracking: chave (table + filtro) -> Job da subscription ativa.
     // Permite reuso entre coletores e desligamento limpo.
-    private val realtimeJobs = mutableMapOf<String, Job>()
+    // ConcurrentHashMap: registrado da main (getters de Flow) e lido de corrotinas
+    // em Dispatchers.IO — mapa comum daria ConcurrentModificationException.
+    private val realtimeJobs = java.util.concurrent.ConcurrentHashMap<String, Job>()
 
     // Reload registry: chave (table) -> set de reload() ativos.
     // Apos uma mutation local (insert/update/delete), chamamos
     // notifyLocalMutation(table) que dispara TODOS os reloads dessa tabela
     // imediatamente — sem esperar Realtime WebSocket. Optimistic-lite:
     // a mudanca aparece em ~200ms (RTT) em vez de ~500ms (websocket roundtrip).
-    private val tableReloaders = mutableMapOf<String, MutableSet<suspend () -> Unit>>()
+    // Concurrent* pra suportar registro (main) + iteracao (IO) sem corromper.
+    private val tableReloaders =
+        java.util.concurrent.ConcurrentHashMap<String, java.util.concurrent.CopyOnWriteArraySet<suspend () -> Unit>>()
 
     private fun registerReloader(table: String, reload: suspend () -> Unit) {
-        tableReloaders.getOrPut(table) { mutableSetOf() }.add(reload)
+        tableReloaders.getOrPut(table) { java.util.concurrent.CopyOnWriteArraySet() }.add(reload)
     }
 
     /** Chamar APOS uma mutation bem-sucedida (insert/update/delete) na tabela.
@@ -1583,10 +1643,19 @@ class RemoteRepository(
     // ============================================================
 
     suspend fun insertUserProgress(progress: UserProgress) {
-        runCatching {
+        // Local-first: grava no Room ANTES de tentar o remoto e, se a rede
+        // falhar, enfileira pra retry. Antes era remoto-primeiro dentro de
+        // runCatching — offline, o progresso de leitura sumia sem aviso.
+        dao.upsertProgress(progress)
+        notifyLocalMutation("user_progress")
+        val payload = buildJsonObject {
+            put("userId", progress.userId)
+            put("clubId", progress.clubId)
+            put("bookId", progress.bookId)
+            put("currentChapter", progress.currentChapter.toString())
+        }.toString()
+        tryRemoteOrEnqueue("upsert_user_progress", payload) {
             supabase.from("user_progress").upsert(progress.toDto())
-            dao.upsertProgress(progress)
-            notifyLocalMutation("user_progress")
         }
     }
 
