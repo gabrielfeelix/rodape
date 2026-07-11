@@ -44,6 +44,9 @@ class DataStoreManager(private val context: Context) {
         // userIds que ja completaram o onboarding pos-primeiro-login.
         // Armazenado como CSV pra suportar multiplos users no mesmo device.
         val ONBOARDED_USERS_KEY = stringPreferencesKey("onboarded_users")
+        // Ultimo clube ativo selecionado — restaura a escolha no cold start
+        // em vez de sempre cair no primeiro clube.
+        val LAST_ACTIVE_CLUB_KEY = stringPreferencesKey("last_active_club")
     }
 
     val ratedAppFlow: Flow<Boolean> = context.dataStore.data.map { prefs ->
@@ -94,6 +97,18 @@ class DataStoreManager(private val context: Context) {
         context.dataStore.edit { prefs ->
             if (userId == null) prefs.remove(LAST_USER_ID_KEY)
             else prefs[LAST_USER_ID_KEY] = userId
+        }
+    }
+
+    /** Ultimo clube ativo persistido (ou null). */
+    suspend fun lastActiveClubId(): String? =
+        context.dataStore.data.first()[LAST_ACTIVE_CLUB_KEY]
+
+    /** Persiste o clube ativo selecionado. */
+    suspend fun setLastActiveClubId(clubId: String?) {
+        context.dataStore.edit { prefs ->
+            if (clubId == null) prefs.remove(LAST_ACTIVE_CLUB_KEY)
+            else prefs[LAST_ACTIVE_CLUB_KEY] = clubId
         }
     }
 

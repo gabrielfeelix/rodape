@@ -787,6 +787,28 @@ private fun MemberActionSheet(
     onTransferSuper: () -> Unit,
     onRemove: () -> Unit
 ) {
+    // Confirmação pra transferir super admin — ação irreversível pelo próprio.
+    var showTransferConfirm by remember { mutableStateOf(false) }
+    if (showTransferConfirm) {
+        AlertDialog(
+            containerColor = MaterialTheme.colorScheme.surface,
+            onDismissRequest = { showTransferConfirm = false },
+            title = { Text("Transferir super admin?") },
+            text = {
+                Text("$memberName vira o super admin do clube e você deixa de ter esse poder. Não dá pra desfazer sozinho — só o novo super admin pode devolver.")
+            },
+            confirmButton = {
+                TextButton(onClick = {
+                    showTransferConfirm = false
+                    onTransferSuper()
+                }) { Text("Transferir", color = Terracota, fontWeight = FontWeight.SemiBold) }
+            },
+            dismissButton = {
+                TextButton(onClick = { showTransferConfirm = false }) { Text("Voltar", color = Muted) }
+            },
+        )
+    }
+
     ModalBottomSheet(
         onDismissRequest = onDismiss,
         containerColor = MaterialTheme.colorScheme.surface
@@ -805,7 +827,7 @@ private fun MemberActionSheet(
             }
             if (memberPapel == "admin" && currentUserIsSuper) {
                 TbButton(text = "Rebaixar a membro", onClick = onDemote, variant = TbButtonVariant.Outline, modifier = Modifier.fillMaxWidth())
-                TbButton(text = "Transferir super_admin pra este admin", onClick = onTransferSuper, variant = TbButtonVariant.Outline, modifier = Modifier.fillMaxWidth())
+                TbButton(text = "Transferir super_admin pra este admin", onClick = { showTransferConfirm = true }, variant = TbButtonVariant.Outline, modifier = Modifier.fillMaxWidth())
             }
             TbButton(text = "Remover do clube", onClick = onRemove, variant = TbButtonVariant.Outline, modifier = Modifier.fillMaxWidth())
             Spacer(modifier = Modifier.height(8.dp))

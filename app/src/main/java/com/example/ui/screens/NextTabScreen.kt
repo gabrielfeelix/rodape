@@ -753,7 +753,10 @@ fun VotacaoTab(
                     val pct = if (totalVotes > 0) bookVotes.size.toFloat() / totalVotes.toFloat() else 0f
                     val hasJustification = suggestionsByBookId[book.id]?.justificativa?.isNotBlank() == true
 
-                    RodapeCard(modifier = Modifier.clickable { viewModel.voteForBook(book.id) }) {
+                    // Card não é mais clicável pra votar (tocar pra "ver melhor"
+                    // registrava/desfazia voto sem querer, ignorando o limite).
+                    // O voto acontece só no botão "Votar nesse", que respeita o limite.
+                    RodapeCard {
                         Row(
                             modifier = Modifier.fillMaxWidth(),
                             horizontalArrangement = Arrangement.spacedBy(16.dp)

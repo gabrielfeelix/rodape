@@ -329,7 +329,12 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
                 if (clubs.isEmpty()) {
                     _activeClubId.value = null
                 } else if (current == null || clubs.none { it.id == current }) {
-                    _activeClubId.value = clubs.first().id
+                    // Restaura o último clube selecionado (se ainda é membro),
+                    // em vez de sempre cair no primeiro. Power user volta pro
+                    // clube onde estava.
+                    val saved = dataStoreManager.lastActiveClubId()
+                    _activeClubId.value = clubs.firstOrNull { it.id == saved }?.id
+                        ?: clubs.first().id
                 }
             }
         }
@@ -389,6 +394,8 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
 
     fun selectActiveClub(clubId: String) {
         _activeClubId.value = clubId
+        // Persiste pra restaurar no próximo cold start.
+        viewModelScope.launch { dataStoreManager.setLastActiveClubId(clubId) }
     }
 
     /**
@@ -706,20 +713,20 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
                 val unified = com.example.data.search.BookSearchService.searchBooks(q)
                 _searchResultsUnified.value = unified
 
-                // Pra backcompat com createBookSuggestion(doc), alimenta _searchResults
-                // só com os de OL convertidos pra OpenLibraryDoc
-                val olDocs = unified
-                    .filter { it.source == com.example.data.search.UnifiedBookResult.Source.OPEN_LIBRARY }
-                    .map { u ->
-                        OpenLibraryDoc(
-                            title = u.title,
-                            authorName = listOf(u.author),
-                            firstPublishYear = u.firstPublishYear,
-                            coverI = u.openlibraryRawCoverI,
-                            isbn = u.isbn?.let { listOf(it) }
-                        )
-                    }
-                _searchResults.value = olDocs
+                // Converte TODAS as fontes (Open Library + Google Books) pra
+                // OpenLibraryDoc — antes filtrava só OL, e livros que existiam
+                // apenas no Google Books nunca apareciam na tela de sugerir.
+                // (GB não tem coverI de OL; a capa cai pra capa gerada.)
+                val docs = unified.map { u ->
+                    OpenLibraryDoc(
+                        title = u.title,
+                        authorName = listOf(u.author),
+                        firstPublishYear = u.firstPublishYear,
+                        coverI = u.openlibraryRawCoverI,
+                        isbn = u.isbn?.let { listOf(it) }
+                    )
+                }
+                _searchResults.value = docs
             } catch (e: Exception) {
                 android.util.Log.e("Rodape/VM", "Operacao falhou silenciosamente", e)
                 _searchResults.value = emptyList()

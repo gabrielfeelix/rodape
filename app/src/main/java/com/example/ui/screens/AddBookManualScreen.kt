@@ -83,8 +83,9 @@ fun AddBookManualScreen(
     }
 
     // Validação
-    val isbnDigits = isbn.filter { it.isDigit() }
-    val isbnValid = isbn.isBlank() || isbnDigits.length == 13
+    val isbnDigits = isbn.filter { it.isDigit() || it == 'X' || it == 'x' }
+    // Aceita ISBN-10 e ISBN-13 (antes só 13 dígitos rejeitava ISBN-10 legítimo).
+    val isbnValid = isbn.isBlank() || isbnDigits.length == 13 || isbnDigits.length == 10
     val anoNum = ano.toIntOrNull()
     val anoValid = ano.isBlank() || (anoNum != null && anoNum in 1000..2100)
     val paginasNum = paginas.toIntOrNull()
@@ -294,12 +295,12 @@ fun AddBookManualScreen(
                 OutlinedTextField(
                     value = isbn,
                     onValueChange = { if (it.length <= 17) isbn = it },
-                    label = { Text("ISBN (13 dígitos)") },
+                    label = { Text("ISBN (10 ou 13 dígitos)") },
                     placeholder = { Text("978…") },
                     singleLine = true,
                     isError = !isbnValid,
                     supportingText = if (!isbnValid) {
-                        { Text("ISBN deve ter 13 dígitos", color = Terracota) }
+                        { Text("ISBN deve ter 10 ou 13 dígitos", color = Terracota) }
                     } else null,
                     keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
                     modifier = Modifier.fillMaxWidth()

@@ -1790,6 +1790,7 @@ fun ProfileScreenTab(
     val finishedBooks by viewModel.finishedBooks.collectAsState()
     val archivedClubs by viewModel.archivedClubsForUser.collectAsState()
     val ratedApp by viewModel.ratedApp.collectAsState()
+    val profileCurrentBooks by viewModel.currentBooksMap.collectAsState()
 
     val context = androidx.compose.ui.platform.LocalContext.current
     var isEditingProfile by remember { mutableStateOf(false) }
@@ -1846,10 +1847,12 @@ fun ProfileScreenTab(
                                     color = Ink
                                 )
                             )
-                            Text(
-                                text = email ?: "contato@rodape.com",
-                                style = MaterialTheme.typography.bodyLarge.copy(color = Muted)
-                            )
+                            if (!email.isNullOrBlank()) {
+                                Text(
+                                    text = email,
+                                    style = MaterialTheme.typography.bodyLarge.copy(color = Muted)
+                                )
+                            }
                         }
                     }
                     IconButton(onClick = { isEditingProfile = true }) {
@@ -1964,13 +1967,11 @@ fun ProfileScreenTab(
                     allClubs.forEach { club ->
                         val isActive = club.id == activeClub?.id
                         val clubColor = clubColorFor(club.cor)
-                        val clubReadingText = if (club.id == "club_rodape") {
-                            "Lendo: A Metamorfose"
-                        } else if (club.id == "club_filosofia") {
-                            "Lendo: O Mito de Sísifo"
-                        } else {
-                            "Sem livro atual"
-                        }
+                        // Livro atual REAL do clube (antes era hardcoded por ID mágico
+                        // "club_rodape"/"club_filosofia" — clubes reais mostravam sempre
+                        // "Sem livro atual"). Usa a mesma fonte do seletor de clube.
+                        val livro = profileCurrentBooks[club.id]
+                        val clubReadingText = if (livro.isNullOrBlank()) "Sem livro atual" else "Lendo: $livro"
 
                         Card(
                             onClick = {
@@ -2747,21 +2748,28 @@ fun EditProfileView(
                         color = Muted
                     )
                 )
+                // Email é gerenciado pelo Supabase Auth (auth.users) e NÃO é
+                // alterável por aqui — o campo era editável mas a mudança era
+                // descartada em silêncio. Agora é somente leitura.
                 OutlinedTextField(
                     value = email,
-                    onValueChange = { email = it },
+                    onValueChange = {},
+                    readOnly = true,
+                    enabled = false,
                     placeholder = { Text("exemplo@email.com", color = Muted) },
                     modifier = Modifier.fillMaxWidth(),
                     shape = RoundedCornerShape(14.dp),
                     singleLine = true,
                     colors = OutlinedTextFieldDefaults.colors(
-                        focusedBorderColor = Terracota,
-                        unfocusedBorderColor = Divider,
-                        focusedContainerColor = Cream,
-                        unfocusedContainerColor = Cream,
-                        focusedTextColor = Ink,
-                        unfocusedTextColor = Ink
+                        disabledTextColor = Ink,
+                        disabledBorderColor = Divider,
+                        disabledContainerColor = Cream,
+                        disabledPlaceholderColor = Muted,
                     )
+                )
+                Text(
+                    text = "O email é usado pra login e não pode ser alterado por aqui.",
+                    style = MaterialTheme.typography.labelSmall.copy(color = Muted),
                 )
             }
         }
@@ -2782,18 +2790,10 @@ fun EditProfileView(
                 )
                 val nameParts = name.trim().split(Regex("\\s+")).filter { it.isNotBlank() }
                 val hasFullName = nameParts.size >= 2 && nameParts.all { it.length >= 2 }
-                val emailLooksValid = email.contains("@") && email.length >= 5
-                // Habilita Salvar se:
-                //  (a) qualquer campo mudou em relacao ao inicial (avatar, nome
-                //      OU email), E
-                //  (b) os campos editaveis (nome+email) sao validos
-                // Antes so olhava (b), o que prendia o botao desabilitado pra
-                // quem tinha nome curto no Supabase (1 palavra) mesmo querendo
-                // so trocar o avatar.
-                val changedSomething = name != initialName ||
-                    email != initialEmail ||
-                    avatarUrl != initialAvatarUrl
-                val canSave = changedSomething && hasFullName && emailLooksValid
+                // Email não é editável (gerido pelo Auth), então só nome/avatar
+                // contam pra habilitar Salvar.
+                val changedSomething = name != initialName || avatarUrl != initialAvatarUrl
+                val canSave = changedSomething && hasFullName
                 TbButton(
                     text = "Salvar",
                     onClick = {

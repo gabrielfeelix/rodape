@@ -64,8 +64,11 @@ fun SuggestScreen(
 
     // Exclude books with missing covers or missing author_name
     val filteredResults = remember(searchResults) {
+        // Não exige mais capa OL (coverI): livros do Google Books não têm e
+        // eram descartados aqui. Sem capa, usamos a capa gerada. Só exige
+        // título e autor pra evitar resultados vazios.
         searchResults.filter { doc ->
-            doc.coverI != null && !doc.authorName.isNullOrEmpty()
+            doc.title.isNotBlank() && !doc.authorName.isNullOrEmpty()
         }
     }
 

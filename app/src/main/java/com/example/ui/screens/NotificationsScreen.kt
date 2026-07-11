@@ -109,13 +109,21 @@ fun NotificationsScreen(
                 }
             }
         } else {
-            // Group notifications by day
-            val grouped = list.groupBy { notif ->
-                when {
-                    notif.payloadJson.contains("meetingId") -> "ESTA SEMANA"
-                    else -> "HOJE"
+            // Agrupa por data REAL (criadoEm), não pelo conteúdo do payload.
+            val now = System.currentTimeMillis()
+            val umDia = 86_400_000L
+            val grouped = list
+                .sortedByDescending { it.criadoEm }
+                .groupBy { notif ->
+                    val idade = now - notif.criadoEm
+                    when {
+                        idade < umDia -> "HOJE"
+                        idade < 2 * umDia -> "ONTEM"
+                        idade < 7 * umDia -> "ESTA SEMANA"
+                        idade < 30 * umDia -> "ESTE MÊS"
+                        else -> "ANTES"
+                    }
                 }
-            }
 
             LazyColumn(
                 modifier = Modifier
@@ -194,8 +202,7 @@ private fun NotificationItem(
     val desc = when {
         tipo == "comment_on_chapter" && payloadJson.contains("chapterTitle") -> {
             val chapterTitle = payloadJson.substringAfter("\"chapterTitle\":\"").substringBefore("\"")
-            val quote = if (userName == "Luciana") ": \"Essa parte me pegou de surpresa...\"" else ""
-            "$userName comentou em '$chapterTitle'$quote. Vem participar da rodada!"
+            "$userName comentou em '$chapterTitle'. Vem participar da rodada!"
         }
         tipo == "next_book_decided" && payloadJson.contains("bookTitle") -> {
             val bookTitle = payloadJson.substringAfter("\"bookTitle\":\"").substringBefore("\"")

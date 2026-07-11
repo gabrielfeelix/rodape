@@ -924,6 +924,18 @@ class RemoteRepository(
                 )
             )
         }
+        registerHandler("upsert_book_rating") { json ->
+            val obj = this.json.parseToJsonElement(json) as JsonObject
+            supabase.from("book_ratings").upsert(
+                BookRatingInsertDto(
+                    bookId = obj.str("bookId"),
+                    clubId = obj.str("clubId"),
+                    userId = obj.str("userId"),
+                    stars = obj.str("stars").toInt(),
+                    comment = obj.str("comment"),
+                )
+            )
+        }
 
         // Tenta drenar logo no init (caso tenha sobrado fila da sessao anterior).
         scope.launch { runCatching { tryDrainPendingQueue() } }
@@ -2556,7 +2568,19 @@ class RemoteRepository(
     }
 
     suspend fun insertBookRating(rating: BookRating) {
-        runCatching {
+        // Local-first + fila: grava no Room antes do remoto e enfileira se
+        // offline. Antes era remoto-primeiro dentro de runCatching — avaliar um
+        // livro sem internet sumia sem aviso (o dao.upsert nem rodava).
+        dao.upsertBookRatings(listOf(rating))
+        notifyLocalMutation("book_ratings")
+        val payload = buildJsonObject {
+            put("bookId", rating.bookId)
+            put("clubId", rating.clubId)
+            put("userId", rating.userId)
+            put("stars", rating.stars.toString())
+            put("comment", rating.comment)
+        }.toString()
+        tryRemoteOrEnqueue("upsert_book_rating", payload) {
             supabase.from("book_ratings").upsert(
                 BookRatingInsertDto(
                     bookId = rating.bookId,
@@ -2566,8 +2590,6 @@ class RemoteRepository(
                     comment = rating.comment,
                 )
             )
-            dao.upsertBookRatings(listOf(rating))
-            notifyLocalMutation("book_ratings")
         }
     }
 
