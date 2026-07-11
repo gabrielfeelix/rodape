@@ -10,31 +10,28 @@ package com.example.ui.components
  *     no nome — mesma pessoa sempre pega o mesmo avatar (nao muda a cada login).
  *  3. Se nao deu pra detectar, escolhe entre os neutros.
  *
- * Presets disponiveis (vide Avatar.kt):
- *  Femininos: leitora, alice, petalas, joana_darc, emilia
- *  Masculinos: leitor, don_quixote, indigena, detetive, mago, fantasma
- *  Universal:  pequeno_principe (crianca, ambiguo)
+ * Presets disponiveis (vide Avatar.kt — só domínio público, sem risco de IP):
+ *  Femininos: leitora, joana_darc, emilia, indigena
+ *  Masculinos: leitor, don_quixote, detetive, mago
+ *  Universal:  leitora, leitor (leitores genéricos — default seguro)
  */
 object AvatarPicker {
 
     private val femininos = listOf(
         "preset:leitora",
-        "preset:alice",
-        "preset:petalas",
         "preset:joana_darc",
         "preset:emilia",
+        "preset:indigena",
     )
 
     private val masculinos = listOf(
         "preset:leitor",
         "preset:don_quixote",
-        "preset:indigena",
         "preset:detetive",
         "preset:mago",
-        "preset:fantasma",
     )
 
-    private val universais = listOf("preset:pequeno_principe")
+    private val universais = listOf("preset:leitora", "preset:leitor")
 
     // Excecoes que terminam em "a" mas sao masculinos
     private val masculinosExcecao = setOf(

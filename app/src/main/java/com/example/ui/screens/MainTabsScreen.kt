@@ -2585,22 +2585,8 @@ fun EditProfileView(
     var email by remember { mutableStateOf(initialEmail) }
     var avatarUrl by remember { mutableStateOf(initialAvatarUrl) }
 
-    // Avatares disponíveis: 12 ilustrados (drawables).
-    // Renderizado como grid 4 colunas x 3 linhas (12 slots cheios).
-    val presetNames = listOf(
-        "preset:pequeno_principe",
-        "preset:don_quixote",
-        "preset:petalas",
-        "preset:indigena",
-        "preset:detetive",
-        "preset:joana_darc",
-        "preset:leitor",
-        "preset:leitora",
-        "preset:mago",
-        "preset:emilia",
-        "preset:fantasma",
-        "preset:alice"
-    )
+    // Avatares disponíveis — fonte única em Avatar.kt (só domínio público).
+    val presetNames = com.example.ui.components.presetAvatarKeys
 
     LazyColumn(
         modifier = Modifier
@@ -2662,21 +2648,7 @@ fun EditProfileView(
                         rowPresets.forEach { preset ->
                             val isSelected = avatarUrl == preset
                             val isIllustrated = preset.startsWith("preset:")
-                            val displayLabel = when (preset) {
-                                "preset:pequeno_principe" -> "Pequeno Príncipe"
-                                "preset:don_quixote" -> "Don Quixote"
-                                "preset:petalas" -> "Pétalas"
-                                "preset:indigena" -> "Indígena"
-                                "preset:detetive" -> "Detetive"
-                                "preset:joana_darc" -> "Joana d'Arc"
-                                "preset:leitor" -> "Leitor"
-                                "preset:leitora" -> "Leitora"
-                                "preset:mago" -> "Mago"
-                                "preset:emilia" -> "Emília"
-                                "preset:fantasma" -> "Fantasma"
-                                "preset:alice" -> "Alice"
-                                else -> preset
-                            }
+                            val displayLabel = com.example.ui.components.presetDisplayName(preset)
                             Box(
                                 modifier = Modifier
                                     .width(56.dp)

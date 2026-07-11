@@ -58,21 +58,26 @@ private data class PresetAvatar(
 private const val DEFAULT_WIDTH_FACTOR = 1.20f
 private const val DEFAULT_HEIGHT_FACTOR = 1.50f
 
+// Apenas personagens de DOMÍNIO PÚBLICO com representação original.
+// Removidos por risco de IP (2026-07): Alice (design da Disney), Pétalas
+// (Mulan da Disney), Pequeno Príncipe (marca do espólio Saint-Exupéry) e
+// Fantasma (associação com o musical de A. L. Webber). Ver docs/legal/.
 private val presetAvatars: Map<String, PresetAvatar> = mapOf(
-    "preset:pequeno_principe" to PresetAvatar(
-        drawableRes = R.drawable.avatar_pequeno_principe,
-        bgColor = Color(0xFFE5EBDA), // OlivaSoft
-        displayName = "Pequeno Príncipe"
+    "preset:leitora" to PresetAvatar(
+        drawableRes = R.drawable.avatar_leitora,
+        bgColor = Color(0xFFF5E8E0), // rosado-cremoso — neutro feminino, combina com tom de pele
+        displayName = "Leitora",
+        scale = 0.78f, // PNG quadrado 1600x1600 — mesma compensacao da Indigena
+    ),
+    "preset:leitor" to PresetAvatar(
+        drawableRes = R.drawable.avatar_leitor,
+        bgColor = Color(0xFFE5EBDA).copy(alpha = 0.85f), // verde-folha levemente diluído
+        displayName = "Leitor"
     ),
     "preset:don_quixote" to PresetAvatar(
         drawableRes = R.drawable.avatar_don_quixote,
         bgColor = Color(0xFFFBE5DA), // TerracotaSoft — combina com armadura/cavaleiro
         displayName = "Don Quixote"
-    ),
-    "preset:petalas" to PresetAvatar(
-        drawableRes = R.drawable.avatar_petalas,
-        bgColor = Color(0xFFF1E3BE), // Mustard soft — combina com pétalas/jardim
-        displayName = "Pétalas"
     ),
     "preset:indigena" to PresetAvatar(
         drawableRes = R.drawable.avatar_indigena,
@@ -90,17 +95,6 @@ private val presetAvatars: Map<String, PresetAvatar> = mapOf(
         bgColor = Color(0xFFEBDCE4), // Plum soft — combina com a bandeira azul-real
         displayName = "Joana d'Arc"
     ),
-    "preset:leitor" to PresetAvatar(
-        drawableRes = R.drawable.avatar_leitor,
-        bgColor = Color(0xFFE5EBDA).copy(alpha = 0.85f), // verde-folha levemente diluído
-        displayName = "Leitor"
-    ),
-    "preset:leitora" to PresetAvatar(
-        drawableRes = R.drawable.avatar_leitora,
-        bgColor = Color(0xFFF5E8E0), // rosado-cremoso — neutro feminino, combina com tom de pele
-        displayName = "Leitora",
-        scale = 0.78f, // PNG quadrado 1600x1600 — mesma compensacao da Indigena
-    ),
     "preset:mago" to PresetAvatar(
         drawableRes = R.drawable.avatar_mago,
         bgColor = Color(0xFFE0D7E8), // lavanda — cosmos/magia, combina com chapéu roxo
@@ -111,20 +105,16 @@ private val presetAvatars: Map<String, PresetAvatar> = mapOf(
         bgColor = Color(0xFFF1EFE6), // DividerSoft — neutro creme pra não competir com a boneca colorida
         displayName = "Emília"
     ),
-    "preset:fantasma" to PresetAvatar(
-        drawableRes = R.drawable.avatar_fantasma,
-        bgColor = Color(0xFF2A3340), // azul-noite — contraste pro fantasma claro
-        displayName = "Fantasma"
-    ),
-    "preset:alice" to PresetAvatar(
-        drawableRes = R.drawable.avatar_alice,
-        bgColor = Color(0xFFD8E7D9), // verde-menta suave — País das Maravilhas
-        displayName = "Alice"
-    )
 )
 
 /** True se o avatarUrl é um preset ilustrado conhecido. */
 fun isPresetAvatar(avatarUrl: String): Boolean = presetAvatars.containsKey(avatarUrl)
+
+/** Chaves dos avatares ilustrados, em ordem — fonte única pros grids de seleção. */
+val presetAvatarKeys: List<String> = presetAvatars.keys.toList()
+
+/** Nome exibido de um preset (fallback seguro pra chaves desconhecidas). */
+fun presetDisplayName(key: String): String = presetAvatars[key]?.displayName ?: "Avatar"
 
 private fun initialsOf(name: String): String =
     name.trim().split(" ").filter { it.isNotEmpty() }
@@ -157,6 +147,15 @@ fun Avatar(
         sized.border(2.dp, ring, CircleShape).clip(CircleShape)
     } else {
         sized.clip(CircleShape)
+    }
+
+    // Preset removido (ex: usuário tinha escolhido um avatar retirado por IP):
+    // degrada pras iniciais em vez de tentar carregar "preset:x" como URL.
+    if (avatarUrl.startsWith("preset:")) {
+        Box(modifier = shaped.semantics { contentDescription = "Avatar de $name" }) {
+            InitialsAvatar(name, size)
+        }
+        return
     }
 
     if (avatarUrl.isNotBlank()) {

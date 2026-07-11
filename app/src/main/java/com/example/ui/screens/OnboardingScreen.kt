@@ -50,20 +50,10 @@ fun OnboardingScreen(
     var apelido by remember { mutableStateOf(initialName) }
     var fontScale by remember { mutableStateOf(initialFontScale) }
 
-    val presetNames = listOf(
-        "preset:pequeno_principe" to "Pequeno Príncipe",
-        "preset:don_quixote" to "Don Quixote",
-        "preset:petalas" to "Pétalas",
-        "preset:indigena" to "Indígena",
-        "preset:detetive" to "Detetive",
-        "preset:joana_darc" to "Joana d'Arc",
-        "preset:leitor" to "Leitor",
-        "preset:leitora" to "Leitora",
-        "preset:mago" to "Mago",
-        "preset:emilia" to "Emília",
-        "preset:fantasma" to "Fantasma",
-        "preset:alice" to "Alice",
-    )
+    // Fonte única em Avatar.kt (só domínio público — sem risco de IP).
+    val presetNames = com.example.ui.components.presetAvatarKeys.map {
+        it to com.example.ui.components.presetDisplayName(it)
+    }
 
     LazyColumn(
         modifier = Modifier
