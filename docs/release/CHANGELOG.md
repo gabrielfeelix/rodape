@@ -1,5 +1,29 @@
 # Changelog — Rodapé
 
+## Não lançado — 2026-07-11
+
+### Visual (fidelidade ao Claude Design)
+- Fontes Literata/Inter embarcadas (corrige queda silenciosa pra Roboto)
+- Sombras suaves tingidas em vez da elevação Material cinza
+- Header assinatura (avatar + pill de clube + sino), ícones próprios,
+  ticket de encontro perfurado, capas com lombada, chips de leitores com anéis
+
+### UX
+- Estados de loading reais (fim dos falsos "não encontrado")
+- Feedback de ações (snackbar), indicador de sincronização offline
+- Pull-to-refresh, confirmações de ações destrutivas, desfazer exclusão de frase
+- Voltar capítulo marcado sem querer
+
+### Correções / robustez
+- Testes voltaram a rodar; `GEMINI_API_KEY` não vai mais pro APK
+- Texto de privacidade corrigido (condiz com o backend Supabase)
+- Progresso de leitura não se perde mais offline (local-first + fila)
+- Fila offline não é mais descartada no logout; poison messages têm dead-letter
+
+### Produto
+- **Exclusão de conta** dentro do app (requisito da Play Store)
+- **Sair do clube** para membro comum
+
 ## v1.0.0 — 2026-05-24 (build 1)
 
 **Primeira versão pública.**

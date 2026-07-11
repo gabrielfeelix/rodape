@@ -26,6 +26,15 @@
 
 ## 🔴 Crítico antes do upload
 
+### 0. Criar o RPC `delete_own_account` no Supabase
+
+A Play Store **exige** exclusão de conta dentro do app. A UI já existe
+(Perfil → "Excluir minha conta") e chama o RPC `delete_own_account`. Rode o SQL
+de `docs/release/account-deletion.sql` no Supabase Dashboard → SQL Editor
+(ajuste a lista de tabelas ao schema real). Enquanto o RPC não existir, o app
+cai no fallback "Pedir por email" — aceitável, mas o ideal é a exclusão
+automática.
+
 ### 1. Hospedar a Privacy Policy num URL público
 
 A Play Store **exige um link público pra política**. Não aceita arquivo
@@ -226,3 +235,5 @@ Fazer:
 - Sem dark mode (decisão de design)
 - HIBP (proteção contra senhas vazadas no Supabase) requer plano Pro
 - Captcha desabilitado (sem hCaptcha secret)
+- Exclusão de conta automática depende do RPC `delete_own_account` (ver item 0);
+  até criá-lo, usa fallback por email

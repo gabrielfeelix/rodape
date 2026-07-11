@@ -6,6 +6,50 @@ visual vs. Claude Design) + build/testes executados hoje.
 
 ---
 
+## Status de execução (2026-07-11)
+
+As Fases 0–4 foram executadas. Resumo do que entrou:
+
+- **Fase 0 (higiene):** testes voltaram a compilar/rodar (Robolectric/Roborazzi
+  marcados `@Ignore` — exigem runtime `android-all` com rede); `GEMINI_API_KEY`
+  barrada do BuildConfig; texto de privacidade do AboutScreen corrigido;
+  README real.
+- **Fase 1 (visual):** fontes embarcadas, sombras tingidas, dourado, header
+  assinatura, 33 ícones próprios, ticket perfurado, cover com lombada,
+  ReaderChips com anéis, press-scale. Dados fake removidos.
+- **Fase 2 (UX):** loading gates, snackbar global, indicador de sync offline,
+  pull-to-refresh na Home, confirmações, decremento de progresso, submits
+  protegidos, tom de voz, política de senha do reset.
+- **Fase 3 (dados, subconjunto seguro):** coleções realtime thread-safe,
+  correção da corrupção de texto no retry (`jsonPrimitive.content`), fila
+  preservada no logout, dead-letter + limite de tentativas, progresso de
+  leitura local-first.
+- **Fase 4 (produto):** exclusão de conta (Play Store) + sair do clube.
+
+### Deferido (mudanças que só falhariam em runtime — exigem verificação visual)
+
+Estas ficaram **de fora** de propósito, porque só se pode validar rodando no
+app/servidor, e um erro aqui vira crash loop ou perda silenciosa em produção:
+
+1. **PK local de `votes`** (incluir `votingRoundId`): exige `Migration` de Room
+   com bump de versão. Sem verificar em runtime, risco de crash loop.
+2. **Timezone de meetings** (parar de interpretar hora como UTC): muda como
+   datas já salvas aparecem — precisa validar com dados reais.
+3. **Ciclo de vida do Realtime** (unsubscribe + refcount dos canais): refactor
+   de lifecycle com alto risco de quebrar o realtime silenciosamente.
+4. **Criação de notificação via RPC server-side** (fechar o INSERT cross-user):
+   depende de criar RPC/trigger + policy no Supabase (schema não versionado).
+5. **Editar/apagar o próprio comentário** e **deep link de convite**: o
+   primeiro depende de policy RLS; o segundo, de domínio próprio + config.
+6. **`delete_own_account`**: o RPC precisa ser criado no Supabase — SQL pronto
+   em `docs/release/account-deletion.sql`. Até lá, o app usa o fallback por
+   email.
+
+Próximo passo natural quando você voltar: rodar o SQL de exclusão de conta,
+depois atacar os itens 1–4 com o app aberto num emulador pra ver cada mudança.
+
+---
+
 ## TL;DR
 
 | Área | Estado |
