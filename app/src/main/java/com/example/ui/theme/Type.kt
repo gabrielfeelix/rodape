@@ -2,13 +2,15 @@ package com.example.ui.theme
 
 import androidx.compose.material3.Typography
 import androidx.compose.ui.text.TextStyle
+import androidx.compose.ui.text.font.Font
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontStyle
+import androidx.compose.ui.text.font.FontVariation
 import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.text.googlefonts.Font
 import androidx.compose.ui.text.googlefonts.GoogleFont
 import androidx.compose.ui.unit.sp
 import com.example.R
+import androidx.compose.ui.text.googlefonts.Font as GFont
 
 private val fontProvider = GoogleFont.Provider(
     providerAuthority = "com.google.android.gms.fonts",
@@ -21,21 +23,50 @@ private val LiterataFont = GoogleFont("Literata")
 // Sans para UI.
 private val InterFont = GoogleFont("Inter")
 
+// Fallback embarcado: fontes variáveis em res/font garantem que Literata/Inter
+// renderizam mesmo sem GMS/rede (sem elas o Compose caía silenciosamente em
+// Roboto). Em API 24-25 a variação de peso é ignorada (instância padrão).
+@OptIn(androidx.compose.ui.text.ExperimentalTextApi::class)
+private fun literataLocal(weight: FontWeight, style: FontStyle = FontStyle.Normal) = Font(
+    resId = if (style == FontStyle.Italic) R.font.literata_italic else R.font.literata,
+    weight = weight,
+    style = style,
+    variationSettings = FontVariation.Settings(FontVariation.weight(weight.weight)),
+)
+
+@OptIn(androidx.compose.ui.text.ExperimentalTextApi::class)
+private fun interLocal(weight: FontWeight) = Font(
+    resId = R.font.inter,
+    weight = weight,
+    variationSettings = FontVariation.Settings(FontVariation.weight(weight.weight)),
+)
+
 val LiterataFontFamily = FontFamily(
-    Font(googleFont = LiterataFont, fontProvider = fontProvider, weight = FontWeight.Normal),
-    Font(googleFont = LiterataFont, fontProvider = fontProvider, weight = FontWeight.Medium),
-    Font(googleFont = LiterataFont, fontProvider = fontProvider, weight = FontWeight.SemiBold),
-    Font(googleFont = LiterataFont, fontProvider = fontProvider, weight = FontWeight.Bold),
-    Font(googleFont = LiterataFont, fontProvider = fontProvider, weight = FontWeight.Normal, style = FontStyle.Italic),
-    Font(googleFont = LiterataFont, fontProvider = fontProvider, weight = FontWeight.Medium, style = FontStyle.Italic),
-    Font(googleFont = LiterataFont, fontProvider = fontProvider, weight = FontWeight.SemiBold, style = FontStyle.Italic),
+    GFont(googleFont = LiterataFont, fontProvider = fontProvider, weight = FontWeight.Normal),
+    literataLocal(FontWeight.Normal),
+    GFont(googleFont = LiterataFont, fontProvider = fontProvider, weight = FontWeight.Medium),
+    literataLocal(FontWeight.Medium),
+    GFont(googleFont = LiterataFont, fontProvider = fontProvider, weight = FontWeight.SemiBold),
+    literataLocal(FontWeight.SemiBold),
+    GFont(googleFont = LiterataFont, fontProvider = fontProvider, weight = FontWeight.Bold),
+    literataLocal(FontWeight.Bold),
+    GFont(googleFont = LiterataFont, fontProvider = fontProvider, weight = FontWeight.Normal, style = FontStyle.Italic),
+    literataLocal(FontWeight.Normal, FontStyle.Italic),
+    GFont(googleFont = LiterataFont, fontProvider = fontProvider, weight = FontWeight.Medium, style = FontStyle.Italic),
+    literataLocal(FontWeight.Medium, FontStyle.Italic),
+    GFont(googleFont = LiterataFont, fontProvider = fontProvider, weight = FontWeight.SemiBold, style = FontStyle.Italic),
+    literataLocal(FontWeight.SemiBold, FontStyle.Italic),
 )
 
 val InterFontFamily = FontFamily(
-    Font(googleFont = InterFont, fontProvider = fontProvider, weight = FontWeight.Normal),
-    Font(googleFont = InterFont, fontProvider = fontProvider, weight = FontWeight.Medium),
-    Font(googleFont = InterFont, fontProvider = fontProvider, weight = FontWeight.SemiBold),
-    Font(googleFont = InterFont, fontProvider = fontProvider, weight = FontWeight.Bold),
+    GFont(googleFont = InterFont, fontProvider = fontProvider, weight = FontWeight.Normal),
+    interLocal(FontWeight.Normal),
+    GFont(googleFont = InterFont, fontProvider = fontProvider, weight = FontWeight.Medium),
+    interLocal(FontWeight.Medium),
+    GFont(googleFont = InterFont, fontProvider = fontProvider, weight = FontWeight.SemiBold),
+    interLocal(FontWeight.SemiBold),
+    GFont(googleFont = InterFont, fontProvider = fontProvider, weight = FontWeight.Bold),
+    interLocal(FontWeight.Bold),
 )
 
 val Typography = Typography(

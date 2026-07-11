@@ -16,6 +16,8 @@ import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.SupervisorJob
+import kotlinx.coroutines.async
+import kotlinx.coroutines.awaitAll
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -780,6 +782,24 @@ class RemoteRepository(
 
     /** StateFlow do tamanho da fila pra UI mostrar badge "X pendentes". */
     val pendingMutationsCount: Flow<Int> = pendingDao.countFlow()
+
+    /**
+     * Pull-to-refresh: zera os TTLs, tenta drenar a fila offline e refaz o
+     * SELECT de todas as caches ativas registradas. Suspende até terminar,
+     * pra UI poder segurar o spinner honestamente.
+     */
+    suspend fun forceRefresh() {
+        lastSyncAt.clear()
+        runCatching { tryDrainPendingQueue() }
+        // Snapshot evita ConcurrentModification se um flow registrar reloader
+        // durante o refresh.
+        val reloads = tableReloaders.values.toList().flatten()
+        kotlinx.coroutines.coroutineScope {
+            reloads.map { reload ->
+                async { runCatching { reload() } }
+            }.awaitAll()
+        }
+    }
 
     init {
         // Registra handlers conhecidos. Payload e JSON ad-hoc por kind.

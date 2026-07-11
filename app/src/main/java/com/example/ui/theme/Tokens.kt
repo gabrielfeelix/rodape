@@ -7,6 +7,7 @@ import androidx.compose.ui.graphics.Color
  * Acesse via `RodapeTokens` direto (são estáticos, tema único claro).
  */
 object RodapeTokens {
+    val dourado = Dourado
     val terracotaDark = TerracotaDark
     val terracotaSoft = TerracotaSoft
     val olivaDark = OlivaDark

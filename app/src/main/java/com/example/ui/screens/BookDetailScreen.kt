@@ -61,11 +61,17 @@ fun BookDetailScreen(
                     .padding(padding),
                 contentAlignment = Alignment.Center
             ) {
-                Text(
-                    text = "Livro não encontrado.",
-                    style = MaterialTheme.typography.bodyLarge,
-                    color = Muted
-                )
+                // Gate: em cold start clubBooks ainda está sincronizando e o
+                // livro "não existe" por 1-2s — mostra loading em vez de erro.
+                if (com.example.ui.components.rememberShowLoading(hasData = clubBooks.isNotEmpty())) {
+                    com.example.ui.components.CenteredLoading()
+                } else {
+                    Text(
+                        text = "Livro não encontrado.",
+                        style = MaterialTheme.typography.bodyLarge,
+                        color = Muted
+                    )
+                }
             }
         }
         return
@@ -107,7 +113,9 @@ fun BookDetailScreen(
                     author = book.author,
                     coverUrl = book.coverUrl,
                     width = 150.dp,
-                    height = 224.dp
+                    height = 224.dp,
+                    // Sombra dramática do design (screens-book-detail.jsx:98)
+                    modifier = Modifier.detailCoverShadow(cornerRadius = 3.dp)
                 )
 
                 Spacer(modifier = Modifier.height(20.dp))
@@ -429,6 +437,24 @@ private fun FrasesTab(
             modifier = Modifier.padding(vertical = 16.dp)
         )
     } else {
+        // Confirmação antes de excluir — antes apagava direto, sem volta.
+        var quoteToDelete by remember { mutableStateOf<com.example.data.model.SavedQuote?>(null) }
+        quoteToDelete?.let { pending ->
+            AlertDialog(
+                onDismissRequest = { quoteToDelete = null },
+                title = { Text("Excluir frase?") },
+                text = { Text("A frase salva some pra todo o clube.") },
+                confirmButton = {
+                    TextButton(onClick = {
+                        viewModel.deleteQuote(pending)
+                        quoteToDelete = null
+                    }) { Text("Excluir") }
+                },
+                dismissButton = {
+                    TextButton(onClick = { quoteToDelete = null }) { Text("Voltar") }
+                },
+            )
+        }
         quotes.forEach { quote ->
             val author = members.find { it.id == quote.userId }
             val authorName = author?.nome ?: "Membro"
@@ -438,7 +464,7 @@ private fun FrasesTab(
                 QuoteCard(
                     texto = quote.texto,
                     ref = quote.capituloRef,
-                    onDelete = { viewModel.deleteQuote(quote) }
+                    onDelete = { quoteToDelete = quote }
                 )
                 Spacer(modifier = Modifier.height(6.dp))
                 Row(

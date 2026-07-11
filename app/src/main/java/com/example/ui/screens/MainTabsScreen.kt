@@ -4,6 +4,7 @@ import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.launch
 import androidx.compose.foundation.background
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.border
@@ -30,6 +31,7 @@ import androidx.compose.material.icons.outlined.List
 import androidx.compose.material.icons.outlined.*
 import androidx.compose.material.icons.outlined.Settings
 import androidx.compose.material3.*
+import androidx.compose.material3.pulltorefresh.PullToRefreshBox
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -61,6 +63,18 @@ import com.example.ui.theme.Muted
 import com.example.ui.theme.DividerSoft
 import com.example.ui.theme.LiterataFontFamily
 import com.example.ui.theme.clubColorFor
+import com.example.ui.theme.navShadow
+import com.example.ui.theme.ticketShadow
+import com.example.ui.theme.floatShadow
+import com.example.ui.theme.heroCoverShadow
+import com.example.ui.theme.pillShadow
+import com.example.ui.theme.Paper
+import com.example.ui.theme.Dourado
+import com.example.ui.theme.RodapeIcons
+import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.graphics.PathEffect
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.semantics
 import com.example.ui.viewmodel.MainViewModel
 import com.example.ui.components.Cover
 import com.example.ui.components.Pill
@@ -124,7 +138,13 @@ fun MainTabsScreen(
 
     // Estado vazio: usuario logado mas nao tem clubes. Mostra CTAs em vez das tabs
     // (as tabs todas dependem de um clube ativo — sem clube, todas mostrariam vazio).
+    // Gate de loading: no cold start os clubes ainda estao baixando e allClubs
+    // emite vazio — sem o gate, quem TEM clube via o empty state piscar.
     if (allClubs.isEmpty()) {
+        if (rememberShowLoading(hasData = false)) {
+            CenteredLoading()
+            return
+        }
         val firstName = (supaName ?: currentUser?.nome)?.substringBefore(" ")
         NoClubsEmptyState(
             userFirstName = firstName,
@@ -139,92 +159,32 @@ fun MainTabsScreen(
         return
     }
 
+    val snackbarHostState = remember { SnackbarHostState() }
+    val scope = rememberCoroutineScope()
+    val showMessage: (String) -> Unit = remember(snackbarHostState) {
+        { msg ->
+            scope.launch {
+                snackbarHostState.currentSnackbarData?.dismiss()
+                snackbarHostState.showSnackbar(msg, duration = SnackbarDuration.Short)
+            }
+        }
+    }
+    val pendingCount by viewModel.pendingMutationsCount.collectAsState()
+
     Scaffold(
         topBar = {
-            CenterAlignedTopAppBar(
-                navigationIcon = {
-                    Box(modifier = Modifier.padding(start = 16.dp)) {
-                        Avatar(
-                            name = currentUser?.nome ?: "Você",
-                            avatarUrl = currentUser?.avatarUrl ?: "",
-                            size = 40.dp,
-                            modifier = Modifier.clickable {
-                                selectedTab = "profile"
-                            }
-                        )
-                    }
-                },
-                title = {
-                    val rawName = activeClub?.nome ?: "Rodapé"
-                    val clubName = if (rawName.length > 20) rawName.take(20) + "..." else rawName
-                    Row(
-                        verticalAlignment = Alignment.CenterVertically,
-                        modifier = Modifier
-                            .clip(RoundedCornerShape(8.dp))
-                            .clickable { showBottomSheet = true }
-                            .padding(horizontal = 8.dp, vertical = 6.dp)
-                    ) {
-                        Text(
-                            text = clubName,
-                            style = MaterialTheme.typography.titleLarge.copy(
-                                fontWeight = FontWeight.Medium,
-                                color = Terracota,
-                                fontFamily = LiterataFontFamily,
-                                fontSize = 20.sp
-                            ),
-                            maxLines = 1,
-                            overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis
-                        )
-                        Spacer(modifier = Modifier.width(6.dp))
-                        Box(
-                            modifier = Modifier
-                                .size(22.dp)
-                                .background(Terracota.copy(alpha = 0.12f), CircleShape),
-                            contentAlignment = Alignment.Center
-                        ) {
-                            Icon(
-                                imageVector = Icons.Outlined.KeyboardArrowDown,
-                                contentDescription = "Trocar de clube",
-                                tint = Terracota,
-                                modifier = Modifier.size(16.dp)
-                            )
-                        }
-                    }
-                },
-                actions = {
-                    if (isAdmin) {
-                        IconButton(onClick = onNavigateToManageClub) {
-                            Icon(
-                                imageVector = Icons.Outlined.Settings,
-                                contentDescription = "Gerenciar clube",
-                                tint = MaterialTheme.colorScheme.onSurface,
-                                modifier = Modifier.size(24.dp)
-                            )
-                        }
-                    }
-                    Box(modifier = Modifier.padding(end = 16.dp)) {
-                        IconButton(onClick = onNavigateToNotifications) {
-                            Icon(
-                                imageVector = Icons.Outlined.Notifications,
-                                contentDescription = "Notificações",
-                                tint = MaterialTheme.colorScheme.onSurface,
-                                modifier = Modifier.size(24.dp)
-                            )
-                        }
-                        if (unreadNotificationsCount > 0) {
-                            Box(
-                                modifier = Modifier
-                                    .size(8.dp)
-                                    .background(Terracota, CircleShape)
-                                    .align(Alignment.TopEnd)
-                                    .offset(x = (-6).dp, y = 6.dp)
-                            )
-                        }
-                    }
-                },
-                colors = TopAppBarDefaults.centerAlignedTopAppBarColors(
-                    containerColor = MaterialTheme.colorScheme.background
-                )
+            // Header do design (shell.jsx GlobalHeader): avatar · pill de clube · sino.
+            GlobalHeader(
+                userName = currentUser?.nome ?: "Você",
+                avatarUrl = currentUser?.avatarUrl ?: "",
+                clubName = activeClub?.nome ?: "Rodapé",
+                clubColor = clubColorFor(activeClub?.cor ?: "0").bg,
+                unreadCount = unreadNotificationsCount,
+                isAdmin = isAdmin,
+                onAvatar = { selectedTab = "profile" },
+                onClubTap = { showBottomSheet = true },
+                onBell = onNavigateToNotifications,
+                onManageClub = onNavigateToManageClub,
             )
         },
         bottomBar = {
@@ -233,6 +193,7 @@ fun MainTabsScreen(
                 onTabSelected = { selectedTab = it }
             )
         },
+        snackbarHost = { SnackbarHost(snackbarHostState) },
         containerColor = MaterialTheme.colorScheme.background
     ) { paddingValues ->
         Box(
@@ -248,10 +209,12 @@ fun MainTabsScreen(
                         pendingNextSubTab = sub
                         selectedTab = tab
                     },
+                    onShowMessage = showMessage,
                 )
                 "book" -> BookDetailScreenTab(
                     viewModel = viewModel,
-                    onNavigateToDiscussion = onNavigateToDiscussion
+                    onNavigateToDiscussion = onNavigateToDiscussion,
+                    onShowMessage = showMessage,
                 )
                 "next" -> NextTabScreen(
                     viewModel = viewModel,
@@ -273,6 +236,35 @@ fun MainTabsScreen(
                     onNavigateToFrases = onNavigateToFrases,
                     onNavigateToAbout = onNavigateToAbout
                 )
+            }
+
+            // Indicador de sync offline: a fila de mutações sempre existiu,
+            // mas era invisível — o usuário não sabia se a ação tinha "pegado".
+            if (pendingCount > 0) {
+                Row(
+                    modifier = Modifier
+                        .align(Alignment.BottomCenter)
+                        .padding(bottom = 10.dp)
+                        .clip(RoundedCornerShape(999.dp))
+                        .background(Ink.copy(alpha = 0.88f))
+                        .padding(horizontal = 12.dp, vertical = 6.dp),
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(6.dp),
+                ) {
+                    CircularProgressIndicator(
+                        color = Cream,
+                        strokeWidth = 1.5.dp,
+                        modifier = Modifier.size(12.dp),
+                    )
+                    Text(
+                        text = if (pendingCount == 1) "1 alteração aguardando conexão"
+                               else "$pendingCount alterações aguardando conexão",
+                        fontFamily = InterFontFamily,
+                        fontSize = 11.sp,
+                        fontWeight = FontWeight.Medium,
+                        color = Cream,
+                    )
+                }
             }
         }
     }
@@ -463,6 +455,166 @@ fun MainTabsScreen(
     }
 }
 
+/**
+ * Header assinatura do design (shell.jsx GlobalHeader):
+ * avatar 40 · pill branco de clube (círculo colorido + overline CLUBE + nome serif
+ * + chevron) · sino circular 40 com badge numérico terracota. Engrenagem de admin
+ * ganha o mesmo tratamento circular do sino (não existe no protótipo, é do produto).
+ */
+@Composable
+private fun GlobalHeader(
+    userName: String,
+    avatarUrl: String,
+    clubName: String,
+    clubColor: Color,
+    unreadCount: Int,
+    isAdmin: Boolean,
+    onAvatar: () -> Unit,
+    onClubTap: () -> Unit,
+    onBell: () -> Unit,
+    onManageClub: () -> Unit,
+) {
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .windowInsetsPadding(WindowInsets.statusBars)
+            .padding(start = 18.dp, end = 18.dp, top = 6.dp, bottom = 12.dp),
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.spacedBy(10.dp),
+    ) {
+        Avatar(
+            name = userName,
+            avatarUrl = avatarUrl,
+            size = 40.dp,
+            modifier = Modifier.clickable(
+                interactionSource = remember { MutableInteractionSource() },
+                indication = null,
+                onClick = onAvatar,
+            ),
+        )
+
+        // Pill de clube
+        Row(
+            modifier = Modifier
+                .weight(1f)
+                .clip(RoundedCornerShape(999.dp))
+                .background(CardSurface)
+                .border(1.dp, Divider, RoundedCornerShape(999.dp))
+                .clickable(onClick = onClubTap)
+                .padding(start = 8.dp, end = 14.dp, top = 7.dp, bottom = 7.dp),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(10.dp),
+        ) {
+            Box(
+                modifier = Modifier
+                    .size(26.dp)
+                    .background(clubColor, CircleShape),
+                contentAlignment = Alignment.Center,
+            ) {
+                Text(
+                    text = clubName.take(1).uppercase(),
+                    color = Cream,
+                    fontFamily = LiterataFontFamily,
+                    fontSize = 13.sp,
+                    fontWeight = FontWeight.SemiBold,
+                )
+            }
+            Column(modifier = Modifier.weight(1f)) {
+                Text(
+                    text = "CLUBE",
+                    fontFamily = InterFontFamily,
+                    fontSize = 10.sp,
+                    fontWeight = FontWeight.SemiBold,
+                    color = Muted,
+                    letterSpacing = 0.6.sp,
+                    lineHeight = 10.sp,
+                )
+                Text(
+                    text = clubName,
+                    fontFamily = LiterataFontFamily,
+                    fontSize = 14.sp,
+                    fontWeight = FontWeight.SemiBold,
+                    color = Ink,
+                    letterSpacing = (-0.2).sp,
+                    lineHeight = 17.sp,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis,
+                )
+            }
+            Icon(
+                imageVector = RodapeIcons.ChevD,
+                contentDescription = "Trocar de clube",
+                tint = com.example.ui.theme.Tertiary,
+                modifier = Modifier.size(14.dp),
+            )
+        }
+
+        if (isAdmin) {
+            HeaderCircleButton(onClick = onManageClub, contentDescription = "Gerenciar clube") {
+                Icon(
+                    imageVector = Icons.Outlined.Settings,
+                    contentDescription = null,
+                    tint = Ink,
+                    modifier = Modifier.size(18.dp),
+                )
+            }
+        }
+
+        Box {
+            HeaderCircleButton(onClick = onBell, contentDescription = "Notificações") {
+                Icon(
+                    imageVector = RodapeIcons.Bell,
+                    contentDescription = null,
+                    tint = Ink,
+                    modifier = Modifier.size(18.dp),
+                )
+            }
+            if (unreadCount > 0) {
+                Box(
+                    modifier = Modifier
+                        .align(Alignment.TopEnd)
+                        .offset(x = 3.dp, y = (-3).dp)
+                        .border(2.dp, com.example.ui.theme.Paper, CircleShape)
+                        .padding(2.dp)
+                        .defaultMinSize(minWidth = 16.dp, minHeight = 16.dp)
+                        .background(Terracota, CircleShape)
+                        .padding(horizontal = 4.dp),
+                    contentAlignment = Alignment.Center,
+                ) {
+                    Text(
+                        text = if (unreadCount > 9) "9+" else unreadCount.toString(),
+                        color = Cream,
+                        fontFamily = InterFontFamily,
+                        fontSize = 10.sp,
+                        fontWeight = FontWeight.Bold,
+                        lineHeight = 10.sp,
+                    )
+                }
+            }
+        }
+    }
+}
+
+@Composable
+private fun HeaderCircleButton(
+    onClick: () -> Unit,
+    contentDescription: String,
+    content: @Composable () -> Unit,
+) {
+    Box(
+        modifier = Modifier
+            .size(40.dp)
+            .clip(CircleShape)
+            .background(CardSurface)
+            .border(1.dp, Divider, CircleShape)
+            .clickable(onClick = onClick)
+            .semantics { this.contentDescription = contentDescription },
+        contentAlignment = Alignment.Center,
+    ) {
+        content()
+    }
+}
+
 @Composable
 fun CustomBottomBar(
     selectedTab: String,
@@ -471,15 +623,24 @@ fun CustomBottomBar(
     Box(
         modifier = Modifier
             .fillMaxWidth()
+            // Fade do design: conteúdo some suavemente sob a barra (shell.jsx:108).
+            .background(
+                androidx.compose.ui.graphics.Brush.verticalGradient(
+                    0f to com.example.ui.theme.Paper.copy(alpha = 0f),
+                    0.5f to com.example.ui.theme.Paper,
+                )
+            )
             .windowInsetsPadding(WindowInsets.navigationBars)
             .padding(horizontal = 12.dp, vertical = 8.dp),
         contentAlignment = Alignment.Center
     ) {
         Surface(
-            modifier = Modifier.fillMaxWidth(),
+            modifier = Modifier
+                .fillMaxWidth()
+                .navShadow(cornerRadius = 32.dp),
             shape = RoundedCornerShape(999.dp),
             color = OlivaDeep,
-            shadowElevation = 8.dp
+            shadowElevation = 0.dp
         ) {
             Row(
                 modifier = Modifier
@@ -490,31 +651,31 @@ fun CustomBottomBar(
             ) {
                 BottomBarItem(
                     label = "Início",
-                    icon = if (selectedTab == "home") Icons.Filled.Home else Icons.Outlined.Home,
+                    icon = RodapeIcons.Home,
                     selected = selectedTab == "home",
                     onClick = { onTabSelected("home") }
                 )
                 BottomBarItem(
-                    label = "Livro atual",
-                    icon = if (selectedTab == "book") Icons.Filled.MenuBook else Icons.Outlined.MenuBook,
+                    label = "Livro",
+                    icon = RodapeIcons.Book,
                     selected = selectedTab == "book",
                     onClick = { onTabSelected("book") }
                 )
                 BottomBarItem(
                     label = "Próximo",
-                    icon = if (selectedTab == "next") Icons.Filled.HowToVote else Icons.Outlined.HowToVote,
+                    icon = RodapeIcons.Calendar,
                     selected = selectedTab == "next",
                     onClick = { onTabSelected("next") }
                 )
                 BottomBarItem(
                     label = "Estante",
-                    icon = if (selectedTab == "shelf") Icons.Filled.LocalLibrary else Icons.Outlined.LocalLibrary,
+                    icon = RodapeIcons.Shelf,
                     selected = selectedTab == "shelf",
                     onClick = { onTabSelected("shelf") }
                 )
                 BottomBarItem(
                     label = "Perfil",
-                    icon = if (selectedTab == "profile") Icons.Filled.Person else Icons.Outlined.Person,
+                    icon = RodapeIcons.User,
                     selected = selectedTab == "profile",
                     onClick = { onTabSelected("profile") }
                 )
@@ -574,7 +735,7 @@ fun BottomBarItem(
             Icon(
                 imageVector = icon,
                 contentDescription = label,
-                tint = Cream.copy(alpha = 0.65f),
+                tint = Cream.copy(alpha = 0.7f),
                 modifier = Modifier.size(20.dp)
             )
         }
@@ -582,12 +743,14 @@ fun BottomBarItem(
 }
 
 // --- HOME SCREEN TAB ---
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun HomeScreenTab(
     viewModel: MainViewModel,
     onNavigateToDiscussion: (String, String) -> Unit,
     // (tab, subTab?) — subTab so faz sentido pra "next" hoje. null pra demais.
     onNavigateToTab: (String, String?) -> Unit,
+    onShowMessage: (String) -> Unit = {},
 ) {
     val activeClub by viewModel.activeClub.collectAsState()
     val currentBook by viewModel.currentBook.collectAsState()
@@ -611,6 +774,15 @@ fun HomeScreenTab(
     val nameToGreet = currentUserFirst(viewModel)
     val fullGreeting = "$salutation, $nameToGreet."
 
+    var isRefreshing by remember { mutableStateOf(false) }
+    PullToRefreshBox(
+        isRefreshing = isRefreshing,
+        onRefresh = {
+            isRefreshing = true
+            viewModel.forceRefresh { isRefreshing = false }
+        },
+        modifier = Modifier.fillMaxSize(),
+    ) {
     LazyColumn(
         modifier = Modifier
             .fillMaxSize()
@@ -646,36 +818,14 @@ fun HomeScreenTab(
                         color = Oliva
                     )) { append(accent) }
                 },
+                // Design: 28px serif SemiBold (screens-main.jsx headline)
                 style = MaterialTheme.typography.displayMedium.copy(
                     fontFamily = LiterataFontFamily,
-                    fontWeight = FontWeight.Bold,
-                    fontSize = 32.sp,
-                    lineHeight = 38.sp
+                    fontWeight = FontWeight.SemiBold,
+                    fontSize = 28.sp,
+                    lineHeight = 34.sp
                 )
             )
-        }
-
-        // Section header for PRÓXIMO ENCONTRO
-        item {
-            Row(
-                verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.spacedBy(6.dp),
-                modifier = Modifier.padding(top = 8.dp)
-            ) {
-                Box(
-                    modifier = Modifier
-                        .size(6.dp)
-                        .background(Terracota, CircleShape)
-                )
-                Text(
-                    text = "PRÓXIMO ENCONTRO",
-                    style = MaterialTheme.typography.labelSmall.copy(
-                        fontWeight = FontWeight.Bold,
-                        letterSpacing = 1.sp,
-                        color = Terracota
-                    )
-                )
-            }
         }
 
         // Section: Próximo encontro card. Tres estados:
@@ -708,225 +858,20 @@ fun HomeScreenTab(
                 val confirmedUsers = rsvps.filter { it.status == "Vou" }.mapNotNull { r ->
                     members.find { it.id == r.userId }
                 }
-
-                val rawData = meeting?.data ?: "DOMINGO, 24 DE OUTUBRO"
-                val dateParts = rawData.split(",")
-                val dayNameStr = dateParts.firstOrNull()?.trim()?.take(3)?.uppercase() ?: "DOM"
-                val fullDatePart = dateParts.getOrNull(1)?.trim() ?: "24 DE OUTUBRO"
-                val dayNumber = fullDatePart.trim().takeWhile { it.isDigit() }.ifEmpty { "24" }
-                val monthName = fullDatePart.replace(dayNumber, "").replace("de", "").trim().lowercase()
-                val finalMonthLabel = if (monthName.length > 3) "${monthName.take(3)}. de 25" else "$monthName de 25"
-
-                Box(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .clip(RoundedCornerShape(24.dp))
-                        .background(OlivaDeep)
-                        .padding(20.dp)
-                ) {
-                    Column {
-                        Row(
-                            modifier = Modifier.fillMaxWidth(),
-                            horizontalArrangement = Arrangement.spacedBy(16.dp),
-                            verticalAlignment = Alignment.CenterVertically
-                        ) {
-                            // Date Column
-                            Column(
-                                modifier = Modifier.width(80.dp),
-                                horizontalAlignment = Alignment.CenterHorizontally
-                            ) {
-                                Text(
-                                    text = dayNameStr,
-                                    style = MaterialTheme.typography.labelMedium.copy(
-                                        fontWeight = FontWeight.Bold,
-                                        color = Cream.copy(alpha = 0.5f),
-                                        letterSpacing = 0.5.sp
-                                    ),
-                                    maxLines = 1,
-                                    overflow = TextOverflow.Ellipsis
-                                )
-                                Spacer(modifier = Modifier.height(2.dp))
-                                Text(
-                                    text = dayNumber,
-                                    style = MaterialTheme.typography.displayMedium.copy(
-                                        fontSize = 38.sp,
-                                        fontWeight = FontWeight.Bold,
-                                        color = Cream,
-                                        fontFamily = LiterataFontFamily,
-                                        fontStyle = FontStyle.Italic
-                                    )
-                                )
-                                Spacer(modifier = Modifier.height(2.dp))
-                                Text(
-                                    text = finalMonthLabel,
-                                    style = MaterialTheme.typography.bodySmall.copy(
-                                        fontSize = 11.sp,
-                                        color = Cream.copy(alpha = 0.4f)
-                                    ),
-                                    maxLines = 1,
-                                    overflow = TextOverflow.Ellipsis
-                                )
-                            }
-
-                            // Vertical Divider Line
-                            Box(
-                                modifier = Modifier
-                                    .width(1.dp)
-                                    .height(84.dp)
-                                    .background(Cream.copy(alpha = 0.15f))
-                            )
-
-                            // Detail Column
-                            Column(
-                                modifier = Modifier.weight(1f)
-                            ) {
-                                Row(
-                                    modifier = Modifier.fillMaxWidth(),
-                                    horizontalArrangement = Arrangement.SpaceBetween,
-                                    verticalAlignment = Alignment.CenterVertically
-                                ) {
-                                    // "em 3 dias" countdown pill
-                                    Pill(text = "em 3 dias", variant = PillVariant.Default)
-                                }
-
-                                Spacer(modifier = Modifier.height(4.dp))
-
-                                Text(
-                                    text = meeting?.agenda?.ifEmpty { "Próximo encontro do clube" } ?: "Próximo encontro do clube",
-                                    style = MaterialTheme.typography.titleMedium.copy(
-                                        fontFamily = LiterataFontFamily,
-                                        fontSize = 18.sp,
-                                        fontWeight = FontWeight.SemiBold,
-                                        color = Cream
-                                    ),
-                                    maxLines = 2,
-                                    overflow = TextOverflow.Ellipsis
-                                )
-
-                                Spacer(modifier = Modifier.height(8.dp))
-
-                                Row(
-                                    verticalAlignment = Alignment.CenterVertically,
-                                    horizontalArrangement = Arrangement.spacedBy(6.dp)
-                                ) {
-                                    Icon(
-                                        imageVector = Icons.Outlined.DateRange,
-                                        contentDescription = null,
-                                        tint = Cream.copy(alpha = 0.6f),
-                                        modifier = Modifier.size(14.dp)
-                                    )
-                                    Text(
-                                        text = meeting?.hora ?: "19:00 — 21:00",
-                                        style = MaterialTheme.typography.bodySmall,
-                                        color = Cream.copy(alpha = 0.6f)
-                                    )
-                                }
-
-                                Spacer(modifier = Modifier.height(2.dp))
-
-                                Row(
-                                    verticalAlignment = Alignment.CenterVertically,
-                                    horizontalArrangement = Arrangement.spacedBy(6.dp)
-                                ) {
-                                    Icon(
-                                        imageVector = Icons.Outlined.Place,
-                                        contentDescription = null,
-                                        tint = Cream.copy(alpha = 0.6f),
-                                        modifier = Modifier.size(14.dp)
-                                    )
-                                    Text(
-                                        text = meeting?.local ?: "Café Lispector, Vila Madalena",
-                                        style = MaterialTheme.typography.bodySmall,
-                                        color = Cream.copy(alpha = 0.6f),
-                                        maxLines = 1,
-                                        overflow = TextOverflow.Ellipsis
-                                    )
-                                }
-                            }
-                        }
-
-                        Spacer(modifier = Modifier.height(16.dp))
-
-                        // Horizontal thin outline divider
-                        Box(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .height(0.5.dp)
-                                .background(Cream.copy(alpha = 0.12f))
+                val isParticipating = rsvps.any { it.userId == viewModel.currentUserId.value && it.status == "Vou" }
+                MeetingTicket(
+                    meeting = meeting!!,
+                    confirmedUsers = confirmedUsers,
+                    isParticipating = isParticipating,
+                    onRsvp = {
+                        val nextStatus = if (isParticipating) "Não vou" else "Vou"
+                        meeting?.let { m -> viewModel.rsvpMeeting(m.id, nextStatus) }
+                        onShowMessage(
+                            if (isParticipating) "Presença desmarcada"
+                            else "Presença confirmada 🎉"
                         )
-
-                        Spacer(modifier = Modifier.height(16.dp))
-
-                        // RSVP Attendance row with overlapping avatars
-                        Row(
-                            modifier = Modifier.fillMaxWidth(),
-                            verticalAlignment = Alignment.CenterVertically,
-                            horizontalArrangement = Arrangement.SpaceBetween
-                        ) {
-                            Row(
-                                verticalAlignment = Alignment.CenterVertically,
-                                horizontalArrangement = Arrangement.spacedBy((-8).dp)
-                            ) {
-                                confirmedUsers.take(3).forEach { u ->
-                                    Avatar(
-                                        name = u.nome,
-                                        avatarUrl = u.avatarUrl ?: "",
-                                        size = 28.dp,
-                                        ring = OlivaDeep,
-                                        modifier = Modifier
-                                    )
-                                }
-                                if (confirmedUsers.size > 3) {
-                                    Box(
-                                        modifier = Modifier
-                                            .size(28.dp)
-                                            .background(OlivaMid.copy(alpha = 0.4f), CircleShape)
-                                            .border(1.5.dp, OlivaDeep, CircleShape),
-                                        contentAlignment = Alignment.Center
-                                    ) {
-                                        Text(
-                                            text = "+${confirmedUsers.size - 3}",
-                                            style = MaterialTheme.typography.labelSmall.copy(
-                                                fontSize = 11.sp,
-                                                fontWeight = FontWeight.Bold,
-                                                color = Cream
-                                            )
-                                        )
-                                    }
-                                }
-                                Spacer(modifier = Modifier.width(12.dp))
-                                Text(
-                                    text = if (confirmedUsers.isEmpty()) "Ninguém confirmado" else "${confirmedUsers.size} confirmaram",
-                                    style = MaterialTheme.typography.bodySmall.copy(
-                                        color = Cream.copy(alpha = 0.6f)
-                                    )
-                                )
-                            }
-
-                            // RSVP Toggle — pill-style button
-                            val isParticipating = rsvps.any { it.userId == viewModel.currentUserId.value && it.status == "Vou" }
-                            Box(
-                                modifier = Modifier
-                                    .clip(RoundedCornerShape(16.dp))
-                                    .background(if (isParticipating) Oliva else Cream)
-                                    .clickable {
-                                        val nextStatus = if (isParticipating) "Não vou" else "Vou"
-                                        meeting?.let { m -> viewModel.rsvpMeeting(m.id, nextStatus) }
-                                    }
-                                    .padding(horizontal = 14.dp, vertical = 6.dp),
-                                contentAlignment = Alignment.Center
-                            ) {
-                                Text(
-                                    text = if (isParticipating) "Confirmado ✓" else "Eu vou >",
-                                    style = MaterialTheme.typography.labelSmall.copy(
-                                        color = if (isParticipating) Cream else OlivaDeep,
-                                        fontWeight = FontWeight.Bold
-                                    )
-                                )
-                            }
-                        }
-                    }
-                }
+                    },
+                )
             }
         }
 
@@ -1201,49 +1146,79 @@ fun HomeScreenTab(
                     }
 
                     val finished = totalChaps > 0 && memChap >= totalChaps
-                    // "No próprio ritmo" se ≥3 caps atrás do mediano da galera (tom acolhedor)
-                    val noProprioRitmo = !finished && totalChaps > 0 && medianChap - memChap >= 3
+                    // "No seu ritmo" = ≥3 caps ATRÁS do mediano da galera (tom acolhedor);
+                    // "Na frente" = ≥3 caps adiante. Anéis semânticos do design (ReaderChip):
+                    // oliva sólido = terminou, tracejado = no seu ritmo, ink = na frente.
+                    val noSeuRitmo = !finished && totalChaps > 0 && medianChap - memChap >= 3
+                    val ahead = !finished && totalChaps > 0 && memChap - medianChap >= 3
 
                     Column(
                         horizontalAlignment = Alignment.CenterHorizontally,
-                        verticalArrangement = Arrangement.spacedBy(8.dp),
                         modifier = Modifier.width(84.dp)
                     ) {
                         Box(
                             contentAlignment = Alignment.BottomCenter,
                             modifier = Modifier.padding(bottom = 10.dp)
                         ) {
-                            Avatar(
-                                name = member.nome,
-                                avatarUrl = member.avatarUrl ?: "",
-                                size = 56.dp,
-                                ring = if (isCurrentUser) Terracota else null
-                            )
+                            val ringColor = when {
+                                finished -> Oliva
+                                noSeuRitmo -> Muted
+                                ahead -> Ink
+                                isCurrentUser -> Terracota
+                                else -> Color.Transparent
+                            }
+                            Box(
+                                modifier = Modifier
+                                    .size(72.dp)
+                                    .drawBehind {
+                                        if (ringColor != Color.Transparent) {
+                                            drawCircle(
+                                                color = ringColor,
+                                                radius = size.minDimension / 2 - 0.75.dp.toPx(),
+                                                style = androidx.compose.ui.graphics.drawscope.Stroke(
+                                                    width = 1.5.dp.toPx(),
+                                                    pathEffect = if (noSeuRitmo) {
+                                                        PathEffect.dashPathEffect(floatArrayOf(6f, 6f))
+                                                    } else null,
+                                                ),
+                                            )
+                                        }
+                                    }
+                                    .padding(3.dp),
+                                contentAlignment = Alignment.Center,
+                            ) {
+                                Avatar(
+                                    name = member.nome,
+                                    avatarUrl = member.avatarUrl ?: "",
+                                    size = 66.dp,
+                                )
+                            }
 
-                            // Small progress badge below avatar
-                            Box(modifier = Modifier.offset(y = 10.dp)) {
+                            // Pill de status sobrepondo a base do avatar, com sombra suave
+                            Box(modifier = Modifier.offset(y = 10.dp).pillShadow()) {
                                 Pill(
                                     text = when {
                                         finished -> "Terminou"
-                                        noProprioRitmo -> "No ritmo"
+                                        noSeuRitmo -> "No seu ritmo"
+                                        ahead -> "Na frente"
                                         else -> "Cap. $memChap"
                                     },
                                     variant = when {
                                         finished -> PillVariant.OliveDeep
-                                        noProprioRitmo -> PillVariant.Default
                                         else -> PillVariant.Default
                                     }
                                 )
                             }
                         }
 
-                        Spacer(modifier = Modifier.height(2.dp))
+                        Spacer(modifier = Modifier.height(6.dp))
 
                         Text(
                             text = displayName,
                             style = MaterialTheme.typography.bodySmall.copy(
+                                fontSize = 12.5.sp,
                                 fontWeight = FontWeight.Medium,
-                                color = Ink
+                                color = com.example.ui.theme.InkSoft
                             ),
                             maxLines = 1,
                             overflow = TextOverflow.Ellipsis
@@ -1293,6 +1268,7 @@ fun HomeScreenTab(
             Spacer(modifier = Modifier.height(32.dp))
         }
     }
+    }
 }
 
 // Private helper to gracefully get the welcome first name or nickname
@@ -1312,7 +1288,8 @@ private fun currentUserFirst(viewModel: MainViewModel): String {
 @Composable
 fun BookDetailScreenTab(
     viewModel: MainViewModel,
-    onNavigateToDiscussion: (String, String) -> Unit
+    onNavigateToDiscussion: (String, String) -> Unit,
+    onShowMessage: (String) -> Unit = {},
 ) {
     val currentBook by viewModel.currentBook.collectAsState()
     val chapters by viewModel.currentChapters.collectAsState()
@@ -1348,10 +1325,24 @@ fun BookDetailScreenTab(
                 Box(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .background(
-                            color = OlivaDeep,
-                            shape = RoundedCornerShape(bottomStart = 36.dp, bottomEnd = 36.dp)
-                        )
+                        .clip(RoundedCornerShape(bottomStart = 36.dp, bottomEnd = 36.dp))
+                        .background(OlivaDeep)
+                        // Círculos decorativos do design (screens-main.jsx:362-367)
+                        .drawBehind {
+                            val stroke = androidx.compose.ui.graphics.drawscope.Stroke(width = 1.dp.toPx())
+                            drawCircle(
+                                color = Cream.copy(alpha = 0.08f),
+                                radius = 130.dp.toPx(),
+                                center = Offset(size.width * 0.92f, -30.dp.toPx()),
+                                style = stroke,
+                            )
+                            drawCircle(
+                                color = Cream.copy(alpha = 0.08f),
+                                radius = 90.dp.toPx(),
+                                center = Offset(-10.dp.toPx(), size.height * 0.85f),
+                                style = stroke,
+                            )
+                        }
                         .padding(start = 22.dp, end = 22.dp, top = 20.dp, bottom = 80.dp)
                 ) {
                     // Label row
@@ -1373,13 +1364,15 @@ fun BookDetailScreenTab(
                         horizontalArrangement = Arrangement.spacedBy(18.dp),
                         verticalAlignment = Alignment.Top
                     ) {
-                        Cover(
-                            title = currentBook!!.title,
-                            author = currentBook!!.author,
-                            coverUrl = currentBook?.coverUrl ?: "",
-                            width = 108.dp,
-                            height = 162.dp
-                        )
+                        Box(modifier = Modifier.heroCoverShadow(cornerRadius = 4.dp)) {
+                            Cover(
+                                title = currentBook!!.title,
+                                author = currentBook!!.author,
+                                coverUrl = currentBook?.coverUrl ?: "",
+                                width = 108.dp,
+                                height = 162.dp
+                            )
+                        }
 
                         Column(
                             modifier = Modifier
@@ -1389,10 +1382,12 @@ fun BookDetailScreenTab(
                         ) {
                             Text(
                                 text = currentBook!!.title,
+                                // Design: serif 26px no hero
                                 style = MaterialTheme.typography.headlineLarge.copy(
+                                    fontSize = 26.sp,
                                     fontWeight = FontWeight.SemiBold,
                                     color = Cream,
-                                    lineHeight = 30.sp
+                                    lineHeight = 31.sp
                                 ),
                                 maxLines = 4,
                                 overflow = TextOverflow.Ellipsis
@@ -1404,12 +1399,23 @@ fun BookDetailScreenTab(
                                 )
                             )
                             Spacer(modifier = Modifier.height(4.dp))
-                            Text(
-                                text = "★ 4.5  ·  $totalChapters capítulos  ·  8 lendo",
-                                style = MaterialTheme.typography.bodySmall.copy(
-                                    color = Cream.copy(alpha = 0.80f)
+                            Row(
+                                verticalAlignment = Alignment.CenterVertically,
+                                horizontalArrangement = Arrangement.spacedBy(6.dp)
+                            ) {
+                                Icon(
+                                    imageVector = RodapeIcons.StarFill,
+                                    contentDescription = null,
+                                    tint = Dourado,
+                                    modifier = Modifier.size(13.dp)
                                 )
-                            )
+                                Text(
+                                    text = if (totalChapters > 0) "$totalChapters capítulos" else "Capítulos a definir",
+                                    style = MaterialTheme.typography.bodySmall.copy(
+                                        color = Cream.copy(alpha = 0.80f)
+                                    )
+                                )
+                            }
                         }
                     }
                 }
@@ -1424,7 +1430,7 @@ fun BookDetailScreenTab(
                         .padding(horizontal = 22.dp)
                 ) {
                     RodapeCard(
-                        modifier = Modifier.fillMaxWidth(),
+                        modifier = Modifier.fillMaxWidth().floatShadow(cornerRadius = 20.dp),
                         contentPadding = PaddingValues(16.dp)
                     ) {
                         // Reading info row
@@ -1435,7 +1441,7 @@ fun BookDetailScreenTab(
                         ) {
                             Column {
                                 Text(
-                                    text = "Tua leitura",
+                                    text = "Sua leitura",
                                     style = MaterialTheme.typography.labelSmall.copy(
                                         fontWeight = FontWeight.Bold,
                                         letterSpacing = 0.6.sp,
@@ -1506,12 +1512,38 @@ fun BookDetailScreenTab(
                                 val nextChap = currentChapIndex + 1
                                 if (nextChap <= chapters.size) {
                                     viewModel.updateBookProgress(currentBook!!.id, nextChap)
+                                    onShowMessage(
+                                        if (nextChap == chapters.size) "Livro terminado! 🎉"
+                                        else "Progresso salvo — Cap. $nextChap"
+                                    )
                                 }
                             },
                             variant = TbButtonVariant.Terra,
                             size = TbButtonSize.Lg,
                             modifier = Modifier.fillMaxWidth()
                         )
+
+                        // Recuperação de toque errado: sem isso não há como voltar atrás
+                        if (currentChapIndex > 0) {
+                            Text(
+                                text = "Marquei sem querer — voltar um capítulo",
+                                style = MaterialTheme.typography.bodySmall.copy(
+                                    color = Muted,
+                                    fontWeight = FontWeight.Medium
+                                ),
+                                textAlign = TextAlign.Center,
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .padding(top = 10.dp)
+                                    .clip(RoundedCornerShape(8.dp))
+                                    .clickable {
+                                        val prev = currentChapIndex - 1
+                                        viewModel.updateBookProgress(currentBook!!.id, prev)
+                                        onShowMessage("Voltamos pro Cap. $prev")
+                                    }
+                                    .padding(vertical = 4.dp)
+                            )
+                        }
                     }
                 }
             }
@@ -1628,19 +1660,19 @@ fun BookDetailScreenTab(
                                     ) {
                                         when {
                                             isLocked -> Icon(
-                                                imageVector = Icons.Outlined.Lock,
+                                                imageVector = RodapeIcons.Lock,
                                                 contentDescription = "Bloqueado",
                                                 tint = Muted,
                                                 modifier = Modifier.size(16.dp)
                                             )
                                             isCurrent -> Icon(
-                                                imageVector = Icons.Outlined.Edit,
+                                                imageVector = RodapeIcons.Book,
                                                 contentDescription = "Capítulo atual",
                                                 tint = Cream,
                                                 modifier = Modifier.size(18.dp)
                                             )
                                             else -> Icon(
-                                                imageVector = Icons.Outlined.Check,
+                                                imageVector = RodapeIcons.Check,
                                                 contentDescription = "Concluído",
                                                 tint = OlivaDeep,
                                                 modifier = Modifier.size(18.dp)
@@ -1671,7 +1703,10 @@ fun BookDetailScreenTab(
                                         }
                                         Text(
                                             text = if (isLocked) "Chega aqui pra liberar" else chapter.titulo,
+                                            // Design: título do capítulo em serif 15px
                                             style = MaterialTheme.typography.bodyMedium.copy(
+                                                fontFamily = LiterataFontFamily,
+                                                fontSize = 15.sp,
                                                 fontWeight = FontWeight.Medium,
                                                 color = if (isLocked) Muted else Ink
                                             ),
@@ -1700,78 +1735,10 @@ fun BookDetailScreenTab(
                 }
             }
 
-            // ── STATISTICS CARD ─────────────────────────────────────────────
+            // Card "Estatísticas" removido: era 100% mock ("1h 45m", "25 pág/h")
+            // e não existe no design. Volta quando houver tracking real de leitura.
             item {
-                Column(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .offset(y = (-30).dp)
-                        .padding(horizontal = 22.dp)
-                ) {
-                    Text(
-                        text = "Estatísticas",
-                        style = MaterialTheme.typography.titleLarge.copy(
-                            fontWeight = FontWeight.SemiBold,
-                            color = Ink
-                        ),
-                        modifier = Modifier.padding(bottom = 14.dp)
-                    )
-
-                    RodapeCard(
-                        modifier = Modifier.fillMaxWidth(),
-                        contentPadding = PaddingValues(24.dp)
-                    ) {
-                        Row(
-                            modifier = Modifier.fillMaxWidth(),
-                            verticalAlignment = Alignment.CenterVertically
-                        ) {
-                            Column(modifier = Modifier.weight(1f)) {
-                                Text(
-                                    text = "Tempo de leitura",
-                                    style = MaterialTheme.typography.bodySmall.copy(
-                                        color = Muted,
-                                        fontWeight = FontWeight.Medium
-                                    )
-                                )
-                                Spacer(modifier = Modifier.height(4.dp))
-                                Text(
-                                    text = "1h 45m",
-                                    style = MaterialTheme.typography.titleLarge.copy(
-                                        fontWeight = FontWeight.Bold
-                                    )
-                                )
-                            }
-
-                            Box(
-                                modifier = Modifier
-                                    .width(1.dp)
-                                    .height(40.dp)
-                                    .background(Divider)
-                            )
-
-                            Spacer(modifier = Modifier.width(24.dp))
-
-                            Column(modifier = Modifier.weight(1f)) {
-                                Text(
-                                    text = "Velocidade média",
-                                    style = MaterialTheme.typography.bodySmall.copy(
-                                        color = Muted,
-                                        fontWeight = FontWeight.Medium
-                                    )
-                                )
-                                Spacer(modifier = Modifier.height(4.dp))
-                                Text(
-                                    text = "25 pág/h",
-                                    style = MaterialTheme.typography.titleLarge.copy(
-                                        fontWeight = FontWeight.Bold
-                                    )
-                                )
-                            }
-                        }
-                    }
-
-                    Spacer(modifier = Modifier.height(32.dp))
-                }
+                Spacer(modifier = Modifier.height(8.dp))
             }
         }
     }
@@ -2728,5 +2695,283 @@ fun EditProfileView(
             }
             Spacer(modifier = Modifier.height(32.dp))
         }
+    }
+}
+
+/**
+ * Ticket perfurado do design (screens-main.jsx MeetingTicket): cabeçalho com
+ * borda tracejada + countdown com dot dourado, carimbo de data em serif itálico
+ * 64sp, perfuração vertical pontilhada, stub inferior escurecido com avatares e
+ * botão de RSVP, e notches recortados nas laterais.
+ */
+@Composable
+private fun MeetingTicket(
+    meeting: com.example.data.model.Meeting,
+    confirmedUsers: List<com.example.data.model.User>,
+    isParticipating: Boolean,
+    onRsvp: () -> Unit,
+) {
+    // Parse do label persistido ("DOMINGO, 24 DE OUTUBRO").
+    val dateParts = meeting.data.split(",")
+    val weekday = dateParts.firstOrNull()?.trim()?.uppercase() ?: ""
+    val rest = dateParts.getOrNull(1)?.trim() ?: ""
+    val dayNumber = rest.takeWhile { it.isDigit() }.ifEmpty { "–" }
+    val monthName = rest.dropWhile { it.isDigit() }.trim().lowercase().removePrefix("de ").trim()
+    val daysUntil = remember(meeting.data) { com.example.util.daysUntilMeetingLabel(meeting.data) }
+
+    Box(modifier = Modifier.fillMaxWidth().ticketShadow(cornerRadius = 24.dp)) {
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .clip(RoundedCornerShape(24.dp))
+                .background(OlivaDeep)
+        ) {
+            // Cabeçalho — overline + countdown, separado por linha tracejada
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .drawBehind {
+                        drawLine(
+                            color = Cream.copy(alpha = 0.25f),
+                            start = Offset(0f, size.height),
+                            end = Offset(size.width, size.height),
+                            strokeWidth = 1.dp.toPx(),
+                            pathEffect = PathEffect.dashPathEffect(
+                                floatArrayOf(4.dp.toPx(), 4.dp.toPx())
+                            ),
+                        )
+                    }
+                    .padding(start = 20.dp, end = 20.dp, top = 16.dp, bottom = 12.dp),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                Text(
+                    text = "PRÓXIMO ENCONTRO",
+                    fontFamily = InterFontFamily,
+                    fontSize = 10.5.sp,
+                    fontWeight = FontWeight.Bold,
+                    letterSpacing = 1.6.sp,
+                    color = Cream.copy(alpha = 0.7f),
+                )
+                if (daysUntil != null && daysUntil >= 0) {
+                    Row(
+                        modifier = Modifier
+                            .clip(RoundedCornerShape(999.dp))
+                            .background(Cream.copy(alpha = 0.12f))
+                            .padding(horizontal = 9.dp, vertical = 3.dp),
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(6.dp),
+                    ) {
+                        Box(Modifier.size(6.dp).background(Dourado, CircleShape))
+                        Text(
+                            text = when (daysUntil) {
+                                0 -> "é hoje!"
+                                1 -> "amanhã"
+                                else -> "em $daysUntil dias"
+                            },
+                            fontFamily = InterFontFamily,
+                            fontSize = 11.sp,
+                            fontWeight = FontWeight.SemiBold,
+                            letterSpacing = 0.2.sp,
+                            color = Cream,
+                        )
+                    }
+                }
+            }
+
+            // Corpo — carimbo de data · perfuração · detalhes
+            Row(modifier = Modifier.fillMaxWidth().height(IntrinsicSize.Min)) {
+                Column(
+                    modifier = Modifier
+                        .width(110.dp)
+                        .padding(start = 16.dp, end = 16.dp, top = 22.dp, bottom = 24.dp),
+                    horizontalAlignment = Alignment.CenterHorizontally,
+                    verticalArrangement = Arrangement.Center,
+                ) {
+                    Text(
+                        text = weekday,
+                        fontFamily = InterFontFamily,
+                        fontSize = 10.sp,
+                        fontWeight = FontWeight.Bold,
+                        letterSpacing = 2.sp,
+                        color = Cream.copy(alpha = 0.65f),
+                        maxLines = 1,
+                    )
+                    Text(
+                        text = dayNumber,
+                        fontFamily = LiterataFontFamily,
+                        fontStyle = FontStyle.Italic,
+                        fontWeight = FontWeight.Medium,
+                        fontSize = 64.sp,
+                        lineHeight = 64.sp,
+                        letterSpacing = (-2).sp,
+                        color = Cream,
+                        modifier = Modifier.padding(top = 4.dp, bottom = 2.dp),
+                    )
+                    Text(
+                        text = monthName,
+                        fontFamily = LiterataFontFamily,
+                        fontStyle = FontStyle.Italic,
+                        fontSize = 14.sp,
+                        color = Cream.copy(alpha = 0.85f),
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis,
+                    )
+                }
+
+                // Perfuração vertical pontilhada
+                Box(
+                    modifier = Modifier
+                        .width(1.dp)
+                        .fillMaxHeight()
+                        .drawBehind {
+                            drawLine(
+                                color = Cream.copy(alpha = 0.3f),
+                                start = Offset(0.5f, 0f),
+                                end = Offset(0.5f, size.height),
+                                strokeWidth = 1.dp.toPx(),
+                                pathEffect = PathEffect.dashPathEffect(
+                                    floatArrayOf(4.dp.toPx(), 4.dp.toPx())
+                                ),
+                            )
+                        }
+                )
+
+                Column(
+                    modifier = Modifier
+                        .weight(1f)
+                        .padding(start = 18.dp, end = 18.dp, top = 20.dp, bottom = 22.dp),
+                ) {
+                    Text(
+                        text = meeting.agenda.ifEmpty { "Próximo encontro do clube" },
+                        fontFamily = LiterataFontFamily,
+                        fontSize = 17.sp,
+                        fontWeight = FontWeight.SemiBold,
+                        lineHeight = 20.sp,
+                        letterSpacing = (-0.3).sp,
+                        color = Cream,
+                        maxLines = 2,
+                        overflow = TextOverflow.Ellipsis,
+                        modifier = Modifier.padding(bottom = 12.dp),
+                    )
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(8.dp),
+                    ) {
+                        Icon(
+                            imageVector = RodapeIcons.Clock,
+                            contentDescription = null,
+                            tint = Cream.copy(alpha = 0.85f),
+                            modifier = Modifier.size(13.dp),
+                        )
+                        Text(
+                            text = meeting.hora,
+                            fontFamily = InterFontFamily,
+                            fontSize = 12.sp,
+                            color = Cream.copy(alpha = 0.85f),
+                        )
+                    }
+                    if (meeting.local.isNotBlank()) {
+                        Spacer(modifier = Modifier.height(6.dp))
+                        Row(
+                            verticalAlignment = Alignment.Top,
+                            horizontalArrangement = Arrangement.spacedBy(8.dp),
+                        ) {
+                            Icon(
+                                imageVector = RodapeIcons.Pin,
+                                contentDescription = null,
+                                tint = Cream.copy(alpha = 0.85f),
+                                modifier = Modifier.size(13.dp).padding(top = 1.dp),
+                            )
+                            Text(
+                                text = meeting.local,
+                                fontFamily = InterFontFamily,
+                                fontSize = 12.sp,
+                                lineHeight = 16.sp,
+                                color = Cream.copy(alpha = 0.85f),
+                                maxLines = 2,
+                                overflow = TextOverflow.Ellipsis,
+                            )
+                        }
+                    }
+                }
+            }
+
+            // Stub inferior — canhoto do ingresso
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .background(Color.Black.copy(alpha = 0.18f))
+                    .padding(horizontal = 20.dp, vertical = 12.dp),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Row(horizontalArrangement = Arrangement.spacedBy((-8).dp)) {
+                        confirmedUsers.take(3).forEach { u ->
+                            Avatar(
+                                name = u.nome,
+                                avatarUrl = u.avatarUrl ?: "",
+                                size = 26.dp,
+                                ring = OlivaDeep,
+                            )
+                        }
+                    }
+                    Spacer(modifier = Modifier.width(10.dp))
+                    Text(
+                        text = when {
+                            confirmedUsers.isEmpty() -> "Ninguém confirmou ainda"
+                            confirmedUsers.size > 3 -> "+${confirmedUsers.size - 3} vão"
+                            else -> "${confirmedUsers.size} ${if (confirmedUsers.size == 1) "vai" else "vão"}"
+                        },
+                        fontFamily = InterFontFamily,
+                        fontSize = 12.sp,
+                        fontWeight = FontWeight.Medium,
+                        color = Cream.copy(alpha = 0.8f),
+                    )
+                }
+
+                Row(
+                    modifier = Modifier
+                        .clip(RoundedCornerShape(999.dp))
+                        .background(if (isParticipating) Oliva else Cream)
+                        .clickable(onClick = onRsvp)
+                        .padding(horizontal = 14.dp, vertical = 7.dp),
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(5.dp),
+                ) {
+                    Text(
+                        text = if (isParticipating) "Confirmado" else "Eu vou",
+                        fontFamily = InterFontFamily,
+                        fontSize = 12.sp,
+                        fontWeight = FontWeight.Bold,
+                        letterSpacing = (-0.1).sp,
+                        color = if (isParticipating) Cream else OlivaDeep,
+                    )
+                    Icon(
+                        imageVector = if (isParticipating) RodapeIcons.Check else RodapeIcons.ChevR,
+                        contentDescription = null,
+                        tint = if (isParticipating) Cream else OlivaDeep,
+                        modifier = Modifier.size(12.dp),
+                    )
+                }
+            }
+        }
+
+        // Notches recortados nas laterais (na altura da perfuração)
+        Box(
+            modifier = Modifier
+                .align(Alignment.TopStart)
+                .offset(x = (-8).dp, y = 70.dp)
+                .size(16.dp)
+                .background(Paper, CircleShape)
+        )
+        Box(
+            modifier = Modifier
+                .align(Alignment.TopEnd)
+                .offset(x = 8.dp, y = 70.dp)
+                .size(16.dp)
+                .background(Paper, CircleShape)
+        )
     }
 }

@@ -26,6 +26,7 @@ import com.example.ui.theme.Terracota
 import com.example.ui.viewmodel.MainViewModel
 import com.example.util.formatShortDate
 import com.example.util.shareTextContent
+import kotlinx.coroutines.launch
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -37,6 +38,8 @@ fun FrasesScreen(
     val clubBooks by viewModel.clubBooks.collectAsState()
     val context = LocalContext.current
     var query by remember { mutableStateOf("") }
+    val snackbarHostState = remember { SnackbarHostState() }
+    val scope = rememberCoroutineScope()
 
     val filteredQuotes = remember(quotes, query, clubBooks) {
         if (query.isBlank()) quotes
@@ -92,6 +95,7 @@ fun FrasesScreen(
                 ),
             )
         },
+        snackbarHost = { SnackbarHost(snackbarHostState) },
         containerColor = MaterialTheme.colorScheme.background,
     ) { innerPadding ->
         Column(modifier = Modifier.fillMaxSize().padding(innerPadding)) {
@@ -135,7 +139,7 @@ fun FrasesScreen(
             if (quotes.isEmpty()) {
                 Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
                     Text(
-                        text = "Tu ainda não guardou nenhuma frase.",
+                        text = "Você ainda não guardou nenhuma frase.",
                         style = MaterialTheme.typography.bodyMedium,
                         color = Muted,
                     )
@@ -156,7 +160,7 @@ fun FrasesScreen(
                 ) {
                     item {
                         val label = if (query.isBlank()) {
-                            "As frases que tu guardou. ${quotes.size} no total."
+                            "As frases que você guardou. ${quotes.size} no total."
                         } else {
                             "${filteredQuotes.size} de ${quotes.size} frases."
                         }
@@ -184,7 +188,22 @@ fun FrasesScreen(
                             QuoteCard(
                                 texto = quote.texto,
                                 ref = quote.capituloRef,
-                                onDelete = { viewModel.deleteQuote(quote) },
+                                onDelete = {
+                                    // Excluir com undo: destrutivo demais pra
+                                    // sumir sem rede de proteção.
+                                    viewModel.deleteQuote(quote)
+                                    scope.launch {
+                                        snackbarHostState.currentSnackbarData?.dismiss()
+                                        val result = snackbarHostState.showSnackbar(
+                                            message = "Frase excluída",
+                                            actionLabel = "Desfazer",
+                                            duration = SnackbarDuration.Short,
+                                        )
+                                        if (result == SnackbarResult.ActionPerformed) {
+                                            viewModel.restoreQuote(quote)
+                                        }
+                                    }
+                                },
                             )
                         }
                     }

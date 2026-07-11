@@ -15,7 +15,8 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.draw.shadow
+import androidx.compose.ui.draw.drawBehind
+import androidx.compose.ui.draw.drawWithContent
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.semantics.contentDescription
@@ -28,6 +29,7 @@ import androidx.compose.ui.unit.sp
 import coil.compose.SubcomposeAsyncImage
 import com.example.ui.theme.InterFontFamily
 import com.example.ui.theme.LiterataFontFamily
+import com.example.ui.theme.softShadow
 
 private data class CoverPalette(val bg: Color, val fg: Color)
 
@@ -54,12 +56,32 @@ fun Cover(
     width: Dp = 92.dp,
     height: Dp = 138.dp,
 ) {
-    val shape = RoundedCornerShape(4.dp)
+    val shape = RoundedCornerShape(3.dp)
     val box = modifier
         .width(width)
         .height(height)
-        .shadow(elevation = 8.dp, shape = shape, clip = false)
+        // Sombra multicamada do design (tokens.jsx Cover): curta + difusa
+        .softShadow(Color.Black, alpha = 0.18f, blur = 2.dp, offsetY = 1.dp, cornerRadius = 3.dp)
+        .softShadow(Color.Black, alpha = 0.10f, blur = 14.dp, offsetY = 6.dp, cornerRadius = 3.dp)
         .clip(shape)
+        // Lombada: gradiente escuro na borda esquerda + risco de luz (efeito livro físico)
+        .drawWithContent {
+            drawContent()
+            val spineW = 6.dp.toPx()
+            drawRect(
+                brush = androidx.compose.ui.graphics.Brush.horizontalGradient(
+                    0f to Color.Black.copy(alpha = 0.22f),
+                    1f to Color.Transparent,
+                    endX = spineW,
+                ),
+                size = androidx.compose.ui.geometry.Size(spineW, size.height),
+            )
+            drawRect(
+                color = Color.White.copy(alpha = 0.22f),
+                topLeft = androidx.compose.ui.geometry.Offset(spineW, 0f),
+                size = androidx.compose.ui.geometry.Size(1.dp.toPx(), size.height),
+            )
+        }
 
     if (coverUrl.isNotBlank()) {
         SubcomposeAsyncImage(
@@ -82,7 +104,50 @@ private fun GeneratedCover(title: String, author: String, width: Dp) {
     val palette = coverPalettes[hashOf(title).mod(coverPalettes.size)]
     val titleFontSize = (width.value / maxOf(8, title.length) * 1.4f).coerceIn(9f, 15f)
     val titleLineHeight = (width.value / maxOf(8, title.length) * 1.5f).coerceIn(11f, 17f)
-    Box(modifier = Modifier.fillMaxSize().background(palette.bg)) {
+    val ornament = hashOf(title + author).mod(4)
+    Box(
+        modifier = Modifier
+            .fillMaxSize()
+            .background(palette.bg)
+            // Ornamentos por hash — origem: claude-design/tokens.jsx (Cover):
+            // 0=círculo, 1=linha, 2=hachura diagonal, 3=réguas duplas
+            .drawBehind {
+                val fg = palette.fg.copy(alpha = 0.35f)
+                val stroke = androidx.compose.ui.graphics.drawscope.Stroke(width = 1.dp.toPx())
+                when (ornament) {
+                    0 -> drawCircle(
+                        color = fg,
+                        radius = size.width * 0.22f,
+                        center = androidx.compose.ui.geometry.Offset(size.width * 0.72f, size.height * 0.62f),
+                        style = stroke,
+                    )
+                    1 -> drawLine(
+                        color = fg,
+                        start = androidx.compose.ui.geometry.Offset(size.width * 0.14f, size.height * 0.68f),
+                        end = androidx.compose.ui.geometry.Offset(size.width * 0.86f, size.height * 0.68f),
+                        strokeWidth = 1.dp.toPx(),
+                    )
+                    2 -> repeat(4) { i ->
+                        val off = size.width * (0.42f + 0.12f * i)
+                        drawLine(
+                            color = fg,
+                            start = androidx.compose.ui.geometry.Offset(off, size.height * 0.78f),
+                            end = androidx.compose.ui.geometry.Offset(off - size.width * 0.16f, size.height * 0.62f),
+                            strokeWidth = 1.dp.toPx(),
+                        )
+                    }
+                    else -> repeat(2) { i ->
+                        val y = size.height * (0.64f + 0.05f * i)
+                        drawLine(
+                            color = fg,
+                            start = androidx.compose.ui.geometry.Offset(size.width * 0.14f, y),
+                            end = androidx.compose.ui.geometry.Offset(size.width * 0.86f, y),
+                            strokeWidth = 1.dp.toPx(),
+                        )
+                    }
+                }
+            }
+    ) {
         Column(modifier = Modifier.fillMaxSize().padding(width * 0.09f)) {
             Text(
                 text = title,

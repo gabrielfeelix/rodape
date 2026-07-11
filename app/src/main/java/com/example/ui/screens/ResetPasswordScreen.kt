@@ -32,7 +32,14 @@ fun ResetPasswordScreen(
     var isLoading by remember { mutableStateOf(false) }
     var errorMsg by remember { mutableStateOf<String?>(null) }
     val scope = rememberCoroutineScope()
-    val valid = password.length >= 6
+    // Espelha a regra do servidor (igual ao SignUp): 8+ com minúscula,
+    // maiúscula, dígito e símbolo. Antes aceitava 6+ e o servidor rejeitava
+    // só depois do submit.
+    val valid = password.length >= 8 &&
+        password.any { it.isLowerCase() } &&
+        password.any { it.isUpperCase() } &&
+        password.any { it.isDigit() } &&
+        password.any { !it.isLetterOrDigit() }
 
     Scaffold(
         topBar = {
@@ -60,7 +67,14 @@ fun ResetPasswordScreen(
                     OutlinedTextField(
                         value = password,
                         onValueChange = { password = it; errorMsg = null },
-                        label = { Text("Nova senha (6+ caracteres)") },
+                        label = { Text("Nova senha") },
+                        supportingText = {
+                            Text(
+                                "Mínimo 8 caracteres, com maiúscula, minúscula, número e símbolo.",
+                                style = MaterialTheme.typography.bodySmall,
+                                color = Muted,
+                            )
+                        },
                         singleLine = true,
                         visualTransformation = if (passwordVisible) VisualTransformation.None else PasswordVisualTransformation(),
                         trailingIcon = {

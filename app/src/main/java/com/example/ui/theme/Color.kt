@@ -17,6 +17,9 @@ val OlivaDeep = Color(0xFF293820)
 val OlivaSoft = Color(0xFFE5EBDA)
 val OlivaMid = Color(0xFF92A57F)
 
+// Dourado — estrelas de rating e dots de destaque (tokens.jsx usa #E6BF6B inline)
+val Dourado = Color(0xFFE6BF6B)
+
 // Neutro
 val Tertiary = Color(0xFF5B5B53)
 val TertiarySoft = Color(0xFFD9D9CF)

@@ -748,6 +748,8 @@ fun JoinClubScreen(
     var activeTabIsCode by remember { mutableStateOf(true) }
     var linkInput by remember { mutableStateOf("") }
     var codeErrorMsg by remember { mutableStateOf<String?>(null) }
+    // Trava o submit durante o request — sem isso, toque duplo = dois joins.
+    var isJoining by remember { mutableStateOf(false) }
     var linkErrorMsg by remember { mutableStateOf<String?>(null) }
 
     // Code entries: 6 characters
@@ -936,11 +938,14 @@ fun JoinClubScreen(
                         Spacer(modifier = Modifier.height(16.dp))
 
                         TbButton(
-                            text = "Confirmar",
+                            text = if (isJoining) "Entrando…" else "Confirmar",
                             onClick = {
                                 if (activeTabIsCode) {
                                     if (isCodeComplete) {
+                                        isJoining = true
+                                        codeErrorMsg = null
                                         onJoinWithCodeSubmit(fullOtpCode) { success, errorMsg ->
+                                            isJoining = false
                                             if (!success) {
                                                 codeErrorMsg = errorMsg
                                             }
@@ -957,7 +962,10 @@ fun JoinClubScreen(
                                     }
 
                                     if (cleanedCode.isNotEmpty()) {
+                                        isJoining = true
+                                        linkErrorMsg = null
                                         onJoinWithCodeSubmit(cleanedCode) { success, errorMsg ->
+                                            isJoining = false
                                             if (!success) {
                                                 linkErrorMsg = errorMsg
                                             }
@@ -969,7 +977,7 @@ fun JoinClubScreen(
                             },
                             variant = TbButtonVariant.Terra,
                             size = TbButtonSize.Lg,
-                            enabled = if (activeTabIsCode) isCodeComplete else linkInput.trim().isNotEmpty(),
+                            enabled = !isJoining && (if (activeTabIsCode) isCodeComplete else linkInput.trim().isNotEmpty()),
                             modifier = Modifier.fillMaxWidth()
                         )
 

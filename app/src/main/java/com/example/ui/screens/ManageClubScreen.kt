@@ -63,6 +63,7 @@ fun ManageClubScreen(
     var editingMeetingId by remember { mutableStateOf<String?>(null) }
     var creatingNewMeeting by remember { mutableStateOf(false) }
     var cancelMeetingId by remember { mutableStateOf<String?>(null) }
+    var concludeMeetingId by remember { mutableStateOf<String?>(null) }
     var showChangeBook by remember { mutableStateOf(false) }
     var showFinishBook by remember { mutableStateOf(false) }
     var showArchiveClub by remember { mutableStateOf(false) }
@@ -356,7 +357,7 @@ fun ManageClubScreen(
                                     meeting = m,
                                     onEdit = { editingMeetingId = m.id },
                                     onCancel = { cancelMeetingId = m.id },
-                                    onConclude = { viewModel.concludeMeeting(m.id) }
+                                    onConclude = { concludeMeetingId = m.id }
                                 )
                             }
                         }
@@ -684,6 +685,26 @@ fun ManageClubScreen(
                 viewModel.cancelMeeting(cancelMeetingId!!)
                 cancelMeetingId = null
             }
+        )
+    }
+
+    // Concluir tem efeito colateral grande (pode mandar o livro pra Estante) —
+    // merece a mesma confirmação que cancelar.
+    if (concludeMeetingId != null) {
+        AlertDialog(
+            containerColor = MaterialTheme.colorScheme.surface,
+            onDismissRequest = { concludeMeetingId = null },
+            title = { Text("Concluir encontro?") },
+            text = { Text("Se este for o último encontro do livro atual, o livro vai pra Estante e a leitura é encerrada pra todo mundo.") },
+            confirmButton = {
+                TextButton(onClick = {
+                    viewModel.concludeMeeting(concludeMeetingId!!)
+                    concludeMeetingId = null
+                }) { Text("Concluir") }
+            },
+            dismissButton = {
+                TextButton(onClick = { concludeMeetingId = null }) { Text("Voltar") }
+            },
         )
     }
 

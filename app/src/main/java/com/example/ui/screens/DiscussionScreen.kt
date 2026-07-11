@@ -99,15 +99,8 @@ fun DiscussionScreen(
                         )
                     }
                 },
-                actions = {
-                    IconButton(onClick = { /* More options template */ }) {
-                        Icon(
-                            imageVector = Icons.Outlined.MoreVert,
-                            contentDescription = "Opções",
-                            tint = MaterialTheme.colorScheme.onSurfaceVariant
-                        )
-                    }
-                },
+                // (botão "⋮" removido: era um placeholder sem ação — controle
+                // morto confunde mais do que ajuda)
                 colors = TopAppBarDefaults.topAppBarColors(containerColor = Paper)
             )
         },
@@ -196,7 +189,7 @@ fun DiscussionScreen(
                             }
                             Column {
                                 Text(
-                                    text = "Tu já passou daqui.",
+                                    text = "Você já passou daqui.",
                                     style = MaterialTheme.typography.bodyMedium.copy(
                                         fontFamily = LiterataFontFamily,
                                         fontWeight = FontWeight.SemiBold,
@@ -204,7 +197,7 @@ fun DiscussionScreen(
                                     )
                                 )
                                 Text(
-                                    text = "Tá liberado.",
+                                    text = "Está liberado.",
                                     style = MaterialTheme.typography.bodySmall.copy(
                                         fontFamily = InterFontFamily,
                                         color = OlivaDark

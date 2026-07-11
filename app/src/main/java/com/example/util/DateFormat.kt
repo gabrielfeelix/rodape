@@ -27,3 +27,29 @@ fun timeAgo(timestamp: Long, now: Long = System.currentTimeMillis()): String {
         else -> formatShortDate(timestamp)
     }
 }
+
+private val ptMonths = listOf(
+    "janeiro", "fevereiro", "março", "abril", "maio", "junho",
+    "julho", "agosto", "setembro", "outubro", "novembro", "dezembro",
+)
+
+/**
+ * Dias até o encontro a partir do label persistido ("DOMINGO, 24 DE OUTUBRO").
+ * O label não carrega ano: se a data cair mais de 6 meses no passado, assume o
+ * ano seguinte. Retorna null se o label não for parseável (aí a UI esconde o
+ * countdown em vez de inventar um número).
+ */
+fun daysUntilMeetingLabel(
+    label: String,
+    today: java.time.LocalDate = java.time.LocalDate.now(),
+): Int? {
+    val rest = label.substringAfter(",", "").trim().lowercase()
+    if (rest.isEmpty()) return null
+    val day = rest.takeWhile { it.isDigit() }.toIntOrNull() ?: return null
+    val monthIdx = ptMonths.indexOfFirst { rest.contains(it) }
+    if (monthIdx < 0) return null
+    var date = runCatching { java.time.LocalDate.of(today.year, monthIdx + 1, day) }
+        .getOrNull() ?: return null
+    if (date.isBefore(today.minusMonths(6))) date = date.plusYears(1)
+    return java.time.temporal.ChronoUnit.DAYS.between(today, date).toInt()
+}

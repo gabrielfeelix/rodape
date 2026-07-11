@@ -863,6 +863,27 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
         }
     }
 
+    /** Undo do "excluir frase": reinsere a mesma quote (mesmo id). */
+    fun restoreQuote(quote: SavedQuote) {
+        viewModelScope.launch {
+            repository.insertSavedQuote(quote)
+        }
+    }
+
+    // --- Sync / offline ---
+
+    /** Tamanho da fila offline — UI mostra "alterações aguardando conexão". */
+    val pendingMutationsCount = repository.pendingMutationsCount
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), 0)
+
+    /** Pull-to-refresh: força re-sync de todas as caches ativas, ignorando TTL. */
+    fun forceRefresh(onDone: () -> Unit = {}) {
+        viewModelScope.launch {
+            runCatching { repository.forceRefresh() }
+            onDone()
+        }
+    }
+
     // ============================================================
     // ADMIN ACTIONS — Fase 5
     // ============================================================

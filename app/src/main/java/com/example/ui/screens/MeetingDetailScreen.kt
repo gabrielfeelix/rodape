@@ -70,7 +70,13 @@ fun MeetingDetailScreen(
                 modifier = Modifier.fillMaxSize().padding(padding),
                 contentAlignment = Alignment.Center
             ) {
-                Text("Encontro não encontrado.", style = MaterialTheme.typography.bodyLarge, color = Muted)
+                // Gate: o flow emite null antes do primeiro sync — loading em
+                // vez de "não encontrado" piscando.
+                if (com.example.ui.components.rememberShowLoading(hasData = false)) {
+                    com.example.ui.components.CenteredLoading()
+                } else {
+                    Text("Encontro não encontrado.", style = MaterialTheme.typography.bodyLarge, color = Muted)
+                }
             }
             return@Scaffold
         }
@@ -343,13 +349,15 @@ fun MeetingDetailScreen(
                 }
             }
 
-            // Botão admin: Concluir encontro
+            // Botão admin: Concluir encontro (com confirmação — a ação tem
+            // efeito colateral grande: pode mandar o livro pra Estante)
             if (isAdmin && !concluded) {
                 item {
                     Spacer(modifier = Modifier.height(8.dp))
+                    var showConcludeConfirm by remember { mutableStateOf(false) }
                     TbButton(
                         text = "Marcar encontro como concluído",
-                        onClick = { viewModel.concludeMeeting(m.id) },
+                        onClick = { showConcludeConfirm = true },
                         variant = TbButtonVariant.Terra,
                         modifier = Modifier.fillMaxWidth()
                     )
@@ -359,6 +367,24 @@ fun MeetingDetailScreen(
                         modifier = Modifier.padding(top = 4.dp).fillMaxWidth(),
                         textAlign = androidx.compose.ui.text.style.TextAlign.Center
                     )
+                    if (showConcludeConfirm) {
+                        AlertDialog(
+                            onDismissRequest = { showConcludeConfirm = false },
+                            title = { Text("Concluir encontro?") },
+                            text = { Text("Se este for o último encontro do livro atual, o livro vai pra Estante e a leitura é encerrada pra todo mundo.") },
+                            confirmButton = {
+                                TextButton(onClick = {
+                                    showConcludeConfirm = false
+                                    viewModel.concludeMeeting(m.id)
+                                }) { Text("Concluir", color = Terracota, fontWeight = FontWeight.SemiBold) }
+                            },
+                            dismissButton = {
+                                TextButton(onClick = { showConcludeConfirm = false }) {
+                                    Text("Voltar", color = Muted)
+                                }
+                            },
+                        )
+                    }
                 }
             }
         }
