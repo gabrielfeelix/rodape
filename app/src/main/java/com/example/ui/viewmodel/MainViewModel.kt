@@ -22,6 +22,15 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
     private val dataStoreManager = DataStoreManager(application)
     private val authRepository = AuthRepository()
 
+    // Mostra um erro na tela quando uma ação de salvar FALHA de verdade. Antes o
+    // app engolia a exceção e o usuário não sabia por que "não acontecia nada".
+    private fun toastErro(msg: String, err: Throwable? = null) {
+        android.util.Log.e("Rodape/VM", msg, err)
+        runCatching {
+            android.widget.Toast.makeText(getApplication(), msg, android.widget.Toast.LENGTH_SHORT).show()
+        }
+    }
+
     // --- Supabase session ---
     val sessionStatus: StateFlow<SessionStatus> = authRepository.sessionStatus
 
@@ -42,7 +51,7 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
 
     val currentUser: StateFlow<User?> = currentUserId.flatMapLatest { userId ->
         if (userId != null) repository.getUserFlow(userId) else flowOf(null)
-    }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), null)
+    }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(60_000), null)
 
     // Legacy: telas antigas leem userName/userEmail. Mapeamos pra Supabase.
     val userName: StateFlow<String?> = supabaseDisplayName
@@ -55,15 +64,15 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
 
     // App-level prefs (avaliação na Play Store + contador de engajamento)
     val ratedApp: StateFlow<Boolean> = dataStoreManager.ratedAppFlow
-        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), false)
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(60_000), false)
 
     val engagementCount: StateFlow<Int> = dataStoreManager.engagementCountFlow
-        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), 0)
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(60_000), 0)
 
     /** Mostra o prompt de avaliação se: não avaliou ainda E já fez ≥3 ações de engajamento. */
     val shouldShowRatePrompt: StateFlow<Boolean> =
         combine(ratedApp, engagementCount) { rated, count -> !rated && count >= 3 }
-            .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), false)
+            .stateIn(viewModelScope, SharingStarted.WhileSubscribed(60_000), false)
 
     fun markAppRated() {
         viewModelScope.launch { dataStoreManager.markAppRated() }
@@ -111,11 +120,11 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
     // Clubs
     val allClubs: StateFlow<List<Club>> = currentUserId.flatMapLatest { userId ->
         if (userId != null) repository.getClubsForUser(userId) else flowOf(emptyList())
-    }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
+    }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(60_000), emptyList())
 
     val activeClub: StateFlow<Club?> = activeClubId.flatMapLatest { clubId ->
         if (clubId != null) repository.getClubFlow(clubId) else flowOf(null)
-    }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), null)
+    }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(60_000), null)
 
     val currentBooksMap: StateFlow<Map<String, String>> = currentUserId.flatMapLatest { userId ->
         if (userId == null) {
@@ -136,7 +145,7 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
                 }
             }
         }
-    }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyMap())
+    }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(60_000), emptyMap())
 
     // Current Lendo Agora Book
     val currentBook: StateFlow<Book?> = activeClubId.flatMapLatest { clubId ->
@@ -145,12 +154,12 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
         } else {
             flowOf(null)
         }
-    }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), null)
+    }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(60_000), null)
 
     // Chapters for Current Book
     val currentChapters: StateFlow<List<Chapter>> = currentBook.flatMapLatest { book ->
         if (book != null) repository.getChaptersForBookFlow(book.id) else flowOf(emptyList())
-    }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
+    }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(60_000), emptyList())
 
     // Active User Progress
     val userProgress: StateFlow<UserProgress?> = combine(currentUserId, activeClubId, currentBook) { userId, clubId, book ->
@@ -161,71 +170,71 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
         } else {
             flowOf(null)
         }
-    }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), null)
+    }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(60_000), null)
 
     // Club Books
     val clubBooks: StateFlow<List<Book>> = activeClubId.flatMapLatest { clubId ->
         if (clubId != null) repository.getClubBooksFlow(clubId) else flowOf(emptyList())
-    }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
+    }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(60_000), emptyList())
 
     val suggestedBooks: StateFlow<List<Book>> = activeClubId.flatMapLatest { clubId ->
         if (clubId != null) repository.getBookByStatusFlow(clubId, "suggested") else flowOf(emptyList())
-    }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
+    }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(60_000), emptyList())
 
     val finishedBooks: StateFlow<List<Book>> = activeClubId.flatMapLatest { clubId ->
         if (clubId != null) repository.getBookByStatusFlow(clubId, "finished") else flowOf(emptyList())
-    }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
+    }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(60_000), emptyList())
 
     // Club Members Profile/Progress
     val clubMembers: StateFlow<List<User>> = activeClubId.flatMapLatest { clubId ->
         if (clubId != null) repository.getClubMembersFlow(clubId) else flowOf(emptyList())
-    }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
+    }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(60_000), emptyList())
 
     val allProgressForClub: StateFlow<List<UserProgress>> = activeClubId.flatMapLatest { clubId ->
         if (clubId != null) repository.getAllProgressForClubFlow(clubId) else flowOf(emptyList())
-    }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
+    }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(60_000), emptyList())
 
     // Meeting Info
     val latestMeeting: StateFlow<Meeting?> = activeClubId.flatMapLatest { clubId ->
         if (clubId != null) repository.getLatestMeetingFlow(clubId) else flowOf(null)
-    }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), null)
+    }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(60_000), null)
 
     val latestMeetingRsvps: StateFlow<List<MeetingRsvp>> = latestMeeting.flatMapLatest { meeting ->
         if (meeting != null) repository.getRsvpsForMeetingFlow(meeting.id) else flowOf(emptyList())
-    }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
+    }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(60_000), emptyList())
 
     // Votes
     val suggestionsAndVotes: StateFlow<List<Vote>> = activeClubId.flatMapLatest { clubId ->
         if (clubId != null) repository.getVotesForClubFlow(clubId) else flowOf(emptyList())
-    }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
+    }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(60_000), emptyList())
 
     // Notifications
     val notifications: StateFlow<List<DbNotification>> = currentUserId.flatMapLatest { userId ->
         if (userId != null) repository.getNotificationsFlow(userId) else flowOf(emptyList())
-    }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
+    }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(60_000), emptyList())
 
     // Saved Quotes
     val savedQuotes: StateFlow<List<SavedQuote>> = currentUserId.flatMapLatest { userId ->
         if (userId != null) repository.getSavedQuotesForUserFlow(userId) else flowOf(emptyList())
-    }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
+    }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(60_000), emptyList())
 
     // --- Fase 4 ---
     // Active voting round
     val activeVotingRound: StateFlow<VotingRound?> = activeClubId.flatMapLatest { clubId ->
         if (clubId != null) repository.getActiveVotingRoundFlow(clubId) else flowOf(null)
-    }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), null)
+    }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(60_000), null)
 
     // Book suggestions for current club, indexed by bookId
     val bookSuggestionsByBookId: StateFlow<Map<String, BookSuggestion>> = activeClubId.flatMapLatest { clubId ->
         if (clubId != null) repository.getBookSuggestionsForClubFlow(clubId).map { list ->
             list.associateBy { it.bookId }
         } else flowOf(emptyMap())
-    }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyMap())
+    }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(60_000), emptyMap())
 
     // Next-queue books (status = "next")
     val nextBooks: StateFlow<List<Book>> = activeClubId.flatMapLatest { clubId ->
         if (clubId != null) repository.getBookByStatusFlow(clubId, "next") else flowOf(emptyList())
-    }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
+    }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(60_000), emptyList())
 
     // Papel do usuário atual no clube ativo: "super_admin" | "admin" | "member" | null
     // Emite null IMEDIATAMENTE ao trocar de clube (antes o stateIn segurava o papel
@@ -244,35 +253,35 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
                 }
             } else flowOf(null)
         }
-        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), null)
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(60_000), null)
 
     val isCurrentUserAdmin: StateFlow<Boolean> = currentUserPapel
         .map { it == "admin" || it == "super_admin" }
-        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), false)
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(60_000), false)
 
     val isCurrentUserSuperAdmin: StateFlow<Boolean> = currentUserPapel
         .map { it == "super_admin" }
-        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), false)
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(60_000), false)
 
     // Membros do clube ativo (raw com papel)
     val activeClubMembersRaw: StateFlow<List<ClubMember>> = activeClubId.flatMapLatest { clubId ->
         if (clubId != null) repository.getClubMembersRawFlow(clubId) else flowOf(emptyList())
-    }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
+    }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(60_000), emptyList())
 
     // Padrão de encontros do clube ativo
     val activeMeetingPattern: StateFlow<MeetingPattern?> = activeClubId.flatMapLatest { clubId ->
         if (clubId != null) repository.getActiveMeetingPatternFlow(clubId) else flowOf(null)
-    }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), null)
+    }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(60_000), null)
 
     // Comentários removidos do clube ativo
     val removedCommentsInActiveClub: StateFlow<List<Comment>> = activeClubId.flatMapLatest { clubId ->
         if (clubId != null) repository.getRemovedCommentsForClubFlow(clubId) else flowOf(emptyList())
-    }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
+    }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(60_000), emptyList())
 
     // Clubes arquivados do usuário
     val archivedClubsForUser: StateFlow<List<Club>> = currentUserId.flatMapLatest { uid ->
         if (uid != null) repository.getArchivedClubsForUserFlow(uid) else flowOf(emptyList())
-    }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
+    }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(60_000), emptyList())
 
     // Mapa bookId -> dataEncontro (do clube ativo, livros finished)
     val finishedBooksMeetingDates: StateFlow<Map<String, Long?>> = activeClubId.flatMapLatest { clubId ->
@@ -280,7 +289,7 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
         else repository.getClubBooksByStatusFlow(clubId, "finished").map { list ->
             list.associate { it.bookId to it.dataEncontro }
         }
-    }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyMap())
+    }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(60_000), emptyMap())
 
     // Books search results from Open Library
     // Backcompat: SuggestScreen ainda usa pro cross-check / criar suggestion via createBookSuggestion(doc).
@@ -615,9 +624,11 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
         viewModelScope.launch {
             val clubId = activeClubId.value ?: return@launch
             val userId = currentUserId.value ?: return@launch
-            // Idempotência: se já existe rodada aberta, ignora
-            val existing = repository.getActiveVotingRound(clubId)
-            if (existing != null) return@launch
+            // Idempotência via estado LOCAL (Room) — instantâneo. Antes fazia um
+            // GET remoto (getActiveVotingRound) que travava a ação por segundos:
+            // o usuário clicava "Abrir votação" e "não acontecia nada" até a rede
+            // responder, e só depois a rodada aparecia.
+            if (activeVotingRound.value != null) return@launch
 
             val agora = System.currentTimeMillis()
             val round = VotingRound(
@@ -802,6 +813,7 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
         onCompleted: () -> Unit
     ) {
         viewModelScope.launch {
+          try {
             val clubId = activeClubId.value ?: return@launch
             val userId = currentUserId.value ?: return@launch
             val isbn = doc.isbn?.firstOrNull() ?: ""
@@ -841,6 +853,9 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
             )
 
             onCompleted()
+          } catch (e: Exception) {
+            toastErro("Não consegui sugerir o livro. Tenta de novo.", e)
+          }
         }
     }
 
@@ -861,6 +876,7 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
         onCreated: (bookId: String) -> Unit
     ) {
         viewModelScope.launch {
+          try {
             val clubId = activeClubId.value ?: return@launch
             val userId = currentUserId.value
             if (title.isBlank() || author.isBlank()) return@launch
@@ -927,6 +943,9 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
             }
             bumpEngagement()
             onCreated(bookId)
+          } catch (e: Exception) {
+            toastErro("Não consegui adicionar o livro. Tenta de novo.", e)
+          }
         }
     }
 
@@ -981,7 +1000,7 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
 
     /** Tamanho da fila offline — UI mostra "alterações aguardando conexão". */
     val pendingMutationsCount = repository.pendingMutationsCount
-        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), 0)
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(60_000), 0)
 
     /** Pull-to-refresh: força re-sync de todas as caches ativas, ignorando TTL. */
     fun forceRefresh(onDone: () -> Unit = {}) {
@@ -1124,11 +1143,8 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
         chapterEnd: Int? = null
     ) {
         viewModelScope.launch {
+          try {
             val clubId = activeClubId.value ?: return@launch
-            // Sem guard de papel aqui: o RLS do servidor já exige admin, e a UI só
-            // mostra o botão pra admin. O guard antigo lia currentUserPapel.value do
-            // cache do Room, que pode estar null num clube recém-criado — e aí o
-            // encontro sumia sem aviso (bug reportado).
             val id = meetingId ?: UUID.randomUUID().toString()
             // Preserva status atual se já existe, senão "agendado"
             val existing = repository.getMeetingById(id)
@@ -1151,6 +1167,9 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
                     dataEpoch = epoch,
                 )
             )
+          } catch (e: Exception) {
+            toastErro("Não consegui salvar o encontro. Tenta de novo.", e)
+          }
         }
     }
 
@@ -1347,14 +1366,14 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
                 if (clubId != null && book != null) repository.getMeetingsForBookFlow(clubId, book.id)
                 else flowOf(emptyList())
             }
-            .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
+            .stateIn(viewModelScope, SharingStarted.WhileSubscribed(60_000), emptyList())
 
     /**
      * Todos os encontros agendados (status = "agendado") do clube ativo.
      */
     val scheduledMeetingsInActiveClub: StateFlow<List<Meeting>> = activeClubId.flatMapLatest { clubId ->
         if (clubId != null) repository.getScheduledMeetingsForClubFlow(clubId) else flowOf(emptyList())
-    }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
+    }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(60_000), emptyList())
 
     fun getMeetingByIdFlow(meetingId: String): Flow<Meeting?> = repository.getMeetingByIdFlow(meetingId)
 

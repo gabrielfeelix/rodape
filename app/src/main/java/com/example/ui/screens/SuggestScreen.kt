@@ -6,6 +6,7 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardActions
@@ -16,6 +17,7 @@ import androidx.compose.material.icons.outlined.Check
 import androidx.compose.material.icons.outlined.Search
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -210,6 +212,52 @@ fun SuggestScreen(
                 ) {
                     CircularProgressIndicator(color = Terracota)
                 }
+            } else if (query.trim().length < 3) {
+                // Lista de populares (pré-preenchida) — mostrada quando ainda não
+                // há busca ativa. Paginada: 15 por vez, "load more" ao rolar.
+                val popular = remember { com.example.data.PopularBooks.list }
+                var visibleCount by rememberSaveable { mutableStateOf(15) }
+                val listState = rememberLazyListState()
+
+                // Load-more por limiar: quando o último item visível chega perto
+                // do fim da fatia atual, revela mais 15.
+                LaunchedEffect(listState, popular.size) {
+                    snapshotFlow { listState.layoutInfo.visibleItemsInfo.lastOrNull()?.index ?: 0 }
+                        .collect { last ->
+                            if (last >= visibleCount - 3 && visibleCount < popular.size) {
+                                visibleCount = (visibleCount + 15).coerceAtMost(popular.size)
+                            }
+                        }
+                }
+
+                Column(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .weight(1f)
+                ) {
+                    Text(
+                        text = "📚 Populares — toque pra sugerir um",
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = Muted
+                    )
+                    Spacer(modifier = Modifier.height(8.dp))
+                    LazyColumn(
+                        state = listState,
+                        modifier = Modifier.fillMaxWidth(),
+                        verticalArrangement = Arrangement.spacedBy(8.dp),
+                        contentPadding = PaddingValues(bottom = 24.dp)
+                    ) {
+                        items(popular.take(visibleCount)) { doc ->
+                            BookResultRow(
+                                doc = doc,
+                                isSelected = selectedDoc == doc,
+                                onClick = {
+                                    selectedDoc = if (selectedDoc == doc) null else doc
+                                }
+                            )
+                        }
+                    }
+                }
             } else if (filteredResults.isEmpty()) {
                 Column(
                     modifier = Modifier
@@ -260,100 +308,13 @@ fun SuggestScreen(
                     contentPadding = PaddingValues(bottom = 24.dp)
                 ) {
                     items(filteredResults) { doc ->
-                        val isSelected = selectedDoc == doc
-                        val author = doc.authorName?.firstOrNull() ?: "Autor desconhecido"
-                        val coverUrl = "https://covers.openlibrary.org/b/id/${doc.coverI}-M.jpg"
-
-                        // Result row — Terracota border when selected
-                        Row(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .clip(RoundedCornerShape(14.dp))
-                                .background(if (isSelected) Cream else Color.Transparent)
-                                .border(
-                                    width = if (isSelected) 1.5.dp else 0.5.dp,
-                                    color = if (isSelected) Terracota else Divider,
-                                    shape = RoundedCornerShape(14.dp)
-                                )
-                                .clickable {
-                                    selectedDoc = if (isSelected) null else doc
-                                }
-                                // A11y: TalkBack lê a linha como UMA opção única
-                                // em vez de título/autor/ano soltos.
-                                .semantics(mergeDescendants = true) {
-                                    role = Role.Button
-                                    contentDescription = buildString {
-                                        append(doc.title)
-                                        append(", ")
-                                        append(author)
-                                        if (isSelected) append(", selecionado")
-                                    }
-                                }
-                                .padding(10.dp),
-                            horizontalArrangement = Arrangement.spacedBy(12.dp),
-                            verticalAlignment = Alignment.CenterVertically
-                        ) {
-                            // Phase-1 Cover component
-                            Cover(
-                                title = doc.title,
-                                author = author,
-                                coverUrl = coverUrl,
-                                width = 48.dp,
-                                height = 72.dp
-                            )
-
-                            Column(
-                                modifier = Modifier.weight(1f)
-                            ) {
-                                Text(
-                                    text = doc.title,
-                                    style = MaterialTheme.typography.titleSmall.copy(
-                                        fontFamily = LiterataFontFamily,
-                                        fontWeight = FontWeight.SemiBold
-                                    ),
-                                    color = Ink,
-                                    maxLines = 2,
-                                    overflow = TextOverflow.Ellipsis
-                                )
-                                Spacer(modifier = Modifier.height(3.dp))
-                                Text(
-                                    text = author,
-                                    style = MaterialTheme.typography.bodySmall.copy(
-                                        fontFamily = InterFontFamily
-                                    ),
-                                    color = Muted,
-                                    maxLines = 1,
-                                    overflow = TextOverflow.Ellipsis
-                                )
-                                if (doc.firstPublishYear != null) {
-                                    Spacer(modifier = Modifier.height(2.dp))
-                                    Text(
-                                        text = "${doc.firstPublishYear}",
-                                        style = MaterialTheme.typography.labelSmall.copy(
-                                            fontFamily = InterFontFamily
-                                        ),
-                                        color = Muted
-                                    )
-                                }
+                        BookResultRow(
+                            doc = doc,
+                            isSelected = selectedDoc == doc,
+                            onClick = {
+                                selectedDoc = if (selectedDoc == doc) null else doc
                             }
-
-                            if (isSelected) {
-                                Box(
-                                    modifier = Modifier
-                                        .size(24.dp)
-                                        .clip(CircleShape)
-                                        .background(Terracota),
-                                    contentAlignment = Alignment.Center
-                                ) {
-                                    Icon(
-                                        imageVector = Icons.Outlined.Check,
-                                        contentDescription = "Selecionado",
-                                        tint = Cream,
-                                        modifier = Modifier.size(14.dp)
-                                    )
-                                }
-                            }
-                        }
+                        )
                     }
 
                     // Rodapé da lista: link discreto "Não achei meu livro"
@@ -505,5 +466,109 @@ fun SuggestScreen(
                 )
             }
         )
+    }
+}
+
+/**
+ * Linha de resultado reutilizável — usada tanto pela busca quanto pela lista de
+ * populares. Mesmo visual + a11y de antes; a URL da capa vira "" quando não há
+ * coverI (o Cover então desenha a capa de iniciais em vez de pedir id/null-M.jpg).
+ */
+@Composable
+private fun BookResultRow(
+    doc: OpenLibraryDoc,
+    isSelected: Boolean,
+    onClick: () -> Unit
+) {
+    val author = doc.authorName?.firstOrNull() ?: "Autor desconhecido"
+    val coverUrl = doc.coverI?.let { "https://covers.openlibrary.org/b/id/$it-M.jpg" } ?: ""
+
+    // Result row — Terracota border when selected
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .clip(RoundedCornerShape(14.dp))
+            .background(if (isSelected) Cream else Color.Transparent)
+            .border(
+                width = if (isSelected) 1.5.dp else 0.5.dp,
+                color = if (isSelected) Terracota else Divider,
+                shape = RoundedCornerShape(14.dp)
+            )
+            .clickable { onClick() }
+            // A11y: TalkBack lê a linha como UMA opção única
+            // em vez de título/autor/ano soltos.
+            .semantics(mergeDescendants = true) {
+                role = Role.Button
+                contentDescription = buildString {
+                    append(doc.title)
+                    append(", ")
+                    append(author)
+                    if (isSelected) append(", selecionado")
+                }
+            }
+            .padding(10.dp),
+        horizontalArrangement = Arrangement.spacedBy(12.dp),
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        // Phase-1 Cover component
+        Cover(
+            title = doc.title,
+            author = author,
+            coverUrl = coverUrl,
+            width = 48.dp,
+            height = 72.dp
+        )
+
+        Column(
+            modifier = Modifier.weight(1f)
+        ) {
+            Text(
+                text = doc.title,
+                style = MaterialTheme.typography.titleSmall.copy(
+                    fontFamily = LiterataFontFamily,
+                    fontWeight = FontWeight.SemiBold
+                ),
+                color = Ink,
+                maxLines = 2,
+                overflow = TextOverflow.Ellipsis
+            )
+            Spacer(modifier = Modifier.height(3.dp))
+            Text(
+                text = author,
+                style = MaterialTheme.typography.bodySmall.copy(
+                    fontFamily = InterFontFamily
+                ),
+                color = Muted,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis
+            )
+            if (doc.firstPublishYear != null) {
+                Spacer(modifier = Modifier.height(2.dp))
+                Text(
+                    text = "${doc.firstPublishYear}",
+                    style = MaterialTheme.typography.labelSmall.copy(
+                        fontFamily = InterFontFamily
+                    ),
+                    color = Muted
+                )
+            }
+        }
+
+        if (isSelected) {
+            Box(
+                modifier = Modifier
+                    .size(24.dp)
+                    .clip(CircleShape)
+                    .background(Terracota),
+                contentAlignment = Alignment.Center
+            ) {
+                Icon(
+                    imageVector = Icons.Outlined.Check,
+                    contentDescription = "Selecionado",
+                    tint = Cream,
+                    modifier = Modifier.size(14.dp)
+                )
+            }
+        }
     }
 }

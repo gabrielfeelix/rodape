@@ -671,6 +671,7 @@ class RemoteRepository(
     // SupervisorJob: falha de uma corotina nao cancela as outras.
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
 
+
     /** Apaga o cache local — chamar no logout pra nao vazar dados entre contas.
      *  Antes de limpar, tenta drenar a fila offline uma ultima vez pra nao
      *  descartar silenciosamente mutations que o usuario achou que salvou.
@@ -774,9 +775,17 @@ class RemoteRepository(
     private suspend fun tryRemoteOrEnqueue(
         kind: String,
         payload: String,
+        notifyTable: String? = null,
         block: suspend () -> Unit,
     ) {
-        runCatching { block() }.onFailure { enqueueMutation(kind, payload) }
+        // notifyTable é notificado SÓ no sucesso: o reload dispara um replace
+        // (upsert+prune) e, se rodasse antes do remoto confirmar, podaria a linha
+        // otimista ainda-não-sincronizada (item "pisca e some"). O Room já emitiu
+        // pro Flow no upsert local, então a UI otimista aparece na hora de qualquer
+        // jeito; o notify só reconcilia com o servidor.
+        runCatching { block() }
+            .onSuccess { if (notifyTable != null) notifyLocalMutation(notifyTable) }
+            .onFailure { enqueueMutation(kind, payload) }
     }
 
     // Depois de MAX_DRAIN_ATTEMPTS a mutation vira "dead-letter" e e descartada,
@@ -1570,10 +1579,14 @@ class RemoteRepository(
         // UI nunca ficar "fantasma" (livro sumiu so porque rede falhou ou rate
         // limit do Supabase respondeu 429). Se o remoto falhar, loga e segue —
         // a proxima sync vai reconciliar.
+        // Room já emite pro Flow após o upsert local (UI otimista). O
+        // notifyLocalMutation (re-fetch remoto + prune) SÓ roda após o remoto
+        // confirmar — senão o re-fetch corre na frente da escrita e PODA a linha
+        // otimista ainda-não-sincronizada (item "pisca e some").
         dao.upsertBook(book)
-        notifyLocalMutation("books")
         runCatching { supabase.from("books").upsert(book.toInsertDto()) }
-            .onFailure { android.util.Log.w("Rodape/Repo", "insertBook remote falhou (livro existe local): ${it.message}") }
+            .onSuccess { notifyLocalMutation("books") }
+            .onFailure { android.util.Log.w("Rodape/Repo", "insertBook remoto falhou: ${it.message}") }
     }
 
     /**
@@ -1604,9 +1617,9 @@ class RemoteRepository(
     suspend fun insertClubBook(clubBook: ClubBook) {
         // Optimistic local-first (mesmo motivo de insertBook).
         dao.upsertClubBook(clubBook)
-        notifyLocalMutation("club_books")
         runCatching { supabase.from("club_books").upsert(clubBook.toDto()) }
-            .onFailure { android.util.Log.w("Rodape/Repo", "insertClubBook remote falhou: ${it.message}") }
+            .onSuccess { notifyLocalMutation("club_books") }
+            .onFailure { android.util.Log.w("Rodape/Repo", "insertClubBook remoto falhou: ${it.message}") }
     }
 
     fun getBookByStatusFlow(clubId: String, status: String): Flow<List<Book>> {
@@ -1885,10 +1898,9 @@ class RemoteRepository(
     suspend fun insertComment(comment: Comment) {
         // 1. Optimistic local PRIMEIRO — UI ja mostra
         dao.upsertComment(comment)
-        notifyLocalMutation("comments")
         // 2. Tenta HTTP — se falhar, queue
         val payload = """{"id":"${comment.id}","chapterId":"${comment.chapterId}","clubId":"${comment.clubId}","userId":"${comment.userId}","texto":"${comment.texto.escapeJson()}"}"""
-        tryRemoteOrEnqueue("insert_comment", payload) {
+        tryRemoteOrEnqueue("insert_comment", payload, notifyTable = "comments") {
             supabase.from("comments").upsert(
                 CommentInsertDto(
                     id = comment.id,
@@ -1951,11 +1963,10 @@ class RemoteRepository(
         // Optimistic local + fila: moderar offline agora persiste (antes era
         // remoto-primeiro e nao fazia nada offline).
         dao.markCommentRemoved(commentId, removidoPor, motivo)
-        notifyLocalMutation("comments")
         val payload = buildJsonObject {
             put("id", commentId); put("by", removidoPor); put("motivo", motivo)
         }.toString()
-        tryRemoteOrEnqueue("remove_comment", payload) {
+        tryRemoteOrEnqueue("remove_comment", payload, notifyTable = "comments") {
             supabase.from("comments").update({
                 set("removido", true)
                 set("removido_por", removidoPor)
@@ -1966,9 +1977,8 @@ class RemoteRepository(
 
     suspend fun restoreComment(commentId: String) {
         dao.markCommentRestored(commentId)
-        notifyLocalMutation("comments")
         val payload = buildJsonObject { put("id", commentId) }.toString()
-        tryRemoteOrEnqueue("restore_comment", payload) {
+        tryRemoteOrEnqueue("restore_comment", payload, notifyTable = "comments") {
             supabase.from("comments").update({
                 set("removido", false)
                 set("removido_por", JsonNull)
@@ -1981,9 +1991,8 @@ class RemoteRepository(
      *  Local-first + fila offline. */
     suspend fun editOwnComment(commentId: String, novoTexto: String) {
         dao.updateCommentText(commentId, novoTexto)
-        notifyLocalMutation("comments")
         val payload = buildJsonObject { put("id", commentId); put("texto", novoTexto) }.toString()
-        tryRemoteOrEnqueue("edit_comment", payload) {
+        tryRemoteOrEnqueue("edit_comment", payload, notifyTable = "comments") {
             supabase.from("comments").update({ set("texto", novoTexto) }) {
                 filter { eq("id", commentId) }
             }
@@ -1994,9 +2003,8 @@ class RemoteRepository(
      *  Local-first + fila offline. */
     suspend fun deleteOwnComment(commentId: String) {
         dao.deleteComment(commentId)
-        notifyLocalMutation("comments")
         val payload = buildJsonObject { put("id", commentId) }.toString()
-        tryRemoteOrEnqueue("delete_comment", payload) {
+        tryRemoteOrEnqueue("delete_comment", payload, notifyTable = "comments") {
             supabase.from("comments").delete { filter { eq("id", commentId) } }
         }
     }
@@ -2021,18 +2029,16 @@ class RemoteRepository(
 
     suspend fun insertReaction(reaction: Reaction) {
         dao.upsertReaction(reaction)
-        notifyLocalMutation("reactions")
         val payload = """{"commentId":"${reaction.commentId}","userId":"${reaction.userId}","emoji":"${reaction.emoji}"}"""
-        tryRemoteOrEnqueue("insert_reaction", payload) {
+        tryRemoteOrEnqueue("insert_reaction", payload, notifyTable = "reactions") {
             supabase.from("reactions").upsert(reaction.toDto())
         }
     }
 
     suspend fun deleteReaction(reaction: Reaction) {
         dao.deleteReaction(reaction.commentId, reaction.userId, reaction.emoji)
-        notifyLocalMutation("reactions")
         val payload = """{"commentId":"${reaction.commentId}","userId":"${reaction.userId}","emoji":"${reaction.emoji}"}"""
-        tryRemoteOrEnqueue("delete_reaction", payload) {
+        tryRemoteOrEnqueue("delete_reaction", payload, notifyTable = "reactions") {
             supabase.from("reactions").delete {
                 filter {
                     eq("comment_id", reaction.commentId)
@@ -2086,9 +2092,8 @@ class RemoteRepository(
     suspend fun insertVote(vote: Vote) {
         val roundId = vote.votingRoundId ?: return
         dao.upsertVotes(listOf(vote))
-        notifyLocalMutation("votes")
         val payload = """{"votingRoundId":"$roundId","userId":"${vote.userId}","bookId":"${vote.clubBookId}"}"""
-        tryRemoteOrEnqueue("insert_vote", payload) {
+        tryRemoteOrEnqueue("insert_vote", payload, notifyTable = "votes") {
             supabase.from("votes").upsert(
                 VoteInsertDto(
                     votingRoundId = roundId,
@@ -2163,11 +2168,10 @@ class RemoteRepository(
         // persiste. Antes era remoto-primeiro sem apagar a linha do Room, entao o
         // voto "voltava" ate um reload via Realtime.
         dao.deleteVote(roundId, userId, bookId)
-        notifyLocalMutation("votes")
         val payload = buildJsonObject {
             put("votingRoundId", roundId); put("userId", userId); put("bookId", bookId)
         }.toString()
-        tryRemoteOrEnqueue("delete_vote", payload) {
+        tryRemoteOrEnqueue("delete_vote", payload, notifyTable = "votes") {
             supabase.from("votes").delete {
                 filter {
                     eq("user_id", userId)
@@ -2193,7 +2197,6 @@ class RemoteRepository(
         // Local-first: grava no Room ANTES do remoto, pra a votação aparecer na
         // hora mesmo se o remoto demorar/falhar. Loga a falha (antes era engolida).
         dao.upsertVotingRound(round)
-        notifyLocalMutation("voting_rounds")
         runCatching {
             supabase.from("voting_rounds").upsert(
                 VotingRoundInsertDto(
@@ -2206,7 +2209,8 @@ class RemoteRepository(
                     status = round.status,
                 )
             )
-        }.onFailure { android.util.Log.e("RodapeWrite", "insertVotingRound remoto falhou", it) }
+        }.onSuccess { notifyLocalMutation("voting_rounds") }
+            .onFailure { android.util.Log.e("RodapeWrite", "insertVotingRound remoto falhou", it) }
     }
 
     fun getActiveVotingRoundFlow(clubId: String): Flow<VotingRound?> {
@@ -2249,7 +2253,6 @@ class RemoteRepository(
     suspend fun insertBookSuggestion(suggestion: BookSuggestion) {
         // Optimistic local-first (mesmo motivo de insertBook/insertClubBook).
         dao.upsertBookSuggestions(listOf(suggestion))
-        notifyLocalMutation("book_suggestions")
         runCatching {
             supabase.from("book_suggestions").upsert(
                 BookSuggestionInsertDto(
@@ -2260,7 +2263,8 @@ class RemoteRepository(
                     justificativa = suggestion.justificativa.ifBlank { null },
                 )
             )
-        }.onFailure { android.util.Log.w("Rodape/Repo", "insertBookSuggestion remote falhou: ${it.message}") }
+        }.onSuccess { notifyLocalMutation("book_suggestions") }
+            .onFailure { android.util.Log.w("Rodape/Repo", "insertBookSuggestion remoto falhou: ${it.message}") }
     }
 
     fun getBookSuggestionFlow(bookId: String, clubId: String): Flow<BookSuggestion?> {
@@ -2326,9 +2330,20 @@ class RemoteRepository(
         // Garante que o Room guarde o epoch mesmo se a VM não preencheu.
         val toStore = if (meeting.dataEpoch != 0L) meeting else meeting.copy(dataEpoch = epoch)
         // Local-first: grava no Room antes do remoto pra o encontro aparecer na hora.
+        // notifyLocalMutation (re-fetch + prune) só após o remoto confirmar, senão
+        // o re-sync poda o encontro otimista ainda-não-sincronizado.
         dao.upsertMeetings(listOf(toStore))
-        notifyLocalMutation("meetings")
         runCatching {
+            // FK: o encontro referencia books(id). Se o livro vinculado só existe
+            // local (ainda não sincronizou), o insert viola meetings_book_id_fkey e
+            // o encontro NUNCA chega ao servidor. Empurra o livro ANTES do encontro
+            // pra garantir a FK.
+            meeting.bookId?.let { bid ->
+                // runCatching próprio: se o livro JÁ existe no servidor (de outro
+                // dono), o upsert-update pode bater na RLS — mas aí a FK já está
+                // satisfeita, então não deve bloquear o encontro.
+                dao.book(bid)?.let { b -> runCatching { supabase.from("books").upsert(b.toInsertDto()) } }
+            }
             supabase.from("meetings").upsert(
                 MeetingInsertDto(
                     id = meeting.id,
@@ -2342,7 +2357,8 @@ class RemoteRepository(
                     status = meeting.status,
                 )
             )
-        }.onFailure { android.util.Log.e("RodapeWrite", "insertMeeting remoto falhou", it) }
+        }.onSuccess { notifyLocalMutation("meetings") }
+            .onFailure { android.util.Log.e("Rodape/Repo", "insertMeeting remoto falhou", it) }
     }
 
     private suspend fun syncMeetingsForClub(clubId: String) {
@@ -2442,10 +2458,9 @@ class RemoteRepository(
 
     suspend fun insertMeetingRsvp(rsvp: MeetingRsvp) {
         dao.upsertMeetingRsvp(rsvp)
-        notifyLocalMutation("meeting_rsvps")
         val statusEnum = rsvpToEnum(rsvp.status)
         val payload = """{"meetingId":"${rsvp.meetingId}","userId":"${rsvp.userId}","status":"$statusEnum"}"""
-        tryRemoteOrEnqueue("insert_meeting_rsvp", payload) {
+        tryRemoteOrEnqueue("insert_meeting_rsvp", payload, notifyTable = "meeting_rsvps") {
             supabase.from("meeting_rsvps").upsert(
                 MeetingRsvpInsertDto(
                     meetingId = rsvp.meetingId,
@@ -2688,9 +2703,8 @@ class RemoteRepository(
 
     suspend fun markNotificationAsRead(id: String) {
         dao.markNotificationRead(id)
-        notifyLocalMutation("notifications")
         val payload = buildJsonObject { put("id", id) }.toString()
-        tryRemoteOrEnqueue("mark_notification_read", payload) {
+        tryRemoteOrEnqueue("mark_notification_read", payload, notifyTable = "notifications") {
             supabase.from("notifications").update({ set("lida", true) }) {
                 filter { eq("id", id) }
             }
@@ -2718,10 +2732,9 @@ class RemoteRepository(
 
     suspend fun insertSavedQuote(quote: SavedQuote) {
         dao.upsertSavedQuotes(listOf(quote))
-        notifyLocalMutation("saved_quotes")
         val cap = quote.capituloRef.escapeJson()
         val payload = """{"id":"${quote.id}","userId":"${quote.userId}","clubId":"${quote.clubId}","bookId":"${quote.bookId}","texto":"${quote.texto.escapeJson()}","capituloRef":"$cap"}"""
-        tryRemoteOrEnqueue("insert_saved_quote", payload) {
+        tryRemoteOrEnqueue("insert_saved_quote", payload, notifyTable = "saved_quotes") {
             supabase.from("saved_quotes").upsert(
                 SavedQuoteInsertDto(
                     id = quote.id,
@@ -2816,7 +2829,6 @@ class RemoteRepository(
         // offline. Antes era remoto-primeiro dentro de runCatching — avaliar um
         // livro sem internet sumia sem aviso (o dao.upsert nem rodava).
         dao.upsertBookRatings(listOf(rating))
-        notifyLocalMutation("book_ratings")
         val payload = buildJsonObject {
             put("bookId", rating.bookId)
             put("clubId", rating.clubId)
@@ -2824,7 +2836,7 @@ class RemoteRepository(
             put("stars", rating.stars.toString())
             put("comment", rating.comment)
         }.toString()
-        tryRemoteOrEnqueue("upsert_book_rating", payload) {
+        tryRemoteOrEnqueue("upsert_book_rating", payload, notifyTable = "book_ratings") {
             supabase.from("book_ratings").upsert(
                 BookRatingInsertDto(
                     bookId = rating.bookId,
