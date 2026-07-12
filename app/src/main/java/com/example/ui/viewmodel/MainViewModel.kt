@@ -529,7 +529,7 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
                     }
                     onCompleted(true, null)
                 } else {
-                    onCompleted(false, "Esse código não tá certo. Confere com quem te chamou.")
+                    onCompleted(false, "Esse código não está certo. Confira com quem te chamou.")
                 }
             } catch (e: Exception) {
                 // Mensagem específica do servidor (código inválido vs não encontrado

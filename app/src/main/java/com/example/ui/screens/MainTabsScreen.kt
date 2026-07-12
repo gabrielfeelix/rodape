@@ -2741,7 +2741,7 @@ fun ProfileScreenTab(
             containerColor = MaterialTheme.colorScheme.surface,
             title = {
                 Text(
-                    "Manda esse feedback 💚",
+                    "Envie esse feedback 💚",
                     style = MaterialTheme.typography.titleLarge.copy(
                         fontFamily = LiterataFontFamily,
                         fontWeight = FontWeight.SemiBold

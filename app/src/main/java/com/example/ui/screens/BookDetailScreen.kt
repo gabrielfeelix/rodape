@@ -309,7 +309,7 @@ fun BookDetailScreen(
                         value = quoteText,
                         onValueChange = { quoteText = it },
                         label = { Text("Frase do livro") },
-                        placeholder = { Text("Escreve a frase aqui…") },
+                        placeholder = { Text("Escreva a frase aqui…") },
                         minLines = 3,
                         modifier = Modifier.fillMaxWidth()
                     )
@@ -784,7 +784,7 @@ private fun RatingsTab(viewModel: MainViewModel, bookId: String) {
                     OutlinedTextField(
                         value = draftComment,
                         onValueChange = { draftComment = it },
-                        placeholder = { Text("Conta o que tu achou (opcional)") },
+                        placeholder = { Text("Conte o que você achou (opcional)") },
                         minLines = 3,
                         modifier = Modifier.fillMaxWidth()
                     )

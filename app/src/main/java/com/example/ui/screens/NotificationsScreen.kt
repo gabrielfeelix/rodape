@@ -243,7 +243,7 @@ private fun NotificationItem(
     // Notification description
     val desc = when (tipo) {
         "comment_on_chapter" ->
-            "$actor comentou em ${bookTitle?.let { "\"$it\"" } ?: "uma leitura"}. Vem participar da rodada!"
+            "$actor comentou em ${bookTitle?.let { "\"$it\"" } ?: "uma leitura"}. Venha participar da rodada!"
         "next_book_decided" ->
             "Nossa próxima leitura já foi escolhida. Prepare seu coração!"
         "book_finished" ->
