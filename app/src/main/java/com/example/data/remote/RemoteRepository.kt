@@ -2003,6 +2003,10 @@ class RemoteRepository(
     // ---- voting_rounds ----
 
     suspend fun insertVotingRound(round: VotingRound) {
+        // Local-first: grava no Room ANTES do remoto, pra a votação aparecer na
+        // hora mesmo se o remoto demorar/falhar. Loga a falha (antes era engolida).
+        dao.upsertVotingRound(round)
+        notifyLocalMutation("voting_rounds")
         runCatching {
             supabase.from("voting_rounds").upsert(
                 VotingRoundInsertDto(
@@ -2015,9 +2019,7 @@ class RemoteRepository(
                     status = round.status,
                 )
             )
-            dao.upsertVotingRound(round)
-            notifyLocalMutation("voting_rounds")
-        }
+        }.onFailure { android.util.Log.e("RodapeWrite", "insertVotingRound remoto falhou", it) }
     }
 
     fun getActiveVotingRoundFlow(clubId: String): Flow<VotingRound?> {
@@ -2130,6 +2132,9 @@ class RemoteRepository(
 
     suspend fun insertMeeting(meeting: Meeting) {
         val dataIso = parseMeetingDateTime(meeting.data, meeting.hora) ?: System.currentTimeMillis().toIso()
+        // Local-first: grava no Room antes do remoto pra o encontro aparecer na hora.
+        dao.upsertMeetings(listOf(meeting))
+        notifyLocalMutation("meetings")
         runCatching {
             supabase.from("meetings").upsert(
                 MeetingInsertDto(
@@ -2144,9 +2149,7 @@ class RemoteRepository(
                     status = meeting.status,
                 )
             )
-            dao.upsertMeetings(listOf(meeting))
-            notifyLocalMutation("meetings")
-        }
+        }.onFailure { android.util.Log.e("RodapeWrite", "insertMeeting remoto falhou", it) }
     }
 
     private fun parseMeetingDateTime(data: String, hora: String): String? {

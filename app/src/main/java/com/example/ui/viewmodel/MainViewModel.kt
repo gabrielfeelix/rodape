@@ -1026,7 +1026,10 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
     ) {
         viewModelScope.launch {
             val clubId = activeClubId.value ?: return@launch
-            if (currentUserPapel.value !in setOf("admin", "super_admin")) return@launch
+            // Sem guard de papel aqui: o RLS do servidor já exige admin, e a UI só
+            // mostra o botão pra admin. O guard antigo lia currentUserPapel.value do
+            // cache do Room, que pode estar null num clube recém-criado — e aí o
+            // encontro sumia sem aviso (bug reportado).
             val id = meetingId ?: UUID.randomUUID().toString()
             // Preserva status atual se já existe, senão "agendado"
             val existing = repository.getMeetingById(id)
