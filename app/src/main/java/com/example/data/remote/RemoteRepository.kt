@@ -30,6 +30,8 @@ import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
+import kotlinx.serialization.encodeToString
+import kotlinx.serialization.decodeFromString
 import kotlinx.serialization.json.JsonElement
 import kotlinx.serialization.json.JsonNull
 import kotlinx.serialization.json.JsonObject
@@ -943,6 +945,24 @@ class RemoteRepository(
                 )
             )
         }
+        // P0-2: replay das CRIAÇÕES feitas offline (payload = DTO serializado).
+        registerHandler("insert_book") { j ->
+            supabase.from("books").upsert(json.decodeFromString<BookInsertDto>(j))
+        }
+        registerHandler("insert_club_book") { j ->
+            supabase.from("club_books").upsert(json.decodeFromString<ClubBookDto>(j))
+        }
+        registerHandler("insert_book_suggestion") { j ->
+            supabase.from("book_suggestions").upsert(json.decodeFromString<BookSuggestionInsertDto>(j))
+        }
+        registerHandler("insert_meeting") { j ->
+            val dto = json.decodeFromString<MeetingInsertDto>(j)
+            // FK: garante o livro no servidor antes do encontro (idem caminho online).
+            dto.bookId?.let { bid ->
+                dao.book(bid)?.let { b -> runCatching { supabase.from("books").upsert(b.toInsertDto()) } }
+            }
+            supabase.from("meetings").upsert(dto)
+        }
         registerHandler("upsert_user_progress") { json ->
             val obj = this.json.parseToJsonElement(json) as JsonObject
             supabase.from("user_progress").upsert(
@@ -1601,9 +1621,13 @@ class RemoteRepository(
         // confirmar — senão o re-fetch corre na frente da escrita e PODA a linha
         // otimista ainda-não-sincronizada (item "pisca e some").
         dao.upsertBook(book)
-        runCatching { supabase.from("books").upsert(book.toInsertDto()) }
-            .onSuccess { notifyLocalMutation("books") }
-            .onFailure { android.util.Log.w("Rodape/Repo", "insertBook remoto falhou: ${it.message}") }
+        // Offline-first REAL: se o remoto falhar (offline/429/5xx), ENFILEIRA em vez
+        // de só logar. Antes a criação local-only era podada no próximo sync (a linha
+        // nunca chegava ao servidor) — perda silenciosa (P0-2).
+        val dto = book.toInsertDto()
+        tryRemoteOrEnqueue("insert_book", json.encodeToString(dto), notifyTable = "books") {
+            supabase.from("books").upsert(dto)
+        }
     }
 
     /**
@@ -1632,11 +1656,12 @@ class RemoteRepository(
     }.getOrNull()
 
     suspend fun insertClubBook(clubBook: ClubBook) {
-        // Optimistic local-first (mesmo motivo de insertBook).
+        // Optimistic local-first + fila (P0-2): offline não perde mais a criação.
         dao.upsertClubBook(clubBook)
-        runCatching { supabase.from("club_books").upsert(clubBook.toDto()) }
-            .onSuccess { notifyLocalMutation("club_books") }
-            .onFailure { android.util.Log.w("Rodape/Repo", "insertClubBook remoto falhou: ${it.message}") }
+        val dto = clubBook.toDto()
+        tryRemoteOrEnqueue("insert_club_book", json.encodeToString(dto), notifyTable = "club_books") {
+            supabase.from("club_books").upsert(dto)
+        }
     }
 
     fun getBookByStatusFlow(clubId: String, status: String): Flow<List<Book>> {
@@ -1805,35 +1830,34 @@ class RemoteRepository(
         }
     }
 
-    @Serializable
-    private data class NumeroOnlyDto(val numero: Int)
-
     /**
-     * Salva a lista de capítulos por DIFF (não delete-all+reinsert). Capítulos que
-     * ficam são ATUALIZADOS in-place (id determinístico `ch_<bookId>_<numero>`),
-     * então seus comentários/reações sobrevivem — antes, salvar qualquer edição
-     * apagava TODA a discussão do livro via ON DELETE CASCADE (bug P0). Só os
-     * capítulos genuinamente removidos são apagados (aí sim a discussão deles vai).
+     * Salva a lista de capítulos por DIFF por ID ESTÁVEL (uuid). A identidade do
+     * capítulo é o `id` (uuid), NÃO o numero:
+     *  - P0-1: antes o id era `ch_<bookId>_<numero>` (texto) enviado pra coluna
+     *    `uuid` do servidor -> Postgres rejeitava (22P02), o erro era engolido e
+     *    o capítulo NUNCA sincronizava (comentários iam pra dead-letter). Agora o
+     *    id é uuid de verdade (gerado na tela), aceito pelo servidor.
+     *  - B2: como o vínculo comentário→capítulo é o id (uuid) e não o numero,
+     *    reordenar/renumerar capítulos NÃO remaneja mais os comentários.
+     * Capítulos que ficam são atualizados in-place (upsert); só os removidos
+     * (id fora da lista) são apagados — a discussão dos mantidos é preservada.
      */
-    suspend fun saveChapters(bookId: String, novos: List<Pair<Int, String>>) {
-        val chapters = novos.map { (numero, titulo) ->
-            Chapter(id = "ch_${bookId}_$numero", bookId = bookId, numero = numero, titulo = titulo)
-        }
-        val keep = novos.map { it.first }
-        // Local-first: upsert (in-place) + deleta só os removidos.
+    suspend fun saveChapters(bookId: String, chapters: List<Chapter>) {
+        val keepIds = chapters.map { it.id }
+        // Local-first: upsert (in-place) + deleta só os removidos, por id.
         dao.upsertChapters(chapters)
-        if (keep.isNotEmpty()) dao.deleteChaptersNotIn(bookId, keep) else dao.deleteChaptersForBook(bookId)
+        if (keepIds.isNotEmpty()) dao.deleteChaptersNotInIds(bookId, keepIds) else dao.deleteChaptersForBook(bookId)
         notifyLocalMutation("chapters")
-        // Remoto: upsert todos, depois deleta só os capítulos cujo numero saiu.
+        // Remoto: upsert todos (id uuid), depois deleta só os capítulos cujo id saiu.
         runCatching {
             if (chapters.isNotEmpty()) supabase.from("chapters").upsert(chapters.map { it.toDto() })
-            val existing = supabase.from("chapters").select(Columns.raw("numero")) {
+            val existing = supabase.from("chapters").select(Columns.raw("id")) {
                 filter { eq("book_id", bookId) }
-            }.decodeList<NumeroOnlyDto>().map { it.numero }
-            val removed = existing.filter { it !in keep }
+            }.decodeList<IdOnlyDto>().map { it.id }
+            val removed = existing.filter { it !in keepIds }
             if (removed.isNotEmpty()) {
                 supabase.from("chapters").delete {
-                    filter { eq("book_id", bookId); isIn("numero", removed) }
+                    filter { eq("book_id", bookId); isIn("id", removed) }
                 }
             }
         }.onFailure { android.util.Log.w("Rodape/Repo", "saveChapters remoto falhou: ${it.message}") }
@@ -2268,20 +2292,18 @@ class RemoteRepository(
     // ============================================================
 
     suspend fun insertBookSuggestion(suggestion: BookSuggestion) {
-        // Optimistic local-first (mesmo motivo de insertBook/insertClubBook).
+        // Optimistic local-first + fila (P0-2): offline não perde mais a sugestão.
         dao.upsertBookSuggestions(listOf(suggestion))
-        runCatching {
-            supabase.from("book_suggestions").upsert(
-                BookSuggestionInsertDto(
-                    id = suggestion.id,
-                    clubId = suggestion.clubId,
-                    bookId = suggestion.bookId,
-                    sugeridoPor = suggestion.suggestedByUserId,
-                    justificativa = suggestion.justificativa.ifBlank { null },
-                )
-            )
-        }.onSuccess { notifyLocalMutation("book_suggestions") }
-            .onFailure { android.util.Log.w("Rodape/Repo", "insertBookSuggestion remoto falhou: ${it.message}") }
+        val dto = BookSuggestionInsertDto(
+            id = suggestion.id,
+            clubId = suggestion.clubId,
+            bookId = suggestion.bookId,
+            sugeridoPor = suggestion.suggestedByUserId,
+            justificativa = suggestion.justificativa.ifBlank { null },
+        )
+        tryRemoteOrEnqueue("insert_book_suggestion", json.encodeToString(dto), notifyTable = "book_suggestions") {
+            supabase.from("book_suggestions").upsert(dto)
+        }
     }
 
     fun getBookSuggestionFlow(bookId: String, clubId: String): Flow<BookSuggestion?> {
@@ -2350,32 +2372,26 @@ class RemoteRepository(
         // notifyLocalMutation (re-fetch + prune) só após o remoto confirmar, senão
         // o re-sync poda o encontro otimista ainda-não-sincronizado.
         dao.upsertMeetings(listOf(toStore))
-        runCatching {
-            // FK: o encontro referencia books(id). Se o livro vinculado só existe
-            // local (ainda não sincronizou), o insert viola meetings_book_id_fkey e
-            // o encontro NUNCA chega ao servidor. Empurra o livro ANTES do encontro
-            // pra garantir a FK.
+        val dto = MeetingInsertDto(
+            id = meeting.id,
+            clubId = meeting.clubId,
+            data = dataIso,
+            local = meeting.local.ifBlank { null },
+            agenda = meeting.agenda.ifBlank { null },
+            bookId = meeting.bookId,
+            chapterStart = meeting.chapterStart,
+            chapterEnd = meeting.chapterEnd,
+            status = meeting.status,
+        )
+        // Offline-first + fila (P0-2): offline não perde mais o encontro. O push do
+        // livro (FK meetings_book_id_fkey) fica DENTRO do bloco pra também rodar no
+        // replay da fila (o handler insert_meeting repete a mesma lógica).
+        tryRemoteOrEnqueue("insert_meeting", json.encodeToString(dto), notifyTable = "meetings") {
             meeting.bookId?.let { bid ->
-                // runCatching próprio: se o livro JÁ existe no servidor (de outro
-                // dono), o upsert-update pode bater na RLS — mas aí a FK já está
-                // satisfeita, então não deve bloquear o encontro.
                 dao.book(bid)?.let { b -> runCatching { supabase.from("books").upsert(b.toInsertDto()) } }
             }
-            supabase.from("meetings").upsert(
-                MeetingInsertDto(
-                    id = meeting.id,
-                    clubId = meeting.clubId,
-                    data = dataIso,
-                    local = meeting.local.ifBlank { null },
-                    agenda = meeting.agenda.ifBlank { null },
-                    bookId = meeting.bookId,
-                    chapterStart = meeting.chapterStart,
-                    chapterEnd = meeting.chapterEnd,
-                    status = meeting.status,
-                )
-            )
-        }.onSuccess { notifyLocalMutation("meetings") }
-            .onFailure { android.util.Log.e("Rodape/Repo", "insertMeeting remoto falhou", it) }
+            supabase.from("meetings").upsert(dto)
+        }
     }
 
     private suspend fun syncMeetingsForClub(clubId: String) {

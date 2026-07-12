@@ -1,5 +1,36 @@
 # Changelog — Rodapé
 
+## v1.0.6 — 2026-07-12 (build 7)
+
+Correção dos P0 de dados que estavam pendentes na 1.0.5 — agora **validados contra o
+banco Supabase ao vivo** (Management API).
+
+### 🔴 Capítulos e comentários agora sincronizam entre dispositivos (P0-1 + B2)
+- **Causa raiz (provada no banco):** o app gerava id de capítulo em TEXTO
+  (`ch_<bookId>_<numero>`) e mandava pra coluna `uuid` do servidor → Postgres
+  rejeitava com `22P02` (erro engolido) → capítulos **nunca** sincronizavam e os
+  comentários iam pra dead-letter. Num aparelho só o Room mascarava; entre membros,
+  a discussão por capítulo não aparecia.
+- **Correção:** identidade de capítulo agora é um `uuid` estável, gerado na tela e
+  aceito pelo servidor. O vínculo comentário→capítulo é o id (uuid), então
+  **reordenar/renumerar capítulos não remaneja mais os comentários** (bug B2).
+- Validado ao vivo: id de texto → rejeitado (22P02); id uuid + comentário via FK →
+  aceitos.
+
+### 🔴 Criação offline não se perde mais (P0-2)
+- Criar livro/livro-do-clube/sugestão/encontro **offline** (ou com o servidor
+  falhando) agora entra na **fila de sincronização** em vez de virar uma linha
+  local órfã que o próximo sync apagava silenciosamente. 4 novos handlers de
+  replay drenam essas criações quando a rede volta (encontro empurra o livro antes,
+  respeitando a FK).
+
+### 🔴 Votação da 2ª rodada corrigida (B1)
+- A votação lia votos do **clube inteiro** (todas as rodadas), então numa segunda
+  votação os botões travavam em "Limite de votos atingido" e tocar em "Teu voto"
+  (de rodada antiga) criava voto novo. Agora é **voto único por rodada** (como o
+  servidor exige, PK round+usuário), escopado à rodada ativa: tocar no próprio voto
+  desfaz, votar em outro troca. Sem falso "limite atingido".
+
 ## v1.0.5 — 2026-07-12 (build 6)
 
 Revisão de app completa (6 auditorias paralelas do código real) → correções de

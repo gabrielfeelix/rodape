@@ -148,6 +148,12 @@ interface RodapeDao {
     @Query("DELETE FROM chapters WHERE bookId = :bookId AND numero NOT IN (:keepNumeros)")
     suspend fun deleteChaptersNotIn(bookId: String, keepNumeros: List<Int>)
 
+    // Variante por ID (identidade estável de capítulo). Reordenar/renumerar não
+    // remaneja mais os comentários: o vínculo comentário→capítulo é o id (uuid),
+    // não o numero. Deleta só capítulos cujo id saiu da lista.
+    @Query("DELETE FROM chapters WHERE bookId = :bookId AND id NOT IN (:keepIds)")
+    suspend fun deleteChaptersNotInIds(bookId: String, keepIds: List<String>)
+
     @Query("SELECT * FROM chapters WHERE bookId = :bookId ORDER BY numero ASC")
     fun chaptersForBookFlow(bookId: String): Flow<List<Chapter>>
 

@@ -747,12 +747,20 @@ fun VotacaoTab(
 
     val currentUserId = viewModel.currentUserId.collectAsState().value ?: ""
 
-    val totalVotes = votes.size
+    // Escopo por RODADA ATIVA: antes usava todos os votos do clube (todas as
+    // rodadas), então numa 2ª votação as contagens/percentuais vinham diluídos e
+    // o "limite" travava com votos de rodadas antigas (bug B1).
+    val roundVotes = remember(votes, activeRound) {
+        activeRound?.let { r -> votes.filter { it.votingRoundId == r.id } } ?: emptyList()
+    }
+    val totalVotes = roundVotes.size
 
-    // Perf: agrupa votos por livro e conta os votos do usuário uma vez por
-    // emissão, em vez de refiltrar/recontar dentro de cada card.
-    val votesByBook = remember(votes) { votes.groupBy { it.clubBookId } }
-    val userVotesInRound = remember(votes, currentUserId) { votes.count { it.userId == currentUserId } }
+    // Perf: agrupa por livro uma vez por emissão. Voto ÚNICO por usuário por rodada
+    // (o servidor tem PK (round,user)) — guardamos o livro em que o usuário votou.
+    val votesByBook = remember(roundVotes) { roundVotes.groupBy { it.clubBookId } }
+    val userVotedBookId = remember(roundVotes, currentUserId) {
+        roundVotes.firstOrNull { it.userId == currentUserId }?.clubBookId
+    }
 
     // Gate de loading: hasData = já há livros sugeridos. Enquanto carrega, mostra
     // skeleton; passada a janela sem dado, cai no empty state real.
@@ -835,8 +843,7 @@ fun VotacaoTab(
             } else {
                 items(suggestedBooks, key = { it.id }) { book ->
                     val bookVotes = votesByBook[book.id] ?: emptyList()
-                    val hasUserVoted = bookVotes.any { it.userId == currentUserId }
-                    val limitReached = !hasUserVoted && userVotesInRound >= (activeRound?.nLivros ?: 1)
+                    val hasUserVoted = userVotedBookId == book.id
                     val pct = if (totalVotes > 0) bookVotes.size.toFloat() / totalVotes.toFloat() else 0f
                     val hasJustification = suggestionsByBookId[book.id]?.justificativa?.isNotBlank() == true
 
@@ -951,16 +958,19 @@ fun VotacaoTab(
                                 }
                                 Spacer(modifier = Modifier.height(12.dp))
                                 TbButton(
+                                    // Voto único por rodada: tocar no próprio voto desfaz;
+                                    // votar em outro troca. Sem "limite atingido" (era o
+                                    // bug da 2ª votação travando todos os botões).
                                     text = when {
                                         hasUserVoted -> "Teu voto"
-                                        limitReached -> "Limite de votos atingido"
+                                        userVotedBookId != null -> "Trocar pra esse"
                                         else -> "Votar nesse"
                                     },
-                                    onClick = { if (!limitReached || hasUserVoted) viewModel.voteForBook(book.id) },
+                                    onClick = { viewModel.voteForBook(book.id) },
                                     modifier = Modifier.fillMaxWidth(),
                                     variant = if (hasUserVoted) TbButtonVariant.OlivaSoft else TbButtonVariant.Primary,
                                     size = TbButtonSize.Sm,
-                                    enabled = !(limitReached && !hasUserVoted)
+                                    enabled = true,
                                 )
                             }
                         }

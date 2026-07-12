@@ -603,15 +603,18 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
             val round = activeVotingRound.value ?: return@launch
 
             val votes = repository.getVotesForRound(round.id) // cache-first
-            // Se já votou neste livro, desfaz
-            if (votes.any { it.userId == userId && it.clubBookId == bookId }) {
+            val mine = votes.filter { it.userId == userId }
+            // VOTO ÚNICO por usuário por rodada: o servidor tem PK (round,user), então
+            // multi-voto é impossível lá (o 2º upsert substituía o 1º e o voto sumia).
+            // Tocar no próprio voto desfaz.
+            if (mine.any { it.clubBookId == bookId }) {
                 repository.removeUserVoteForBookInRound(userId, round.id, bookId)
                 return@launch
             }
-            // Limite N a partir do Room (não de um GET remoto que retorna 0 offline).
-            val count = votes.count { it.userId == userId }
-            if (count >= round.nLivros) return@launch
-
+            // Trocar de escolha: remove o voto anterior (se houver) em OUTRO livro antes
+            // de inserir, pro estado local bater com o servidor (que substitui em
+            // (round,user)). nLivros = nº de VENCEDORES da rodada, não votos por usuário.
+            mine.forEach { repository.removeUserVoteForBookInRound(userId, round.id, it.clubBookId) }
             repository.insertVote(
                 Vote(votingRoundId = round.id, clubBookId = bookId, userId = userId, votedAt = System.currentTimeMillis())
             )
@@ -1260,12 +1263,13 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
         }
     }
 
-    fun upsertChapters(bookId: String, novos: List<Pair<Int, String>>) {
+    fun upsertChapters(bookId: String, chapters: List<Chapter>) {
         viewModelScope.launch {
             // Sem guard de papel client-side: RLS/RPC do servidor já exige admin.
-            // Salva por DIFF (não delete-all): editar/adicionar capítulo NÃO apaga
-            // mais a discussão dos capítulos mantidos (bug P0 corrigido).
-            repository.saveChapters(bookId, novos)
+            // Salva por DIFF por id estável (uuid): editar/adicionar/reordenar NÃO
+            // apaga nem remaneja a discussão dos capítulos mantidos, e o id uuid
+            // sincroniza com o servidor (bugs P0-1 e B2 corrigidos).
+            repository.saveChapters(bookId, chapters)
         }
     }
 

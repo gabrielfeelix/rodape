@@ -23,9 +23,22 @@ import com.example.ui.components.TbButtonVariant
 import com.example.ui.components.RodapeCard
 import com.example.ui.components.SkeletonRowList
 import com.example.ui.components.rememberShowLoading
+import com.example.data.model.Chapter
 import com.example.ui.theme.*
 import com.example.ui.viewmodel.MainViewModel
 import com.example.util.voting.ChapterFetchResult
+import java.util.UUID
+
+// Rascunho de capítulo com IDENTIDADE ESTÁVEL (uuid). O id acompanha a linha por
+// toda edição (reordenar/renumerar), então o vínculo comentário→capítulo é o id,
+// não a posição — corrige o remapeamento de comentários (B2). O id é um uuid de
+// verdade, aceito pela coluna uuid do servidor (corrige o sync, P0-1).
+private data class ChapterDraft(val id: String, val titulo: String)
+
+// Mantém o id se já for uuid válido; senão gera um novo (migra ids legados
+// "ch_<bookId>_<numero>", que nunca sincronizaram, pra uuid no próximo save).
+private fun keepOrNewId(id: String): String =
+    runCatching { UUID.fromString(id); id }.getOrElse { UUID.randomUUID().toString() }
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -40,12 +53,12 @@ fun ManageChaptersScreen(
     // reload em tempo real troca a referência de `chapters` no meio da edição,
     // apagando alterações não salvas. Seed uma vez e não sobrescreve depois.
     var draftList by remember {
-        mutableStateOf(chapters.map { it.numero to it.titulo }.toMutableList())
+        mutableStateOf(chapters.map { ChapterDraft(keepOrNewId(it.id), it.titulo) }.toMutableList())
     }
     var seeded by remember { mutableStateOf(chapters.isNotEmpty()) }
     LaunchedEffect(chapters) {
         if (!seeded && chapters.isNotEmpty()) {
-            draftList = chapters.map { it.numero to it.titulo }.toMutableList()
+            draftList = chapters.map { ChapterDraft(keepOrNewId(it.id), it.titulo) }.toMutableList()
             seeded = true
         }
     }
@@ -72,7 +85,9 @@ fun ManageChaptersScreen(
                                     fetching = false
                                     when (result) {
                                         is ChapterFetchResult.Success -> {
-                                            draftList = result.chapters.toMutableList()
+                                            draftList = result.chapters
+                                                .map { ChapterDraft(UUID.randomUUID().toString(), it.second) }
+                                                .toMutableList()
                                             apiBanner = "Encontramos ${result.chapters.size} capítulos. Revisa e salva."
                                         }
                                         is ChapterFetchResult.Failed -> {
@@ -167,11 +182,13 @@ fun ManageChaptersScreen(
                 modifier = Modifier.weight(1f).padding(horizontal = 16.dp),
                 verticalArrangement = Arrangement.spacedBy(8.dp)
             ) {
-                itemsIndexed(draftList) { idx, pair ->
+                itemsIndexed(draftList, key = { _, d -> d.id }) { idx, draft ->
                     RodapeCard(modifier = Modifier.fillMaxWidth()) {
                         Row(verticalAlignment = Alignment.CenterVertically) {
                             Text(
-                                "Cap. ${pair.first}",
+                                // Numero = posição na lista (recalculado ao salvar). O
+                                // id (uuid) é a identidade real; o numero é só ordem.
+                                "Cap. ${idx + 1}",
                                 style = MaterialTheme.typography.labelSmall.copy(
                                     fontWeight = FontWeight.SemiBold,
                                     color = Muted
@@ -179,10 +196,10 @@ fun ManageChaptersScreen(
                                 modifier = Modifier.width(60.dp)
                             )
                             OutlinedTextField(
-                                value = pair.second,
+                                value = draft.titulo,
                                 onValueChange = { newTitle ->
                                     draftList = draftList.toMutableList().apply {
-                                        this[idx] = pair.first to newTitle
+                                        this[idx] = draft.copy(titulo = newTitle)
                                     }
                                 },
                                 placeholder = { Text("Título (opcional)") },
@@ -194,7 +211,7 @@ fun ManageChaptersScreen(
                                     if (idx > 0) {
                                         draftList = draftList.toMutableList().apply {
                                             val tmp = this[idx - 1]
-                                            this[idx - 1] = pair
+                                            this[idx - 1] = draft
                                             this[idx] = tmp
                                         }
                                     }
@@ -206,7 +223,7 @@ fun ManageChaptersScreen(
                                     if (idx < draftList.size - 1) {
                                         draftList = draftList.toMutableList().apply {
                                             val tmp = this[idx + 1]
-                                            this[idx + 1] = pair
+                                            this[idx + 1] = draft
                                             this[idx] = tmp
                                         }
                                     }
@@ -223,8 +240,7 @@ fun ManageChaptersScreen(
                     TbButton(
                         text = "+ Adicionar capítulo",
                         onClick = {
-                            val nextNum = (draftList.maxOfOrNull { it.first } ?: 0) + 1
-                            draftList = (draftList + (nextNum to "")).toMutableList()
+                            draftList = (draftList + ChapterDraft(UUID.randomUUID().toString(), "")).toMutableList()
                         },
                         variant = TbButtonVariant.Outline,
                         modifier = Modifier.fillMaxWidth().padding(top = 8.dp)
@@ -262,8 +278,13 @@ fun ManageChaptersScreen(
                     },
                     confirmButton = {
                         TextButton(onClick = {
-                            val normalized = draftList.mapIndexed { i, p -> (i + 1) to p.second }
-                            viewModel.upsertChapters(currentBook!!.id, normalized)
+                            // numero = posição (1..N contígua); id (uuid) é a identidade
+                            // estável que preserva os comentários ao reordenar.
+                            val bookId = currentBook!!.id
+                            val chaptersToSave = draftList.mapIndexed { i, d ->
+                                Chapter(id = d.id, bookId = bookId, numero = i + 1, titulo = d.titulo)
+                            }
+                            viewModel.upsertChapters(bookId, chaptersToSave)
                             showSaveConfirm = false
                             onNavigateBack()
                         }) { Text("Salvar", color = Terracota, fontWeight = FontWeight.SemiBold) }
