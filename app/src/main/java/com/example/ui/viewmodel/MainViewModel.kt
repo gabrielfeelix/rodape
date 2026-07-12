@@ -1355,6 +1355,20 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
     fun fetchChaptersOnline(book: Book, onResult: (com.example.util.voting.ChapterFetchResult) -> Unit) {
         viewModelScope.launch {
             try {
+                // 1) Open Library table_of_contents (grátis, sem chave) — melhor fonte
+                //    pública, boa pra técnico/inglês (ficção/PT quase sempre vem vazio).
+                if (book.isbn.isNotBlank()) {
+                    val edition = runCatching {
+                        com.example.data.api.OpenLibraryApi.service.editionByIsbn(book.isbn.trim())
+                    }.getOrNull()
+                    val toc = edition?.tableOfContents.orEmpty().map { it.label to it.title }
+                    val fromOl = com.example.util.voting.ChapterFetcher.fromOpenLibraryToc(toc)
+                    if (fromOl is com.example.util.voting.ChapterFetchResult.Success) {
+                        onResult(fromOl)
+                        return@launch
+                    }
+                }
+                // 2) Fallback: raspar a descrição do Google Books (fraco, mas às vezes pega).
                 val query = if (book.isbn.isNotBlank()) "isbn:${book.isbn}"
                     else "intitle:${book.title}+inauthor:${book.author}"
                 val gb = com.example.data.api.GoogleBooksApi.service.search(query)

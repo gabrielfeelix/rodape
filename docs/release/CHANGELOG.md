@@ -1,5 +1,17 @@
 # Changelog — Rodapé
 
+## v1.0.10 — 2026-07-12 (build 11)
+
+### ✨ "Buscar online" agora usa o Open Library (índice de capítulos)
+Pesquisa a fundo (com testes ao vivo): a ÚNICA fonte pública/grátis/sem-chave com
+lista de capítulos é o `table_of_contents` do **Open Library**. Cobertura é enviesada:
+ótima pra técnico/inglês (ex.: Clean Code = 358 entradas, Design Patterns = 10), mas
+**romances e livros em português quase sempre vêm vazios**. O botão "buscar online" em
+Gerenciar clube → Capítulos agora consulta o Open Library por ISBN (filtrando só
+entradas de capítulo reais), com fallback pra descrição do Google Books. Quando não
+acha, o admin usa o **gerar N capítulos**. (Nenhuma API resolve capítulos de ficção de
+forma confiável — é uma limitação dos dados, não do app.)
+
 ## v1.0.9 — 2026-07-12 (build 10)
 
 Verificado no banco ao vivo que o servidor **aceita** troca de voto e progresso (upsert

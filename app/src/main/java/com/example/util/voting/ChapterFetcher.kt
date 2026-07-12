@@ -31,4 +31,21 @@ object ChapterFetcher {
         if (chapters.size < 3) return ChapterFetchResult.Failed
         return ChapterFetchResult.Success(chapters)
     }
+
+    /**
+     * Extrai capítulos do table_of_contents do Open Library. Cada entrada tem um
+     * `label` (ex.: "Chapter 1", "Capítulo 3", "1") e um `title`. Pegamos só as
+     * entradas cujo label indica um número de capítulo (ignora prefácio, sumário,
+     * sub-seções), pra não gerar 300 "capítulos" a partir de sub-tópicos.
+     * Recebe pares (label, title).
+     */
+    fun fromOpenLibraryToc(entries: List<Pair<String?, String?>>): ChapterFetchResult {
+        val labelRegex = Regex("""^(?:chapter|cap[íi]tulo|cap\.?)?\s*(\d{1,3})\b""", RegexOption.IGNORE_CASE)
+        val chapters = entries.mapNotNull { (label, title) ->
+            val l = label?.trim().orEmpty()
+            val num = labelRegex.find(l)?.groupValues?.get(1)?.toIntOrNull() ?: return@mapNotNull null
+            num to (title?.trim().orEmpty())
+        }.distinctBy { it.first }.sortedBy { it.first }
+        return validate(chapters)
+    }
 }

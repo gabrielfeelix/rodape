@@ -5,6 +5,7 @@ import com.squareup.moshi.JsonClass
 import retrofit2.Retrofit
 import retrofit2.converter.moshi.MoshiConverterFactory
 import retrofit2.http.GET
+import retrofit2.http.Path
 import retrofit2.http.Query
 
 @JsonClass(generateAdapter = true)
@@ -24,6 +25,21 @@ data class OpenLibrarySearchResponse(
     @Json(name = "docs") val docs: List<OpenLibraryDoc>?
 )
 
+// Índice (table_of_contents) de uma EDIÇÃO. É a ÚNICA fonte pública/grátis/sem-chave
+// com capítulos, mas cobertura é enviesada pra técnico/inglês — ficção e livros em
+// português quase sempre vêm vazios. Best-effort: se vier, ótimo; se não, o admin
+// gera N capítulos manualmente.
+@JsonClass(generateAdapter = true)
+data class OpenLibraryTocEntry(
+    @Json(name = "label") val label: String? = null,
+    @Json(name = "title") val title: String? = null,
+)
+
+@JsonClass(generateAdapter = true)
+data class OpenLibraryEdition(
+    @Json(name = "table_of_contents") val tableOfContents: List<OpenLibraryTocEntry>? = null,
+)
+
 interface OpenLibraryService {
     @GET("search.json")
     suspend fun searchBooks(
@@ -32,6 +48,10 @@ interface OpenLibraryService {
         @Query("subject") subject: String? = null,     // ex: "fiction", "brazilian literature"
         @Query("limit") limit: Int = 20
     ): OpenLibrarySearchResponse
+
+    // /isbn/<isbn>.json redireciona (302) pra /books/<OLID>.json — OkHttp segue sozinho.
+    @GET("isbn/{isbn}.json")
+    suspend fun editionByIsbn(@Path("isbn") isbn: String): OpenLibraryEdition
 }
 
 object OpenLibraryApi {
