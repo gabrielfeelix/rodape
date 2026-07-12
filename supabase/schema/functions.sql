@@ -1,5 +1,4 @@
 -- Snapshot das funções public (RPCs) — Management API, atualizado 2026-07-12
--- NÃO editar à mão; use migrations em supabase/migrations/
 
 CREATE OR REPLACE FUNCTION public.auto_close_expired_rounds()
  RETURNS integer
@@ -517,6 +516,33 @@ begin
   end if;
 
   delete from public.club_members where club_id = p_club_id and user_id = v_uid;
+end;
+$function$
+;
+
+CREATE OR REPLACE FUNCTION public.notify_book_finished()
+ RETURNS trigger
+ LANGUAGE plpgsql
+ SECURITY DEFINER
+ SET search_path TO 'public'
+AS $function$
+begin
+  if new.status = 'finished'
+     and (tg_op = 'INSERT' or old.status is distinct from new.status) then
+    begin
+      insert into public.notifications (user_id, club_id, tipo, payload)
+      select cm.user_id, new.club_id, 'book_finished'::notification_type,
+             jsonb_build_object(
+               'bookTitle', coalesce((select b.title from public.books b where b.id = new.book_id), '')
+             )
+      from public.club_members cm
+      where cm.club_id = new.club_id;
+    exception when others then
+      -- Nunca bloquear a conclusão do livro por causa de notificação.
+      null;
+    end;
+  end if;
+  return new;
 end;
 $function$
 ;

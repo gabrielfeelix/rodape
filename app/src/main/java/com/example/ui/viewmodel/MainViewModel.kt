@@ -1289,23 +1289,9 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
                 if (isCurrentBook) {
                     repository.updateClubBookStatus(clubId, bookId, "finished")
                     repository.updateClubBookMeetingDate(clubId, bookId, System.currentTimeMillis())
-                    // Notificar membros
-                    val members = repository.getClubMembersFlow(clubId).first()
-                    val book = repository.getBook(bookId)
-                    val titleEsc = (book?.title ?: "").replace("\\", "\\\\").replace("\"", "\\\"")
-                    members.forEach { m ->
-                        repository.insertNotification(
-                            DbNotification(
-                                id = UUID.randomUUID().toString(),
-                                userId = m.id,
-                                clubId = clubId,
-                                tipo = "book_finished",
-                                payloadJson = "{\"bookTitle\":\"$titleEsc\"}",
-                                lida = false,
-                                criadoEm = System.currentTimeMillis()
-                            )
-                        )
-                    }
+                    // As notificações de "livro finalizado" são criadas server-side
+                    // pelo trigger club_books_notify_finished (migration 0002). O
+                    // insert via cliente falhava (sem INSERT policy + enum inválido).
                 }
             }
         }

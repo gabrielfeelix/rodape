@@ -188,6 +188,7 @@ private fun NotificationItem(
     val title = when (tipo) {
         "comment_on_chapter" -> "Comentário na leitura"
         "next_book_decided" -> "Próxima leitura definida!"
+        "book_finished" -> "Livro concluído! 📚"
         "voting_open" -> "Nova votação de livro!"
         "voting_closed" -> "Votação encerrada"
         "meeting_reminder" -> "Encontro marcado!"
@@ -207,6 +208,11 @@ private fun NotificationItem(
         tipo == "next_book_decided" && payloadJson.contains("bookTitle") -> {
             val bookTitle = payloadJson.substringAfter("\"bookTitle\":\"").substringBefore("\"")
             "Nosso próximo companheiro de viagem será '$bookTitle'. Prepare seu coração!"
+        }
+        tipo == "book_finished" -> {
+            val bookTitle = payloadJson.substringAfter("\"bookTitle\":\"").substringBefore("\"")
+            if (bookTitle.isBlank()) "O clube terminou o livro atual! Já pensou no próximo?"
+            else "O clube terminou '$bookTitle'! Já pensou no próximo?"
         }
         tipo == "voting_open" -> {
             "Quem será nosso próximo parceiro de leituras? A votação iniciou, dê seu palpite!"
@@ -252,6 +258,7 @@ private fun NotificationItem(
         "voting_open", "next_book_decided", "voting_closed" -> Pair(Icons.Outlined.ThumbUp, Pair(TerracotaSoft, Terracota))
         "meeting_reminder" -> Pair(Icons.Outlined.DateRange, Pair(OlivaSoft, OlivaDark))
         "member_finished" -> Pair(Icons.Outlined.CheckCircle, Pair(Ink, Cream))
+        "book_finished" -> Pair(Icons.Outlined.CheckCircle, Pair(OlivaSoft, OlivaDark))
         "member_removed" -> Pair(Icons.Outlined.Info, Pair(TerracotaSoft, Terracota))
         "promoted_to_admin", "super_admin_transferred" -> Pair(Icons.Outlined.Star, Pair(TerracotaSoft, Terracota))
         else -> Pair(Icons.Outlined.Notifications, Pair(OlivaSoft, OlivaDark))
