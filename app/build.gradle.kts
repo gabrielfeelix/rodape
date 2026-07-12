@@ -107,6 +107,11 @@ secrets {
   // pra nao vazar no BuildConfig/APK. Rotacionar a chave no console (ela ja
   // esteve embutida em builds anteriores).
   ignoreList.add("GEMINI_API_KEY")
+  // Credenciais de administração do Supabase (só usadas em ferramentas locais /
+  // migrações, NUNCA no app) — barradas pra jamais irem pro BuildConfig/APK.
+  ignoreList.add("SUPABASE_ACCESS_TOKEN")
+  ignoreList.add("SUPABASE_DB_PASSWORD")
+  ignoreList.add("SUPABASE_DB_URL")
   // Senhas do keystore: jamais devem ir pro BuildConfig (vazariam no APK).
   // O signingConfig le essas direto via System.getenv() em runtime de build.
   ignoreList.add("KEYSTORE_PATH")
