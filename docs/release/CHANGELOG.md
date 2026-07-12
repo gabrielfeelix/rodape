@@ -1,5 +1,24 @@
 # Changelog — Rodapé
 
+## v1.0.7 — 2026-07-12 (build 8)
+
+### ⚡ Ações de DB agora resolvem na hora (fim do "1 alteração aguardando conexão")
+- **Diagnóstico (medido):** o banco/rede está rápido — round-trip ~200ms. O problema
+  NÃO era o servidor. Era o caminho de recuperação: quando uma ação falhava por um
+  tropeço **transitório** (rádio frio / conexão fria no primeiro toque), ela caía na
+  fila offline e o **único** gatilho pra re-sincronizar era o `DrainQueueWorker`
+  (WorkManager, não-expedited) — que só roda **minutos** depois. Por isso o
+  "1 alteração aguardando conexão" ficava preso.
+- **Correção 1 — retry inline:** antes de desistir pra fila, a ação tenta de novo
+  2–3× com 350–700ms de intervalo. Como a rede volta em <1s, a maioria das ações
+  agora nem chega a mostrar "aguardando".
+- **Correção 2 — drenagem imediata em processo:** se ainda assim cair na fila, o app
+  drena na hora (retries de 0,25s→5s) no próprio processo, em vez de esperar o
+  WorkManager. O worker vira só fallback pra quando o app está fechado.
+- Resultado: votar, marcar progresso, RSVP, avaliar, comentar etc. sincronizam em
+  ~1s. A UI já era otimista (aparece na hora); agora o selo de sincronização some
+  quase imediatamente.
+
 ## v1.0.6 — 2026-07-12 (build 7)
 
 Correção dos P0 de dados que estavam pendentes na 1.0.5 — agora **validados contra o

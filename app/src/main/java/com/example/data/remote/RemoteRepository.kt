@@ -20,6 +20,7 @@ import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.async
 import kotlinx.coroutines.cancel
 import kotlinx.coroutines.awaitAll
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -766,8 +767,37 @@ class RemoteRepository(
                 createdAt = System.currentTimeMillis(),
             )
         )
-        // Pede pro WorkManager tentar drenar assim que houver rede.
+        // RECUPERAÇÃO IMEDIATA em processo: a falha que joga pra fila costuma ser
+        // TRANSITÓRIA (rádio frio/conexão fria no 1º toque) e a rede volta em 1-2s.
+        // Antes o único gatilho era o WorkManager (não-expedited) — que só drena
+        // MINUTOS depois, deixando o "1 alteração aguardando conexão" preso. Agora
+        // drenamos já no scope do app, com retries curtos, e o worker vira fallback
+        // só pra quando o app está em background/morto.
+        kickImmediateDrain()
         com.example.data.sync.DrainQueueWorker.schedule(appContext)
+    }
+
+    // Evita spawnar vários loops de drain concorrentes quando o usuário faz várias
+    // ações seguidas — um loop só drena TODA a fila a cada passada.
+    private val immediateDrainInFlight = java.util.concurrent.atomic.AtomicBoolean(false)
+
+    /** Drena a fila JÁ, em processo, com backoff curto até esvaziar (ou desistir
+     *  pro fallback do WorkManager). Não bloqueia a ação: roda no scope do repo. */
+    private fun kickImmediateDrain() {
+        if (!immediateDrainInFlight.compareAndSet(false, true)) return
+        scope.launch {
+            try {
+                // 0.25s, 0.75s, 1.5s, 3s, 5s — cobre a janela típica de rádio frio.
+                val delaysMs = longArrayOf(250, 750, 1500, 3000, 5000)
+                for (d in delaysMs) {
+                    delay(d)
+                    val remaining = runCatching { tryDrainPendingQueue() }.getOrDefault(1)
+                    if (remaining == 0) break
+                }
+            } finally {
+                immediateDrainInFlight.set(false)
+            }
+        }
     }
 
     /**
@@ -785,9 +815,26 @@ class RemoteRepository(
         // otimista ainda-não-sincronizada (item "pisca e some"). O Room já emitiu
         // pro Flow no upsert local, então a UI otimista aparece na hora de qualquer
         // jeito; o notify só reconcilia com o servidor.
-        runCatching { block() }
-            .onSuccess { if (notifyTable != null) notifyLocalMutation(notifyTable) }
-            .onFailure { enqueueMutation(kind, payload) }
+        //
+        // Retry INLINE curto antes de desistir pra fila: a falha comum é TRANSITÓRIA
+        // (rádio frio/conexão fria no 1º toque) e a rede volta em <1s. Com a rede
+        // sadia (round-trip ~200ms) a ação "resolve" na hora em vez de mostrar
+        // "aguardando conexão". Todos os blocks são idempotentes (upsert/delete),
+        // então repetir é seguro. 4xx real (payload/permissão) não retenta inline.
+        repeat(3) { attempt ->
+            val res = runCatching { block() }
+            if (res.isSuccess) {
+                if (notifyTable != null) notifyLocalMutation(notifyTable)
+                return
+            }
+            val err = res.exceptionOrNull()
+            if (err != null && isPermanentError(err)) {
+                enqueueMutation(kind, payload)
+                return
+            }
+            if (attempt < 2) kotlinx.coroutines.delay(350L * (attempt + 1)) // 350ms, 700ms
+        }
+        enqueueMutation(kind, payload)
     }
 
     // Depois de MAX_DRAIN_ATTEMPTS a mutation vira "dead-letter" e e descartada,
@@ -813,7 +860,7 @@ class RemoteRepository(
     /** Drena a fila — chamada quando rede volta ou em sync periodico.
      *  Para na PRIMEIRA falha transitoria pra preservar ordem/dependencias
      *  (ex: insert_reaction depende de insert_comment ainda na fila). */
-    suspend fun tryDrainPendingQueue() = drainMutex.withLock {
+    suspend fun tryDrainPendingQueue(): Int = drainMutex.withLock {
         val all = pendingDao.all() // ja vem ordenado por createdAt ASC
         for (m in all) {
             val handler = mutationHandlers[m.kind]
@@ -846,6 +893,9 @@ class RemoteRepository(
                 break
             }
         }
+        // Quantos ainda sobraram na fila (0 = tudo sincronizado). Usado pelo drain
+        // imediato em processo pra parar assim que a fila esvazia.
+        pendingDao.all().size
     }
 
     /** StateFlow do tamanho da fila pra UI mostrar badge "X pendentes". */
