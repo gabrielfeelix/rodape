@@ -33,6 +33,7 @@ import androidx.compose.ui.unit.dp
 import com.example.R
 import com.example.ui.components.RodapeCard
 import com.example.ui.theme.Muted
+import com.example.ui.theme.Oliva
 import com.example.ui.theme.Terracota
 import kotlinx.coroutines.launch
 
@@ -52,6 +53,11 @@ fun SignUpScreen(
     var isLoading by remember { mutableStateOf(false) }
     var errorMsg by remember { mutableStateOf<String?>(null) }
     var showConfirmHint by remember { mutableStateOf(false) }
+    // Email de fato usado no cadastro (fixado no submit) — mostrado no "muro" de
+    // confirmação e reutilizado no reenvio.
+    var confirmedEmail by remember { mutableStateOf("") }
+    // Feedback do "Reenviar email" (sucesso ou falha), separado do errorMsg do form.
+    var resendMsg by remember { mutableStateOf<String?>(null) }
     val scope = rememberCoroutineScope()
     val emailFocusRequester = remember { FocusRequester() }
     val passwordFocusRequester = remember { FocusRequester() }
@@ -75,8 +81,31 @@ fun SignUpScreen(
                 val r = onSignUp(email, password, name.trim())
                 isLoading = false
                 r.fold(
-                    onSuccess = { showConfirmHint = true },
+                    onSuccess = {
+                        confirmedEmail = email
+                        resendMsg = null
+                        showConfirmHint = true
+                    },
                     onFailure = { errorMsg = com.example.ui.auth.AuthErrors.friendly(it, "Falha ao criar conta") },
+                )
+            }
+        }
+    }
+
+    // Reenvio real da confirmação: chamar signUp de novo com o mesmo email ainda
+    // não confirmado faz o Supabase disparar outro email de confirmação (não cria
+    // conta duplicada). Sem endpoint dedicado exposto por este callback, esse é o
+    // caminho de reenvio de verdade — nada de botão decorativo.
+    val resendConfirmation: () -> Unit = {
+        if (!isLoading && confirmedEmail.isNotBlank()) {
+            isLoading = true
+            resendMsg = null
+            scope.launch {
+                val r = onSignUp(confirmedEmail, password, name.trim())
+                isLoading = false
+                r.fold(
+                    onSuccess = { resendMsg = "Reenviamos o link para $confirmedEmail. Confira sua caixa (e o spam)." },
+                    onFailure = { resendMsg = com.example.ui.auth.AuthErrors.friendly(it, "Não deu pra reenviar agora. Tente em instantes.") },
                 )
             }
         }
@@ -105,19 +134,89 @@ fun SignUpScreen(
                 RodapeCard(modifier = Modifier.fillMaxWidth(), contentPadding = PaddingValues(20.dp)) {
                     if (showConfirmHint) {
                         Text(
-                            "Conta criada! Confira seu email pra confirmar o cadastro antes de entrar.",
+                            "Conta criada!",
+                            style = MaterialTheme.typography.displaySmall,
+                            textAlign = TextAlign.Center,
+                            modifier = Modifier.fillMaxWidth(),
+                        )
+                        Spacer(Modifier.height(12.dp))
+                        Text(
+                            "Enviamos um link de confirmação para:",
                             style = MaterialTheme.typography.bodyLarge,
                             textAlign = TextAlign.Center,
                             modifier = Modifier.fillMaxWidth(),
                         )
-                        Spacer(Modifier.height(16.dp))
+                        Spacer(Modifier.height(4.dp))
+                        Text(
+                            confirmedEmail,
+                            style = MaterialTheme.typography.bodyLarge.copy(
+                                fontWeight = FontWeight.Bold,
+                                color = Terracota,
+                            ),
+                            textAlign = TextAlign.Center,
+                            modifier = Modifier.fillMaxWidth(),
+                        )
+                        Spacer(Modifier.height(8.dp))
+                        Text(
+                            "Abra o link antes de entrar. Confira também a caixa de spam.",
+                            style = MaterialTheme.typography.bodyMedium.copy(color = Muted),
+                            textAlign = TextAlign.Center,
+                            modifier = Modifier.fillMaxWidth(),
+                        )
+
+                        resendMsg?.let {
+                            Spacer(Modifier.height(8.dp))
+                            Text(
+                                it,
+                                color = Oliva,
+                                style = MaterialTheme.typography.bodyMedium,
+                                textAlign = TextAlign.Center,
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .semantics { liveRegion = LiveRegionMode.Polite },
+                            )
+                        }
+
+                        Spacer(Modifier.height(20.dp))
                         Button(
                             onClick = onSignedUp,
+                            enabled = !isLoading,
                             modifier = Modifier.fillMaxWidth().height(52.dp),
                             shape = RoundedCornerShape(26.dp),
                             colors = ButtonDefaults.buttonColors(containerColor = Terracota),
                         ) {
                             Text("Voltar para login", color = Color.White)
+                        }
+
+                        Spacer(Modifier.height(12.dp))
+                        OutlinedButton(
+                            onClick = { resendConfirmation() },
+                            enabled = !isLoading,
+                            modifier = Modifier.fillMaxWidth().height(52.dp),
+                            shape = RoundedCornerShape(26.dp),
+                            border = BorderStroke(1.dp, Terracota),
+                            colors = ButtonDefaults.outlinedButtonColors(contentColor = Terracota),
+                        ) {
+                            if (isLoading) {
+                                CircularProgressIndicator(color = Terracota, strokeWidth = 2.dp, modifier = Modifier.size(20.dp))
+                            } else {
+                                Text("Reenviar email")
+                            }
+                        }
+
+                        Spacer(Modifier.height(4.dp))
+                        // "Corrigir email": volta ao formulário editável sem perder o que
+                        // foi digitado (name/email/password ficam no rememberSaveable).
+                        TextButton(
+                            onClick = {
+                                showConfirmHint = false
+                                resendMsg = null
+                                errorMsg = null
+                            },
+                            enabled = !isLoading,
+                            modifier = Modifier.fillMaxWidth(),
+                        ) {
+                            Text("Corrigir email", color = Muted)
                         }
                     } else {
                         Text(
@@ -156,7 +255,7 @@ fun SignUpScreen(
                             label = { Text("Senha") },
                             supportingText = {
                                 Text(
-                                    "8+ caracteres com maiusculas, minusculas, numeros e simbolos (ex: Rodape@123)",
+                                    "8+ caracteres com maiúsculas, minúsculas, números e símbolos (ex.: Rodape@123)",
                                     style = MaterialTheme.typography.bodySmall
                                 )
                             },
@@ -177,6 +276,19 @@ fun SignUpScreen(
                             enabled = !isLoading,
                         )
 
+                        // Checklist inline: mostra exatamente o que ainda falta na senha,
+                        // pra o botão cinza não deixar o usuário no escuro.
+                        if (password.isNotEmpty() && !pwValid) {
+                            Spacer(Modifier.height(8.dp))
+                            Column(Modifier.fillMaxWidth()) {
+                                PasswordReq("Pelo menos 8 caracteres", password.length >= 8)
+                                PasswordReq("Uma letra maiúscula", password.any { it.isUpperCase() })
+                                PasswordReq("Uma letra minúscula", password.any { it.isLowerCase() })
+                                PasswordReq("Um número", password.any { it.isDigit() })
+                                PasswordReq("Um símbolo (ex.: @, !, #)", password.any { !it.isLetterOrDigit() })
+                            }
+                        }
+
                         errorMsg?.let {
                             Spacer(Modifier.height(8.dp))
                             Text(
@@ -184,6 +296,24 @@ fun SignUpScreen(
                                 color = MaterialTheme.colorScheme.error,
                                 style = MaterialTheme.typography.bodyMedium,
                                 modifier = Modifier.semantics { liveRegion = LiveRegionMode.Assertive },
+                            )
+                        }
+
+                        // Resumo do que ainda bloqueia o cadastro (nome/email/senha), pra
+                        // explicar por que o botão "Cadastrar" está desabilitado.
+                        val faltamCampos = buildList {
+                            if (!nameValid) add("seu nome")
+                            if (!emailValid) add("um email válido")
+                            if (!pwValid) add("uma senha forte")
+                        }
+                        if (faltamCampos.isNotEmpty() &&
+                            (name.isNotEmpty() || email.isNotEmpty() || password.isNotEmpty())
+                        ) {
+                            Spacer(Modifier.height(12.dp))
+                            Text(
+                                "Falta: " + faltamCampos.joinToString(", "),
+                                style = MaterialTheme.typography.bodySmall.copy(color = Muted),
+                                modifier = Modifier.fillMaxWidth(),
                             )
                         }
 
@@ -251,5 +381,26 @@ fun SignUpScreen(
                 Spacer(Modifier.height(48.dp))
             }
         }
+    }
+}
+
+/** Linha do checklist de senha: verde quando o requisito é atendido. */
+@Composable
+private fun PasswordReq(label: String, met: Boolean) {
+    Row(
+        modifier = Modifier.fillMaxWidth().padding(vertical = 1.dp),
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        Text(
+            if (met) "✓" else "○",
+            color = if (met) Oliva else Muted,
+            style = MaterialTheme.typography.bodySmall,
+        )
+        Spacer(Modifier.width(8.dp))
+        Text(
+            label,
+            color = if (met) Oliva else Muted,
+            style = MaterialTheme.typography.bodySmall,
+        )
     }
 }

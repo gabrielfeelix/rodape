@@ -165,7 +165,7 @@ fun FrasesScreen(
                             textAlign = androidx.compose.ui.text.style.TextAlign.Center,
                         )
                         Text(
-                            text = "As frases que você marcar durante a leitura aparecem aqui. Abra o livro atual e toque em marcar frase pra começar.",
+                            text = "As frases que você marcar durante a leitura aparecem aqui. Abra um livro e toque em marcar frase enquanto lê.",
                             style = MaterialTheme.typography.bodyMedium,
                             color = Muted,
                             textAlign = androidx.compose.ui.text.style.TextAlign.Center,
@@ -208,8 +208,10 @@ fun FrasesScreen(
                     }
 
                     items(filteredQuotes, key = { it.id }) { quote ->
+                        // Livro fora do clube: fallback neutro. O capítulo fica só na
+                        // linha de referência (QuoteCard), não no lugar do título.
                         val bookTitle = clubBooks.find { it.id == quote.bookId }?.title
-                            ?: quote.capituloRef
+                            ?: "Livro removido"
 
                         Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
                             Text(

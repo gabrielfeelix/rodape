@@ -23,6 +23,7 @@ import com.example.ui.components.Pill
 import com.example.ui.components.PillVariant
 import com.example.ui.components.RatingStars
 import com.example.ui.components.RodapeCard
+import com.example.ui.components.TbButton
 import com.example.ui.components.SkeletonBox
 import com.example.ui.components.SkeletonText
 import com.example.ui.components.rememberShowLoading
@@ -37,7 +38,8 @@ import kotlinx.coroutines.flow.map
 @Composable
 fun ShelfTabScreen(
     viewModel: MainViewModel,
-    onNavigateToBookDetail: (String) -> Unit
+    onNavigateToBookDetail: (String) -> Unit,
+    onNavigateToSuggest: () -> Unit = {}
 ) {
     val finishedBooks by viewModel.finishedBooks.collectAsState()
     val meetingDates by viewModel.finishedBooksMeetingDates.collectAsState()
@@ -71,8 +73,13 @@ fun ShelfTabScreen(
     }
     val ratingsByBook by ratingsFlow.collectAsState(initial = emptyMap())
 
+    // "Favoritos" = favoritos PESSOAIS de verdade (♥), não mais a média do clube
+    // ≥ 4.5 (que enganava — o usuário não escolhia nada). Mostra os livros que ESTE
+    // usuário favoritou e que o clube já leu (interseção).
+    val favoriteBooks by viewModel.favoriteBooks.collectAsState()
+    val favoriteIds = remember(favoriteBooks) { favoriteBooks.map { it.id }.toSet() }
     val displayedBooks = if (filterBy == "Favoritos") {
-        finishedBooks.filter { (ratingsByBook[it.id] ?: 0f) >= 4.5f }
+        finishedBooks.filter { it.id in favoriteIds }
     } else finishedBooks
 
     // Distingue LOADING de EMPTY: no cold start local-first `finishedBooks` chega
@@ -103,9 +110,9 @@ fun ShelfTabScreen(
             Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
                 if (filterBy == "Favoritos") {
                     // Empty do filtro "Favoritos" ≠ empty geral: há livros lidos,
-                    // só faltam favoritos. Copy honesta (bug U2).
+                    // só faltam favoritos. Copy honesta — o ♥ existe de verdade agora.
                     Text(
-                        text = "Nenhum favorito ainda. Toque na estrela de um livro pra marcá-lo como favorito.",
+                        text = "Você ainda não favoritou nenhum livro. Toque no ♥ na página de um livro pra guardá-lo aqui.",
                         style = MaterialTheme.typography.bodyLarge,
                         color = Muted,
                         textAlign = TextAlign.Center,
@@ -129,9 +136,11 @@ fun ShelfTabScreen(
                             color = Muted,
                             textAlign = TextAlign.Center
                         )
-                        // CTA "Sugerir uma leitura" omitido: não há callback de
-                        // navegação pra sugerir livro no escopo desta tela (só
-                        // `viewModel` e `onNavigateToBookDetail`).
+                        Spacer(modifier = Modifier.height(20.dp))
+                        TbButton(
+                            text = "Sugerir uma leitura",
+                            onClick = onNavigateToSuggest
+                        )
                     }
                 }
             }

@@ -408,6 +408,28 @@ interface RodapeDao {
     @Query("SELECT * FROM book_ratings WHERE bookId = :bookId AND clubId = :clubId AND userId = :userId LIMIT 1")
     fun bookRatingOfUserFlow(bookId: String, clubId: String, userId: String): Flow<BookRating?>
 
+    // ====================== BOOK FAVORITES ======================
+    @Upsert
+    suspend fun upsertBookFavorites(fs: List<BookFavorite>)
+
+    @Query("DELETE FROM book_favorites WHERE userId = :userId AND bookId = :bookId")
+    suspend fun deleteBookFavorite(userId: String, bookId: String)
+
+    @Query("DELETE FROM book_favorites WHERE userId = :userId AND bookId NOT IN (:keepBookIds)")
+    suspend fun pruneBookFavoritesExcept(userId: String, keepBookIds: List<String>)
+
+    @Query("SELECT EXISTS(SELECT 1 FROM book_favorites WHERE userId = :userId AND bookId = :bookId)")
+    fun isBookFavoriteFlow(userId: String, bookId: String): Flow<Boolean>
+
+    // Livros favoritos do usuário, entre TODOS os clubes (join com books global).
+    @Query("SELECT b.* FROM books b INNER JOIN book_favorites f ON f.bookId = b.id WHERE f.userId = :userId ORDER BY f.criadoEm DESC")
+    fun favoriteBooksFlow(userId: String): Flow<List<Book>>
+
+    // Um clube (qualquer) que contém o livro — usado pra abrir o detalhe (club-scoped)
+    // a partir do Perfil, trocando o clube ativo antes de navegar.
+    @Query("SELECT clubId FROM club_books WHERE bookId = :bookId LIMIT 1")
+    suspend fun anyClubIdForBook(bookId: String): String?
+
     // ====================== MEMBER REMOVALS ======================
     @Upsert
     suspend fun upsertMemberRemovals(rs: List<MemberRemoval>)
@@ -530,6 +552,9 @@ interface RodapeDao {
     @Query("DELETE FROM book_ratings")
     suspend fun clearBookRatings()
 
+    @Query("DELETE FROM book_favorites")
+    suspend fun clearBookFavorites()
+
     @Query("DELETE FROM book_suggestions")
     suspend fun clearBookSuggestions()
 
@@ -559,6 +584,7 @@ interface RodapeDao {
         clearMeetings()
         clearMeetingPatterns()
         clearBookRatings()
+        clearBookFavorites()
         clearBookSummaries()
         clearBookSuggestions()
         clearVotingRounds()

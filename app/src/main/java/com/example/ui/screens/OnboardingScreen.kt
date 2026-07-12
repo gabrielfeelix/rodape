@@ -12,6 +12,7 @@ import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.OutlinedTextFieldDefaults
 import androidx.compose.runtime.*
@@ -19,8 +20,10 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.semantics.LiveRegionMode
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.liveRegion
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.semantics.stateDescription
 import androidx.compose.ui.text.font.FontWeight
@@ -58,10 +61,25 @@ fun OnboardingScreen(
     var fontScale by rememberSaveable { mutableStateOf(initialFontScale) }
     // Trava o submit final: sem isso, toque duplo em "Pronto!" persistia 2x.
     var submitting by rememberSaveable { mutableStateOf(false) }
+    // Aviso quando o submit final não conclui (ver LaunchedEffect abaixo).
+    var submitError by rememberSaveable { mutableStateOf<String?>(null) }
 
     // Back físico espelha o "Voltar" on-screen nos steps > 0. No step 0 fica
     // desabilitado, deixando o back seguir o comportamento padrão (sair).
     BackHandler(enabled = step > 0) { step-- }
+
+    // Rede lenta/falha ao persistir o perfil deixaria o spinner girando pra
+    // sempre — o onComplete não devolve erro. Se, passados alguns segundos, a
+    // tela ainda estiver composta (a navegação de sucesso não aconteceu),
+    // liberamos o botão e mostramos o aviso. No sucesso a tela sai da composição
+    // e este efeito é cancelado antes de disparar.
+    LaunchedEffect(submitting) {
+        if (submitting) {
+            kotlinx.coroutines.delay(8000)
+            submitting = false
+            submitError = "Não deu pra salvar agora. Verifique sua conexão e tente de novo."
+        }
+    }
 
     // Fonte única em Avatar.kt (só domínio público — sem risco de IP).
     val presetNames = com.example.ui.components.presetAvatarKeys.map {
@@ -294,6 +312,7 @@ fun OnboardingScreen(
                             if (step < 2) {
                                 step++
                             } else if (!submitting) {
+                                submitError = null
                                 submitting = true
                                 onComplete(apelido.trim(), avatarUrl, fontScale)
                             }
@@ -311,6 +330,43 @@ fun OnboardingScreen(
                         )
                     }
                 }
+            }
+
+            submitError?.let {
+                Spacer(modifier = Modifier.height(12.dp))
+                Text(
+                    text = it,
+                    style = MaterialTheme.typography.bodyMedium.copy(
+                        color = MaterialTheme.colorScheme.error,
+                    ),
+                    textAlign = TextAlign.Center,
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .semantics { liveRegion = LiveRegionMode.Assertive },
+                )
+            }
+
+            Spacer(modifier = Modifier.height(8.dp))
+            // "Pular por agora": segue com os padrões (avatar preset, nome do JWT,
+            // fonte 1.0). Passa pela mesma trava/timeout do submit final.
+            TextButton(
+                onClick = {
+                    if (!submitting) {
+                        submitError = null
+                        submitting = true
+                        onComplete(
+                            initialName.trim().ifBlank { "Leitor" },
+                            "preset:leitor",
+                            1.0f,
+                        )
+                    }
+                },
+                enabled = !submitting,
+            ) {
+                Text(
+                    text = "Pular por agora",
+                    style = MaterialTheme.typography.bodyMedium.copy(color = Muted),
+                )
             }
             Spacer(modifier = Modifier.height(36.dp))
         }

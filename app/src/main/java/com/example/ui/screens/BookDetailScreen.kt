@@ -12,6 +12,8 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.outlined.ArrowBack
+import androidx.compose.material.icons.filled.Favorite
+import androidx.compose.material.icons.outlined.FavoriteBorder
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.runtime.saveable.rememberSaveable
@@ -90,6 +92,7 @@ fun BookDetailScreen(
     val quotes by quotesFlow.collectAsState(initial = emptyList())
     val meetingDates by viewModel.finishedBooksMeetingDates.collectAsState()
     val dataEncontro = meetingDates[bookId]
+    val isFavorite by remember(bookId) { viewModel.isBookFavoriteFlow(bookId) }.collectAsState(initial = false)
 
     Column(
         modifier = Modifier
@@ -158,6 +161,25 @@ fun BookDetailScreen(
                     imageVector = Icons.AutoMirrored.Outlined.ArrowBack,
                     contentDescription = "Voltar",
                     tint = Ink,
+                    modifier = Modifier.size(20.dp)
+                )
+            }
+
+            // ♥ Favoritar — pessoal, cross-clube. Espelha a posição do botão Voltar.
+            Box(
+                modifier = Modifier
+                    .align(Alignment.TopEnd)
+                    .padding(top = 8.dp, end = 12.dp)
+                    .size(40.dp)
+                    .clip(CircleShape)
+                    .background(CardSurface.copy(alpha = 0.85f))
+                    .clickable { viewModel.toggleBookFavorite(bookId, !isFavorite) },
+                contentAlignment = Alignment.Center
+            ) {
+                Icon(
+                    imageVector = if (isFavorite) Icons.Filled.Favorite else Icons.Outlined.FavoriteBorder,
+                    contentDescription = if (isFavorite) "Remover dos favoritos" else "Adicionar aos favoritos",
+                    tint = if (isFavorite) Terracota else Ink,
                     modifier = Modifier.size(20.dp)
                 )
             }
@@ -302,7 +324,7 @@ fun BookDetailScreen(
                 TextButton(
                     onClick = {
                         if (quoteText.isNotBlank()) {
-                            viewModel.saveQuote(bookId, quoteText, quoteRef.ifBlank { "Cap." })
+                            viewModel.saveQuote(bookId, quoteText, quoteRef.trim())
                         }
                         showQuoteDialog = false
                         quoteText = ""
@@ -641,12 +663,23 @@ private fun RatingsTab(viewModel: MainViewModel, bookId: String) {
         horizontalAlignment = Alignment.CenterHorizontally,
         modifier = Modifier.fillMaxWidth()
     ) {
-        RatingStars(rating = avg, size = 28.dp, spacing = 4.dp)
-        Spacer(modifier = Modifier.height(8.dp))
-        Text(
-            text = "${"%.1f".format(avg)} de 5 · ${ratings.size} ${if (ratings.size == 1) "avaliação" else "avaliações"}",
-            style = MaterialTheme.typography.bodyMedium.copy(color = Muted)
-        )
+        if (ratings.isEmpty()) {
+            // Estado vazio distinto: "0.0 de 5" com estrelas vazias parecia nota
+            // ZERO, não "ainda não avaliado" — enganava e desmotivava.
+            RatingStars(rating = 0f, size = 28.dp, spacing = 4.dp)
+            Spacer(modifier = Modifier.height(8.dp))
+            Text(
+                text = "Ninguém avaliou ainda — seja o primeiro.",
+                style = MaterialTheme.typography.bodyMedium.copy(color = Muted)
+            )
+        } else {
+            RatingStars(rating = avg, size = 28.dp, spacing = 4.dp)
+            Spacer(modifier = Modifier.height(8.dp))
+            Text(
+                text = "${"%.1f".format(avg)} de 5 · ${ratings.size} ${if (ratings.size == 1) "avaliação" else "avaliações"}",
+                style = MaterialTheme.typography.bodyMedium.copy(color = Muted)
+            )
+        }
     }
 
     Spacer(modifier = Modifier.height(16.dp))

@@ -27,6 +27,7 @@ import com.example.data.model.*
         SavedQuote::class,
         BookSummary::class,
         BookRating::class,
+        BookFavorite::class,
         BookSuggestion::class,
         VotingRound::class,
         MeetingPattern::class,
@@ -35,7 +36,7 @@ import com.example.data.model.*
         MeetingNote::class,
         PendingMutation::class,
     ],
-    version = 3,
+    version = 4,
     exportSchema = true,
 )
 abstract class AppDatabase : RoomDatabase() {
@@ -82,6 +83,17 @@ abstract class AppDatabase : RoomDatabase() {
             }
         }
 
+        // v3 -> v4: nova tabela book_favorites (favorito pessoal de livro, cross-clube).
+        private val MIGRATION_3_4 = object : Migration(3, 4) {
+            override fun migrate(db: SupportSQLiteDatabase) {
+                db.execSQL(
+                    "CREATE TABLE IF NOT EXISTS `book_favorites` (" +
+                        "`userId` TEXT NOT NULL, `bookId` TEXT NOT NULL, " +
+                        "`criadoEm` INTEGER NOT NULL, PRIMARY KEY(`userId`, `bookId`))"
+                )
+            }
+        }
+
         /**
          * Banco e GLOBAL pro app, nao por usuario — porque RLS no servidor ja garante
          * que cada user so consegue baixar SEU dado, entao o cache local naturalmente
@@ -94,7 +106,7 @@ abstract class AppDatabase : RoomDatabase() {
                 AppDatabase::class.java,
                 "rodape-cache.db"
             )
-                .addMigrations(MIGRATION_1_2, MIGRATION_2_3)
+                .addMigrations(MIGRATION_1_2, MIGRATION_2_3, MIGRATION_3_4)
                 .apply {
                     // Migrations explicitas acima preservam o cache e a fila offline
                     // no upgrade. Em DEBUG mantemos o fallback destrutivo como rede de

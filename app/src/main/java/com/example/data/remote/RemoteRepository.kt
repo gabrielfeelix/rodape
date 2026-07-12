@@ -528,6 +528,20 @@ private data class BookRatingInsertDto(
     val comment: String = "",
 )
 
+// ---- book_favorites ----
+@Serializable
+private data class BookFavoriteDto(
+    @SerialName("user_id") val userId: String,
+    @SerialName("book_id") val bookId: String,
+    @SerialName("created_at") val createdAt: String? = null,
+)
+
+@Serializable
+private data class BookFavoriteInsertDto(
+    @SerialName("user_id") val userId: String,
+    @SerialName("book_id") val bookId: String,
+)
+
 // ---- book_suggestions ----
 @Serializable
 private data class BookSuggestionDto(
@@ -1047,6 +1061,21 @@ class RemoteRepository(
                     comment = obj.str("comment"),
                 )
             )
+        }
+        registerHandler("insert_book_favorite") { j ->
+            val obj = this.json.parseToJsonElement(j) as JsonObject
+            supabase.from("book_favorites").upsert(
+                BookFavoriteInsertDto(userId = obj.str("userId"), bookId = obj.str("bookId"))
+            )
+        }
+        registerHandler("delete_book_favorite") { j ->
+            val obj = this.json.parseToJsonElement(j) as JsonObject
+            supabase.from("book_favorites").delete {
+                filter {
+                    eq("user_id", obj.str("userId"))
+                    eq("book_id", obj.str("bookId"))
+                }
+            }
         }
         registerHandler("upsert_profile") { json ->
             val obj = this.json.parseToJsonElement(json) as JsonObject
@@ -3017,6 +3046,52 @@ class RemoteRepository(
             }
         }
         return dao.bookRatingOfUserFlow(bookId, clubId, userId)
+    }
+
+    // ---- book_favorites ----
+    // Favorito PESSOAL de livro (cross-clube). Local-first + fila offline, igual
+    // book_ratings: grava no Room na hora e enfileira se offline (idempotente).
+    suspend fun setBookFavorite(userId: String, bookId: String, favorite: Boolean) {
+        val payload = buildJsonObject {
+            put("userId", userId)
+            put("bookId", bookId)
+        }.toString()
+        if (favorite) {
+            dao.upsertBookFavorites(listOf(BookFavorite(userId, bookId, System.currentTimeMillis())))
+            tryRemoteOrEnqueue("insert_book_favorite", payload, notifyTable = "book_favorites") {
+                supabase.from("book_favorites").upsert(BookFavoriteInsertDto(userId = userId, bookId = bookId))
+            }
+        } else {
+            dao.deleteBookFavorite(userId, bookId)
+            tryRemoteOrEnqueue("delete_book_favorite", payload, notifyTable = "book_favorites") {
+                supabase.from("book_favorites").delete {
+                    filter {
+                        eq("user_id", userId)
+                        eq("book_id", bookId)
+                    }
+                }
+            }
+        }
+    }
+
+    fun isBookFavoriteFlow(userId: String, bookId: String): Flow<Boolean> =
+        dao.isBookFavoriteFlow(userId, bookId)
+
+    suspend fun anyClubIdForBook(bookId: String): String? = dao.anyClubIdForBook(bookId)
+
+    fun getFavoriteBooksForUserFlow(userId: String): Flow<List<Book>> {
+        val reload: suspend () -> Unit = {
+            runCatching {
+                val list = supabase.from("book_favorites").select {
+                    filter { eq("user_id", userId) }
+                }.decodeList<BookFavoriteDto>()
+                dao.upsertBookFavorites(list.map { BookFavorite(it.userId, it.bookId, it.createdAt.fromIso()) })
+                dao.pruneBookFavoritesExcept(userId, list.map { it.bookId })
+            }
+        }
+        scope.launch { runCatching { reload() } }
+        ensureRealtime("book_favorites", filterColumn = "user_id", filterValue = userId, reload = reload)
+        return dao.favoriteBooksFlow(userId)
     }
 
     // ============================================================

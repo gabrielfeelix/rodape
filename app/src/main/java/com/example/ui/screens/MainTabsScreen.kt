@@ -13,6 +13,7 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.selection.selectable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.grid.GridCells
 import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
@@ -246,7 +247,8 @@ fun MainTabsScreen(
                 )
                 "shelf" -> ShelfTabScreen(
                     viewModel = viewModel,
-                    onNavigateToBookDetail = onNavigateToBookDetail
+                    onNavigateToBookDetail = onNavigateToBookDetail,
+                    onNavigateToSuggest = onNavigateToSuggestBook
                 )
                 "profile" -> ProfileScreenTab(
                     viewModel = viewModel,
@@ -255,6 +257,7 @@ fun MainTabsScreen(
                     onNavigateToJoinClub = onNavigateToJoinClub,
                     onNavigateToCreateClub = onNavigateToCreateClub,
                     onNavigateToFrases = onNavigateToFrases,
+                    onNavigateToBookDetail = onNavigateToBookDetail,
                     onNavigateToAbout = onNavigateToAbout
                 )
             }
@@ -696,7 +699,7 @@ fun CustomBottomBar(
                     onClick = { onTabSelected("book") }
                 )
                 BottomBarItem(
-                    label = "Próximo",
+                    label = "Encontros",
                     icon = RodapeIcons.Calendar,
                     selected = selectedTab == "next",
                     onClick = { onTabSelected("next") }
@@ -758,7 +761,7 @@ fun BottomBarItem(
             )
         }
     } else {
-        Box(
+        Column(
             modifier = Modifier
                 // Alvo de toque de 48dp + anuncia como aba (nao selecionada)
                 .minimumInteractiveComponentSize()
@@ -769,14 +772,26 @@ fun BottomBarItem(
                     onClick = onClick
                 )
                 .semantics { this.selected = selected; role = Role.Tab }
-                .padding(horizontal = 12.dp, vertical = 10.dp),
-            contentAlignment = Alignment.Center
+                .padding(horizontal = 8.dp, vertical = 6.dp),
+            horizontalAlignment = Alignment.CenterHorizontally,
+            verticalArrangement = Arrangement.spacedBy(2.dp)
         ) {
             Icon(
                 imageVector = icon,
                 contentDescription = label,
                 tint = Cream.copy(alpha = 0.7f),
                 modifier = Modifier.size(20.dp)
+            )
+            // Rótulo sempre visível: sem ele, 4 das 5 abas viram só ícone e o
+            // usuário precisa decorar o que cada uma faz.
+            Text(
+                text = label,
+                style = MaterialTheme.typography.labelSmall.copy(
+                    color = Cream.copy(alpha = 0.7f),
+                    fontFamily = InterFontFamily,
+                    fontSize = 10.sp
+                ),
+                maxLines = 1
             )
         }
     }
@@ -971,7 +986,10 @@ fun HomeScreenTab(
                                     )
                                 )
                                 Text(
-                                    text = "O clube precisa de uma leitura — comece a votação",
+                                    // Papel-neutro: "comece a votação" prometia ao membro
+                                    // comum um poder de admin (abrir rodada) que ele não tem.
+                                    // Sugerir, sim, todos podem — e é onde o card leva.
+                                    text = "O clube ainda não tem leitura — sugira um título",
                                     style = MaterialTheme.typography.bodySmall.copy(color = Muted)
                                 )
                             }
@@ -1070,8 +1088,8 @@ fun HomeScreenTab(
                         val bookTitle = book.title
                         val totalChaps = chapters.size
                         val curChap = currentChapIndex
-                        val readingLabel = if (totalChaps > 0) "TUA LEITURA · CAP. $curChap/$totalChaps"
-                            else "TUA LEITURA · sem capítulos definidos"
+                        val readingLabel = if (totalChaps > 0) "SUA LEITURA · CAP. $curChap/$totalChaps"
+                            else "SUA LEITURA · sem capítulos definidos"
 
                         Text(
                             text = readingLabel,
@@ -1201,10 +1219,12 @@ fun HomeScreenTab(
                     // oliva sólido = terminou, tracejado = no seu ritmo, ink = na frente.
                     val noSeuRitmo = !finished && totalChaps > 0 && medianChap - memChap >= 3
                     val ahead = !finished && totalChaps > 0 && memChap - medianChap >= 3
+                    // Mesmos termos do pill visível (TalkBack lia "adiantado" enquanto
+                    // a tela mostrava "Na frente" — divergência confusa).
                     val statusText = when {
                         finished -> "terminou o livro"
                         noSeuRitmo -> "no seu ritmo"
-                        ahead -> "adiantado"
+                        ahead -> "na frente"
                         else -> "no capítulo $memChap"
                     }
 
@@ -1901,6 +1921,7 @@ fun ProfileScreenTab(
     onNavigateToJoinClub: () -> Unit,
     onNavigateToCreateClub: () -> Unit,
     onNavigateToFrases: () -> Unit,
+    onNavigateToBookDetail: (String) -> Unit,
     onNavigateToAbout: () -> Unit = {}
 ) {
     val supaName by viewModel.supabaseDisplayName.collectAsState()
@@ -1919,6 +1940,7 @@ fun ProfileScreenTab(
     val archivedClubs by viewModel.archivedClubsForUser.collectAsState()
     val ratedApp by viewModel.ratedApp.collectAsState()
     val profileCurrentBooks by viewModel.currentBooksMap.collectAsState()
+    val favoriteBooks by viewModel.favoriteBooks.collectAsState()
 
     val context = androidx.compose.ui.platform.LocalContext.current
     // rememberSaveable: a edicao de perfil sobrevive a rotacao / mudanca de fonte.
@@ -2021,7 +2043,7 @@ fun ProfileScreenTab(
                         )
                         Spacer(modifier = Modifier.height(4.dp))
                         Text(
-                            text = "livros\nlidos",
+                            text = "lidos\nno clube",
                             style = MaterialTheme.typography.bodySmall.copy(
                                 fontFamily = InterFontFamily,
                                 color = Muted
@@ -2089,9 +2111,55 @@ fun ProfileScreenTab(
                 }
             }
 
-            // ── Teus Clubes ─────────────────────────────────────────────
+            // ── Meus livros favoritos ───────────────────────────────────
             item {
-                TbSectionHeader(title = "Teus clubes")
+                TbSectionHeader(title = "Meus livros favoritos")
+                Spacer(modifier = Modifier.height(12.dp))
+                if (favoriteBooks.isEmpty()) {
+                    Text(
+                        text = "Toque no ♥ na página de um livro pra guardá-lo aqui.",
+                        style = MaterialTheme.typography.bodyMedium.copy(
+                            fontFamily = InterFontFamily,
+                            color = Muted
+                        )
+                    )
+                } else {
+                    LazyRow(
+                        horizontalArrangement = Arrangement.spacedBy(12.dp),
+                        contentPadding = PaddingValues(vertical = 4.dp)
+                    ) {
+                        items(favoriteBooks, key = { it.id }) { fav ->
+                            Column(
+                                modifier = Modifier
+                                    .width(92.dp)
+                                    .clickable { viewModel.openFavoriteBook(fav.id, onNavigateToBookDetail) },
+                                horizontalAlignment = Alignment.CenterHorizontally
+                            ) {
+                                Cover(
+                                    title = fav.title,
+                                    author = fav.author,
+                                    coverUrl = fav.coverUrl,
+                                    width = 92.dp,
+                                    height = 138.dp
+                                )
+                                Spacer(modifier = Modifier.height(6.dp))
+                                Text(
+                                    text = fav.title,
+                                    style = MaterialTheme.typography.labelSmall.copy(color = Ink, fontSize = 11.sp),
+                                    textAlign = TextAlign.Center,
+                                    maxLines = 1,
+                                    overflow = TextOverflow.Ellipsis,
+                                    modifier = Modifier.fillMaxWidth()
+                                )
+                            }
+                        }
+                    }
+                }
+            }
+
+            // ── Seus Clubes ─────────────────────────────────────────────
+            item {
+                TbSectionHeader(title = "Seus clubes")
                 Spacer(modifier = Modifier.height(12.dp))
                 Column(
                     verticalArrangement = Arrangement.spacedBy(8.dp),
@@ -2507,16 +2575,24 @@ fun ProfileScreenTab(
                 }
             }
 
-            // ── Sair do clube (membro comum) ─────────────────────────────
+            // ── Sair do clube (membro comum) — link discreto: sair do clube e
+            //    sair da conta têm consequências bem diferentes, então não podem
+            //    ter o mesmo peso visual (dois botões iguais colados convidavam
+            //    ao toque errado).
             if (activeClub != null) {
                 item {
                     Spacer(modifier = Modifier.height(20.dp))
-                    TbButton(
+                    Text(
                         text = "Sair do clube \"${activeClub!!.nome}\"",
-                        onClick = { leaveClubError = null; showLeaveClubDialog = true },
-                        variant = TbButtonVariant.Outline,
-                        size = TbButtonSize.Lg,
-                        modifier = Modifier.fillMaxWidth()
+                        style = MaterialTheme.typography.bodyMedium.copy(
+                            fontFamily = InterFontFamily,
+                            color = Muted
+                        ),
+                        textAlign = TextAlign.Center,
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .clickable { leaveClubError = null; showLeaveClubDialog = true }
+                            .padding(vertical = 8.dp)
                     )
                 }
             }
@@ -2848,13 +2924,14 @@ fun EditProfileView(
 
         // ── Nome field (exige nome + sobrenome) ──
         item {
-            val nameParts = name.trim().split(Regex("\\s+")).filter { it.isNotBlank() }
             val nameTouched = name.isNotEmpty()
-            val hasFullName = nameParts.size >= 2 && nameParts.all { it.length >= 2 }
-            val nameError = nameTouched && !hasFullName
+            // Nome único é válido (contas Google como "Ana"). Antes exigia 2 palavras,
+            // o que travava salvar QUALQUER coisa — até só a foto — pra quem tem 1 nome.
+            val nameValid = name.trim().length >= 2
+            val nameError = nameTouched && !nameValid
             Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
                 Text(
-                    text = "NOME COMPLETO",
+                    text = "SEU NOME",
                     style = MaterialTheme.typography.labelMedium.copy(
                         fontFamily = InterFontFamily,
                         fontWeight = FontWeight.SemiBold,
@@ -2864,7 +2941,7 @@ fun EditProfileView(
                 OutlinedTextField(
                     value = name,
                     onValueChange = { name = it },
-                    placeholder = { Text("Nome e sobrenome", color = Muted) },
+                    placeholder = { Text("Como você quer ser chamado", color = Muted) },
                     modifier = Modifier.fillMaxWidth(),
                     shape = RoundedCornerShape(14.dp),
                     singleLine = true,
@@ -2880,7 +2957,7 @@ fun EditProfileView(
                 )
                 if (nameError) {
                     Text(
-                        text = "Coloca nome e sobrenome (ex: Maria Silva)",
+                        text = "Digite pelo menos 2 letras.",
                         style = MaterialTheme.typography.labelSmall.copy(color = Terracota)
                     )
                 }
@@ -2938,12 +3015,11 @@ fun EditProfileView(
                     size = TbButtonSize.Lg,
                     modifier = Modifier.weight(1f)
                 )
-                val nameParts = name.trim().split(Regex("\\s+")).filter { it.isNotBlank() }
-                val hasFullName = nameParts.size >= 2 && nameParts.all { it.length >= 2 }
                 // Email não é editável (gerido pelo Auth), então só nome/avatar
-                // contam pra habilitar Salvar.
+                // contam pra habilitar Salvar. Nome único é aceito (não trava a foto).
+                val nameValid = name.trim().length >= 2
                 val changedSomething = name != initialName || avatarUrl != initialAvatarUrl
-                val canSave = changedSomething && hasFullName
+                val canSave = changedSomething && nameValid
                 TbButton(
                     text = "Salvar",
                     onClick = {

@@ -155,6 +155,24 @@ fun WelcomeScreen(
                 }
             }
 
+            // O que é o Rodapé, em 3 frases curtas — dá contexto antes dos CTAs
+            // pra quem chega sem saber o que o app faz.
+            AnimatedVisibility(
+                visible = visible,
+                enter = fadeIn(animationSpec = tween(durationMillis = 300))
+            ) {
+                Column(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .widthIn(max = 340.dp),
+                    verticalArrangement = Arrangement.spacedBy(12.dp),
+                ) {
+                    WelcomeBullet("Um clube de leitura presencial, com gente de verdade.")
+                    WelcomeBullet("Encontros marcados pra discutir o livro da vez.")
+                    WelcomeBullet("Conversa no seu ritmo, sem estragar o final.")
+                }
+            }
+
             // Botoes de auth: o app exige autenticacao real (Supabase Auth + RLS),
             // entao Welcome so oferece Entrar/Criar conta. Apos login, os botoes
             // de Criar/Entrar em clube aparecem dentro do app no estado vazio.
@@ -165,17 +183,19 @@ fun WelcomeScreen(
                 verticalArrangement = Arrangement.spacedBy(16.dp),
                 horizontalAlignment = Alignment.CenterHorizontally
             ) {
+                // Recém-chegado ainda não tem conta: "Criar conta" ganha o destaque
+                // primário (topo + Terra); "Entrar" fica como ação secundária.
                 TbButton(
-                    text = "Entrar",
-                    onClick = onNavigateToLogin,
+                    text = "Criar conta",
+                    onClick = onNavigateToSignUp,
                     variant = TbButtonVariant.Terra,
                     size = TbButtonSize.Lg,
                     modifier = Modifier.fillMaxWidth()
                 )
 
                 TbButton(
-                    text = "Criar conta",
-                    onClick = onNavigateToSignUp,
+                    text = "Já tenho conta · Entrar",
+                    onClick = onNavigateToLogin,
                     variant = TbButtonVariant.Outline,
                     size = TbButtonSize.Lg,
                     modifier = Modifier.fillMaxWidth()
@@ -310,6 +330,21 @@ fun LoginScreen(
                             color = MaterialTheme.colorScheme.error,
                             style = MaterialTheme.typography.bodyMedium,
                             modifier = Modifier.semantics { liveRegion = LiveRegionMode.Assertive },
+                        )
+                    }
+
+                    // Explica por que "Entrar" fica desabilitado, em vez de um botão
+                    // cinza mudo.
+                    val faltamLogin = buildList {
+                        if (!isEmailValid) add("um email válido")
+                        if (!isPasswordValid) add("a senha (mín. 6 caracteres)")
+                    }
+                    if (faltamLogin.isNotEmpty() && (email.isNotEmpty() || password.isNotEmpty())) {
+                        Spacer(modifier = Modifier.height(12.dp))
+                        Text(
+                            "Falta: " + faltamLogin.joinToString(", "),
+                            style = MaterialTheme.typography.bodySmall.copy(color = Muted),
+                            modifier = Modifier.fillMaxWidth(),
                         )
                     }
 
@@ -517,7 +552,7 @@ fun CreateClubScreen(
                             verticalAlignment = Alignment.CenterVertically
                         ) {
                             Text(
-                                text = "Conta um pouco",
+                                text = "Conte um pouco",
                                 style = MaterialTheme.typography.titleMedium.copy(
                                     fontWeight = FontWeight.SemiBold,
                                     color = Ink
@@ -743,6 +778,15 @@ fun CreateClubScreen(
                             .padding(bottom = 8.dp)
                     )
                 }
+                if (!isNameValid && name.isNotEmpty()) {
+                    Text(
+                        text = "O nome do clube precisa de pelo menos 3 letras.",
+                        style = MaterialTheme.typography.bodySmall.copy(color = Muted),
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(bottom = 8.dp),
+                    )
+                }
                 TbButton(
                     text = if (isSubmitting) "Criando…" else "Criar clube",
                     onClick = {
@@ -824,22 +868,16 @@ fun JoinClubScreen(
             item {
                 Spacer(modifier = Modifier.height(8.dp))
 
-                // Tab unica "Com codigo" — convite por link foi adiado ate ter dominio proprio.
-                // (Quando voltar, restaurar segmented control aqui.)
-                Box(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .height(52.dp)
-                        .background(CardSurface, RoundedCornerShape(26.dp))
-                        .border(0.5.dp, Divider, RoundedCornerShape(26.dp)),
-                    contentAlignment = Alignment.Center
-                ) {
-                    Text(
-                        "Com código",
-                        color = Ink,
-                        style = MaterialTheme.typography.bodyLarge.copy(fontWeight = FontWeight.SemiBold)
-                    )
-                }
+                // Título da seção. O convite por link foi adiado até ter domínio
+                // próprio, então aqui só entra por código — isto é um rótulo, não um
+                // botão/aba (o visual de pill anterior sugeria um toque que não existia).
+                Text(
+                    "Com código",
+                    color = Ink,
+                    style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.SemiBold),
+                    textAlign = TextAlign.Center,
+                    modifier = Modifier.fillMaxWidth()
+                )
             }
 
             item {
@@ -1047,6 +1085,27 @@ fun JoinClubScreen(
                 }
             }
         }
+    }
+}
+
+// Bullet curto da Welcome: ponto terracota + frase do que o app faz.
+@Composable
+private fun WelcomeBullet(text: String) {
+    Row(verticalAlignment = Alignment.Top) {
+        Box(
+            modifier = Modifier
+                .padding(top = 7.dp)
+                .size(6.dp)
+                .clip(CircleShape)
+                .background(Terracota)
+        )
+        Spacer(modifier = Modifier.width(12.dp))
+        Text(
+            text = text,
+            style = MaterialTheme.typography.bodyMedium.copy(
+                color = MaterialTheme.colorScheme.onSurfaceVariant
+            ),
+        )
     }
 }
 

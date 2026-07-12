@@ -12,6 +12,7 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.outlined.ArrowBack
+import androidx.compose.material.icons.outlined.AddReaction
 import androidx.compose.material.icons.outlined.CheckCircle
 import androidx.compose.material.icons.outlined.MoreVert
 import androidx.compose.material.icons.outlined.Send
@@ -163,14 +164,19 @@ fun DiscussionScreen(
 
                         Spacer(modifier = Modifier.height(8.dp))
 
+                        // Ênfase invertida (P9): a ação segura (voltar) é a primária;
+                        // revelar o spoiler fica como opção secundária, discreta.
                         TbButton(
-                            text = "Revelar debate mesmo assim",
-                            onClick = { forceRevealDebate = true },
-                            variant = TbButtonVariant.TerraSoft
+                            text = "Voltar para minha meta",
+                            onClick = onNavigateBack,
+                            variant = TbButtonVariant.Primary
                         )
 
-                        TextButton(onClick = onNavigateBack) {
-                            Text("Voltar para minha meta", color = MaterialTheme.colorScheme.onSurfaceVariant)
+                        TextButton(onClick = { forceRevealDebate = true }) {
+                            Text(
+                                "Revelar debate mesmo assim",
+                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                            )
                         }
                     }
                 }
@@ -190,7 +196,7 @@ fun DiscussionScreen(
                         .padding(horizontal = 16.dp, vertical = 8.dp)
                 ) {
                     if (isLido) {
-                        // "Tu já passou daqui. Tá liberado." — olive card per design
+                        // "Você já passou daqui. Está liberado." — olive card per design
                         Row(
                             modifier = Modifier
                                 .fillMaxWidth()
@@ -306,7 +312,7 @@ fun DiscussionScreen(
                     ) {
                         items(comments, key = { it.id }) { comment ->
                             val userObj = membersById[comment.userId]
-                            val userNameVal = if (comment.userId == currentUid) "Você" else userObj?.nome ?: "Iniciante"
+                            val userNameVal = if (comment.userId == currentUid) "Você" else userObj?.nome ?: "Membro"
                             val commentReactions = reactionsByComment[comment.id].orEmpty()
                             val isOwn = comment.userId == currentUid
                             var showModMenu by remember(comment.id) { mutableStateOf(false) }
@@ -353,14 +359,30 @@ fun DiscussionScreen(
                                             .padding(horizontal = 14.dp, vertical = 10.dp)
                                     ) {
                                         Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
-                                            Text(
-                                                text = if (isOwn) "Tu" else userNameVal,
-                                                style = MaterialTheme.typography.bodyMedium.copy(
-                                                    fontFamily = InterFontFamily,
-                                                    fontWeight = FontWeight.SemiBold,
-                                                    color = if (isOwn) TerracotaDark else MaterialTheme.colorScheme.onSurface
+                                            Row(
+                                                modifier = Modifier.fillMaxWidth(),
+                                                verticalAlignment = Alignment.CenterVertically,
+                                                horizontalArrangement = Arrangement.spacedBy(6.dp)
+                                            ) {
+                                                Text(
+                                                    text = if (isOwn) "Você" else userNameVal,
+                                                    style = MaterialTheme.typography.bodyMedium.copy(
+                                                        fontFamily = InterFontFamily,
+                                                        fontWeight = FontWeight.SemiBold,
+                                                        color = if (isOwn) TerracotaDark else MaterialTheme.colorScheme.onSurface
+                                                    ),
+                                                    modifier = Modifier.weight(1f)
                                                 )
-                                            )
+                                                // Affordance visível de "reagir" (P7): antes só
+                                                // existia o contentDescription (invisível). O ícone
+                                                // deixa claro que dá pra tocar e reagir.
+                                                Icon(
+                                                    imageVector = Icons.Outlined.AddReaction,
+                                                    contentDescription = null,
+                                                    tint = Muted,
+                                                    modifier = Modifier.size(16.dp)
+                                                )
+                                            }
                                             if (comment.removido) {
                                                 Text(
                                                     text = "[mensagem removida pela moderação]",
@@ -565,7 +587,7 @@ fun DiscussionScreen(
                                     title = { Text("Remover comentário?") },
                                     text = {
                                         Column {
-                                            Text("Vira placeholder pra todos. Registra no log.")
+                                            Text("Vira um placeholder para todos e fica registrado no log.")
                                             Spacer(modifier = Modifier.height(8.dp))
                                             OutlinedTextField(
                                                 value = modMotivo,
@@ -619,7 +641,7 @@ fun DiscussionScreen(
                                 onValueChange = { commentText = it.take(4000) },
                                 placeholder = {
                                     Text(
-                                        text = "Comenta esse capítulo...",
+                                        text = "Comente este capítulo...",
                                         style = MaterialTheme.typography.bodyMedium.copy(
                                             fontFamily = InterFontFamily,
                                             color = MaterialTheme.colorScheme.onSurfaceVariant

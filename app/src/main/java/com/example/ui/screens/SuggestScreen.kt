@@ -116,6 +116,25 @@ fun SuggestScreen(
     // "Buscando": há query válida e o resultado dela ainda não chegou.
     val searching = loading || searchInFlight
 
+    // Inicia o fluxo de sugestão pro doc: cross-check de autor com o Google Books
+    // e, na sequência, a folha de justificativa. Reusado pela ação do topo e pela
+    // barra inferior fixa "Sugerir selecionado".
+    val beginSuggest: (OpenLibraryDoc) -> Unit = { doc ->
+        justificationText = ""
+        gbConflictAuthor = null
+        pickedAuthor = null
+        verifying = true
+        viewModel.verifyAuthorWithGoogleBooks(
+            title = doc.title,
+            olAuthor = doc.authorName?.firstOrNull().orEmpty(),
+            isbn = doc.isbn?.firstOrNull().orEmpty()
+        ) { gbAuthor ->
+            verifying = false
+            gbConflictAuthor = gbAuthor // null se bate
+            showJustifySheetForDoc = doc
+        }
+    }
+
     Scaffold(
         topBar = {
             TopAppBar(
@@ -138,19 +157,7 @@ fun SuggestScreen(
                     TextButton(
                         onClick = {
                             val doc = selectedDoc ?: return@TextButton
-                            justificationText = ""
-                            gbConflictAuthor = null
-                            pickedAuthor = null
-                            verifying = true
-                            viewModel.verifyAuthorWithGoogleBooks(
-                                title = doc.title,
-                                olAuthor = doc.authorName?.firstOrNull().orEmpty(),
-                                isbn = doc.isbn?.firstOrNull().orEmpty()
-                            ) { gbAuthor ->
-                                verifying = false
-                                gbConflictAuthor = gbAuthor // null se bate
-                                showJustifySheetForDoc = doc
-                            }
+                            beginSuggest(doc)
                         },
                         enabled = selectedStillVisible && !verifying,
                         colors = ButtonDefaults.textButtonColors(
@@ -166,7 +173,7 @@ fun SuggestScreen(
                             )
                         } else {
                             Text(
-                                "Adicionar",
+                                "Sugerir",
                                 style = MaterialTheme.typography.bodyLarge.copy(
                                     fontWeight = FontWeight.Bold
                                 )
@@ -178,6 +185,26 @@ fun SuggestScreen(
                     containerColor = MaterialTheme.colorScheme.background
                 )
             )
+        },
+        bottomBar = {
+            // Confirmação perto do item: assim que há uma seleção válida, a barra
+            // fixa "Sugerir selecionado" aparece — sem precisar subir até o topo.
+            if (selectedStillVisible) {
+                Surface(
+                    color = MaterialTheme.colorScheme.background,
+                    shadowElevation = 8.dp
+                ) {
+                    TbButton(
+                        text = "Sugerir selecionado",
+                        onClick = { selectedDoc?.let { beginSuggest(it) } },
+                        variant = TbButtonVariant.Terra,
+                        enabled = !verifying,
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(horizontal = 24.dp, vertical = 12.dp)
+                    )
+                }
+            }
         },
         containerColor = MaterialTheme.colorScheme.background
     ) { paddingValues ->
@@ -232,15 +259,17 @@ fun SuggestScreen(
 
             Spacer(modifier = Modifier.height(16.dp))
 
-            if (loading) {
-                Box(
+            if (searching && query.trim().length >= 3) {
+                // Enquanto a busca roda (debounce de 400ms + loading do VM), mostra
+                // skeleton. O empty/erro só aparece quando a busca termina de fato —
+                // sem isso a tela piscava "não achamos nada" antes de buscar.
+                SkeletonRowList(
+                    count = 6,
                     modifier = Modifier
                         .fillMaxWidth()
-                        .weight(1f),
-                    contentAlignment = Alignment.Center
-                ) {
-                    CircularProgressIndicator(color = Terracota)
-                }
+                        .weight(1f)
+                        .padding(vertical = 8.dp)
+                )
             } else if (query.trim().length < 3) {
                 // Lista de populares (pré-preenchida) — mostrada quando ainda não
                 // há busca ativa. Paginada: 15 por vez, "load more" ao rolar.
@@ -265,7 +294,7 @@ fun SuggestScreen(
                         .weight(1f)
                 ) {
                     Text(
-                        text = "📚 Populares — toque pra sugerir um",
+                        text = "📚 Populares — toque para selecionar",
                         style = MaterialTheme.typography.bodyMedium,
                         color = Muted
                     )
@@ -433,7 +462,7 @@ fun SuggestScreen(
                     }
 
                     Text(
-                        text = "Conta pro pessoal por que tu sugere esse. Opcional.",
+                        text = "Conte pro pessoal por que você sugere esse. Opcional.",
                         style = MaterialTheme.typography.bodyMedium,
                         color = Muted
                     )
@@ -464,7 +493,7 @@ fun SuggestScreen(
             },
             confirmButton = {
                 TbButton(
-                    text = "Adicionar",
+                    text = "Sugerir",
                     onClick = {
                         viewModel.createBookSuggestion(
                             doc = doc,

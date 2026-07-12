@@ -336,7 +336,17 @@ fun EncontroTab(
 
             item {
                 // Meeting header card with olive gradient
-                RodapeCard(contentPadding = PaddingValues(0.dp)) {
+                // Card-herói clicável: abre o detalhe do encontro (ata, anotações,
+                // concluir) sem depender de existir cronograma com mais de 1 encontro.
+                RodapeCard(
+                    modifier = Modifier
+                        .clickable { onNavigateToMeetingDetail(meeting!!.id) }
+                        .semantics {
+                            role = Role.Button
+                            contentDescription = "Abrir detalhes do próximo encontro"
+                        },
+                    contentPadding = PaddingValues(0.dp)
+                ) {
                     Box(
                         modifier = Modifier
                             .fillMaxWidth()
@@ -403,6 +413,15 @@ fun EncontroTab(
                                     text = meeting!!.hora,
                                     style = MaterialTheme.typography.bodyLarge.copy(color = OlivaSoft.copy(alpha = 0.9f))
                                 )
+                                if (meeting!!.chapterStart != null && meeting!!.chapterEnd != null) {
+                                    Text(
+                                        text = "📖 Caps ${meeting!!.chapterStart}–${meeting!!.chapterEnd}",
+                                        style = MaterialTheme.typography.labelSmall.copy(
+                                            color = OlivaSoft,
+                                            fontWeight = FontWeight.SemiBold
+                                        )
+                                    )
+                                }
                             }
                         }
                     }
@@ -507,7 +526,7 @@ fun EncontroTab(
                                     fontWeight = FontWeight.Bold
                                 )
                             )
-                            Text("Confirmados", style = MaterialTheme.typography.labelSmall.copy(color = Muted))
+                            Text("Vou", style = MaterialTheme.typography.labelSmall.copy(color = Muted))
                         }
 
                         Column(horizontalAlignment = Alignment.CenterHorizontally) {
@@ -529,7 +548,7 @@ fun EncontroTab(
                                     fontWeight = FontWeight.Bold
                                 )
                             )
-                            Text("Não vão", style = MaterialTheme.typography.labelSmall.copy(color = Muted))
+                            Text("Não vou", style = MaterialTheme.typography.labelSmall.copy(color = Muted))
                         }
                     }
 
@@ -553,7 +572,7 @@ fun EncontroTab(
                         )
                         Spacer(modifier = Modifier.width(8.dp))
                         Text(
-                            text = "Confirmados (${confirmados.size})",
+                            text = "Vou (${confirmados.size})",
                             style = MaterialTheme.typography.titleMedium.copy(
                                 fontWeight = FontWeight.Bold,
                                 color = Ink
@@ -665,7 +684,7 @@ fun EncontroTab(
                         )
                         Spacer(modifier = Modifier.width(8.dp))
                         Text(
-                            text = "Não vão (${naoVou.size})",
+                            text = "Não vou (${naoVou.size})",
                             style = MaterialTheme.typography.titleMedium.copy(
                                 fontWeight = FontWeight.Bold,
                                 color = Ink
@@ -712,7 +731,7 @@ fun EncontroTab(
             if (meeting!!.agenda.isNotBlank()) {
                 item {
                     TbSectionHeader(
-                        title = "Programação / pauta",
+                        title = "Pauta",
                         modifier = Modifier.padding(bottom = 8.dp)
                     )
                     RodapeCard {
@@ -809,6 +828,10 @@ fun VotacaoTab(
     // Gate de loading: hasData = já há livros sugeridos. Enquanto carrega, mostra
     // skeleton; passada a janela sem dado, cai no empty state real.
     val showBooksLoading = com.example.ui.components.rememberShowLoading(hasData = suggestedBooks.isNotEmpty())
+
+    // Quando o empty state já mostra o CTA primário "Sugerir o primeiro livro",
+    // não repita o CTA de sugerir no rodapé.
+    val showFirstBookCta = activeRound != null && !showBooksLoading && suggestedBooks.isEmpty()
 
     var showOpenSheet by remember { mutableStateOf(false) }
     var showCloseDialog by remember { mutableStateOf(false) }
@@ -935,7 +958,7 @@ fun VotacaoTab(
                                         Text(text = book.author, style = MaterialTheme.typography.bodyLarge.copy(color = Muted))
                                     }
                                     if (hasUserVoted) {
-                                        Pill(text = "Teu voto", variant = PillVariant.OliveDeep, modifier = Modifier.padding(start = 8.dp))
+                                        Pill(text = "Seu voto", variant = PillVariant.OliveDeep, modifier = Modifier.padding(start = 8.dp))
                                     }
                                     if (isAdmin) {
                                         var showMenu by remember(book.id) { mutableStateOf(false) }
@@ -1002,13 +1025,13 @@ fun VotacaoTab(
                                 }
                                 Spacer(modifier = Modifier.height(12.dp))
                                 TbButton(
-                                    // Voto único por rodada: tocar no próprio voto desfaz;
-                                    // votar em outro troca. Sem "limite atingido" (era o
-                                    // bug da 2ª votação travando todos os botões).
+                                    // Voto único por rodada: no seu voto o botão vira ação
+                                    // de desfazer ("Remover voto"); votar em outro troca. Sem
+                                    // "limite atingido" (era o bug da 2ª votação travando tudo).
                                     text = when {
-                                        hasUserVoted -> "Teu voto"
-                                        userVotedBookId != null -> "Trocar pra esse"
-                                        else -> "Votar nesse"
+                                        hasUserVoted -> "Remover voto"
+                                        userVotedBookId != null -> "Trocar para este"
+                                        else -> "Votar neste"
                                     },
                                     onClick = { viewModel.voteForBook(book.id) },
                                     modifier = Modifier.fillMaxWidth(),
@@ -1070,12 +1093,14 @@ fun VotacaoTab(
 
         item {
             Spacer(modifier = Modifier.height(8.dp))
-            TbButton(
-                text = "Sugerir livro",
-                onClick = onNavigateToSuggestBook,
-                modifier = Modifier.fillMaxWidth(),
-                variant = TbButtonVariant.Outline
-            )
+            if (!showFirstBookCta) {
+                TbButton(
+                    text = "Sugerir livro",
+                    onClick = onNavigateToSuggestBook,
+                    modifier = Modifier.fillMaxWidth(),
+                    variant = TbButtonVariant.Outline
+                )
+            }
             if (isAdmin && activeRound != null) {
                 Spacer(modifier = Modifier.height(8.dp))
                 TbButton(

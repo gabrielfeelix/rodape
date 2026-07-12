@@ -129,7 +129,7 @@ fun AddBookManualScreen(
                     showCamera = false
                     Toast.makeText(
                         context,
-                        "Não deu pra usar a câmera. Tenta de novo.",
+                        "Não deu pra usar a câmera. Tente de novo.",
                         Toast.LENGTH_LONG
                     ).show()
                 }
@@ -147,7 +147,7 @@ fun AddBookManualScreen(
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { Text("Cadastrar livro") },
+                title = { Text("Sugerir livro") },
                 navigationIcon = {
                     IconButton(onClick = onNavigateBack) {
                         Icon(Icons.AutoMirrored.Outlined.ArrowBack, contentDescription = "Voltar")
@@ -164,7 +164,7 @@ fun AddBookManualScreen(
         ) {
             item {
                 Text(
-                    text = "Não achou o livro nas buscas? Cadastra aqui.",
+                    text = "Não achou o livro nas buscas? Cadastre aqui.",
                     style = MaterialTheme.typography.bodyMedium.copy(
                         fontFamily = LiterataFontFamily,
                         color = Muted
@@ -289,12 +289,19 @@ fun AddBookManualScreen(
                         trailingIcon = {
                             TextButton(
                                 onClick = {
+                                    // Habilitado sempre: valida no clique e explica o
+                                    // motivo, em vez de ficar apagado sem justificativa.
                                     if (coverUrlInput.trim().startsWith("https://")) {
                                         coverPathOrUrl = coverUrlInput.trim()
                                         showUrlInput = false
+                                    } else {
+                                        Toast.makeText(
+                                            context,
+                                            "Use um endereço https://",
+                                            Toast.LENGTH_SHORT
+                                        ).show()
                                     }
-                                },
-                                enabled = coverUrlInput.trim().startsWith("https://")
+                                }
                             ) { Text("Usar", color = Terracota) }
                         }
                     )
@@ -448,7 +455,7 @@ fun AddBookManualScreen(
                         modifier = Modifier.weight(1f)
                     )
                     TbButton(
-                        text = "Salvar livro",
+                        text = "Sugerir livro",
                         onClick = {
                             viewModel.createManualBook(
                                 title = titulo,

@@ -82,7 +82,7 @@ fun ForgotPasswordScreen(
                         )
                     } else {
                         Text(
-                            "Te mandamos um link por email",
+                            "Digite seu email e enviamos o link de redefinição.",
                             style = MaterialTheme.typography.displaySmall,
                             textAlign = TextAlign.Center,
                             modifier = Modifier.fillMaxWidth(),

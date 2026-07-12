@@ -1,5 +1,6 @@
 package com.example.ui.screens
 
+import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
@@ -11,7 +12,6 @@ import androidx.compose.material.icons.outlined.Delete
 import androidx.compose.material.icons.outlined.KeyboardArrowDown
 import androidx.compose.material.icons.outlined.KeyboardArrowUp
 import androidx.compose.material.icons.outlined.MenuBook
-import androidx.compose.material.icons.outlined.Refresh
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.runtime.saveable.rememberSaveable
@@ -57,52 +57,96 @@ fun ManageChaptersScreen(
     var draftList by remember {
         mutableStateOf(chapters.map { ChapterDraft(keepOrNewId(it.id), it.titulo) }.toMutableList())
     }
+    // Snapshot do rascunho carregado/salvo. Comparar com draftList diz se há edições
+    // não salvas (confirma o descarte ao sair) sem precisar marcar "dirty" à mão em
+    // cada mutação.
+    var baseline by remember { mutableStateOf(draftList.toList()) }
     var seeded by remember { mutableStateOf(chapters.isNotEmpty()) }
     LaunchedEffect(chapters) {
         if (!seeded && chapters.isNotEmpty()) {
-            draftList = chapters.map { ChapterDraft(keepOrNewId(it.id), it.titulo) }.toMutableList()
+            val seededDraft = chapters.map { ChapterDraft(keepOrNewId(it.id), it.titulo) }.toMutableList()
+            draftList = seededDraft
+            baseline = seededDraft.toList()
             seeded = true
         }
     }
     var fetching by remember { mutableStateOf(false) }
     var apiBanner by remember { mutableStateOf<String?>(null) }
+    var apiError by remember { mutableStateOf(false) }
     var showSaveConfirm by remember { mutableStateOf(false) }
+    var showFetchConfirm by remember { mutableStateOf(false) }
+    var showDiscardConfirm by remember { mutableStateOf(false) }
     var genCount by rememberSaveable { mutableStateOf("") }
     var shareToCommunity by rememberSaveable { mutableStateOf(true) }
+
+    val hasUnsavedEdits = draftList != baseline
+
+    // Executa a busca online e SOBRESCREVE o rascunho. Só deve ser chamada depois
+    // de confirmar quando já existem capítulos (a confirmação fica em requestFetch).
+    val runFetch = {
+        val book = currentBook
+        if (book != null) {
+            fetching = true
+            apiBanner = null
+            apiError = false
+            viewModel.fetchChaptersOnline(book) { result ->
+                fetching = false
+                when (result) {
+                    is ChapterFetchResult.Success -> {
+                        draftList = result.chapters
+                            .map { ChapterDraft(UUID.randomUUID().toString(), it.second) }
+                            .toMutableList()
+                        apiError = false
+                        apiBanner = "Encontramos ${result.chapters.size} capítulos. Revise e salve."
+                    }
+                    is ChapterFetchResult.Failed -> {
+                        apiError = true
+                        apiBanner = "Não encontramos os capítulos. Adicione manualmente."
+                    }
+                }
+            }
+        }
+    }
+    // Buscar sobrescreve a lista inteira: se já há capítulos, confirma antes (P0 —
+    // sem isso, um toque apagava o índice sem aviso e sem desfazer).
+    val requestFetch = {
+        if (draftList.isNotEmpty()) showFetchConfirm = true else runFetch()
+    }
+    val addChapter = {
+        draftList = (draftList + ChapterDraft(UUID.randomUUID().toString(), "")).toMutableList()
+    }
+    val generateChapters = {
+        val n = genCount.toIntOrNull() ?: 0
+        if (n in 1..500) {
+            draftList = (draftList + (1..n).map {
+                ChapterDraft(UUID.randomUUID().toString(), "")
+            }).toMutableList()
+            genCount = ""
+        }
+    }
+    // Sair descarta o rascunho: confirma quando há edições não salvas (P1).
+    val requestDiscard = {
+        if (hasUnsavedEdits) showDiscardConfirm = true else onNavigateBack()
+    }
+
+    BackHandler { requestDiscard() }
 
     Scaffold(
         topBar = {
             TopAppBar(
                 title = { Text("Capítulos") },
                 navigationIcon = {
-                    IconButton(onClick = onNavigateBack) {
+                    IconButton(onClick = requestDiscard) {
                         Icon(Icons.AutoMirrored.Outlined.ArrowBack, contentDescription = "Voltar")
                     }
                 },
                 actions = {
-                    if (currentBook != null) {
-                        IconButton(
-                            onClick = {
-                                fetching = true
-                                apiBanner = null
-                                viewModel.fetchChaptersOnline(currentBook!!) { result ->
-                                    fetching = false
-                                    when (result) {
-                                        is ChapterFetchResult.Success -> {
-                                            draftList = result.chapters
-                                                .map { ChapterDraft(UUID.randomUUID().toString(), it.second) }
-                                                .toMutableList()
-                                            apiBanner = "Encontramos ${result.chapters.size} capítulos. Revisa e salva."
-                                        }
-                                        is ChapterFetchResult.Failed -> {
-                                            apiBanner = "Não encontramos os capítulos. Adicione manualmente."
-                                        }
-                                    }
-                                }
-                            },
-                            enabled = !fetching
-                        ) {
-                            Icon(Icons.Outlined.Refresh, contentDescription = "Buscar online")
+                    // Botão com TEXTO visível (P1): a busca online estava escondida atrás
+                    // de um ícone com rótulo só de acessibilidade. Aparece quando já há
+                    // capítulos; no estado vazio, o caminho primário fica no corpo da tela.
+                    if (currentBook != null && draftList.isNotEmpty()) {
+                        TextButton(onClick = requestFetch, enabled = !fetching) {
+                            Text("Buscar capítulos online", color = Terracota)
                         }
                     }
                 }
@@ -150,15 +194,17 @@ fun ManageChaptersScreen(
             }
 
             if (apiBanner != null) {
+                // Falha usa tom terracota (P2): o verde OlivaSoft é cor de sucesso e
+                // dava a impressão errada quando a busca NÃO encontrava os capítulos.
                 Surface(
-                    color = OlivaSoft,
+                    color = if (apiError) TerracotaSoft else OlivaSoft,
                     shape = RoundedCornerShape(12.dp),
                     modifier = Modifier.padding(16.dp).fillMaxWidth()
                 ) {
                     Text(
                         apiBanner!!,
                         style = MaterialTheme.typography.bodyMedium,
-                        color = OlivaDark,
+                        color = if (apiError) TerracotaDark else OlivaDark,
                         modifier = Modifier.padding(12.dp)
                     )
                 }
@@ -182,6 +228,62 @@ fun ManageChaptersScreen(
                 return@Column
             }
 
+            if (draftList.isEmpty()) {
+                // Estado vazio (P3): sem capítulos, a tela ficava quase em branco.
+                // Aqui o título dá contexto e os três caminhos ficam à mão — buscar
+                // (ação primária), gerar numerados e adicionar manualmente.
+                Column(
+                    modifier = Modifier
+                        .weight(1f)
+                        .fillMaxWidth()
+                        .padding(24.dp),
+                    horizontalAlignment = Alignment.CenterHorizontally,
+                    verticalArrangement = Arrangement.Center
+                ) {
+                    Icon(
+                        Icons.Outlined.MenuBook,
+                        contentDescription = null,
+                        tint = Muted,
+                        modifier = Modifier.size(48.dp)
+                    )
+                    Spacer(modifier = Modifier.height(12.dp))
+                    Text(
+                        "Este livro ainda não tem capítulos.",
+                        style = MaterialTheme.typography.bodyLarge.copy(fontWeight = FontWeight.SemiBold),
+                        color = Ink,
+                        textAlign = TextAlign.Center
+                    )
+                    Spacer(modifier = Modifier.height(6.dp))
+                    Text(
+                        "Cadastre os capítulos para o clube discutir e marcar o progresso da leitura.",
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = Muted,
+                        textAlign = TextAlign.Center
+                    )
+                    Spacer(modifier = Modifier.height(20.dp))
+                    TbButton(
+                        text = "Buscar capítulos online",
+                        onClick = requestFetch,
+                        variant = TbButtonVariant.Terra,
+                        enabled = !fetching,
+                        modifier = Modifier.fillMaxWidth()
+                    )
+                    Spacer(modifier = Modifier.height(16.dp))
+                    ChapterGeneratorSection(
+                        genCount = genCount,
+                        onGenCountChange = { genCount = it.filter { c -> c.isDigit() }.take(3) },
+                        onGenerate = generateChapters,
+                        modifier = Modifier.fillMaxWidth()
+                    )
+                    Spacer(modifier = Modifier.height(16.dp))
+                    TbButton(
+                        text = "Adicionar manualmente",
+                        onClick = addChapter,
+                        variant = TbButtonVariant.Outline,
+                        modifier = Modifier.fillMaxWidth()
+                    )
+                }
+            } else {
             LazyColumn(
                 modifier = Modifier.weight(1f).padding(horizontal = 16.dp),
                 verticalArrangement = Arrangement.spacedBy(8.dp)
@@ -243,45 +345,23 @@ fun ManageChaptersScreen(
                 item {
                     TbButton(
                         text = "+ Adicionar capítulo",
-                        onClick = {
-                            draftList = (draftList + ChapterDraft(UUID.randomUUID().toString(), "")).toMutableList()
-                        },
+                        onClick = addChapter,
                         variant = TbButtonVariant.Outline,
                         modifier = Modifier.fillMaxWidth().padding(top = 8.dp)
                     )
                 }
                 item {
-                    // Gerador rápido: cria N capítulos de uma vez (títulos opcionais).
-                    // As APIs de livro não fornecem a lista de capítulos de forma
-                    // confiável, então o caminho prático é informar quantos são.
-                    Row(
-                        verticalAlignment = Alignment.CenterVertically,
-                        horizontalArrangement = Arrangement.spacedBy(8.dp),
+                    // Gerador rápido: cria N capítulos numerados de uma vez (títulos
+                    // opcionais). As APIs de livro não fornecem a lista de capítulos de
+                    // forma confiável, então o caminho prático é informar quantos são.
+                    ChapterGeneratorSection(
+                        genCount = genCount,
+                        onGenCountChange = { genCount = it.filter { c -> c.isDigit() }.take(3) },
+                        onGenerate = generateChapters,
                         modifier = Modifier.fillMaxWidth().padding(top = 8.dp)
-                    ) {
-                        OutlinedTextField(
-                            value = genCount,
-                            onValueChange = { genCount = it.filter { c -> c.isDigit() }.take(3) },
-                            placeholder = { Text("Nº de capítulos") },
-                            singleLine = true,
-                            modifier = Modifier.weight(1f)
-                        )
-                        TbButton(
-                            text = "Gerar",
-                            onClick = {
-                                val n = genCount.toIntOrNull() ?: 0
-                                if (n in 1..500) {
-                                    draftList = (draftList + (1..n).map {
-                                        ChapterDraft(UUID.randomUUID().toString(), "")
-                                    }).toMutableList()
-                                    genCount = ""
-                                }
-                            },
-                            variant = TbButtonVariant.OlivaSoft,
-                            enabled = (genCount.toIntOrNull() ?: 0) in 1..500,
-                        )
-                    }
+                    )
                 }
+            }
             }
 
             Row(
@@ -290,7 +370,7 @@ fun ManageChaptersScreen(
             ) {
                 TbButton(
                     text = "Cancelar",
-                    onClick = onNavigateBack,
+                    onClick = requestDiscard,
                     variant = TbButtonVariant.Outline,
                     modifier = Modifier.weight(1f)
                 )
@@ -361,6 +441,96 @@ fun ManageChaptersScreen(
                     }
                 )
             }
+
+            if (showFetchConfirm) {
+                // P0: buscar online sobrescreve a lista inteira. Confirma antes de
+                // descartar o que já existe (não há como desfazer depois).
+                AlertDialog(
+                    onDismissRequest = { showFetchConfirm = false },
+                    title = { Text("Substituir os capítulos atuais?") },
+                    text = {
+                        Text(
+                            "Isso substitui os capítulos atuais. Você ainda pode revisar e ajustar antes de salvar."
+                        )
+                    },
+                    confirmButton = {
+                        TextButton(onClick = {
+                            showFetchConfirm = false
+                            runFetch()
+                        }) { Text("Continuar", color = Terracota, fontWeight = FontWeight.SemiBold) }
+                    },
+                    dismissButton = {
+                        TextButton(onClick = { showFetchConfirm = false }) {
+                            Text("Cancelar", color = Muted)
+                        }
+                    }
+                )
+            }
+
+            if (showDiscardConfirm) {
+                // P1: sair (voltar/cancelar/back) descartava o rascunho sem aviso.
+                AlertDialog(
+                    onDismissRequest = { showDiscardConfirm = false },
+                    title = { Text("Descartar as alterações?") },
+                    text = {
+                        Text(
+                            "Você tem capítulos editados que ainda não foram salvos. Se sair agora, você perde essas alterações."
+                        )
+                    },
+                    confirmButton = {
+                        TextButton(onClick = {
+                            showDiscardConfirm = false
+                            onNavigateBack()
+                        }) { Text("Descartar", color = Terracota, fontWeight = FontWeight.SemiBold) }
+                    },
+                    dismissButton = {
+                        TextButton(onClick = { showDiscardConfirm = false }) {
+                            Text("Continuar editando", color = Muted)
+                        }
+                    }
+                )
+            }
+        }
+    }
+}
+
+// Gerador "informe N capítulos", com microcopy explicando pra que serve (P2). Fica
+// num composable só pra ser reusado no estado vazio e no rodapé da lista.
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+private fun ChapterGeneratorSection(
+    genCount: String,
+    onGenCountChange: (String) -> Unit,
+    onGenerate: () -> Unit,
+    modifier: Modifier = Modifier
+) {
+    Column(
+        modifier = modifier,
+        verticalArrangement = Arrangement.spacedBy(6.dp)
+    ) {
+        Text(
+            "Não sabe os títulos? Gere N capítulos numerados.",
+            style = MaterialTheme.typography.bodySmall,
+            color = Muted
+        )
+        Row(
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(8.dp),
+            modifier = Modifier.fillMaxWidth()
+        ) {
+            OutlinedTextField(
+                value = genCount,
+                onValueChange = onGenCountChange,
+                placeholder = { Text("Nº de capítulos") },
+                singleLine = true,
+                modifier = Modifier.weight(1f)
+            )
+            TbButton(
+                text = "Gerar",
+                onClick = onGenerate,
+                variant = TbButtonVariant.OlivaSoft,
+                enabled = (genCount.toIntOrNull() ?: 0) in 1..500,
+            )
         }
     }
 }

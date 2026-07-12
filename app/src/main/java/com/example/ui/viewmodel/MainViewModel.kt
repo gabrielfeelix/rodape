@@ -213,6 +213,11 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
         if (userId != null) repository.getSavedQuotesForUserFlow(userId) else flowOf(emptyList())
     }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(60_000), emptyList())
 
+    // Livros favoritos do usuário (♥ pessoal, cross-clube). Mesmo padrão de savedQuotes.
+    val favoriteBooks: StateFlow<List<Book>> = currentUserId.flatMapLatest { userId ->
+        if (userId != null) repository.getFavoriteBooksForUserFlow(userId) else flowOf(emptyList())
+    }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(60_000), emptyList())
+
     // --- Fase 4 ---
     // Active voting round
     val activeVotingRound: StateFlow<VotingRound?> = activeClubId.flatMapLatest { clubId ->
@@ -722,6 +727,29 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
                 BookRating(bookId, clubId, userId, stars, comment.trim(), System.currentTimeMillis())
             )
             bumpEngagement()
+        }
+    }
+
+    // --- Favoritos (♥ pessoal, cross-clube) ---
+    fun isBookFavoriteFlow(bookId: String): Flow<Boolean> =
+        currentUserId.flatMapLatest { userId ->
+            if (userId != null) repository.isBookFavoriteFlow(userId, bookId) else flowOf(false)
+        }
+
+    fun toggleBookFavorite(bookId: String, favorite: Boolean) {
+        viewModelScope.launch {
+            val userId = currentUserId.value ?: return@launch
+            repository.setBookFavorite(userId, bookId, favorite)
+            if (favorite) bumpEngagement()
+        }
+    }
+
+    // Abre o detalhe (club-scoped) de um favorito a partir do Perfil: garante um
+    // clube ativo que contém o livro antes de navegar, senão o BookDetail não o acha.
+    fun openFavoriteBook(bookId: String, navigate: (String) -> Unit) {
+        viewModelScope.launch {
+            repository.anyClubIdForBook(bookId)?.let { selectActiveClub(it) }
+            navigate(bookId)
         }
     }
 

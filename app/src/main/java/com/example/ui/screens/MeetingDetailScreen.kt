@@ -27,6 +27,7 @@ import com.example.ui.components.PillVariant
 import com.example.ui.components.TbButton
 import com.example.ui.components.TbButtonSize
 import com.example.ui.components.TbButtonVariant
+import com.example.ui.components.TbSectionHeader
 import com.example.ui.components.RodapeCard
 import com.example.ui.components.SkeletonText
 import com.example.ui.components.rememberShowLoading
@@ -54,6 +55,8 @@ fun MeetingDetailScreen(
 
     var showMinutesEdit by rememberSaveable { mutableStateOf(false) }
     var minutesDraft by rememberSaveable { mutableStateOf("") }
+    // Descartar por engano apaga o rascunho da ata — confirma quando há texto.
+    var showMinutesDiscardConfirm by rememberSaveable { mutableStateOf(false) }
 
     // Seed-once (R1): o Room emite null no cold start e re-emite a cada sync.
     // remember(myNote) resemeava o rascunho a cada emissão — apagando (a) o texto
@@ -90,7 +93,7 @@ fun MeetingDetailScreen(
             ) {
                 // Gate: o flow emite null antes do primeiro sync — loading em
                 // vez de "não encontrado" piscando.
-                if (com.example.ui.components.rememberShowLoading(hasData = false)) {
+                if (com.example.ui.components.rememberShowLoading(hasData = meeting != null)) {
                     com.example.ui.components.CenteredLoading()
                 } else {
                     Text("Encontro não encontrado.", style = MaterialTheme.typography.bodyLarge, color = Muted)
@@ -176,18 +179,13 @@ fun MeetingDetailScreen(
                 }
             }
 
-            // Agenda
+            // Pauta
             if (m.agenda.isNotBlank()) {
                 item {
-                    Text(
-                        text = "AGENDA",
-                        style = MaterialTheme.typography.labelSmall.copy(
-                            fontWeight = FontWeight.Bold,
-                            color = Muted,
-                            letterSpacing = 1.sp
-                        )
+                    TbSectionHeader(
+                        title = "Pauta",
+                        modifier = Modifier.padding(bottom = 8.dp)
                     )
-                    Spacer(modifier = Modifier.height(6.dp))
                     RodapeCard(modifier = Modifier.fillMaxWidth()) {
                         Text(
                             text = m.agenda,
@@ -200,15 +198,10 @@ fun MeetingDetailScreen(
             // RSVP
             if (!concluded) {
                 item {
-                    Text(
-                        text = "SUA PARTICIPAÇÃO",
-                        style = MaterialTheme.typography.labelSmall.copy(
-                            fontWeight = FontWeight.Bold,
-                            color = Muted,
-                            letterSpacing = 1.sp
-                        )
+                    TbSectionHeader(
+                        title = "Sua participação",
+                        modifier = Modifier.padding(bottom = 8.dp)
                     )
-                    Spacer(modifier = Modifier.height(6.dp))
                     RodapeCard(modifier = Modifier.fillMaxWidth()) {
                         Row(
                             modifier = Modifier.fillMaxWidth(),
@@ -245,15 +238,10 @@ fun MeetingDetailScreen(
 
             // Ata (Minutes)
             item {
-                Text(
-                    text = "ATA DO ENCONTRO",
-                    style = MaterialTheme.typography.labelSmall.copy(
-                        fontWeight = FontWeight.Bold,
-                        color = Muted,
-                        letterSpacing = 1.sp
-                    )
+                TbSectionHeader(
+                    title = "Ata do encontro",
+                    modifier = Modifier.padding(bottom = 8.dp)
                 )
-                Spacer(modifier = Modifier.height(6.dp))
                 // Local-first: minutes vem null antes do 1º sync. Skeleton na janela
                 // de graça evita "ninguém escreveu a ata" piscando antes do dado chegar.
                 val minutesLoading = rememberShowLoading(hasData = minutes != null)
@@ -316,15 +304,10 @@ fun MeetingDetailScreen(
 
             // Suas anotações (privadas)
             item {
-                Text(
-                    text = "SUAS ANOTAÇÕES (PRIVADAS)",
-                    style = MaterialTheme.typography.labelSmall.copy(
-                        fontWeight = FontWeight.Bold,
-                        color = Muted,
-                        letterSpacing = 1.sp
-                    )
+                TbSectionHeader(
+                    title = "Suas anotações (privadas)",
+                    modifier = Modifier.padding(bottom = 8.dp)
                 )
-                Spacer(modifier = Modifier.height(6.dp))
                 // Local-first: myNote vem null antes do 1º sync — skeleton na janela de graça.
                 val noteLoading = rememberShowLoading(hasData = myNote != null)
                 if (noteEditing) {
@@ -431,7 +414,11 @@ fun MeetingDetailScreen(
     // Dialog editar ata
     if (showMinutesEdit) {
         AlertDialog(
-            onDismissRequest = { showMinutesEdit = false },
+            // Tocar fora com texto no rascunho pede confirmação antes de descartar.
+            onDismissRequest = {
+                if (minutesDraft.isNotBlank()) showMinutesDiscardConfirm = true
+                else showMinutesEdit = false
+            },
             containerColor = MaterialTheme.colorScheme.surface,
             title = {
                 Text(
@@ -462,6 +449,27 @@ fun MeetingDetailScreen(
             dismissButton = {
                 TextButton(onClick = { showMinutesEdit = false }) {
                     Text("Cancelar", color = Muted)
+                }
+            }
+        )
+    }
+
+    // Confirmação de descarte da ata: evita perder o rascunho ao tocar fora do dialog.
+    if (showMinutesDiscardConfirm) {
+        AlertDialog(
+            containerColor = MaterialTheme.colorScheme.surface,
+            onDismissRequest = { showMinutesDiscardConfirm = false },
+            title = { Text("Descartar a ata?") },
+            text = { Text("O texto que você digitou vai ser perdido.") },
+            confirmButton = {
+                TextButton(onClick = {
+                    showMinutesDiscardConfirm = false
+                    showMinutesEdit = false
+                }) { Text("Descartar", color = Terracota, fontWeight = FontWeight.SemiBold) }
+            },
+            dismissButton = {
+                TextButton(onClick = { showMinutesDiscardConfirm = false }) {
+                    Text("Continuar editando", color = Muted)
                 }
             }
         )

@@ -180,6 +180,16 @@ data class BookRating(
     val updatedAt: Long,
 )
 
+// Favorito PESSOAL de livro. Chave (userId, bookId) — vale entre TODOS os clubes
+// do usuário (um livro é global; favoritar é do usuário, não do clube). Espelha o
+// padrão de book_ratings no sync. books.id é uuid, então book_id no servidor é uuid.
+@Entity(tableName = "book_favorites", primaryKeys = ["userId", "bookId"])
+data class BookFavorite(
+    val userId: String,
+    val bookId: String,
+    val criadoEm: Long,
+)
+
 @Entity(tableName = "book_suggestions")
 data class BookSuggestion(
     @PrimaryKey val id: String,
