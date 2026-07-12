@@ -2,6 +2,7 @@ package com.example.data.remote
 
 import com.example.BuildConfig
 import com.example.data.model.*
+import com.example.util.MeetingTime
 import io.github.jan.supabase.SupabaseClient
 import io.github.jan.supabase.postgrest.from
 import io.github.jan.supabase.postgrest.postgrest
@@ -17,6 +18,7 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.async
+import kotlinx.coroutines.cancel
 import kotlinx.coroutines.awaitAll
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -24,6 +26,8 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.launchIn
 import kotlinx.coroutines.flow.onEach
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.sync.Mutex
+import kotlinx.coroutines.sync.withLock
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.JsonElement
@@ -344,13 +348,17 @@ private data class MeetingDto(
     val status: String = "agendado",
 ) {
     fun toDomain(): Meeting {
-        // Banco guarda 1 timestamptz; domain quebra em (data, hora) strings.
-        val (dataStr, horaStr) = formatMeetingDateTime(data)
+        // Banco guarda 1 timestamptz (instante). Deriva (data, hora) NO FUSO LOCAL
+        // e guarda o epoch pra ordenação cronológica. Antes formatava o offset UTC
+        // cru sem converter — o encontro aparecia na hora errada.
+        val epoch = MeetingTime.isoToEpoch(data) ?: 0L
+        val (dataStr, horaStr) = if (epoch != 0L) MeetingTime.epochToLabel(epoch) else (data to "")
         return Meeting(
             id = id, clubId = clubId,
             data = dataStr, hora = horaStr, local = local ?: "",
             agenda = agenda ?: "", bookId = bookId,
             chapterStart = chapterStart, chapterEnd = chapterEnd, status = status,
+            dataEpoch = epoch,
         )
     }
 }
@@ -367,17 +375,6 @@ private data class MeetingInsertDto(
     @SerialName("chapter_end") val chapterEnd: Int? = null,
     val status: String = "agendado",
 )
-
-/** "2026-05-25T19:00:00+00:00" -> ("DOMINGO, 25 DE MAIO DE 2026", "19:00"). */
-private fun formatMeetingDateTime(iso: String): Pair<String, String> {
-    return runCatching {
-        val odt = java.time.OffsetDateTime.parse(iso)
-        val dia = odt.dayOfWeek.getDisplayName(java.time.format.TextStyle.FULL, java.util.Locale("pt", "BR")).uppercase()
-        val data = "${dia}, ${odt.dayOfMonth} DE ${odt.month.getDisplayName(java.time.format.TextStyle.FULL, java.util.Locale("pt", "BR")).uppercase()} DE ${odt.year}"
-        val hora = "%02d:%02d".format(odt.hour, odt.minute)
-        data to hora
-    }.getOrElse { iso to "" }
-}
 
 // ---- meeting_rsvps ----
 @Serializable
@@ -676,9 +673,17 @@ class RemoteRepository(
 
     /** Apaga o cache local — chamar no logout pra nao vazar dados entre contas.
      *  Antes de limpar, tenta drenar a fila offline uma ultima vez pra nao
-     *  descartar silenciosamente mutations que o usuario achou que salvou. */
+     *  descartar silenciosamente mutations que o usuario achou que salvou.
+     *  IMPORTANTE: chamar ENQUANTO a sessao ainda existe (antes do signOut),
+     *  senao o drain roda deslogado -> 401 -> descarta as mutations. */
     suspend fun clearLocalCache() {
         runCatching { tryDrainPendingQueue() }
+        clearLocalCacheNoDrain()
+    }
+
+    /** Limpa o cache SEM drenar. Usar na troca de conta (nao drenar as mutations
+     *  do usuario A sob a sessao do usuario B) e depois de ja ter drenado. */
+    suspend fun clearLocalCacheNoDrain() {
         dao.clearAll()
         pendingDao.clear()
         lastSyncAt.clear()
@@ -784,12 +789,21 @@ class RemoteRepository(
      *  tipos concretos do SDK, inspeciona a mensagem por status 4xx. */
     private fun isPermanentError(t: Throwable): Boolean {
         val msg = (t.message ?: "") + " " + t.toString()
+        // 408 (timeout) e 429 (rate limit) sao TRANSITORIOS apesar de 4xx — retenta.
+        if (Regex("""\b(408|429)\b""").containsMatchIn(msg)) return false
+        // Demais 4xx = payload/permissao invalida: nao adianta retentar.
         return Regex("""\b4\d\d\b""").containsMatchIn(msg)
     }
 
-    /** Drena a fila — chamada quando rede volta ou em sync periodico. */
-    suspend fun tryDrainPendingQueue() {
-        val all = pendingDao.all()
+    // Serializa drains concorrentes (worker + init + forceRefresh + logout) pra
+    // nao processar o mesmo item 2x (double markFailed -> dead-letter prematuro).
+    private val drainMutex = Mutex()
+
+    /** Drena a fila — chamada quando rede volta ou em sync periodico.
+     *  Para na PRIMEIRA falha transitoria pra preservar ordem/dependencias
+     *  (ex: insert_reaction depende de insert_comment ainda na fila). */
+    suspend fun tryDrainPendingQueue() = drainMutex.withLock {
+        val all = pendingDao.all() // ja vem ordenado por createdAt ASC
         for (m in all) {
             val handler = mutationHandlers[m.kind]
             if (handler == null) {
@@ -798,21 +812,28 @@ class RemoteRepository(
                 pendingDao.delete(m.id)
                 continue
             }
-            runCatching { handler(m.payload) }
-                .onSuccess { pendingDao.delete(m.id) }
-                .onFailure { err ->
-                    val permanent = isPermanentError(err)
-                    val exhausted = m.attempts + 1 >= maxDrainAttempts
-                    if (permanent || exhausted) {
-                        android.util.Log.w(
-                            "Rodape",
-                            "Dead-letter mutation ${m.kind} (permanent=$permanent, attempts=${m.attempts + 1}): ${err.message}"
-                        )
-                        pendingDao.delete(m.id)
-                    } else {
-                        pendingDao.markFailed(m.id, err.message)
-                    }
-                }
+            val result = runCatching { handler(m.payload) }
+            if (result.isSuccess) {
+                pendingDao.delete(m.id)
+                continue
+            }
+            val err = result.exceptionOrNull()!!
+            val permanent = isPermanentError(err)
+            val exhausted = m.attempts + 1 >= maxDrainAttempts
+            if (permanent || exhausted) {
+                android.util.Log.w(
+                    "Rodape",
+                    "Dead-letter mutation ${m.kind} (permanent=$permanent, attempts=${m.attempts + 1}): ${err.message}"
+                )
+                pendingDao.delete(m.id)
+            } else {
+                // Falha transitoria (sem rede / 5xx): marca e PARA. Retentar os
+                // itens seguintes agora arriscaria aplicar um dependente antes do
+                // seu pai (FK/permissao 4xx -> dead-letter injusto). Proxima drenagem
+                // recomeca do inicio quando a rede voltar.
+                pendingDao.markFailed(m.id, err.message)
+                break
+            }
         }
     }
 
@@ -829,7 +850,7 @@ class RemoteRepository(
         runCatching { tryDrainPendingQueue() }
         // Snapshot evita ConcurrentModification se um flow registrar reloader
         // durante o refresh.
-        val reloads = tableReloaders.values.toList().flatten()
+        val reloads = tableReloaders.values.toList().flatMap { it.values }
         kotlinx.coroutines.coroutineScope {
             reloads.map { reload ->
                 async { runCatching { reload() } }
@@ -936,6 +957,59 @@ class RemoteRepository(
                 )
             )
         }
+        registerHandler("upsert_profile") { json ->
+            val obj = this.json.parseToJsonElement(json) as JsonObject
+            supabase.from("profiles").upsert(
+                ProfileUpdateDto(
+                    id = obj.str("id"),
+                    nome = obj.str("nome"),
+                    sobrenome = obj.strOrNull("sobrenome"),
+                    avatarKey = obj.str("avatarKey"),
+                )
+            )
+        }
+        registerHandler("delete_vote") { json ->
+            val obj = this.json.parseToJsonElement(json) as JsonObject
+            supabase.from("votes").delete {
+                filter {
+                    eq("voting_round_id", obj.str("votingRoundId"))
+                    eq("user_id", obj.str("userId"))
+                    eq("book_id", obj.str("bookId"))
+                }
+            }
+        }
+        registerHandler("edit_comment") { json ->
+            val obj = this.json.parseToJsonElement(json) as JsonObject
+            supabase.from("comments").update({ set("texto", obj.str("texto")) }) {
+                filter { eq("id", obj.str("id")) }
+            }
+        }
+        registerHandler("delete_comment") { json ->
+            val obj = this.json.parseToJsonElement(json) as JsonObject
+            supabase.from("comments").delete { filter { eq("id", obj.str("id")) } }
+        }
+        registerHandler("remove_comment") { json ->
+            val obj = this.json.parseToJsonElement(json) as JsonObject
+            supabase.from("comments").update({
+                set("removido", true)
+                set("removido_por", obj.str("by"))
+                set("motivo_remocao", obj.strOrNull("motivo"))
+            }) { filter { eq("id", obj.str("id")) } }
+        }
+        registerHandler("restore_comment") { json ->
+            val obj = this.json.parseToJsonElement(json) as JsonObject
+            supabase.from("comments").update({
+                set("removido", false)
+                set("removido_por", JsonNull)
+                set("motivo_remocao", JsonNull)
+            }) { filter { eq("id", obj.str("id")) } }
+        }
+        registerHandler("mark_notification_read") { json ->
+            val obj = this.json.parseToJsonElement(json) as JsonObject
+            supabase.from("notifications").update({ set("lida", true) }) {
+                filter { eq("id", obj.str("id")) }
+            }
+        }
 
         // Tenta drenar logo no init (caso tenha sobrado fila da sessao anterior).
         scope.launch { runCatching { tryDrainPendingQueue() } }
@@ -966,24 +1040,23 @@ class RemoteRepository(
     // em Dispatchers.IO — mapa comum daria ConcurrentModificationException.
     private val realtimeJobs = java.util.concurrent.ConcurrentHashMap<String, Job>()
 
-    // Reload registry: chave (table) -> set de reload() ativos.
-    // Apos uma mutation local (insert/update/delete), chamamos
-    // notifyLocalMutation(table) que dispara TODOS os reloads dessa tabela
-    // imediatamente — sem esperar Realtime WebSocket. Optimistic-lite:
-    // a mudanca aparece em ~200ms (RTT) em vez de ~500ms (websocket roundtrip).
-    // Concurrent* pra suportar registro (main) + iteracao (IO) sem corromper.
+    // Reload registry: chave (table) -> mapa (key -> reload()).
+    // Antes era um CopyOnWriteArraySet que CRESCIA SEM LIMITE — cada revisita de
+    // tela/re-emissao de flatMapLatest adicionava um novo lambda (nunca iguais),
+    // e um unico write local virava centenas de reloads (RemoteRepository.kt:1003).
+    // Agora indexamos por (table,filter) key: re-registrar SUBSTITUI em vez de acumular.
     private val tableReloaders =
-        java.util.concurrent.ConcurrentHashMap<String, java.util.concurrent.CopyOnWriteArraySet<suspend () -> Unit>>()
+        java.util.concurrent.ConcurrentHashMap<String, java.util.concurrent.ConcurrentHashMap<String, suspend () -> Unit>>()
 
-    private fun registerReloader(table: String, reload: suspend () -> Unit) {
-        tableReloaders.getOrPut(table) { java.util.concurrent.CopyOnWriteArraySet() }.add(reload)
+    private fun registerReloader(table: String, key: String, reload: suspend () -> Unit) {
+        tableReloaders.getOrPut(table) { java.util.concurrent.ConcurrentHashMap() }[key] = reload
     }
 
     /** Chamar APOS uma mutation bem-sucedida (insert/update/delete) na tabela.
      *  Dispara reload de todas as caches que escutam essa tabela.
      *  Realtime tambem vai disparar, mas com latencia maior — este e o fast path. */
     private fun notifyLocalMutation(table: String) {
-        tableReloaders[table]?.forEach { reload ->
+        tableReloaders[table]?.values?.forEach { reload ->
             scope.launch { runCatching { reload() } }
         }
     }
@@ -992,6 +1065,11 @@ class RemoteRepository(
      * Subscribe na tabela [table]. Quando receber qualquer mudanca que case
      * com [filterColumn]=[filterValue] (se fornecidos), chama [reload].
      * Idempotente: chamar 2x com mesma chave reusa a subscription existente.
+     *
+     * O Job rastreado agora COLETA o flow (via collector.join()), entao seu
+     * isActive reflete a subscription viva de verdade. Antes o Job so fazia o
+     * setup e morria apos subscribe(), enquanto o coletor real corria detached —
+     * o guard `isActive` nunca dedupava e VAZAVA um canal novo a cada chamada.
      */
     private fun ensureRealtime(
         table: String,
@@ -999,10 +1077,10 @@ class RemoteRepository(
         filterValue: String? = null,
         reload: suspend () -> Unit,
     ) {
-        // Sempre registra o reloader pra fast-path local (mutations imediatas).
-        registerReloader(table, reload)
-
         val key = "$table:${filterColumn ?: "*"}=${filterValue ?: "*"}"
+        // Registra o reloader pro fast-path local (substitui o de mesma key).
+        registerReloader(table, key, reload)
+
         if (realtimeJobs[key]?.isActive == true) return
 
         val job = scope.launch {
@@ -1014,14 +1092,24 @@ class RemoteRepository(
                         filter(filterColumn, io.github.jan.supabase.postgrest.query.filter.FilterOperator.EQ, filterValue)
                     }
                 }
-                flow.onEach { _ ->
-                    // Qualquer evento dispara reload — simples e robusto.
-                    runCatching { reload() }
-                }.launchIn(scope)
+                val collector = launch {
+                    flow.collect { runCatching { reload() } }
+                }
                 ch.subscribe()
+                // Mantem o Job vivo enquanto coletar — liveness = subscription real.
+                collector.join()
             }
         }
         realtimeJobs[key] = job
+    }
+
+    /** Encerra o repo: cancela subscriptions/reloads pendentes. Chamar em
+     *  MainViewModel.onCleared() e no fim do worker de drain. Sem isso, os
+     *  coletores Realtime e loops de reload rodavam pra sempre (leak). */
+    fun close() {
+        scope.cancel()
+        realtimeJobs.clear()
+        tableReloaders.clear()
     }
 
     // ----------------------- Caches reativas -----------------------
@@ -1066,19 +1154,26 @@ class RemoteRepository(
     suspend fun insertUser(user: User) {
         // Apenas atualiza profile do USUARIO LOGADO (RLS bloqueia outros).
         // Para criar profile de outro usuario o trigger handle_new_user e quem faz.
-        runCatching {
-            val partes = user.nome.trim().split(" ", limit = 2)
-            val nome = partes.firstOrNull()?.ifBlank { user.nome } ?: user.nome
-            val sobrenome = if (partes.size > 1) partes[1].trim().ifBlank { null } else null
+        //
+        // Local-first: grava no Room ANTES do remoto e enfileira se offline. Antes
+        // era remoto-primeiro dentro de runCatching SEM escrita local — editar o
+        // perfil (nome/avatar) offline sumia sem aviso e a saudacao nao mudava.
+        val partes = user.nome.trim().split(" ", limit = 2)
+        val nome = partes.firstOrNull()?.ifBlank { user.nome } ?: user.nome
+        val sobrenome = if (partes.size > 1) partes[1].trim().ifBlank { null } else null
+        val avatarKey = user.avatarUrl.ifBlank { "preset:leitor" }
+        dao.upsertUser(user.copy(avatarUrl = avatarKey))
+        notifyLocalMutation("profiles")
+        val payload = buildJsonObject {
+            put("id", user.id)
+            put("nome", nome)
+            if (sobrenome != null) put("sobrenome", sobrenome)
+            put("avatarKey", avatarKey)
+        }.toString()
+        tryRemoteOrEnqueue("upsert_profile", payload) {
             supabase.from("profiles").upsert(
-                ProfileUpdateDto(
-                    id = user.id,
-                    nome = nome,
-                    sobrenome = sobrenome,
-                    avatarKey = user.avatarUrl.ifBlank { "preset:leitor" },
-                )
+                ProfileUpdateDto(id = user.id, nome = nome, sobrenome = sobrenome, avatarKey = avatarKey)
             )
-            notifyLocalMutation("profiles")
         }
     }
 
@@ -1137,26 +1232,41 @@ class RemoteRepository(
     }.getOrNull()
 
     fun getClubsForUser(userId: String): Flow<List<Club>> {
-        val reload: suspend () -> Unit = { syncClubsForUser(); markSynced("clubs:user:$userId") }
-        scope.launch { syncOnce("clubs:user:$userId", Ttl.MED) { syncClubsForUser() } }
+        val reload: suspend () -> Unit = { syncClubsForUser(userId); markSynced("clubs:user:$userId") }
+        scope.launch { syncOnce("clubs:user:$userId", Ttl.MED) { syncClubsForUser(userId) } }
         ensureRealtime("club_members", filterColumn = "user_id", filterValue = userId, reload = reload)
-        ensureRealtime("clubs", reload = reload)
+        // clubs sem filtro dispararia reload a cada mudanca de QUALQUER clube publico;
+        // filtra pelo membership via club_members acima. Mantemos clubs filtrado por
+        // nada removido — mas com o reload escopado, o custo fica no membership.
         return dao.clubsActiveFlow()
     }
 
-    private suspend fun syncClubsForUser() {
+    private suspend fun syncClubsForUser(userId: String) {
         runCatching {
-            val list = supabase.from("clubs").select().decodeList<ClubDto>().map { it.toDomain() }
-            // Substitui: o que sumiu do servidor (saiu do clube) some local tambem.
+            // Escopa por MEMBERSHIP (join club_members do usuario), em vez de baixar
+            // TODOS os clubes que o SELECT policy libera (publicos + os que sou membro).
+            // Antes o cliente cacheava clubes publicos que o usuario nunca entrou —
+            // poluia o switcher, o empty-state e a escolha de clube ativo.
+            val rows = supabase.from("club_members").select(Columns.raw("clubs!inner(*)")) {
+                filter { eq("user_id", userId) }
+            }.decodeList<JoinClubOnly>()
+            val list = rows.map { it.club.toDomain() }
             dao.upsertClubs(list)
+            // Substitui: o que sumiu (saiu do clube) some do cache tambem.
             dao.pruneClubsExcept(list.map { it.id })
         }
     }
 
+    @Serializable
+    private data class JoinClubOnly(@SerialName("clubs") val club: ClubDto)
+
     suspend fun getClubsForUserList(userId: String): List<Club> = runCatching {
-        supabase.from("clubs").select {
-            filter { eq("arquivado", false) }
-        }.decodeList<ClubDto>().map { it.toDomain() }
+        // Escopado por membership (nao por "todos nao-arquivados"). Usado pra
+        // escolher o proximo clube ativo ao sair/arquivar — nao pode cair num
+        // clube publico que o usuario nem e membro.
+        supabase.from("club_members").select(Columns.raw("clubs!inner(*)")) {
+            filter { eq("user_id", userId) }
+        }.decodeList<JoinClubOnly>().map { it.club.toDomain() }.filter { !it.arquivado }
     }.getOrDefault(emptyList())
 
     suspend fun insertClub(club: Club) {
@@ -1192,14 +1302,16 @@ class RemoteRepository(
     }
 
     /** RPC: join_club_with_code. Retorna ROW de club_members (campo `club_id`).
-     *  Mesmo padrao do create_club — extrai o id apos parsear. */
-    suspend fun joinClubWithCodeViaRpc(codigo: String): String? = runCatching {
+     *  Mesmo padrao do create_club — extrai o id apos parsear.
+     *  PROPAGA excecao (codigo invalido / nao encontrado / sem rede) pra VM
+     *  distinguir os casos em vez de mostrar sempre "codigo errado". */
+    suspend fun joinClubWithCodeViaRpc(codigo: String): String? {
         val resp = supabase.postgrest.rpc(
             function = "join_club_with_code",
             parameters = buildJsonObject { put("p_codigo", codigo.uppercase().trim()) }
         ).data
-        extractFieldFromRpcRow(resp, "club_id")
-    }.getOrNull()
+        return extractFieldFromRpcRow(resp, "club_id")
+    }
 
     /** Parse helper: pega `id` da row retornada por uma RPC `RETURNS tabela`.
      *  Resposta vem como JSON: '{"id":"uuid","nome":"...",...}'. Em casos
@@ -1220,10 +1332,11 @@ class RemoteRepository(
         }.getOrNull()
     }
 
+    /** RPC: leave_club. PROPAGA excecao — o caller so pode trocar o clube ativo
+     *  APOS confirmar o sucesso. Antes engolia o erro e o app reportava "saiu"
+     *  mesmo quando falhava (e o clube reaparecia no proximo sync). */
     suspend fun leaveClubViaRpc(clubId: String) {
-        runCatching {
-            supabase.postgrest.rpc("leave_club", buildJsonObject { put("p_club_id", clubId) })
-        }
+        supabase.postgrest.rpc("leave_club", buildJsonObject { put("p_club_id", clubId) })
     }
 
     /**
@@ -1236,13 +1349,15 @@ class RemoteRepository(
         supabase.postgrest.rpc("delete_own_account")
     }
 
-    suspend fun regenerateInviteCodeViaRpc(clubId: String): String = runCatching {
+    /** RPC: regenerate_invite_code. PROPAGA excecao (antes retornava "" e a UI
+     *  mostrava "Novo codigo: " em branco). */
+    suspend fun regenerateInviteCodeViaRpc(clubId: String): String {
         val resp = supabase.postgrest.rpc(
             "regenerate_invite_code",
             buildJsonObject { put("p_club_id", clubId) }
         ).data
-        resp.trim('"', ' ', '\n')
-    }.getOrElse { "" }
+        return resp.trim('"', ' ', '\n')
+    }
 
     suspend fun promoteMemberViaRpc(clubId: String, targetUserId: String) {
         runCatching {
@@ -1268,14 +1383,14 @@ class RemoteRepository(
         }
     }
 
+    /** RPC: remove_member. PROPAGA excecao (ex: admin tentando remover admin) pra
+     *  UI mostrar o erro em vez de o toque nao fazer nada silenciosamente. */
     suspend fun removeMemberViaRpc(clubId: String, targetUserId: String, motivo: String?) {
-        runCatching {
-            supabase.postgrest.rpc("remove_member", buildJsonObject {
-                put("p_club_id", clubId)
-                put("p_target_user_id", targetUserId)
-                put("p_motivo", motivo ?: "")
-            })
-        }
+        supabase.postgrest.rpc("remove_member", buildJsonObject {
+            put("p_club_id", clubId)
+            put("p_target_user_id", targetUserId)
+            put("p_motivo", motivo ?: "")
+        })
     }
 
     suspend fun closeVotingRoundViaRpc(roundId: String) {
@@ -1660,6 +1775,40 @@ class RemoteRepository(
         }
     }
 
+    @Serializable
+    private data class NumeroOnlyDto(val numero: Int)
+
+    /**
+     * Salva a lista de capítulos por DIFF (não delete-all+reinsert). Capítulos que
+     * ficam são ATUALIZADOS in-place (id determinístico `ch_<bookId>_<numero>`),
+     * então seus comentários/reações sobrevivem — antes, salvar qualquer edição
+     * apagava TODA a discussão do livro via ON DELETE CASCADE (bug P0). Só os
+     * capítulos genuinamente removidos são apagados (aí sim a discussão deles vai).
+     */
+    suspend fun saveChapters(bookId: String, novos: List<Pair<Int, String>>) {
+        val chapters = novos.map { (numero, titulo) ->
+            Chapter(id = "ch_${bookId}_$numero", bookId = bookId, numero = numero, titulo = titulo)
+        }
+        val keep = novos.map { it.first }
+        // Local-first: upsert (in-place) + deleta só os removidos.
+        dao.upsertChapters(chapters)
+        if (keep.isNotEmpty()) dao.deleteChaptersNotIn(bookId, keep) else dao.deleteChaptersForBook(bookId)
+        notifyLocalMutation("chapters")
+        // Remoto: upsert todos, depois deleta só os capítulos cujo numero saiu.
+        runCatching {
+            if (chapters.isNotEmpty()) supabase.from("chapters").upsert(chapters.map { it.toDto() })
+            val existing = supabase.from("chapters").select(Columns.raw("numero")) {
+                filter { eq("book_id", bookId) }
+            }.decodeList<NumeroOnlyDto>().map { it.numero }
+            val removed = existing.filter { it !in keep }
+            if (removed.isNotEmpty()) {
+                supabase.from("chapters").delete {
+                    filter { eq("book_id", bookId); isIn("numero", removed) }
+                }
+            }
+        }.onFailure { android.util.Log.w("Rodape/Repo", "saveChapters remoto falhou: ${it.message}") }
+    }
+
     // ============================================================
     // USER PROGRESS
     // ============================================================
@@ -1799,24 +1948,56 @@ class RemoteRepository(
     }
 
     suspend fun softRemoveComment(commentId: String, removidoPor: String, motivo: String) {
-        runCatching {
+        // Optimistic local + fila: moderar offline agora persiste (antes era
+        // remoto-primeiro e nao fazia nada offline).
+        dao.markCommentRemoved(commentId, removidoPor, motivo)
+        notifyLocalMutation("comments")
+        val payload = buildJsonObject {
+            put("id", commentId); put("by", removidoPor); put("motivo", motivo)
+        }.toString()
+        tryRemoteOrEnqueue("remove_comment", payload) {
             supabase.from("comments").update({
                 set("removido", true)
                 set("removido_por", removidoPor)
                 set("motivo_remocao", motivo)
             }) { filter { eq("id", commentId) } }
-            notifyLocalMutation("comments")
         }
     }
 
     suspend fun restoreComment(commentId: String) {
-        runCatching {
+        dao.markCommentRestored(commentId)
+        notifyLocalMutation("comments")
+        val payload = buildJsonObject { put("id", commentId) }.toString()
+        tryRemoteOrEnqueue("restore_comment", payload) {
             supabase.from("comments").update({
                 set("removido", false)
                 set("removido_por", JsonNull)
                 set("motivo_remocao", JsonNull)
             }) { filter { eq("id", commentId) } }
-            notifyLocalMutation("comments")
+        }
+    }
+
+    /** Edita o texto do PRÓPRIO comentário (RLS permite autor enquanto não removido).
+     *  Local-first + fila offline. */
+    suspend fun editOwnComment(commentId: String, novoTexto: String) {
+        dao.updateCommentText(commentId, novoTexto)
+        notifyLocalMutation("comments")
+        val payload = buildJsonObject { put("id", commentId); put("texto", novoTexto) }.toString()
+        tryRemoteOrEnqueue("edit_comment", payload) {
+            supabase.from("comments").update({ set("texto", novoTexto) }) {
+                filter { eq("id", commentId) }
+            }
+        }
+    }
+
+    /** Apaga o PRÓPRIO comentário (hard delete; RLS "comments delete self" na migration 0003).
+     *  Local-first + fila offline. */
+    suspend fun deleteOwnComment(commentId: String) {
+        dao.deleteComment(commentId)
+        notifyLocalMutation("comments")
+        val payload = buildJsonObject { put("id", commentId) }.toString()
+        tryRemoteOrEnqueue("delete_comment", payload) {
+            supabase.from("comments").delete { filter { eq("id", commentId) } }
         }
     }
 
@@ -1978,7 +2159,15 @@ class RemoteRepository(
     }
 
     suspend fun removeUserVoteForBookInRound(userId: String, roundId: String, bookId: String) {
-        runCatching {
+        // Optimistic local + fila (espelha insertVote): desfazer voto offline agora
+        // persiste. Antes era remoto-primeiro sem apagar a linha do Room, entao o
+        // voto "voltava" ate um reload via Realtime.
+        dao.deleteVote(roundId, userId, bookId)
+        notifyLocalMutation("votes")
+        val payload = buildJsonObject {
+            put("votingRoundId", roundId); put("userId", userId); put("bookId", bookId)
+        }.toString()
+        tryRemoteOrEnqueue("delete_vote", payload) {
             supabase.from("votes").delete {
                 filter {
                     eq("user_id", userId)
@@ -1986,8 +2175,6 @@ class RemoteRepository(
                     eq("book_id", bookId)
                 }
             }
-            // O sync via Realtime/notifyLocalMutation vai limpar via replace.
-            notifyLocalMutation("votes")
         }
     }
 
@@ -2131,9 +2318,15 @@ class RemoteRepository(
     // ============================================================
 
     suspend fun insertMeeting(meeting: Meeting) {
-        val dataIso = parseMeetingDateTime(meeting.data, meeting.hora) ?: System.currentTimeMillis().toIso()
+        // Instante real: prefere dataEpoch (já calculado no fuso local pela VM);
+        // fallback pra parse do rótulo. NUNCA interpreta hora local como UTC.
+        val epoch = if (meeting.dataEpoch != 0L) meeting.dataEpoch
+            else MeetingTime.parseLocal(meeting.data, meeting.hora) ?: System.currentTimeMillis()
+        val dataIso = MeetingTime.epochToIso(epoch)
+        // Garante que o Room guarde o epoch mesmo se a VM não preencheu.
+        val toStore = if (meeting.dataEpoch != 0L) meeting else meeting.copy(dataEpoch = epoch)
         // Local-first: grava no Room antes do remoto pra o encontro aparecer na hora.
-        dao.upsertMeetings(listOf(meeting))
+        dao.upsertMeetings(listOf(toStore))
         notifyLocalMutation("meetings")
         runCatching {
             supabase.from("meetings").upsert(
@@ -2152,22 +2345,6 @@ class RemoteRepository(
         }.onFailure { android.util.Log.e("RodapeWrite", "insertMeeting remoto falhou", it) }
     }
 
-    private fun parseMeetingDateTime(data: String, hora: String): String? {
-        // Tenta formatos comuns: "DD/MM/YYYY", "DD/MM", livre.
-        // Se falhar, retorna null e o caller usa now().
-        return runCatching {
-            val partes = data.split("/")
-            if (partes.size != 3) return@runCatching null
-            val dia = partes[0].toInt()
-            val mes = partes[1].toInt()
-            val ano = partes[2].toInt()
-            val (h, m) = hora.split(":").let {
-                if (it.size >= 2) it[0].toInt() to it[1].toInt() else 19 to 0
-            }
-            java.time.OffsetDateTime.of(ano, mes, dia, h, m, 0, 0, java.time.ZoneOffset.UTC).toString()
-        }.getOrNull()
-    }
-
     private suspend fun syncMeetingsForClub(clubId: String) {
         runCatching {
             val list = supabase.from("meetings").select {
@@ -2182,7 +2359,8 @@ class RemoteRepository(
         val reload: suspend () -> Unit = { syncMeetingsForClub(clubId) }
         scope.launch { runCatching { reload() } }
         ensureRealtime("meetings", filterColumn = "club_id", filterValue = clubId, reload = reload)
-        return dao.latestMeetingForClubFlow(clubId)
+        // "Próximo encontro" = agendado futuro mais próximo (instante real).
+        return dao.nextMeetingForClubFlow(clubId, System.currentTimeMillis())
     }
 
     fun getAllMeetingsFlow(clubId: String): Flow<List<Meeting>> {
@@ -2216,7 +2394,11 @@ class RemoteRepository(
     }
 
     fun getMeetingsForBookFlow(clubId: String, bookId: String): Flow<List<Meeting>> {
-        scope.launch { runCatching { syncMeetingsForClub(clubId) } }
+        val reload: suspend () -> Unit = { syncMeetingsForClub(clubId) }
+        scope.launch { runCatching { reload() } }
+        // Realtime: encontros do livro atualizam ao vivo entre dispositivos (antes
+        // era one-shot e ficava desatualizado até refresh manual).
+        ensureRealtime("meetings", filterColumn = "club_id", filterValue = clubId, reload = reload)
         return dao.meetingsForBookFlow(clubId, bookId)
     }
 
@@ -2307,6 +2489,11 @@ class RemoteRepository(
     // ---- meeting_patterns ----
 
     suspend fun insertMeetingPattern(pattern: MeetingPattern) {
+        // Local-first: grava o padrão no Room ANTES do remoto (separado), pra ele
+        // aparecer na hora e não sumir se a rede falhar (antes era tudo num
+        // runCatching remoto-primeiro que engolia a escrita local).
+        dao.upsertMeetingPattern(pattern)
+        notifyLocalMutation("meeting_patterns")
         runCatching {
             supabase.from("meeting_patterns").upsert(
                 MeetingPatternInsertDto(
@@ -2321,9 +2508,58 @@ class RemoteRepository(
                     valorRecorrencia = pattern.valorRecorrencia,
                 )
             )
-            dao.upsertMeetingPattern(pattern)
-            notifyLocalMutation("meeting_patterns")
+        }.onFailure { android.util.Log.w("Rodape/Repo", "insertMeetingPattern remote falhou: ${it.message}") }
+    }
+
+    /**
+     * Gera encontros concretos a partir de um padrão de recorrência — o que
+     * fazia a recorrência FINALMENTE funcionar (antes o padrão era só um rótulo,
+     * nenhum encontro nascia dele). Idempotente: id determinístico por data
+     * (`mtg_pat_<clubId>_<yyyymmdd>`), então re-gerar não duplica. Antes de gerar,
+     * remove encontros auto-gerados FUTUROS (caso o dia/hora do padrão tenha
+     * mudado) — nunca toca em encontros criados à mão.
+     *
+     * [horizon] = quantas ocorrências à frente gerar (default 8).
+     */
+    suspend fun generateMeetingsFromPattern(pattern: MeetingPattern, horizon: Int = 8) {
+        if (pattern.tipoRecorrencia == "unica" || !pattern.ativo) return
+        val now = System.currentTimeMillis()
+        val epochs = MeetingTime.nextOccurrenceEpochs(
+            tipo = pattern.tipoRecorrencia,
+            diaSemana = pattern.diaSemana,
+            valor = pattern.valorRecorrencia,
+            hora = pattern.hora,
+            fromEpoch = now,
+            count = horizon,
+        )
+        if (epochs.isEmpty()) return
+
+        // Limpa auto-gerados futuros (local + remoto) antes de recriar.
+        runCatching { dao.deleteFutureGeneratedMeetings(pattern.clubId, now) }
+        runCatching {
+            supabase.from("meetings").delete {
+                filter {
+                    eq("club_id", pattern.clubId)
+                    like("id", "mtg_pat_%")
+                    gte("data", MeetingTime.epochToIso(now))
+                }
+            }
         }
+
+        val zone = java.time.ZoneId.systemDefault()
+        val meetings = epochs.map { epoch ->
+            val ymd = java.time.Instant.ofEpochMilli(epoch).atZone(zone).toLocalDate()
+            val id = "mtg_pat_${pattern.clubId}_%04d%02d%02d".format(ymd.year, ymd.monthValue, ymd.dayOfMonth)
+            val (label, horaStr) = MeetingTime.epochToLabel(epoch)
+            Meeting(
+                id = id, clubId = pattern.clubId,
+                data = label, hora = horaStr,
+                local = pattern.local, agenda = pattern.agendaTemplate,
+                bookId = null, chapterStart = null, chapterEnd = null,
+                status = "agendado", dataEpoch = epoch,
+            )
+        }
+        meetings.forEach { insertMeeting(it) }
     }
 
     fun getActiveMeetingPatternFlow(clubId: String): Flow<MeetingPattern?> {
@@ -2439,20 +2675,25 @@ class RemoteRepository(
     }
 
     suspend fun markAllNotificationsAsRead(userId: String) {
+        // Local-first: some o badge na hora mesmo offline. Antes era remoto-primeiro
+        // e a notificacao ficava "nao lida" ate um round-trip bem-sucedido.
+        dao.markAllNotificationsRead(userId)
+        notifyLocalMutation("notifications")
         runCatching {
             supabase.from("notifications").update({ set("lida", true) }) {
                 filter { eq("user_id", userId) }
             }
-            notifyLocalMutation("notifications")
-        }
+        }.onFailure { android.util.Log.w("Rodape/Repo", "markAll read remote falhou: ${it.message}") }
     }
 
     suspend fun markNotificationAsRead(id: String) {
-        runCatching {
+        dao.markNotificationRead(id)
+        notifyLocalMutation("notifications")
+        val payload = buildJsonObject { put("id", id) }.toString()
+        tryRemoteOrEnqueue("mark_notification_read", payload) {
             supabase.from("notifications").update({ set("lida", true) }) {
                 filter { eq("id", id) }
             }
-            notifyLocalMutation("notifications")
         }
     }
 

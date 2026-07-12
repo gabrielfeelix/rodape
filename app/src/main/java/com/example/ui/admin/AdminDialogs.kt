@@ -3,16 +3,24 @@ package com.example.ui.admin
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.interaction.MutableInteractionSource
+import androidx.compose.foundation.interaction.PressInteraction
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.outlined.DateRange
+import androidx.compose.material.icons.outlined.Schedule
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.semantics.Role
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.onClick
+import androidx.compose.ui.semantics.role
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.example.ui.theme.*
@@ -438,6 +446,7 @@ fun EditSingleMeetingDialog(
     // e o encontro virava "agora" pra todos). Prefill: tenta ler a data existente.
     var dateMillis by remember { mutableStateOf(parseMeetingLabelToMillis(initialData)) }
     var showDatePicker by remember { mutableStateOf(false) }
+    var showTimePicker by remember { mutableStateOf(false) }
     // Hora fica como HH:MM (24h). Sanitiza o valor inicial pra só o começo.
     var hora by remember { mutableStateOf(sanitizeHora(initialHora)) }
     var local by remember { mutableStateOf(initialLocal) }
@@ -457,11 +466,23 @@ fun EditSingleMeetingDialog(
                 modifier = Modifier.fillMaxWidth()
             ) {
                 item {
+                    // A11y: readOnly (não enabled=false) mantém o campo focável e
+                    // anunciado no TalkBack. Um OutlinedTextField enabled consome o
+                    // clique de Modifier.clickable, então o toque abre o DatePicker
+                    // via interactionSource; a ação de acessibilidade (onClick) faz
+                    // o mesmo pro duplo-toque do leitor de tela.
+                    val dateInteraction = remember { MutableInteractionSource() }
+                    LaunchedEffect(dateInteraction) {
+                        dateInteraction.interactions.collect {
+                            if (it is PressInteraction.Release) showDatePicker = true
+                        }
+                    }
+                    val dateLabel = dateMillis?.let { formatMillisBr(it) } ?: ""
                     OutlinedTextField(
-                        value = dateMillis?.let { formatMillisBr(it) } ?: "",
+                        value = dateLabel,
                         onValueChange = {},
                         readOnly = true,
-                        enabled = false,
+                        interactionSource = dateInteraction,
                         label = { Text("Data do encontro") },
                         placeholder = { Text("Toque para escolher") },
                         trailingIcon = {
@@ -470,29 +491,41 @@ fun EditSingleMeetingDialog(
                         singleLine = true,
                         modifier = Modifier
                             .fillMaxWidth()
-                            .clickable { showDatePicker = true },
-                        colors = OutlinedTextFieldDefaults.colors(
-                            disabledTextColor = Ink,
-                            disabledBorderColor = Divider,
-                            disabledLabelColor = Muted,
-                            disabledTrailingIconColor = Muted,
-                            disabledPlaceholderColor = Muted,
-                        ),
+                            .semantics {
+                                role = Role.Button
+                                contentDescription = "Data do encontro. " +
+                                    dateLabel.ifEmpty { "Toque para escolher" }
+                                onClick(label = "Escolher data") { showDatePicker = true; true }
+                            },
                     )
                 }
                 item {
+                    // Hora é TimePicker (24h): o texto livre aceitava "99:99".
+                    val timeInteraction = remember { MutableInteractionSource() }
+                    LaunchedEffect(timeInteraction) {
+                        timeInteraction.interactions.collect {
+                            if (it is PressInteraction.Release) showTimePicker = true
+                        }
+                    }
                     OutlinedTextField(
                         value = hora,
-                        onValueChange = { txt ->
-                            // aceita só dígitos e ":", formato HH:MM
-                            hora = txt.filter { it.isDigit() || it == ':' }.take(5)
+                        onValueChange = {},
+                        readOnly = true,
+                        interactionSource = timeInteraction,
+                        label = { Text("Hora (24h)") },
+                        placeholder = { Text("Toque para escolher") },
+                        trailingIcon = {
+                            Icon(Icons.Outlined.Schedule, contentDescription = null, tint = Muted)
                         },
-                        label = { Text("Hora (24h, ex: 19:00)") },
                         singleLine = true,
-                        keyboardOptions = androidx.compose.foundation.text.KeyboardOptions(
-                            keyboardType = androidx.compose.ui.text.input.KeyboardType.Number
-                        ),
-                        modifier = Modifier.fillMaxWidth()
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .semantics {
+                                role = Role.Button
+                                contentDescription = "Hora do encontro. " +
+                                    hora.ifBlank { "Toque para escolher" }
+                                onClick(label = "Escolher hora") { showTimePicker = true; true }
+                            },
                     )
                 }
                 item {
@@ -603,8 +636,16 @@ fun EditSingleMeetingDialog(
     )
 
     if (showDatePicker) {
+        // Não deixa agendar no passado: só hoje-ou-depois (comparado em meia-noite UTC).
+        val minDateMillis = remember { todayUtcMidnightMillis() }
         val pickerState = rememberDatePickerState(
-            initialSelectedDateMillis = dateMillis ?: System.currentTimeMillis()
+            initialSelectedDateMillis = dateMillis ?: System.currentTimeMillis(),
+            selectableDates = object : SelectableDates {
+                override fun isSelectableDate(utcTimeMillis: Long): Boolean =
+                    utcTimeMillis >= minDateMillis
+                override fun isSelectableYear(year: Int): Boolean =
+                    year >= java.util.Calendar.getInstance().get(java.util.Calendar.YEAR)
+            }
         )
         DatePickerDialog(
             onDismissRequest = { showDatePicker = false },
@@ -621,16 +662,64 @@ fun EditSingleMeetingDialog(
             DatePicker(state = pickerState)
         }
     }
+
+    if (showTimePicker) {
+        val initHora = sanitizeHora(hora)
+        val timeState = rememberTimePickerState(
+            initialHour = initHora.substringBefore(":").toIntOrNull()?.coerceIn(0, 23) ?: 19,
+            initialMinute = initHora.substringAfter(":").toIntOrNull()?.coerceIn(0, 59) ?: 0,
+            is24Hour = true,
+        )
+        AlertDialog(
+            containerColor = MaterialTheme.colorScheme.surface,
+            onDismissRequest = { showTimePicker = false },
+            title = { Text("Hora do encontro") },
+            text = {
+                Box(modifier = Modifier.fillMaxWidth(), contentAlignment = Alignment.Center) {
+                    TimePicker(state = timeState)
+                }
+            },
+            confirmButton = {
+                TextButton(onClick = {
+                    hora = "%02d:%02d".format(timeState.hour, timeState.minute)
+                    showTimePicker = false
+                }) { Text("OK", color = Oliva, fontWeight = FontWeight.SemiBold) }
+            },
+            dismissButton = {
+                TextButton(onClick = { showTimePicker = false }) { Text("Cancelar", color = Muted) }
+            },
+        )
+    }
 }
 
 // ── Helpers de data/hora do encontro ──
 // O banco guarda um timestamp; o parser do repositório aceita "dd/MM/yyyy" + "HH:MM".
+// O DatePicker devolve millis à meia-noite UTC. Formatando/parseando SEMPRE em UTC
+// (não no fuso do device) o dia mostrado casa com o dia tocado — antes, em fusos
+// negativos (Américas), o dia voltava 1 (off-by-one).
+private val UTC_ZONE = java.util.TimeZone.getTimeZone("UTC")
 private val brDate = java.text.SimpleDateFormat("dd/MM/yyyy", java.util.Locale("pt", "BR"))
+    .apply { timeZone = UTC_ZONE }
 private val brDateFriendly = java.text.SimpleDateFormat("EEE, dd 'de' MMM 'de' yyyy", java.util.Locale("pt", "BR"))
+    .apply { timeZone = UTC_ZONE }
 
 private fun formatMillisDdMmYyyy(millis: Long): String = brDate.format(java.util.Date(millis))
 private fun formatMillisBr(millis: Long): String =
     brDateFriendly.format(java.util.Date(millis)).replaceFirstChar { it.uppercase() }
+
+/** Meia-noite UTC do dia local de hoje — limite inferior do DatePicker. */
+private fun todayUtcMidnightMillis(): Long {
+    val local = java.util.Calendar.getInstance()
+    return java.util.Calendar.getInstance(UTC_ZONE).apply {
+        clear()
+        set(
+            local.get(java.util.Calendar.YEAR),
+            local.get(java.util.Calendar.MONTH),
+            local.get(java.util.Calendar.DAY_OF_MONTH),
+            0, 0, 0
+        )
+    }.timeInMillis
+}
 
 /** Extrai a 1ª ocorrência de HH:MM; default 19:00. */
 private fun sanitizeHora(raw: String): String {
@@ -656,7 +745,7 @@ private fun parseMeetingLabelToMillis(label: String): Long? {
     val ano = Regex("""\b(20\d{2})\b""").find(low)?.groupValues?.get(1)?.toIntOrNull()
         ?: java.util.Calendar.getInstance().get(java.util.Calendar.YEAR)
     return runCatching {
-        java.util.Calendar.getInstance().apply {
+        java.util.Calendar.getInstance(UTC_ZONE).apply {
             clear(); set(ano, mesIdx, dia, 12, 0, 0)
         }.timeInMillis
     }.getOrNull()

@@ -43,8 +43,15 @@ object AuthErrors {
             lower.contains("account_not_linked") || lower.contains("identity_not_found") ||
                 lower.contains("account reauth") || lower.contains("user_not_found") ->
                 "Essa conta foi criada com email/senha. Entre usando sua senha — depois voce pode vincular o Google nas configuracoes."
-            lower.contains("oauth") && lower.contains("cancel") ->
+            // Cancelamento do fluxo Google. O CredentialManager devolve textos crus
+            // como "activity is cancelled by the user" / OAuth cancelado — sem esse
+            // caso vazava ingles pro usuario.
+            lower.contains("cancel") ->
                 "Login com Google cancelado."
+            // Nenhuma conta/credencial Google no device
+            // (CredentialManager: "No credentials available" / "no credential").
+            lower.contains("no credential") ->
+                "Nenhuma conta Google disponivel neste dispositivo. Adicione uma conta Google nas configuracoes e tente de novo."
 
             // Rate limit
             lower.contains("over_email_send_rate_limit") || lower.contains("too many requests") ->

@@ -9,6 +9,7 @@ import com.example.data.api.OpenLibraryDoc
 import com.example.data.model.*
 import com.example.data.remote.AuthRepository
 import com.example.data.remote.RemoteRepository
+import com.example.util.MeetingTime
 import io.github.jan.supabase.auth.status.SessionStatus
 import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.launch
@@ -227,11 +228,19 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
     }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
 
     // Papel do usuário atual no clube ativo: "super_admin" | "admin" | "member" | null
+    // Emite null IMEDIATAMENTE ao trocar de clube (antes o stateIn segurava o papel
+    // do clube ANTERIOR até o novo flow emitir — os guards de admin e o header
+    // piscavam/misfire com o papel errado).
     val currentUserPapel: StateFlow<String?> = combine(currentUserId, activeClubId) { uid, cid -> Pair(uid, cid) }
         .flatMapLatest { (uid, cid) ->
             if (uid != null && cid != null) {
-                repository.getClubMembersRawFlow(cid).map { list ->
-                    list.find { it.userId == uid }?.papel
+                flow<String?> {
+                    emit(null) // reset ao trocar de clube
+                    emitAll(
+                        repository.getClubMembersRawFlow(cid).map { list ->
+                            list.find { it.userId == uid }?.papel
+                        }
+                    )
                 }
             } else flowOf(null)
         }
@@ -314,7 +323,10 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
                         "Rodape/VM",
                         "Troca/primeiro login (last=$lastId, new=$newUserId). Limpando cache local."
                     )
-                    runCatching { repository.clearLocalCache() }
+                    // SEM drenar: as mutations pendentes eram do usuario ANTERIOR e
+                    // seriam reenviadas sob a sessao do novo (misattribution/RLS-reject).
+                    runCatching { repository.clearLocalCacheNoDrain() }
+                    runCatching { dataStoreManager.setLastActiveClubId(null) }
                     runCatching { dataStoreManager.setLastUserId(newUserId) }
                 }
             }
@@ -338,9 +350,16 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
                 }
             }
         }
+        // Auto-close reativo: fecha a rodada assim que ela vira "expirada", em vez
+        // de um delay(500) fixo que rodava com activeClubId ainda null (nao fechava).
         viewModelScope.launch {
-            kotlinx.coroutines.delay(500)
-            maybeAutoCloseExpiredRound()
+            activeVotingRound.collect { round ->
+                if (round != null && round.status == "aberta" &&
+                    System.currentTimeMillis() >= round.fechaEm
+                ) {
+                    maybeAutoCloseExpiredRound()
+                }
+            }
         }
 
         // Avatar inicial inteligente: quando detectamos profile com avatar default
@@ -367,12 +386,23 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
         onCompleted()
     }
 
+    override fun onCleared() {
+        super.onCleared()
+        // Cancela subscriptions Realtime e loops de reload do repo (antes ficavam
+        // rodando pra sempre, detached do ciclo de vida — leak de socket/coroutine).
+        repository.close()
+    }
+
     fun logout(onCompleted: () -> Unit) {
         viewModelScope.launch {
+            // Drena a fila ENQUANTO ainda autenticado — senao o drain rodaria
+            // deslogado (401) e descartaria mutations que o usuario achou salvas.
+            runCatching { repository.tryDrainPendingQueue() }
             runCatching { authRepository.signOut() }
             dataStoreManager.clearSession()
-            runCatching { repository.clearLocalCache() }
+            runCatching { repository.clearLocalCacheNoDrain() }
             runCatching { dataStoreManager.setLastUserId(null) }
+            runCatching { dataStoreManager.setLastActiveClubId(null) }
             _activeClubId.value = null
             onCompleted()
         }
@@ -382,11 +412,13 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
      *  durante a 9A — esse wrapper sera o canal unico apos a 9B/9C. */
     fun signOutSupabase(onCompleted: () -> Unit) {
         viewModelScope.launch {
+            runCatching { repository.tryDrainPendingQueue() }
             runCatching { authRepository.signOut() }
             dataStoreManager.clearSession()
             // Limpa Room — evita vazar dados entre contas no mesmo device.
-            runCatching { repository.clearLocalCache() }
+            runCatching { repository.clearLocalCacheNoDrain() }
             runCatching { dataStoreManager.setLastUserId(null) }
+            runCatching { dataStoreManager.setLastActiveClubId(null) }
             _activeClubId.value = null
             onCompleted()
         }
@@ -414,8 +446,11 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
             }
             runCatching { authRepository.signOut() }
             dataStoreManager.clearSession()
-            runCatching { repository.clearLocalCache() }
+            // Conta excluida no servidor: nao adianta drenar (mutations pendentes
+            // ficaram orfas). So limpa local.
+            runCatching { repository.clearLocalCacheNoDrain() }
             runCatching { dataStoreManager.setLastUserId(null) }
+            runCatching { dataStoreManager.setLastActiveClubId(null) }
             _activeClubId.value = null
             onDeleted()
         }
@@ -444,6 +479,7 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
                 // RPC: cria clube + super_admin member + invite code unico, atomicamente.
                 val clubId = repository.createClubViaRpc(nome, descricao, cor, privacidade)
                 _activeClubId.value = clubId
+                dataStoreManager.setLastActiveClubId(clubId)
                 onCompleted(clubId)
             } catch (e: Exception) {
                 android.util.Log.e("Rodape/VM", "createClub falhou", e)
@@ -464,6 +500,7 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
                 val clubId = repository.joinClubWithCodeViaRpc(code)
                 if (clubId != null) {
                     _activeClubId.value = clubId
+                    dataStoreManager.setLastActiveClubId(clubId)
                     // Inicializa progresso no livro atual, se existir.
                     val curBooks = repository.getBookByStatusFlow(clubId, "current").first()
                     val userId = currentUserId.value
@@ -477,7 +514,11 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
                     onCompleted(false, "Esse código não tá certo. Confere com quem te chamou.")
                 }
             } catch (e: Exception) {
-                onCompleted(false, e.message ?: "Esse código não tá certo. Confere com quem te chamou.")
+                // Mensagem específica do servidor (código inválido vs não encontrado
+                // vs sem conexão) em vez de sempre "código errado".
+                onCompleted(false, com.example.ui.auth.AuthErrors.friendly(
+                    e, fallback = "Não consegui entrar no clube. Confere o código e a conexão."
+                ))
             }
         }
     }
@@ -548,22 +589,23 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
     fun voteForBook(bookId: String) {
         viewModelScope.launch {
             val userId = currentUserId.value ?: return@launch
-            val clubId = activeClubId.value ?: return@launch
-            val round = repository.getActiveVotingRound(clubId) ?: return@launch
+            // Rodada ativa vem do StateFlow (Room-backed) — funciona OFFLINE. Antes
+            // usava getActiveVotingRound remoto: null offline -> voto virava no-op.
+            val round = activeVotingRound.value ?: return@launch
 
+            val votes = repository.getVotesForRound(round.id) // cache-first
             // Se já votou neste livro, desfaz
-            val existingForBook = repository.getVotesForRound(round.id)
-                .firstOrNull { it.userId == userId && it.clubBookId == bookId }
-            if (existingForBook != null) {
+            if (votes.any { it.userId == userId && it.clubBookId == bookId }) {
                 repository.removeUserVoteForBookInRound(userId, round.id, bookId)
                 return@launch
             }
-
-            // Se atingiu o limite N, não faz nada
-            val count = repository.countUserVotesInRound(userId, round.id)
+            // Limite N a partir do Room (não de um GET remoto que retorna 0 offline).
+            val count = votes.count { it.userId == userId }
             if (count >= round.nLivros) return@launch
 
-            repository.insertVote(Vote(bookId, userId, System.currentTimeMillis(), round.id))
+            repository.insertVote(
+                Vote(votingRoundId = round.id, clubBookId = bookId, userId = userId, votedAt = System.currentTimeMillis())
+            )
             bumpEngagement()
         }
     }
@@ -737,6 +779,22 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
         }
     }
 
+    /** Dedup: se o clube já tem esse livro (mesmo ISBN, ou mesmo openlibraryId, ou
+     *  mesmo título), reusa o bookId em vez de criar um candidato duplicado. Antes,
+     *  o mesmo livro sugerido por 3 pessoas virava 3 candidatos de voto separados. */
+    private fun existingClubBookId(title: String, isbn: String, openlibraryId: String = ""): String? {
+        val books = clubBooks.value
+        val cleanIsbn = isbn.filter { it.isDigit() }
+        if (cleanIsbn.isNotBlank()) {
+            books.firstOrNull { it.isbn.filter { c -> c.isDigit() } == cleanIsbn }?.let { return it.id }
+        }
+        if (openlibraryId.isNotBlank()) {
+            books.firstOrNull { it.openlibraryId.isNotBlank() && it.openlibraryId == openlibraryId }?.let { return it.id }
+        }
+        val normTitle = title.trim().lowercase()
+        return books.firstOrNull { it.title.trim().lowercase() == normTitle }?.id
+    }
+
     fun createBookSuggestion(
         doc: OpenLibraryDoc,
         justification: String,
@@ -746,49 +804,41 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
         viewModelScope.launch {
             val clubId = activeClubId.value ?: return@launch
             val userId = currentUserId.value ?: return@launch
-            val bookId = UUID.randomUUID().toString()
-            val coverId = doc.coverI
-            val coverUrl = if (coverId != null) {
-                "https://covers.openlibrary.org/b/id/${coverId}-M.jpg"
-            } else {
-                ""
-            }
+            val isbn = doc.isbn?.firstOrNull() ?: ""
 
-            val finalAuthor = authorOverride?.trim()?.takeIf { it.isNotBlank() }
-                ?: doc.authorName?.firstOrNull()
-                ?: "Autor desconhecido"
+            // Reusa livro existente no clube (dedup) ou cria um novo.
+            val existingId = existingClubBookId(doc.title, isbn)
+            val bookId = existingId ?: UUID.randomUUID().toString()
 
-            val newBook = Book(
-                id = bookId,
-                title = doc.title,
-                author = finalAuthor,
-                coverUrl = coverUrl,
-                openlibraryId = "",
-                isbn = doc.isbn?.firstOrNull() ?: "",
-                isManual = false,
-                totalPaginas = null,
-                editora = null,
-                anoPublicacao = doc.firstPublishYear,
-                idioma = "pt"
-            )
-            repository.insertBook(newBook)
-
-            // Insert suggestion relation
-            repository.insertClubBook(ClubBook(clubId, bookId, "suggested", 0, null))
-
-            // Persistir justificativa de verdade
-            if (justification.isNotBlank()) {
-                repository.insertBookSuggestion(
-                    BookSuggestion(
-                        id = UUID.randomUUID().toString(),
-                        clubId = clubId,
-                        bookId = bookId,
-                        suggestedByUserId = userId,
-                        justificativa = justification.trim(),
-                        criadoEm = System.currentTimeMillis()
-                    )
+            if (existingId == null) {
+                val coverId = doc.coverI
+                val coverUrl = if (coverId != null) "https://covers.openlibrary.org/b/id/${coverId}-M.jpg" else ""
+                val finalAuthor = authorOverride?.trim()?.takeIf { it.isNotBlank() }
+                    ?: doc.authorName?.firstOrNull()
+                    ?: "Autor desconhecido"
+                val newBook = Book(
+                    id = bookId, title = doc.title, author = finalAuthor,
+                    coverUrl = coverUrl, openlibraryId = "", isbn = isbn,
+                    isManual = false, totalPaginas = null, editora = null,
+                    anoPublicacao = doc.firstPublishYear, idioma = "pt"
                 )
+                repository.insertBook(newBook)
+                repository.insertClubBook(ClubBook(clubId, bookId, "suggested", 0, null))
             }
+
+            // SEMPRE grava a atribuição (quem sugeriu + quando), mesmo sem
+            // justificativa — antes só gravava se justificativa != blank, então a
+            // autoria se perdia e o histórico ficava genérico.
+            repository.insertBookSuggestion(
+                BookSuggestion(
+                    id = UUID.randomUUID().toString(),
+                    clubId = clubId,
+                    bookId = bookId,
+                    suggestedByUserId = userId,
+                    justificativa = justification.trim(),
+                    criadoEm = System.currentTimeMillis()
+                )
+            )
 
             onCompleted()
         }
@@ -812,9 +862,27 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
     ) {
         viewModelScope.launch {
             val clubId = activeClubId.value ?: return@launch
+            val userId = currentUserId.value
             if (title.isBlank() || author.isBlank()) return@launch
-            val bookId = UUID.randomUUID().toString()
             val cleanIsbn = isbn?.filter { it.isDigit() } ?: ""
+
+            // Dedup: se o clube já tem esse livro, reusa (não recria candidato).
+            existingClubBookId(title.trim(), cleanIsbn)?.let { existing ->
+                if (userId != null) {
+                    repository.insertBookSuggestion(
+                        BookSuggestion(
+                            id = UUID.randomUUID().toString(), clubId = clubId, bookId = existing,
+                            suggestedByUserId = userId, justificativa = "",
+                            criadoEm = System.currentTimeMillis()
+                        )
+                    )
+                }
+                bumpEngagement()
+                onCreated(existing)
+                return@launch
+            }
+
+            val bookId = UUID.randomUUID().toString()
 
             // Se coverPathOrUrl e file:// local, sobe pro bucket book-covers
             // e usa o signed URL no banco. Se ja for http(s), passa direto.
@@ -848,6 +916,15 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
             )
             repository.insertBook(newBook)
             repository.insertClubBook(ClubBook(clubId, bookId, "suggested", 0, null))
+            if (userId != null) {
+                repository.insertBookSuggestion(
+                    BookSuggestion(
+                        id = UUID.randomUUID().toString(), clubId = clubId, bookId = bookId,
+                        suggestedByUserId = userId, justificativa = "",
+                        criadoEm = System.currentTimeMillis()
+                    )
+                )
+            }
             bumpEngagement()
             onCreated(bookId)
         }
@@ -926,11 +1003,16 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
         }
     }
 
-    fun regenerateInviteCode(onResult: (String) -> Unit = {}) {
+    fun regenerateInviteCode(onResult: (String) -> Unit = {}, onError: (String) -> Unit = {}) {
         viewModelScope.launch {
             val clubId = activeClubId.value ?: return@launch
-            val newCode = repository.regenerateInviteCodeViaRpc(clubId)
-            onResult(newCode)
+            try {
+                val newCode = repository.regenerateInviteCodeViaRpc(clubId)
+                if (newCode.isBlank()) onError("Não consegui gerar um novo código agora.")
+                else onResult(newCode)
+            } catch (e: Exception) {
+                onError(com.example.ui.auth.AuthErrors.friendly(e, fallback = "Não consegui gerar um novo código agora."))
+            }
         }
     }
 
@@ -955,10 +1037,16 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
         }
     }
 
-    fun removeMember(targetUserId: String, motivo: String) {
+    fun removeMember(targetUserId: String, motivo: String, onError: (String) -> Unit = {}) {
         viewModelScope.launch {
             val clubId = activeClubId.value ?: return@launch
-            repository.removeMemberViaRpc(clubId, targetUserId, motivo.trim())
+            try {
+                repository.removeMemberViaRpc(clubId, targetUserId, motivo.trim())
+            } catch (e: Exception) {
+                onError(com.example.ui.auth.AuthErrors.friendly(
+                    e, fallback = "Não foi possível remover esse membro."
+                ))
+            }
         }
     }
 
@@ -967,13 +1055,18 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
             val clubId = activeClubId.value ?: return@launch
             val meId = currentUserId.value ?: return@launch
             try {
+                // Só troca de clube ativo APÓS confirmar o sucesso (a RPC agora
+                // propaga exceção; antes engolia o erro e reportava "saiu" à toa).
                 repository.leaveClubViaRpc(clubId)
                 val outros = repository.getClubsForUserList(meId)
-                _activeClubId.value = outros.firstOrNull()?.id
+                val proximo = outros.firstOrNull()?.id
+                _activeClubId.value = proximo
+                dataStoreManager.setLastActiveClubId(proximo)
                 onDone()
             } catch (e: Exception) {
-                // RPC leave_club levanta exception se super_admin sozinho — repassa msg.
-                onBlocked(e.message ?: "Não foi possível sair do clube.")
+                onBlocked(com.example.ui.auth.AuthErrors.friendly(
+                    e, fallback = "Não foi possível sair do clube."
+                ))
             }
         }
     }
@@ -988,28 +1081,34 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
     ) {
         viewModelScope.launch {
             val clubId = activeClubId.value ?: return@launch
-            if (currentUserPapel.value !in setOf("admin", "super_admin")) return@launch
+            // Sem guard de papel client-side: RLS/RPC do servidor já exige admin
+            // (o guard antigo lia currentUserPapel do cache, que fica null num clube
+            // recém-carregado e bloqueava a ação de um admin de verdade sem aviso).
             repository.deactivateMeetingPatterns(clubId)
-            repository.insertMeetingPattern(
-                MeetingPattern(
-                    id = "pattern_${clubId}_${System.currentTimeMillis()}",
-                    clubId = clubId,
-                    diaSemana = diaSemana,
-                    hora = hora,
-                    local = local,
-                    agendaTemplate = agendaTemplate,
-                    ativo = true,
-                    tipoRecorrencia = tipoRecorrencia,
-                    valorRecorrencia = valorRecorrencia
-                )
+            val pattern = MeetingPattern(
+                id = "pattern_${clubId}_${System.currentTimeMillis()}",
+                clubId = clubId,
+                diaSemana = diaSemana,
+                hora = hora,
+                local = local,
+                agendaTemplate = agendaTemplate,
+                ativo = true,
+                tipoRecorrencia = tipoRecorrencia,
+                valorRecorrencia = valorRecorrencia
             )
+            repository.insertMeetingPattern(pattern)
+            // AGORA a recorrência gera encontros de verdade (antes o padrão era só
+            // um rótulo e nenhum encontro nascia dele). Cria as próximas ocorrências.
+            repository.generateMeetingsFromPattern(pattern)
         }
     }
 
     fun deactivateMeetingPattern() {
         viewModelScope.launch {
             val clubId = activeClubId.value ?: return@launch
-            if (currentUserPapel.value !in setOf("admin", "super_admin")) return@launch
+            // Sem guard de papel client-side: RLS/RPC do servidor já exige admin
+            // (o guard antigo lia currentUserPapel do cache, que fica null num clube
+            // recém-carregado e bloqueava a ação de um admin de verdade sem aviso).
             repository.deactivateMeetingPatterns(clubId)
         }
     }
@@ -1033,18 +1132,23 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
             val id = meetingId ?: UUID.randomUUID().toString()
             // Preserva status atual se já existe, senão "agendado"
             val existing = repository.getMeetingById(id)
+            // Calcula o instante real no FUSO LOCAL a partir do "DD/MM/YYYY" + "HH:mm"
+            // e deriva o rótulo bonito (consistente com o que o servidor devolve).
+            val epoch = MeetingTime.parseLocal(data, hora) ?: System.currentTimeMillis()
+            val (label, horaLabel) = MeetingTime.epochToLabel(epoch)
             repository.insertMeeting(
                 Meeting(
                     id = id,
                     clubId = clubId,
-                    data = data,
-                    hora = hora,
+                    data = label,
+                    hora = horaLabel,
                     local = local,
                     agenda = agenda,
                     bookId = bookId,
                     chapterStart = chapterStart,
                     chapterEnd = chapterEnd,
-                    status = existing?.status ?: "agendado"
+                    status = existing?.status ?: "agendado",
+                    dataEpoch = epoch,
                 )
             )
         }
@@ -1052,7 +1156,9 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
 
     fun cancelMeeting(meetingId: String) {
         viewModelScope.launch {
-            if (currentUserPapel.value !in setOf("admin", "super_admin")) return@launch
+            // Sem guard de papel client-side: RLS/RPC do servidor já exige admin
+            // (o guard antigo lia currentUserPapel do cache, que fica null num clube
+            // recém-carregado e bloqueava a ação de um admin de verdade sem aviso).
             repository.deleteRsvpsForMeeting(meetingId)
             repository.deleteMeeting(meetingId)
         }
@@ -1061,7 +1167,9 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
     fun removeComment(commentId: String, motivo: String) {
         viewModelScope.launch {
             val meId = currentUserId.value ?: return@launch
-            if (currentUserPapel.value !in setOf("admin", "super_admin")) return@launch
+            // Sem guard de papel client-side: RLS/RPC do servidor já exige admin
+            // (o guard antigo lia currentUserPapel do cache, que fica null num clube
+            // recém-carregado e bloqueava a ação de um admin de verdade sem aviso).
             repository.softRemoveComment(commentId, meId, motivo.trim())
         }
     }
@@ -1076,7 +1184,9 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
     fun removeSuggestion(bookId: String) {
         viewModelScope.launch {
             val clubId = activeClubId.value ?: return@launch
-            if (currentUserPapel.value !in setOf("admin", "super_admin")) return@launch
+            // Sem guard de papel client-side: RLS/RPC do servidor já exige admin
+            // (o guard antigo lia currentUserPapel do cache, que fica null num clube
+            // recém-carregado e bloqueava a ação de um admin de verdade sem aviso).
             repository.deleteVotesForBook(bookId)
             repository.deleteBookSuggestion(bookId, clubId)
             repository.deleteClubBook(clubId, bookId)
@@ -1086,7 +1196,9 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
     fun changeCurrentBookManually(targetBookId: String) {
         viewModelScope.launch {
             val clubId = activeClubId.value ?: return@launch
-            if (currentUserPapel.value !in setOf("admin", "super_admin")) return@launch
+            // Sem guard de papel client-side: RLS/RPC do servidor já exige admin
+            // (o guard antigo lia currentUserPapel do cache, que fica null num clube
+            // recém-carregado e bloqueava a ação de um admin de verdade sem aviso).
 
             val currentList = repository.getBookByStatusFlow(clubId, "current").first()
             currentList.forEach { b ->
@@ -1100,7 +1212,9 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
     fun markCurrentBookFinished() {
         viewModelScope.launch {
             val clubId = activeClubId.value ?: return@launch
-            if (currentUserPapel.value !in setOf("admin", "super_admin")) return@launch
+            // Sem guard de papel client-side: RLS/RPC do servidor já exige admin
+            // (o guard antigo lia currentUserPapel do cache, que fica null num clube
+            // recém-carregado e bloqueava a ação de um admin de verdade sem aviso).
             val currentList = repository.getBookByStatusFlow(clubId, "current").first()
             currentList.forEach { b ->
                 repository.updateClubBookStatus(clubId, b.id, "finished")
@@ -1111,17 +1225,26 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
 
     fun upsertChapters(bookId: String, novos: List<Pair<Int, String>>) {
         viewModelScope.launch {
-            if (currentUserPapel.value !in setOf("admin", "super_admin")) return@launch
-            repository.deleteChaptersForBook(bookId)
-            val chapters = novos.map { (numero, titulo) ->
-                Chapter(
-                    id = "ch_${bookId}_${numero}",
-                    bookId = bookId,
-                    numero = numero,
-                    titulo = titulo
-                )
-            }
-            repository.insertChapters(chapters)
+            // Sem guard de papel client-side: RLS/RPC do servidor já exige admin.
+            // Salva por DIFF (não delete-all): editar/adicionar capítulo NÃO apaga
+            // mais a discussão dos capítulos mantidos (bug P0 corrigido).
+            repository.saveChapters(bookId, novos)
+        }
+    }
+
+    /** Edita o texto do próprio comentário (RLS permite autor). */
+    fun editComment(commentId: String, novoTexto: String) {
+        viewModelScope.launch {
+            val texto = novoTexto.trim()
+            if (texto.isBlank() || texto.length > 4000) return@launch
+            repository.editOwnComment(commentId, texto)
+        }
+    }
+
+    /** Apaga o próprio comentário (hard delete; RLS "comments delete self"). */
+    fun deleteOwnComment(commentId: String) {
+        viewModelScope.launch {
+            repository.deleteOwnComment(commentId)
         }
     }
 
@@ -1132,7 +1255,9 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
             repository.updateClubArquivado(clubId, true)
             val uid = currentUserId.value ?: return@launch
             val outros = repository.getClubsForUserList(uid)
-            _activeClubId.value = outros.firstOrNull()?.id
+            val proximo = outros.firstOrNull()?.id
+            _activeClubId.value = proximo
+            dataStoreManager.setLastActiveClubId(proximo)
         }
     }
 
@@ -1243,7 +1368,9 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
     fun saveMeetingMinutes(meetingId: String, texto: String) {
         viewModelScope.launch {
             val uid = currentUserId.value ?: return@launch
-            if (currentUserPapel.value !in setOf("admin", "super_admin")) return@launch
+            // Sem guard de papel client-side: RLS/RPC do servidor já exige admin
+            // (o guard antigo lia currentUserPapel do cache, que fica null num clube
+            // recém-carregado e bloqueava a ação de um admin de verdade sem aviso).
             if (texto.isBlank()) return@launch
             repository.insertMeetingMinutes(
                 MeetingMinutes(
@@ -1277,7 +1404,9 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
     fun concludeMeeting(meetingId: String) {
         viewModelScope.launch {
             val clubId = activeClubId.value ?: return@launch
-            if (currentUserPapel.value !in setOf("admin", "super_admin")) return@launch
+            // Sem guard de papel client-side: RLS/RPC do servidor já exige admin
+            // (o guard antigo lia currentUserPapel do cache, que fica null num clube
+            // recém-carregado e bloqueava a ação de um admin de verdade sem aviso).
             val meeting = repository.getMeetingById(meetingId) ?: return@launch
             repository.updateMeetingStatus(meetingId, "concluido")
 

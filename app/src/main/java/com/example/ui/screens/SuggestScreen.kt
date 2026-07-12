@@ -8,6 +8,8 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.text.KeyboardActions
+import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.outlined.ArrowBack
 import androidx.compose.material.icons.outlined.Check
@@ -18,7 +20,13 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalSoftwareKeyboardController
+import androidx.compose.ui.semantics.Role
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.role
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import com.example.data.api.OpenLibraryDoc
@@ -45,6 +53,7 @@ fun SuggestScreen(
     var query by remember { mutableStateOf("") }
     val searchResults by viewModel.searchResults.collectAsState()
     val loading by viewModel.searchLoading.collectAsState()
+    val keyboardController = LocalSoftwareKeyboardController.current
 
     var selectedDoc by remember { mutableStateOf<OpenLibraryDoc?>(null) }
     var showJustifySheetForDoc by remember { mutableStateOf<OpenLibraryDoc?>(null) }
@@ -59,6 +68,10 @@ fun SuggestScreen(
         if (query.trim().length >= 3) {
             delay(400)
             viewModel.searchOpenLibrary(query)
+        } else {
+            // Apagar a busca pra 0-2 chars deve limpar os hits antigos —
+            // searchOpenLibrary("") é tratado como "limpar" no ViewModel.
+            viewModel.searchOpenLibrary("")
         }
     }
 
@@ -166,6 +179,15 @@ fun SuggestScreen(
                     )
                 },
                 singleLine = true,
+                keyboardOptions = KeyboardOptions(imeAction = ImeAction.Search),
+                keyboardActions = KeyboardActions(
+                    onSearch = {
+                        keyboardController?.hide()
+                        if (query.trim().length >= 3) {
+                            viewModel.searchOpenLibrary(query)
+                        }
+                    }
+                ),
                 colors = OutlinedTextFieldDefaults.colors(
                     unfocusedContainerColor = Cream,
                     focusedContainerColor = Cream,
@@ -201,13 +223,26 @@ fun SuggestScreen(
                         text = if (query.trim().length < 3)
                             "Comece a digitar pra encontrar livros."
                         else
-                            "Não achamos esse livro nas buscas.",
+                        // A busca vazia pode ser "nada encontrado" OU erro de
+                        // rede — a copy aponta pros dois casos e há botão de
+                        // tentar de novo logo abaixo.
+                            "Não achamos nada — verifique a conexão e tente de novo.",
                         style = MaterialTheme.typography.bodyLarge,
                         color = Muted,
                         textAlign = androidx.compose.ui.text.style.TextAlign.Center
                     )
                     if (query.trim().length >= 3) {
                         Spacer(modifier = Modifier.height(20.dp))
+                        TbButton(
+                            text = "Tentar de novo",
+                            onClick = {
+                                keyboardController?.hide()
+                                viewModel.searchOpenLibrary(query)
+                            },
+                            variant = TbButtonVariant.Outline,
+                            modifier = Modifier.fillMaxWidth(0.8f)
+                        )
+                        Spacer(modifier = Modifier.height(10.dp))
                         TbButton(
                             text = "📚 Cadastrar manualmente",
                             onClick = onNavigateToAddManual,
@@ -242,6 +277,17 @@ fun SuggestScreen(
                                 )
                                 .clickable {
                                     selectedDoc = if (isSelected) null else doc
+                                }
+                                // A11y: TalkBack lê a linha como UMA opção única
+                                // em vez de título/autor/ano soltos.
+                                .semantics(mergeDescendants = true) {
+                                    role = Role.Button
+                                    contentDescription = buildString {
+                                        append(doc.title)
+                                        append(", ")
+                                        append(author)
+                                        if (isSelected) append(", selecionado")
+                                    }
                                 }
                                 .padding(10.dp),
                             horizontalArrangement = Arrangement.spacedBy(12.dp),

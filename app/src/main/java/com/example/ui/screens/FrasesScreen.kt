@@ -17,7 +17,9 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import com.example.ui.components.CenteredLoading
 import com.example.ui.components.QuoteCard
+import com.example.ui.components.rememberShowLoading
 import com.example.ui.theme.Cream
 import com.example.ui.theme.Divider
 import com.example.ui.theme.LiterataFontFamily
@@ -53,6 +55,10 @@ fun FrasesScreen(
             }
         }
     }
+
+    // Distingue LOADING de EMPTY: no cold start local-first `quotes` chega vazio
+    // antes do primeiro sync, mostrando "nenhuma frase" por engano.
+    val showLoading = rememberShowLoading(hasData = quotes.isNotEmpty())
 
     Scaffold(
         topBar = {
@@ -136,7 +142,9 @@ fun FrasesScreen(
                 )
             }
 
-            if (quotes.isEmpty()) {
+            if (showLoading) {
+                CenteredLoading()
+            } else if (quotes.isEmpty()) {
                 Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
                     Text(
                         text = "Você ainda não guardou nenhuma frase.",

@@ -16,6 +16,7 @@ import com.example.R
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.outlined.ArrowBack
@@ -23,9 +24,12 @@ import androidx.compose.material.icons.outlined.*
 import androidx.compose.material3.*
 import androidx.compose.foundation.selection.selectable
 import androidx.compose.runtime.*
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Alignment
+import androidx.compose.ui.semantics.LiveRegionMode
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.liveRegion
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -33,6 +37,7 @@ import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.text.input.VisualTransformation
@@ -190,16 +195,32 @@ fun LoginScreen(
     onSignInWithGoogle: suspend () -> Result<Unit>,
     onSignedIn: () -> Unit,
 ) {
-    var email by remember { mutableStateOf("") }
-    var password by remember { mutableStateOf("") }
+    var email by rememberSaveable { mutableStateOf("") }
+    var password by rememberSaveable { mutableStateOf("") }
     var passwordVisible by remember { mutableStateOf(false) }
     var isLoading by remember { mutableStateOf(false) }
     var errorMsg by remember { mutableStateOf<String?>(null) }
     val scope = rememberCoroutineScope()
+    val passwordFocusRequester = remember { FocusRequester() }
 
     val isEmailValid = email.contains("@") && email.length >= 5
     val isPasswordValid = password.length >= 6
     val isFormValid = isEmailValid && isPasswordValid
+
+    val submitLogin: () -> Unit = {
+        if (isFormValid && !isLoading) {
+            isLoading = true
+            errorMsg = null
+            scope.launch {
+                val result = onSignInWithEmail(email, password)
+                isLoading = false
+                result.fold(
+                    onSuccess = { onSignedIn() },
+                    onFailure = { errorMsg = com.example.ui.auth.AuthErrors.friendly(it, "Falha ao entrar") },
+                )
+            }
+        }
+    }
 
     Scaffold(
         topBar = {
@@ -245,7 +266,8 @@ fun LoginScreen(
                         onValueChange = { email = it.trim(); errorMsg = null },
                         label = { Text("Email") },
                         singleLine = true,
-                        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Email),
+                        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Email, imeAction = ImeAction.Next),
+                        keyboardActions = KeyboardActions(onNext = { passwordFocusRequester.requestFocus() }),
                         modifier = Modifier.fillMaxWidth(),
                         enabled = !isLoading,
                     )
@@ -256,7 +278,8 @@ fun LoginScreen(
                         onValueChange = { password = it; errorMsg = null },
                         label = { Text("Senha") },
                         singleLine = true,
-                        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Password),
+                        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Password, imeAction = ImeAction.Done),
+                        keyboardActions = KeyboardActions(onDone = { submitLogin() }),
                         visualTransformation = if (passwordVisible) VisualTransformation.None else PasswordVisualTransformation(),
                         trailingIcon = {
                             IconButton(onClick = { passwordVisible = !passwordVisible }) {
@@ -267,7 +290,7 @@ fun LoginScreen(
                                 )
                             }
                         },
-                        modifier = Modifier.fillMaxWidth(),
+                        modifier = Modifier.fillMaxWidth().focusRequester(passwordFocusRequester),
                         enabled = !isLoading,
                     )
 
@@ -282,23 +305,17 @@ fun LoginScreen(
 
                     errorMsg?.let {
                         Spacer(modifier = Modifier.height(8.dp))
-                        Text(it, color = MaterialTheme.colorScheme.error, style = MaterialTheme.typography.bodyMedium)
+                        Text(
+                            it,
+                            color = MaterialTheme.colorScheme.error,
+                            style = MaterialTheme.typography.bodyMedium,
+                            modifier = Modifier.semantics { liveRegion = LiveRegionMode.Assertive },
+                        )
                     }
 
                     Spacer(modifier = Modifier.height(16.dp))
                     Button(
-                        onClick = {
-                            isLoading = true
-                            errorMsg = null
-                            scope.launch {
-                                val result = onSignInWithEmail(email, password)
-                                isLoading = false
-                                result.fold(
-                                    onSuccess = { onSignedIn() },
-                                    onFailure = { errorMsg = com.example.ui.auth.AuthErrors.friendly(it, "Falha ao entrar") },
-                                )
-                            }
-                        },
+                        onClick = { submitLogin() },
                         enabled = isFormValid && !isLoading,
                         modifier = Modifier
                             .fillMaxWidth()
@@ -859,10 +876,26 @@ fun JoinClubScreen(
                                     OutlinedTextField(
                                         value = otpValues[i],
                                         onValueChange = { value ->
-                                            if (value.length <= 1) {
-                                                otpValues[i] = value
-                                                if (value.isNotEmpty() && i < 5) {
-                                                    focusRequesters[i + 1].requestFocus()
+                                            when {
+                                                // Colar o codigo inteiro (ou varios chars):
+                                                // distribui a partir da caixa atual.
+                                                value.length > 1 -> {
+                                                    val chars = value.filter { !it.isWhitespace() }.take(6 - i)
+                                                    chars.forEachIndexed { offset, c ->
+                                                        otpValues[i + offset] = c.toString()
+                                                    }
+                                                    val nextFocus = (i + chars.length).coerceAtMost(5)
+                                                    focusRequesters[nextFocus].requestFocus()
+                                                }
+                                                // Backspace numa caixa ja vazia: volta pra anterior.
+                                                value.isEmpty() && otpValues[i].isEmpty() && i > 0 -> {
+                                                    focusRequesters[i - 1].requestFocus()
+                                                }
+                                                value.length <= 1 -> {
+                                                    otpValues[i] = value
+                                                    if (value.isNotEmpty() && i < 5) {
+                                                        focusRequesters[i + 1].requestFocus()
+                                                    }
                                                 }
                                             }
                                         },

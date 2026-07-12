@@ -3,15 +3,21 @@ package com.example.ui.screens
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.outlined.ArrowBack
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.semantics.LiveRegionMode
+import androidx.compose.ui.semantics.liveRegion
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
@@ -25,12 +31,26 @@ fun ForgotPasswordScreen(
     onNavigateBack: () -> Unit,
     onSendReset: suspend (email: String) -> Result<Unit>,
 ) {
-    var email by remember { mutableStateOf("") }
+    var email by rememberSaveable { mutableStateOf("") }
     var isLoading by remember { mutableStateOf(false) }
     var sent by remember { mutableStateOf(false) }
     var errorMsg by remember { mutableStateOf<String?>(null) }
     val scope = rememberCoroutineScope()
     val emailValid = email.contains("@") && email.length >= 5
+
+    val submitReset: () -> Unit = {
+        if (emailValid && !isLoading) {
+            isLoading = true
+            scope.launch {
+                val r = onSendReset(email)
+                isLoading = false
+                r.fold(
+                    onSuccess = { sent = true },
+                    onFailure = { errorMsg = com.example.ui.auth.AuthErrors.friendly(it, "Falha ao enviar email") },
+                )
+            }
+        }
+    }
 
     Scaffold(
         topBar = {
@@ -73,27 +93,22 @@ fun ForgotPasswordScreen(
                             onValueChange = { email = it.trim(); errorMsg = null },
                             label = { Text("Email") },
                             singleLine = true,
-                            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Email),
+                            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Email, imeAction = ImeAction.Done),
+                            keyboardActions = KeyboardActions(onDone = { submitReset() }),
                             modifier = Modifier.fillMaxWidth(),
                             enabled = !isLoading,
                         )
                         errorMsg?.let {
                             Spacer(Modifier.height(8.dp))
-                            Text(it, color = MaterialTheme.colorScheme.error)
+                            Text(
+                                it,
+                                color = MaterialTheme.colorScheme.error,
+                                modifier = Modifier.semantics { liveRegion = LiveRegionMode.Assertive },
+                            )
                         }
                         Spacer(Modifier.height(16.dp))
                         Button(
-                            onClick = {
-                                isLoading = true
-                                scope.launch {
-                                    val r = onSendReset(email)
-                                    isLoading = false
-                                    r.fold(
-                                        onSuccess = { sent = true },
-                                        onFailure = { errorMsg = com.example.ui.auth.AuthErrors.friendly(it, "Falha ao enviar email") },
-                                    )
-                                }
-                            },
+                            onClick = { submitReset() },
                             enabled = emailValid && !isLoading,
                             modifier = Modifier.fillMaxWidth().height(52.dp),
                             shape = RoundedCornerShape(26.dp),

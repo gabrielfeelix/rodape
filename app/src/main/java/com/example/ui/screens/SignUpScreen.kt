@@ -5,6 +5,7 @@ import androidx.compose.foundation.Image
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.outlined.ArrowBack
@@ -12,11 +13,18 @@ import androidx.compose.material.icons.outlined.Visibility
 import androidx.compose.material.icons.outlined.VisibilityOff
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.focus.FocusRequester
+import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.semantics.LiveRegionMode
+import androidx.compose.ui.semantics.liveRegion
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.text.input.VisualTransformation
@@ -37,14 +45,16 @@ fun SignUpScreen(
     onSignedUp: () -> Unit,
     onGoogleSignedIn: () -> Unit,
 ) {
-    var name by remember { mutableStateOf("") }
-    var email by remember { mutableStateOf("") }
-    var password by remember { mutableStateOf("") }
+    var name by rememberSaveable { mutableStateOf("") }
+    var email by rememberSaveable { mutableStateOf("") }
+    var password by rememberSaveable { mutableStateOf("") }
     var passwordVisible by remember { mutableStateOf(false) }
     var isLoading by remember { mutableStateOf(false) }
     var errorMsg by remember { mutableStateOf<String?>(null) }
     var showConfirmHint by remember { mutableStateOf(false) }
     val scope = rememberCoroutineScope()
+    val emailFocusRequester = remember { FocusRequester() }
+    val passwordFocusRequester = remember { FocusRequester() }
 
     // Validacao local espelha a regra do servidor (Auth -> Password requirements:
     // Lowercase + Uppercase + Digits + Symbols, min 8 chars).
@@ -56,6 +66,21 @@ fun SignUpScreen(
         password.any { it.isDigit() } &&
         password.any { !it.isLetterOrDigit() }
     val formValid = nameValid && emailValid && pwValid
+
+    val submitSignUp: () -> Unit = {
+        if (formValid && !isLoading) {
+            isLoading = true
+            errorMsg = null
+            scope.launch {
+                val r = onSignUp(email, password, name.trim())
+                isLoading = false
+                r.fold(
+                    onSuccess = { showConfirmHint = true },
+                    onFailure = { errorMsg = com.example.ui.auth.AuthErrors.friendly(it, "Falha ao criar conta") },
+                )
+            }
+        }
+    }
 
     Scaffold(
         topBar = {
@@ -108,6 +133,8 @@ fun SignUpScreen(
                             onValueChange = { name = it; errorMsg = null },
                             label = { Text("Nome") },
                             singleLine = true,
+                            keyboardOptions = KeyboardOptions(imeAction = ImeAction.Next),
+                            keyboardActions = KeyboardActions(onNext = { emailFocusRequester.requestFocus() }),
                             modifier = Modifier.fillMaxWidth(),
                             enabled = !isLoading,
                         )
@@ -117,8 +144,9 @@ fun SignUpScreen(
                             onValueChange = { email = it.trim(); errorMsg = null },
                             label = { Text("Email") },
                             singleLine = true,
-                            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Email),
-                            modifier = Modifier.fillMaxWidth(),
+                            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Email, imeAction = ImeAction.Next),
+                            keyboardActions = KeyboardActions(onNext = { passwordFocusRequester.requestFocus() }),
+                            modifier = Modifier.fillMaxWidth().focusRequester(emailFocusRequester),
                             enabled = !isLoading,
                         )
                         Spacer(Modifier.height(12.dp))
@@ -133,7 +161,8 @@ fun SignUpScreen(
                                 )
                             },
                             singleLine = true,
-                            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Password),
+                            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Password, imeAction = ImeAction.Done),
+                            keyboardActions = KeyboardActions(onDone = { submitSignUp() }),
                             visualTransformation = if (passwordVisible) VisualTransformation.None else PasswordVisualTransformation(),
                             trailingIcon = {
                                 IconButton(onClick = { passwordVisible = !passwordVisible }) {
@@ -144,29 +173,23 @@ fun SignUpScreen(
                                     )
                                 }
                             },
-                            modifier = Modifier.fillMaxWidth(),
+                            modifier = Modifier.fillMaxWidth().focusRequester(passwordFocusRequester),
                             enabled = !isLoading,
                         )
 
                         errorMsg?.let {
                             Spacer(Modifier.height(8.dp))
-                            Text(it, color = MaterialTheme.colorScheme.error, style = MaterialTheme.typography.bodyMedium)
+                            Text(
+                                it,
+                                color = MaterialTheme.colorScheme.error,
+                                style = MaterialTheme.typography.bodyMedium,
+                                modifier = Modifier.semantics { liveRegion = LiveRegionMode.Assertive },
+                            )
                         }
 
                         Spacer(Modifier.height(16.dp))
                         Button(
-                            onClick = {
-                                isLoading = true
-                                errorMsg = null
-                                scope.launch {
-                                    val r = onSignUp(email, password, name.trim())
-                                    isLoading = false
-                                    r.fold(
-                                        onSuccess = { showConfirmHint = true },
-                                        onFailure = { errorMsg = com.example.ui.auth.AuthErrors.friendly(it, "Falha ao criar conta") },
-                                    )
-                                }
-                            },
+                            onClick = { submitSignUp() },
                             enabled = formValid && !isLoading,
                             modifier = Modifier.fillMaxWidth().height(52.dp),
                             shape = RoundedCornerShape(26.dp),

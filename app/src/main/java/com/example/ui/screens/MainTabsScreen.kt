@@ -1,5 +1,6 @@
 package com.example.ui.screens
 
+import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
@@ -34,6 +35,8 @@ import androidx.compose.material.icons.outlined.Settings
 import androidx.compose.material3.*
 import androidx.compose.material3.pulltorefresh.PullToRefreshBox
 import androidx.compose.runtime.*
+import androidx.compose.runtime.saveable.rememberSaveable
+import androidx.compose.runtime.saveable.rememberSaveableStateHolder
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -80,6 +83,7 @@ import androidx.compose.ui.semantics.heading
 import androidx.compose.ui.semantics.stateDescription
 import androidx.compose.ui.semantics.selected
 import androidx.compose.ui.semantics.Role
+import androidx.compose.ui.semantics.role
 import com.example.ui.viewmodel.MainViewModel
 import com.example.ui.components.Cover
 import com.example.ui.components.Pill
@@ -112,10 +116,15 @@ fun MainTabsScreen(
     onNavigateToMeetingDetail: (String) -> Unit = {},
     onNavigateToAbout: () -> Unit = {},
 ) {
-    var selectedTab by remember { mutableStateOf("home") }
+    // rememberSaveable: sobrevive a rotacao / mudanca de fonte do sistema
+    // (com remember, o processo recompunha e caia pra "home", perdendo a tab atual).
+    var selectedTab by rememberSaveable { mutableStateOf("home") }
     // Sub-tab inicial pra abrir a Next tab (encontro ou votacao). null = padrao.
     // Usado por CTAs da Home pra mandar direto pra votacao em vez do default.
-    var pendingNextSubTab by remember { mutableStateOf<String?>(null) }
+    var pendingNextSubTab by rememberSaveable { mutableStateOf<String?>(null) }
+    // Back numa tab != home volta pra home em vez de sair do app (as tabs sao
+    // estado interno; main_tabs e a raiz da backstack de navegacao).
+    BackHandler(enabled = selectedTab != "home") { selectedTab = "home" }
     // Observa pedidos externos de troca de tab (ex: notificações navegando)
     val requestedTab by viewModel.requestedTab.collectAsState()
     LaunchedEffect(requestedTab) {
@@ -175,6 +184,9 @@ fun MainTabsScreen(
         }
     }
     val pendingCount by viewModel.pendingMutationsCount.collectAsState()
+    // Preserva o estado de cada tab (scroll da LazyColumn, etc.) mesmo quando o
+    // when(selectedTab) troca o composable ativo — cada tab guarda seu proprio estado.
+    val saveableStateHolder = rememberSaveableStateHolder()
 
     Scaffold(
         topBar = {
@@ -206,6 +218,7 @@ fun MainTabsScreen(
                 .fillMaxSize()
                 .padding(paddingValues)
         ) {
+            saveableStateHolder.SaveableStateProvider(selectedTab) {
             when (selectedTab) {
                 "home" -> HomeScreenTab(
                     viewModel = viewModel,
@@ -241,6 +254,7 @@ fun MainTabsScreen(
                     onNavigateToFrases = onNavigateToFrases,
                     onNavigateToAbout = onNavigateToAbout
                 )
+            }
             }
 
             // Indicador de sync offline: a fila de mutações sempre existiu,
@@ -491,11 +505,17 @@ private fun GlobalHeader(
             name = userName,
             avatarUrl = avatarUrl,
             size = 40.dp,
-            modifier = Modifier.clickable(
-                interactionSource = remember { MutableInteractionSource() },
-                indication = null,
-                onClick = onAvatar,
-            ),
+            modifier = Modifier
+                // Alvo de toque de 48dp + rotulo/role pra leitor de tela (era um
+                // alvo de 40dp sem descricao).
+                .minimumInteractiveComponentSize()
+                .clickable(
+                    interactionSource = remember { MutableInteractionSource() },
+                    indication = null,
+                    role = Role.Button,
+                    onClick = onAvatar,
+                )
+                .semantics { contentDescription = "Abrir perfil" },
         )
 
         // Pill de clube
@@ -705,6 +725,8 @@ fun BottomBarItem(
     if (selected) {
         Row(
             modifier = Modifier
+                // Alvo de toque de 48dp + anuncia como aba selecionada (Role.Tab)
+                .minimumInteractiveComponentSize()
                 .clip(RoundedCornerShape(999.dp))
                 .background(Terracota)
                 .clickable(
@@ -712,6 +734,7 @@ fun BottomBarItem(
                     indication = ripple(bounded = true),
                     onClick = onClick
                 )
+                .semantics { this.selected = selected; role = Role.Tab }
                 .padding(horizontal = 12.dp, vertical = 10.dp),
             verticalAlignment = Alignment.CenterVertically,
             horizontalArrangement = Arrangement.spacedBy(6.dp)
@@ -734,12 +757,15 @@ fun BottomBarItem(
     } else {
         Box(
             modifier = Modifier
+                // Alvo de toque de 48dp + anuncia como aba (nao selecionada)
+                .minimumInteractiveComponentSize()
                 .clip(RoundedCornerShape(999.dp))
                 .clickable(
                     interactionSource = remember { MutableInteractionSource() },
                     indication = ripple(bounded = true),
                     onClick = onClick
                 )
+                .semantics { this.selected = selected; role = Role.Tab }
                 .padding(horizontal = 12.dp, vertical = 10.dp),
             contentAlignment = Alignment.Center
         ) {
@@ -1297,13 +1323,12 @@ fun HomeScreenTab(
 // Private helper to gracefully get the welcome first name or nickname
 @Composable
 private fun currentUserFirst(viewModel: MainViewModel): String {
-    // Prefere o nome do JWT Supabase (auth.user_metadata.full_name), que esta
-    // disponivel imediatamente apos login (sem depender do Room antigo).
-    // Cai pro currentUser (Room) durante a transicao 9A->9B e pra "Leitor(a)"
-    // como ultima opcao se nem o JWT trouxe nome.
+    // Prefere o nome do Room (User.nome), que ATUALIZA depois de editar o perfil;
+    // supaName (JWT auth.user_metadata.full_name) e imutavel, entao vira so
+    // fallback enquanto o Room ainda nao carregou. "Leitor(a)" e ultimo recurso.
     val supaName by viewModel.supabaseDisplayName.collectAsState()
     val currentUser by viewModel.currentUser.collectAsState()
-    val name = supaName ?: currentUser?.nome ?: "Leitor(a)"
+    val name = currentUser?.nome ?: supaName ?: "Leitor(a)"
     return name.substringBefore(" ")
 }
 
@@ -1636,9 +1661,12 @@ fun BookDetailScreenTab(
                     Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
                         chapters.forEach { chapter ->
                             val chapNumber = chapter.numero
-                            val isCompleted = chapNumber < currentChapIndex
-                            val isCurrent = chapNumber == currentChapIndex
-                            val isLocked = chapNumber > currentChapIndex
+                            // No progresso 0, o cap. 1 e o alvo atual (destravado): um
+                            // membro recem-entrado precisa abrir a discussao do cap. 1.
+                            val effectiveChap = maxOf(currentChapIndex, 1)
+                            val isCompleted = chapNumber < effectiveChap
+                            val isCurrent = chapNumber == effectiveChap
+                            val isLocked = chapNumber > effectiveChap
 
                             val commentsFlow = remember(chapter.id) {
                                 viewModel.getCommentsForChapter(chapter.id)
@@ -1782,9 +1810,11 @@ fun ProfileScreenTab(
     val supaEmail by viewModel.supabaseEmail.collectAsState()
     val nameLegacy by viewModel.userName.collectAsState()
     val emailLegacy by viewModel.userEmail.collectAsState()
-    val name = supaName ?: nameLegacy
-    val email = supaEmail ?: emailLegacy
     val currentUser by viewModel.currentUser.collectAsState()
+    // Nome exibido vem do Room (User.nome), que ATUALIZA depois de editar o perfil;
+    // supaName (JWT imutavel) e nameLegacy sao apenas fallback.
+    val name = currentUser?.nome ?: supaName ?: nameLegacy
+    val email = supaEmail ?: emailLegacy
     val allClubs by viewModel.allClubs.collectAsState()
     val activeClub by viewModel.activeClub.collectAsState()
     val savedQuotes by viewModel.savedQuotes.collectAsState()
@@ -1794,12 +1824,17 @@ fun ProfileScreenTab(
     val profileCurrentBooks by viewModel.currentBooksMap.collectAsState()
 
     val context = androidx.compose.ui.platform.LocalContext.current
-    var isEditingProfile by remember { mutableStateOf(false) }
+    // rememberSaveable: a edicao de perfil sobrevive a rotacao / mudanca de fonte.
+    var isEditingProfile by rememberSaveable { mutableStateOf(false) }
     var showLogoutDialog by remember { mutableStateOf(false) }
     var showFeedbackDialog by remember { mutableStateOf(false) }
     var showLeaveClubDialog by remember { mutableStateOf(false) }
     var showDeleteAccountDialog by remember { mutableStateOf(false) }
     var leaveClubError by remember { mutableStateOf<String?>(null) }
+
+    // Editando o perfil, Back cancela a edicao em vez de sair do app (e perder
+    // o que foi digitado).
+    BackHandler(enabled = isEditingProfile) { isEditingProfile = false }
 
     if (isEditingProfile) {
         EditProfileView(
@@ -2413,8 +2448,11 @@ fun ProfileScreenTab(
                     textAlign = TextAlign.Center,
                     modifier = Modifier
                         .fillMaxWidth()
+                        // Alvo de toque de 48dp + anuncia como botao (era um Text
+                        // minusculo com clickable sem role).
+                        .minimumInteractiveComponentSize()
                         .clip(RoundedCornerShape(8.dp))
-                        .clickable { showDeleteAccountDialog = true }
+                        .clickable(role = Role.Button) { showDeleteAccountDialog = true }
                         .padding(vertical = 8.dp)
                 )
                 Spacer(modifier = Modifier.height(40.dp))
@@ -2682,7 +2720,16 @@ fun EditProfileView(
                                 modifier = Modifier
                                     .width(56.dp)
                                     .height(76.dp)
-                                    .clickable { avatarUrl = preset },
+                                    // Anuncia o avatar como opcao de um grupo e informa
+                                    // se esta selecionado (antes era um clickable mudo).
+                                    .selectable(
+                                        selected = isSelected,
+                                        role = Role.RadioButton,
+                                        onClick = { avatarUrl = preset },
+                                    )
+                                    .semantics {
+                                        stateDescription = if (isSelected) "Selecionado" else "Não selecionado"
+                                    },
                                 contentAlignment = Alignment.BottomCenter
                             ) {
                                 Avatar(

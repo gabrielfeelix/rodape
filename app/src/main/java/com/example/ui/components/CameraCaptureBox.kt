@@ -20,7 +20,10 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -62,6 +65,9 @@ fun CameraCaptureBox(
             .setCaptureMode(ImageCapture.CAPTURE_MODE_MINIMIZE_LATENCY)
             .build()
     }
+    // Mensagem de erro visível no próprio overlay — garante feedback mesmo
+    // quando o caller usa o onError padrão (vazio) do componente.
+    var errorMsg by remember { mutableStateOf<String?>(null) }
 
     DisposableEffect(lifecycleOwner) {
         val providerFuture = ProcessCameraProvider.getInstance(context)
@@ -79,6 +85,7 @@ fun CameraCaptureBox(
                     imageCapture
                 )
             } catch (e: Exception) {
+                errorMsg = "Não deu pra iniciar a câmera. Tenta de novo."
                 onError(e)
             }
         }, executor)
@@ -120,6 +127,7 @@ fun CameraCaptureBox(
                 // A11y: o botão era um emoji dentro de um Box clicável sem rótulo.
                 .semantics { contentDescription = "Tirar foto"; role = Role.Button }
                 .clickable {
+                    errorMsg = null
                     val outFile = File(context.cacheDir, "capture_${System.currentTimeMillis()}.jpg")
                     val output = ImageCapture.OutputFileOptions.Builder(outFile).build()
                     imageCapture.takePicture(
@@ -130,6 +138,7 @@ fun CameraCaptureBox(
                                 onCaptured(outFile)
                             }
                             override fun onError(exception: ImageCaptureException) {
+                                errorMsg = "Falha ao capturar a foto. Tenta de novo."
                                 onError(exception)
                             }
                         }
@@ -141,6 +150,23 @@ fun CameraCaptureBox(
                 text = "📷",
                 style = MaterialTheme.typography.titleLarge.copy(color = Cream)
             )
+        }
+
+        // Feedback de erro visível no overlay (captura ou bind falhou)
+        errorMsg?.let { msg ->
+            Box(
+                modifier = Modifier
+                    .align(Alignment.TopCenter)
+                    .padding(top = 16.dp)
+                    .clip(RoundedCornerShape(10.dp))
+                    .background(Terracota)
+                    .padding(horizontal = 14.dp, vertical = 8.dp)
+            ) {
+                Text(
+                    text = msg,
+                    style = MaterialTheme.typography.bodyMedium.copy(color = Cream)
+                )
+            }
         }
     }
 }

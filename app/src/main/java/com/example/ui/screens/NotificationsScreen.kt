@@ -19,10 +19,13 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.semantics.stateDescription
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.example.ui.components.Avatar
@@ -34,6 +37,12 @@ import com.example.ui.theme.OlivaDark
 import com.example.ui.theme.Terracota
 import com.example.ui.theme.TerracotaSoft
 import com.example.ui.viewmodel.MainViewModel
+import kotlinx.serialization.json.Json
+import kotlinx.serialization.json.JsonArray
+import kotlinx.serialization.json.JsonObject
+import kotlinx.serialization.json.JsonPrimitive
+import kotlinx.serialization.json.contentOrNull
+import kotlinx.serialization.json.jsonObject
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -179,76 +188,71 @@ private fun NotificationItem(
     lida: Boolean,
     onClick: () -> Unit
 ) {
-    // Extract user name from payload to decide icon vs avatar
-    val userName = if (payloadJson.contains("\"userName\"")) {
-        payloadJson.substringAfter("\"userName\":\"").substringBefore("\"")
-    } else ""
+    // Decodifica o payload JSON de forma segura. Qualquer falha vira null,
+    // então nunca renderizamos JSON cru na tela.
+    val payload: JsonObject? = remember(payloadJson) {
+        runCatching { Json.parseToJsonElement(payloadJson).jsonObject }.getOrNull()
+    }
+    fun str(key: String): String? =
+        (payload?.get(key) as? JsonPrimitive)?.contentOrNull?.takeIf { it.isNotBlank() }
+    fun strList(key: String): List<String> =
+        (payload?.get(key) as? JsonArray)
+            ?.mapNotNull { (it as? JsonPrimitive)?.contentOrNull?.takeIf { s -> s.isNotBlank() } }
+            ?: emptyList()
+
+    val actorName = str("actorName")
+    val clubName = str("clubName")
+    val bookTitle = str("bookTitle")
+    val chapterTitle = str("chapterTitle")
+    val motivo = str("motivo")
+    val data = str("data")
+    val titulos = strList("titulos")
+
+    // Fallbacks amigáveis para quando alguma chave vier ausente.
+    val actor = actorName ?: "Alguém"
+    val club = clubName ?: "seu clube"
+    val book = bookTitle ?: "o livro"
+    val chapter = chapterTitle ?: "a leitura"
 
     // Notification title
     val title = when (tipo) {
-        "comment_on_chapter" -> "Comentário na leitura"
-        "next_book_decided" -> "Próxima leitura definida!"
-        "book_finished" -> "Livro concluído! 📚"
-        "voting_open" -> "Nova votação de livro!"
-        "voting_closed" -> "Votação encerrada"
-        "meeting_reminder" -> "Encontro marcado!"
-        "member_finished" -> "Comemoração! 🥳"
-        "member_removed" -> "Você foi removido do clube"
-        "promoted_to_admin" -> "Você virou admin!"
-        "super_admin_transferred" -> "Você é o novo super admin"
+        "comment_on_chapter" -> "Novo comentário em \"$chapter\""
+        "next_book_decided" -> "Próximo livro: \"$book\""
+        "book_finished" -> "Livro finalizado: \"$book\""
+        "voting_open" -> "Votação aberta em \"$club\""
+        "voting_closed" -> "Votação encerrada em \"$club\""
+        "meeting_reminder" -> "Encontro chegando em \"$club\""
+        "member_finished" -> "$actor terminou \"$book\" 🎉"
+        "member_removed" -> "Você saiu de \"$club\""
+        "promoted_to_admin" -> "$actor te promoveu a admin em \"$club\""
+        "super_admin_transferred" -> "$actor te passou o comando de \"$club\""
         else -> "Novidades e avisos"
     }
 
     // Notification description
-    val desc = when {
-        tipo == "comment_on_chapter" && payloadJson.contains("chapterTitle") -> {
-            val chapterTitle = payloadJson.substringAfter("\"chapterTitle\":\"").substringBefore("\"")
-            "$userName comentou em '$chapterTitle'. Vem participar da rodada!"
-        }
-        tipo == "next_book_decided" && payloadJson.contains("bookTitle") -> {
-            val bookTitle = payloadJson.substringAfter("\"bookTitle\":\"").substringBefore("\"")
-            "Nosso próximo companheiro de viagem será '$bookTitle'. Prepare seu coração!"
-        }
-        tipo == "book_finished" -> {
-            val bookTitle = payloadJson.substringAfter("\"bookTitle\":\"").substringBefore("\"")
-            if (bookTitle.isBlank()) "O clube terminou o livro atual! Já pensou no próximo?"
-            else "O clube terminou '$bookTitle'! Já pensou no próximo?"
-        }
-        tipo == "voting_open" -> {
-            "Quem será nosso próximo parceiro de leituras? A votação iniciou, dê seu palpite!"
-        }
-        tipo == "voting_closed" && payloadJson.contains("titulos") -> {
-            val titulos = payloadJson.substringAfter("\"titulos\":[").substringBefore("]")
-                .replace("\"", "").trim().ifEmpty { "—" }
-            val n = payloadJson.substringAfter("\"n\":").substringBefore("}").trim().toIntOrNull() ?: 1
-            if (n == 1) "O clube escolheu: $titulos." else "O clube escolheu $n livros: $titulos."
-        }
-        tipo == "member_removed" -> {
-            val clubName = payloadJson.substringAfter("\"clubName\":\"").substringBefore("\"")
-            val motivo = if (payloadJson.contains("\"motivo\":\"")) {
-                payloadJson.substringAfter("\"motivo\":\"").substringBefore("\"")
-            } else ""
-            if (motivo.isBlank()) "Você foi removido de '$clubName'."
-            else "Você foi removido de '$clubName'. Motivo: $motivo"
-        }
-        tipo == "promoted_to_admin" -> {
-            val clubName = payloadJson.substringAfter("\"clubName\":\"").substringBefore("\"")
-            val promotedBy = payloadJson.substringAfter("\"promotedBy\":\"").substringBefore("\"")
-            "$promotedBy te promoveu a admin em '$clubName'. Boas-vindas ao time de organização."
-        }
-        tipo == "super_admin_transferred" -> {
-            val clubName = payloadJson.substringAfter("\"clubName\":\"").substringBefore("\"")
-            val fromUser = payloadJson.substringAfter("\"fromUser\":\"").substringBefore("\"")
-            "$fromUser te passou o título de super admin de '$clubName'. Cuida bem dele."
-        }
-        payloadJson.contains("meetingId") -> {
-            val datePart = payloadJson.substringAfter("\"date\":\"").substringBefore("\"")
-            "Nosso próximo encontro será: $datePart. Confirme sua presença para nos vermos!"
-        }
-        payloadJson.contains("bookTitle") -> {
-            val bookTitle = payloadJson.substringAfter("\"bookTitle\":\"").substringBefore("\"")
-            "Viva! $userName terminou todas as metas de '$bookTitle'! Que jornada incrível."
-        }
+    val desc = when (tipo) {
+        "comment_on_chapter" ->
+            "$actor comentou em ${bookTitle?.let { "\"$it\"" } ?: "uma leitura"}. Vem participar da rodada!"
+        "next_book_decided" ->
+            "Nossa próxima leitura já foi escolhida. Prepare seu coração!"
+        "book_finished" ->
+            "O clube terminou essa leitura. Já pensou no próximo livro?"
+        "voting_open" ->
+            "$actor abriu a votação. Dê seu palpite para o próximo livro!"
+        "voting_closed" ->
+            if (titulos.isNotEmpty()) "O clube escolheu: ${titulos.joinToString(", ")}."
+            else "A votação foi encerrada. Confira o resultado!"
+        "meeting_reminder" ->
+            if (data != null) "Nosso próximo encontro: $data. Confirme sua presença!"
+            else "Nosso próximo encontro está chegando. Confirme sua presença!"
+        "member_finished" ->
+            "Que jornada incrível! Bora comemorar essa conquista."
+        "member_removed" ->
+            "$actor removeu você" + (if (motivo != null) " · $motivo" else "")
+        "promoted_to_admin" ->
+            "Boas-vindas ao time de organização do clube."
+        "super_admin_transferred" ->
+            "Agora o comando é seu. Cuida bem do clube. 💛"
         else -> "Navegue para conferir os detalhes desse momento do clube."
     }
 
@@ -270,14 +274,15 @@ private fun NotificationItem(
             .clip(MaterialTheme.shapes.medium)
             .background(if (!lida) Cream else androidx.compose.ui.graphics.Color.Transparent)
             .clickable(onClick = onClick)
+            .semantics { stateDescription = if (lida) "lida" else "não lida" }
             .padding(horizontal = 12.dp, vertical = 12.dp),
         horizontalArrangement = Arrangement.spacedBy(12.dp),
         verticalAlignment = Alignment.Top
     ) {
         // Avatar (if user notification) or icon circle
-        if (userName.isNotBlank() && tipo == "comment_on_chapter") {
+        if (!actorName.isNullOrBlank() && tipo == "comment_on_chapter") {
             Avatar(
-                name = userName,
+                name = actorName,
                 size = 40.dp
             )
         } else {

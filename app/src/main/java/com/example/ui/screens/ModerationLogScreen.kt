@@ -30,6 +30,10 @@ fun ModerationLogScreen(
     val members by viewModel.clubMembers.collectAsState()
     val isSuper by viewModel.isCurrentUserSuperAdmin.collectAsState()
 
+    // Restaurar reverte uma decisão de moderação — exige confirmação (evita
+    // toque acidental). Guarda o id do comentário a restaurar.
+    var restoreCommentId by remember { mutableStateOf<String?>(null) }
+
     Scaffold(
         topBar = {
             TopAppBar(
@@ -100,7 +104,7 @@ fun ModerationLogScreen(
                             Spacer(modifier = Modifier.height(8.dp))
                             TbButton(
                                 text = "Restaurar",
-                                onClick = { viewModel.restoreRemovedComment(c.id) },
+                                onClick = { restoreCommentId = c.id },
                                 variant = TbButtonVariant.Outline,
                                 modifier = Modifier.fillMaxWidth()
                             )
@@ -109,5 +113,28 @@ fun ModerationLogScreen(
                 }
             }
         }
+    }
+
+    if (restoreCommentId != null) {
+        AlertDialog(
+            containerColor = MaterialTheme.colorScheme.surface,
+            onDismissRequest = { restoreCommentId = null },
+            title = { Text("Restaurar comentário?") },
+            text = {
+                Text(
+                    "O comentário volta a aparecer na conversa para todos os membros.",
+                    style = MaterialTheme.typography.bodyMedium.copy(color = Muted)
+                )
+            },
+            confirmButton = {
+                TextButton(onClick = {
+                    viewModel.restoreRemovedComment(restoreCommentId!!)
+                    restoreCommentId = null
+                }) { Text("Restaurar", color = Terracota, fontWeight = FontWeight.SemiBold) }
+            },
+            dismissButton = {
+                TextButton(onClick = { restoreCommentId = null }) { Text("Cancelar", color = Muted) }
+            }
+        )
     }
 }

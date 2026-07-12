@@ -3,15 +3,24 @@ package com.example.ui.screens
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.text.KeyboardActions
+import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.outlined.ArrowBack
 import androidx.compose.material.icons.outlined.Visibility
 import androidx.compose.material.icons.outlined.VisibilityOff
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.semantics.LiveRegionMode
+import androidx.compose.ui.semantics.liveRegion
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.input.ImeAction
+import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.text.input.VisualTransformation
 import androidx.compose.ui.text.style.TextAlign
@@ -26,8 +35,9 @@ import kotlinx.coroutines.launch
 fun ResetPasswordScreen(
     onPasswordUpdated: () -> Unit,
     onUpdatePassword: suspend (newPassword: String) -> Result<Unit>,
+    onCancel: () -> Unit,
 ) {
-    var password by remember { mutableStateOf("") }
+    var password by rememberSaveable { mutableStateOf("") }
     var passwordVisible by remember { mutableStateOf(false) }
     var isLoading by remember { mutableStateOf(false) }
     var errorMsg by remember { mutableStateOf<String?>(null) }
@@ -41,10 +51,33 @@ fun ResetPasswordScreen(
         password.any { it.isDigit() } &&
         password.any { !it.isLetterOrDigit() }
 
+    val submitNewPassword: () -> Unit = {
+        if (valid && !isLoading) {
+            isLoading = true
+            scope.launch {
+                val r = onUpdatePassword(password)
+                isLoading = false
+                r.fold(
+                    onSuccess = { onPasswordUpdated() },
+                    onFailure = { errorMsg = com.example.ui.auth.AuthErrors.friendly(it, "Falha ao redefinir senha") },
+                )
+            }
+        }
+    }
+
     Scaffold(
         topBar = {
             TopAppBar(
                 title = { Text("Nova senha", style = MaterialTheme.typography.headlineLarge.copy(color = Terracota)) },
+                navigationIcon = {
+                    IconButton(onClick = onCancel) {
+                        Icon(
+                            imageVector = Icons.AutoMirrored.Outlined.ArrowBack,
+                            contentDescription = "Cancelar",
+                            tint = Terracota,
+                        )
+                    }
+                },
                 colors = TopAppBarDefaults.topAppBarColors(containerColor = MaterialTheme.colorScheme.background),
             )
         },
@@ -76,6 +109,8 @@ fun ResetPasswordScreen(
                             )
                         },
                         singleLine = true,
+                        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Password, imeAction = ImeAction.Done),
+                        keyboardActions = KeyboardActions(onDone = { submitNewPassword() }),
                         visualTransformation = if (passwordVisible) VisualTransformation.None else PasswordVisualTransformation(),
                         trailingIcon = {
                             IconButton(onClick = { passwordVisible = !passwordVisible }) {
@@ -91,21 +126,15 @@ fun ResetPasswordScreen(
                     )
                     errorMsg?.let {
                         Spacer(Modifier.height(8.dp))
-                        Text(it, color = MaterialTheme.colorScheme.error)
+                        Text(
+                            it,
+                            color = MaterialTheme.colorScheme.error,
+                            modifier = Modifier.semantics { liveRegion = LiveRegionMode.Assertive },
+                        )
                     }
                     Spacer(Modifier.height(16.dp))
                     Button(
-                        onClick = {
-                            isLoading = true
-                            scope.launch {
-                                val r = onUpdatePassword(password)
-                                isLoading = false
-                                r.fold(
-                                    onSuccess = { onPasswordUpdated() },
-                                    onFailure = { errorMsg = com.example.ui.auth.AuthErrors.friendly(it, "Falha ao redefinir senha") },
-                                )
-                            }
-                        },
+                        onClick = { submitNewPassword() },
                         enabled = valid && !isLoading,
                         modifier = Modifier.fillMaxWidth().height(52.dp),
                         shape = RoundedCornerShape(26.dp),

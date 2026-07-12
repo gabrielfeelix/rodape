@@ -15,11 +15,13 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.data.model.Book
+import com.example.ui.components.CenteredLoading
 import com.example.ui.components.Cover
 import com.example.ui.components.Pill
 import com.example.ui.components.PillVariant
 import com.example.ui.components.RatingStars
 import com.example.ui.components.RodapeCard
+import com.example.ui.components.rememberShowLoading
 import com.example.ui.theme.Ink
 import com.example.ui.theme.Muted
 import com.example.ui.viewmodel.MainViewModel
@@ -46,6 +48,10 @@ fun ShelfTabScreen(
         finishedBooks.filter { (ratingsByBook[it.id] ?: 0f) >= 4.5f }
     } else finishedBooks
 
+    // Distingue LOADING de EMPTY: no cold start local-first `finishedBooks` chega
+    // vazio antes do primeiro sync, mostrando o empty state por engano.
+    val showLoading = rememberShowLoading(hasData = finishedBooks.isNotEmpty())
+
     Column(modifier = Modifier.fillMaxSize()) {
         Row(
             modifier = Modifier
@@ -64,7 +70,9 @@ fun ShelfTabScreen(
             }
         }
 
-        if (displayedBooks.isEmpty()) {
+        if (showLoading) {
+            CenteredLoading()
+        } else if (displayedBooks.isEmpty()) {
             Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
                 Text(
                     text = "Nenhum livro lido ainda pelo clube. Quando vocês terminarem um livro, ele aparece aqui.",

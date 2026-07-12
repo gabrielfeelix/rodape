@@ -19,7 +19,11 @@ import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.saveable.rememberSaveable
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.unit.Density
@@ -29,6 +33,7 @@ import androidx.navigation.compose.rememberNavController
 import com.example.ui.screens.*
 import com.example.ui.theme.MyApplicationTheme
 import com.example.ui.viewmodel.MainViewModel
+import kotlinx.coroutines.launch
 
 class MainActivity : ComponentActivity() {
     private val viewModel: MainViewModel by viewModels()
@@ -58,6 +63,13 @@ class MainActivity : ComponentActivity() {
                     val navController = rememberNavController()
                     val sessionStatus by viewModel.sessionStatus.collectAsState()
 
+                    // Guarda one-shot do deep link de recovery. Sem isso, cada
+                    // re-emissao do StateFlow (re-subscribe / cold start) re-arrancava
+                    // o usuario pra reset_password e limpava a back stack (popUpTo(0)).
+                    // So volta a false quando a sessao vira NotAuthenticated — assim um
+                    // novo link de recovery futuro ainda funciona.
+                    var recoveryConsumed by rememberSaveable { mutableStateOf(false) }
+
                     // SEMPRE iniciar em welcome — esse e estado neutro/seguro. Se a sessao
                     // ja vier autenticada (cold start com sessao no storage), o LaunchedEffect
                     // abaixo redireciona pra main_tabs. Isso evita o bug onde:
@@ -71,8 +83,11 @@ class MainActivity : ComponentActivity() {
                         val s = sessionStatus
                         when {
                             s is SessionStatus.Authenticated && s.session.type == "recovery" -> {
-                                navController.navigate("reset_password") {
-                                    popUpTo(0) { inclusive = true }
+                                if (!recoveryConsumed) {
+                                    recoveryConsumed = true
+                                    navController.navigate("reset_password") {
+                                        popUpTo(0) { inclusive = true }
+                                    }
                                 }
                             }
                             s is SessionStatus.Authenticated -> {
@@ -85,7 +100,9 @@ class MainActivity : ComponentActivity() {
                                 }
                             }
                             s is SessionStatus.NotAuthenticated -> {
-                                // Deslogado: garante que esta em welcome.
+                                // Deslogado: libera o guard pra um futuro link de recovery.
+                                recoveryConsumed = false
+                                // garante que esta em welcome.
                                 val current = navController.currentBackStackEntry?.destination?.route
                                 if (current != null && current != "welcome" && current != "login" &&
                                     current != "signup" && current != "forgot_password" && current != "reset_password") {
@@ -179,11 +196,20 @@ class MainActivity : ComponentActivity() {
 
                     composable("reset_password") {
                         val authRepo = remember { AuthRepository() }
+                        val resetScope = rememberCoroutineScope()
                         ResetPasswordScreen(
                             onUpdatePassword = { newPassword -> runCatching { authRepo.updatePassword(newPassword) } },
                             onPasswordUpdated = {
                                 navController.navigate("main_tabs") {
                                     popUpTo("welcome") { inclusive = true }
+                                }
+                            },
+                            onCancel = {
+                                // Sai do fluxo de recovery: encerra a sessao de recovery
+                                // e volta pro welcome (estado neutro/seguro).
+                                resetScope.launch { runCatching { authRepo.signOut() } }
+                                navController.navigate("welcome") {
+                                    popUpTo(0) { inclusive = true }
                                 }
                             },
                         )

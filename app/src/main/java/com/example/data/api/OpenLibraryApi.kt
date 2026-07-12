@@ -9,7 +9,10 @@ import retrofit2.http.Query
 
 @JsonClass(generateAdapter = true)
 data class OpenLibraryDoc(
-    @Json(name = "title") val title: String,
+    // Default "" evita que UM doc sem "title" faça o Moshi lançar
+    // JsonDataException e zerar a página inteira de resultados. Docs com
+    // título em branco são filtrados na SuggestScreen.
+    @Json(name = "title") val title: String = "",
     @Json(name = "author_name") val authorName: List<String>?,
     @Json(name = "first_publish_year") val firstPublishYear: Int?,
     @Json(name = "cover_i") val coverI: Long?,

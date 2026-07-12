@@ -32,11 +32,22 @@ fun ManageChaptersScreen(
     val currentBook by viewModel.currentBook.collectAsState()
     val chapters by viewModel.currentChapters.collectAsState()
 
-    var draftList by remember(chapters) {
+    // Seed do rascunho UMA vez. Usar remember(chapters) reseta a lista quando um
+    // reload em tempo real troca a referência de `chapters` no meio da edição,
+    // apagando alterações não salvas. Seed uma vez e não sobrescreve depois.
+    var draftList by remember {
         mutableStateOf(chapters.map { it.numero to it.titulo }.toMutableList())
+    }
+    var seeded by remember { mutableStateOf(chapters.isNotEmpty()) }
+    LaunchedEffect(chapters) {
+        if (!seeded && chapters.isNotEmpty()) {
+            draftList = chapters.map { it.numero to it.titulo }.toMutableList()
+            seeded = true
+        }
     }
     var fetching by remember { mutableStateOf(false) }
     var apiBanner by remember { mutableStateOf<String?>(null) }
+    var showSaveConfirm by remember { mutableStateOf(false) }
 
     Scaffold(
         topBar = {
@@ -190,13 +201,35 @@ fun ManageChaptersScreen(
                 )
                 TbButton(
                     text = "Salvar",
-                    onClick = {
-                        val normalized = draftList.mapIndexed { i, p -> (i + 1) to p.second }
-                        viewModel.upsertChapters(currentBook!!.id, normalized)
-                        onNavigateBack()
-                    },
+                    onClick = { showSaveConfirm = true },
                     variant = TbButtonVariant.Terra,
                     modifier = Modifier.weight(1f)
+                )
+            }
+
+            if (showSaveConfirm) {
+                AlertDialog(
+                    onDismissRequest = { showSaveConfirm = false },
+                    title = { Text("Salvar capítulos?") },
+                    text = {
+                        Text(
+                            "Editar os capítulos altera o cronograma de leitura do clube. " +
+                                "Os comentários dos capítulos mantidos são preservados."
+                        )
+                    },
+                    confirmButton = {
+                        TextButton(onClick = {
+                            val normalized = draftList.mapIndexed { i, p -> (i + 1) to p.second }
+                            viewModel.upsertChapters(currentBook!!.id, normalized)
+                            showSaveConfirm = false
+                            onNavigateBack()
+                        }) { Text("Salvar", color = Terracota, fontWeight = FontWeight.SemiBold) }
+                    },
+                    dismissButton = {
+                        TextButton(onClick = { showSaveConfirm = false }) {
+                            Text("Cancelar", color = Muted)
+                        }
+                    }
                 )
             }
         }

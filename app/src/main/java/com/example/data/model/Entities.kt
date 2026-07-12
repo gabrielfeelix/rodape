@@ -1,5 +1,6 @@
 package com.example.data.model
 
+import androidx.room.ColumnInfo
 import androidx.room.Entity
 import androidx.room.PrimaryKey
 
@@ -102,26 +103,33 @@ data class Reaction(
     val emoji: String,
 )
 
-@Entity(tableName = "votes", primaryKeys = ["clubBookId", "userId"])
+// PK inclui votingRoundId: o servidor mantém 1 voto por (round, user, book),
+// e o mesmo livro pode ser votado em rodadas diferentes. Sem votingRoundId na PK
+// (bug antigo), votos de rodadas distintas colapsavam numa linha só e sumiam.
+@Entity(tableName = "votes", primaryKeys = ["votingRoundId", "clubBookId", "userId"])
 data class Vote(
+    val votingRoundId: String,
     val clubBookId: String,
     val userId: String,
     val votedAt: Long,
-    val votingRoundId: String?,
 )
 
 @Entity(tableName = "meetings")
 data class Meeting(
     @PrimaryKey val id: String,
     val clubId: String,
-    val data: String,
-    val hora: String,
+    val data: String,   // rótulo de exibição no fuso local ("DOMINGO, 25 DE MAIO DE 2026")
+    val hora: String,   // "HH:mm" no fuso local
     val local: String,
     val agenda: String,
     val bookId: String?,
     val chapterStart: Int?,
     val chapterEnd: Int?,
     val status: String, // "agendado" | "concluido" | "cancelado"
+    // Instante real do encontro (epoch ms). Fonte de verdade pra ORDENAÇÃO
+    // cronológica — `data`/`hora` são derivados só pra exibição. 0 = desconhecido
+    // (linha antiga antes do sync; auto-corrige no próximo sync do servidor).
+    @ColumnInfo(defaultValue = "0") val dataEpoch: Long = 0L,
 )
 
 @Entity(tableName = "meeting_rsvps", primaryKeys = ["meetingId", "userId"])

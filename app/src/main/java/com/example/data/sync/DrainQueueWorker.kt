@@ -30,14 +30,18 @@ class DrainQueueWorker(
 ) : CoroutineWorker(appContext, params) {
 
     override suspend fun doWork(): Result {
-        return runCatching {
-            // RemoteRepository e pesado pra construir — instanciar so dentro do worker.
-            val repo = RemoteRepository(applicationContext)
+        // RemoteRepository e pesado pra construir — instanciar so dentro do worker.
+        val repo = RemoteRepository(applicationContext)
+        return try {
             repo.tryDrainPendingQueue()
             Result.success()
-        }.getOrElse {
+        } catch (t: Throwable) {
             // Retry com backoff padrao do WorkManager (30s, 1min, 2min, ...)
             Result.retry()
+        } finally {
+            // Encerra o scope do repo — senao cada execucao do worker vazaria as
+            // subscriptions/loops de reload que o repo cria no init.
+            repo.close()
         }
     }
 

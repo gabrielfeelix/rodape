@@ -306,7 +306,8 @@ fun BookDetailScreen(
                         showQuoteDialog = false
                         quoteText = ""
                         quoteRef = ""
-                    }
+                    },
+                    enabled = quoteText.isNotBlank()
                 ) {
                     Text(text = "Salvar", color = Oliva, fontWeight = FontWeight.SemiBold)
                 }

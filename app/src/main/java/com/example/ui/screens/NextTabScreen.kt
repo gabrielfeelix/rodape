@@ -5,6 +5,9 @@ import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.selection.selectable
 import androidx.compose.ui.semantics.Role
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.role
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyRow
@@ -154,14 +157,23 @@ fun EncontroTab(
             modifier = Modifier.fillMaxSize(),
             contentAlignment = Alignment.Center
         ) {
-            Text(
-                "Nenhum próximo encontro agendado.",
-                style = MaterialTheme.typography.bodyLarge,
-                color = Muted
-            )
+            // Gate: o flow começa null antes do primeiro sync — mostra loading em
+            // vez de "nenhum encontro" piscando enquanto os dados carregam.
+            if (com.example.ui.components.rememberShowLoading(hasData = false)) {
+                com.example.ui.components.CenteredLoading()
+            } else {
+                Text(
+                    "Nenhum próximo encontro agendado.",
+                    style = MaterialTheme.typography.bodyLarge,
+                    color = Muted
+                )
+            }
         }
     } else {
-        val userRsvp by viewModel.getRsvpOfUser(meeting!!.id).collectAsState(initial = null)
+        // A11y + perf: memoiza o flow por id do encontro (sem remember o flow era
+        // recriado a cada recomposição).
+        val userRsvpFlow = remember(meeting!!.id) { viewModel.getRsvpOfUser(meeting!!.id) }
+        val userRsvp by userRsvpFlow.collectAsState(initial = null)
         val userStatus = userRsvp?.status ?: "Sem resposta"
 
         LazyColumn(
@@ -200,6 +212,11 @@ fun EncontroTab(
                             .background(if (concluded) DividerSoft.copy(alpha = 0.3f) else Cream)
                             .border(0.5.dp, Divider, RoundedCornerShape(12.dp))
                             .clickable { onNavigateToMeetingDetail(m.id) }
+                            // A11y: card navega — anuncia como botão com rótulo.
+                            .semantics {
+                                role = Role.Button
+                                contentDescription = "Abrir encontro de ${m.data}"
+                            }
                             .padding(12.dp),
                         verticalAlignment = Alignment.CenterVertically,
                         horizontalArrangement = Arrangement.spacedBy(12.dp)
@@ -635,29 +652,33 @@ fun EncontroTab(
                 }
             }
 
-            item {
-                TbSectionHeader(
-                    title = "Programação / pauta",
-                    modifier = Modifier.padding(bottom = 8.dp)
-                )
-                RodapeCard {
-                    meeting!!.agenda.split("\n").forEachIndexed { index, line ->
-                        Row(
-                            verticalAlignment = Alignment.Top,
-                            horizontalArrangement = Arrangement.spacedBy(12.dp),
-                            modifier = Modifier.padding(vertical = 4.dp)
-                        ) {
-                            Text(
-                                text = "•",
-                                style = MaterialTheme.typography.bodyLarge.copy(
-                                    color = Terracota,
-                                    fontWeight = FontWeight.Bold
+            // Só renderiza a pauta se houver conteúdo — agenda vazia gerava um
+            // bullet "•" solitário ("".split("\n") devolve [""]).
+            if (meeting!!.agenda.isNotBlank()) {
+                item {
+                    TbSectionHeader(
+                        title = "Programação / pauta",
+                        modifier = Modifier.padding(bottom = 8.dp)
+                    )
+                    RodapeCard {
+                        meeting!!.agenda.split("\n").forEachIndexed { index, line ->
+                            Row(
+                                verticalAlignment = Alignment.Top,
+                                horizontalArrangement = Arrangement.spacedBy(12.dp),
+                                modifier = Modifier.padding(vertical = 4.dp)
+                            ) {
+                                Text(
+                                    text = "•",
+                                    style = MaterialTheme.typography.bodyLarge.copy(
+                                        color = Terracota,
+                                        fontWeight = FontWeight.Bold
+                                    )
                                 )
-                            )
-                            Text(
-                                text = line,
-                                style = MaterialTheme.typography.bodyLarge.copy(color = Ink)
-                            )
+                                Text(
+                                    text = line,
+                                    style = MaterialTheme.typography.bodyLarge.copy(color = Ink)
+                                )
+                            }
                         }
                     }
                 }

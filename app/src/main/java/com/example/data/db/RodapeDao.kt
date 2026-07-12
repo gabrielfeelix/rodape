@@ -142,6 +142,12 @@ interface RodapeDao {
     @Query("DELETE FROM chapters WHERE bookId = :bookId")
     suspend fun deleteChaptersForBook(bookId: String)
 
+    // Deleta SÓ os capítulos que saíram da lista (numero fora de keepNumeros).
+    // Os que ficam são atualizados in-place por upsert — assim os comentários dos
+    // capítulos mantidos NÃO são cascateados (bug P0 do delete-all+reinsert).
+    @Query("DELETE FROM chapters WHERE bookId = :bookId AND numero NOT IN (:keepNumeros)")
+    suspend fun deleteChaptersNotIn(bookId: String, keepNumeros: List<Int>)
+
     @Query("SELECT * FROM chapters WHERE bookId = :bookId ORDER BY numero ASC")
     fun chaptersForBookFlow(bookId: String): Flow<List<Chapter>>
 
@@ -185,6 +191,19 @@ interface RodapeDao {
     @Query("SELECT * FROM comments WHERE clubId = :clubId AND removido = 1 ORDER BY criadoEm DESC")
     fun removedCommentsForClubFlow(clubId: String): Flow<List<Comment>>
 
+    // Ops locais (optimistic) — o remoto reconcilia depois via sync/fila.
+    @Query("UPDATE comments SET texto = :texto WHERE id = :id")
+    suspend fun updateCommentText(id: String, texto: String)
+
+    @Query("UPDATE comments SET removido = 1, removidoPor = :by, motivoRemocao = :motivo WHERE id = :id")
+    suspend fun markCommentRemoved(id: String, by: String?, motivo: String?)
+
+    @Query("UPDATE comments SET removido = 0, removidoPor = NULL, motivoRemocao = NULL WHERE id = :id")
+    suspend fun markCommentRestored(id: String)
+
+    @Query("DELETE FROM comments WHERE id = :id")
+    suspend fun deleteComment(id: String)
+
     // ====================== REACTIONS ======================
     @Upsert
     suspend fun upsertReactions(rs: List<Reaction>)
@@ -214,6 +233,9 @@ interface RodapeDao {
 
     @Query("DELETE FROM votes WHERE votingRoundId = :roundId AND NOT (votingRoundId || userId || clubBookId) IN (:keepKeys)")
     suspend fun pruneVotesInRoundExcept(roundId: String, keepKeys: List<String>)
+
+    @Query("DELETE FROM votes WHERE votingRoundId = :roundId AND userId = :userId AND clubBookId = :bookId")
+    suspend fun deleteVote(roundId: String, userId: String, bookId: String)
 
     @Query("SELECT * FROM votes WHERE votingRoundId = :roundId")
     fun votesForRoundFlow(roundId: String): Flow<List<Vote>>
@@ -257,13 +279,20 @@ interface RodapeDao {
     @Query("DELETE FROM meetings WHERE id = :meetingId")
     suspend fun deleteMeeting(meetingId: String)
 
-    @Query("SELECT * FROM meetings WHERE clubId = :clubId ORDER BY data DESC")
+    // Encontros gerados por recorrência têm id prefixado 'mtg_pat_'. Remove os
+    // FUTUROS ao regenerar o padrão, sem tocar em encontros criados à mão.
+    @Query("DELETE FROM meetings WHERE clubId = :clubId AND id LIKE 'mtg_pat_%' AND dataEpoch >= :now")
+    suspend fun deleteFutureGeneratedMeetings(clubId: String, now: Long)
+
+    @Query("SELECT * FROM meetings WHERE clubId = :clubId ORDER BY dataEpoch DESC")
     fun meetingsForClubFlow(clubId: String): Flow<List<Meeting>>
 
-    @Query("SELECT * FROM meetings WHERE clubId = :clubId ORDER BY data DESC LIMIT 1")
-    fun latestMeetingForClubFlow(clubId: String): Flow<Meeting?>
+    // "Próximo encontro": o agendado mais PRÓXIMO no futuro (não o de rótulo
+    // alfabeticamente maior). Ordena pelo instante real e filtra concluído/passado.
+    @Query("SELECT * FROM meetings WHERE clubId = :clubId AND status = 'agendado' AND dataEpoch >= :now ORDER BY dataEpoch ASC LIMIT 1")
+    fun nextMeetingForClubFlow(clubId: String, now: Long): Flow<Meeting?>
 
-    @Query("SELECT * FROM meetings WHERE clubId = :clubId AND status = 'agendado' ORDER BY data ASC")
+    @Query("SELECT * FROM meetings WHERE clubId = :clubId AND status = 'agendado' ORDER BY dataEpoch ASC")
     fun scheduledMeetingsForClubFlow(clubId: String): Flow<List<Meeting>>
 
     @Query("SELECT * FROM meetings WHERE id = :meetingId LIMIT 1")
@@ -272,7 +301,7 @@ interface RodapeDao {
     @Query("SELECT * FROM meetings WHERE id = :meetingId LIMIT 1")
     suspend fun meetingById(meetingId: String): Meeting?
 
-    @Query("SELECT * FROM meetings WHERE clubId = :clubId AND bookId = :bookId ORDER BY data ASC")
+    @Query("SELECT * FROM meetings WHERE clubId = :clubId AND bookId = :bookId ORDER BY dataEpoch ASC")
     fun meetingsForBookFlow(clubId: String, bookId: String): Flow<List<Meeting>>
 
     // ====================== MEETING RSVPs ======================
@@ -324,6 +353,12 @@ interface RodapeDao {
 
     @Query("SELECT * FROM notifications WHERE userId = :userId ORDER BY criadoEm DESC")
     fun notificationsForUserFlow(userId: String): Flow<List<DbNotification>>
+
+    @Query("UPDATE notifications SET lida = 1 WHERE id = :id")
+    suspend fun markNotificationRead(id: String)
+
+    @Query("UPDATE notifications SET lida = 1 WHERE userId = :userId")
+    suspend fun markAllNotificationsRead(userId: String)
 
     // ====================== SAVED QUOTES ======================
     @Upsert

@@ -52,6 +52,8 @@ fun ManageClubScreen(
     val meeting by viewModel.latestMeeting.collectAsState()
     val removed by viewModel.removedCommentsInActiveClub.collectAsState()
     val isSuper by viewModel.isCurrentUserSuperAdmin.collectAsState()
+    val currentUserId by viewModel.currentUserId.collectAsState()
+    val currentUserPapel by viewModel.currentUserPapel.collectAsState()
     val suggestedBooks by viewModel.suggestedBooks.collectAsState()
     val nextBooks by viewModel.nextBooks.collectAsState()
 
@@ -208,7 +210,10 @@ fun ManageClubScreen(
                                 }
                                 if (rawMember.papel != "super_admin") {
                                     IconButton(onClick = { memberSheetFor = rawMember }) {
-                                        Icon(Icons.Outlined.MoreVert, contentDescription = "Ações")
+                                        Icon(
+                                            Icons.Outlined.MoreVert,
+                                            contentDescription = "Ações para ${user?.nome ?: "membro"}"
+                                        )
                                     }
                                 }
                             }
@@ -566,9 +571,16 @@ fun ManageClubScreen(
         RegenerateCodeDialog(
             onDismiss = { showRegenCode = false },
             onConfirm = {
-                viewModel.regenerateInviteCode { newCode ->
-                    scope.launch { snackbar.showSnackbar("Novo código: $newCode") }
-                }
+                viewModel.regenerateInviteCode(
+                    onResult = { newCode ->
+                        if (newCode.isNotBlank()) {
+                            scope.launch { snackbar.showSnackbar("Novo código: $newCode") }
+                        }
+                    },
+                    onError = { msg ->
+                        scope.launch { snackbar.showSnackbar(msg) }
+                    }
+                )
                 showRegenCode = false
             }
         )
@@ -576,10 +588,19 @@ fun ManageClubScreen(
 
     memberSheetFor?.let { rawMember ->
         val user = members.find { it.id == rawMember.userId }
+        // Só mostra "Remover" quando o servidor de fato aceitaria a remoção:
+        // - ninguém remove um super_admin nem a si mesmo;
+        // - super_admin remove admins e membros;
+        // - admin (não super) só remove membros comuns.
+        val isSelf = rawMember.userId == currentUserId
+        val canRemove = !isSelf && rawMember.papel != "super_admin" && (
+            isSuper || (currentUserPapel == "admin" && rawMember.papel == "member")
+        )
         MemberActionSheet(
             memberName = user?.nome ?: "Membro",
             memberPapel = rawMember.papel,
             currentUserIsSuper = isSuper,
+            canRemove = canRemove,
             onDismiss = { memberSheetFor = null },
             onPromote = {
                 viewModel.promoteMemberToAdmin(rawMember.userId)
@@ -606,7 +627,11 @@ fun ManageClubScreen(
             memberName = user?.nome ?: "Membro",
             onDismiss = { removeMemberFor = null },
             onConfirm = { motivo ->
-                viewModel.removeMember(rawMember.userId, motivo)
+                viewModel.removeMember(
+                    rawMember.userId,
+                    motivo,
+                    onError = { msg -> scope.launch { snackbar.showSnackbar(msg) } }
+                )
                 removeMemberFor = null
             }
         )
@@ -781,6 +806,7 @@ private fun MemberActionSheet(
     memberName: String,
     memberPapel: String,
     currentUserIsSuper: Boolean,
+    canRemove: Boolean,
     onDismiss: () -> Unit,
     onPromote: () -> Unit,
     onDemote: () -> Unit,
@@ -829,7 +855,9 @@ private fun MemberActionSheet(
                 TbButton(text = "Rebaixar a membro", onClick = onDemote, variant = TbButtonVariant.Outline, modifier = Modifier.fillMaxWidth())
                 TbButton(text = "Transferir super_admin pra este admin", onClick = { showTransferConfirm = true }, variant = TbButtonVariant.Outline, modifier = Modifier.fillMaxWidth())
             }
-            TbButton(text = "Remover do clube", onClick = onRemove, variant = TbButtonVariant.Outline, modifier = Modifier.fillMaxWidth())
+            if (canRemove) {
+                TbButton(text = "Remover do clube", onClick = onRemove, variant = TbButtonVariant.Outline, modifier = Modifier.fillMaxWidth())
+            }
             Spacer(modifier = Modifier.height(8.dp))
         }
     }

@@ -3,19 +3,25 @@ package com.example.ui.screens
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
-import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.selection.selectable
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.OutlinedTextFieldDefaults
 import androidx.compose.runtime.*
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.semantics.Role
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.semantics.stateDescription
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
@@ -45,10 +51,12 @@ fun OnboardingScreen(
     initialFontScale: Float,
     onComplete: (nome: String, avatarUrl: String, fontScale: Float) -> Unit,
 ) {
-    var step by remember { mutableStateOf(0) } // 0=avatar, 1=apelido, 2=fonte
-    var avatarUrl by remember { mutableStateOf(initialAvatarUrl.ifBlank { "preset:leitor" }) }
-    var apelido by remember { mutableStateOf(initialName) }
-    var fontScale by remember { mutableStateOf(initialFontScale) }
+    var step by rememberSaveable { mutableStateOf(0) } // 0=avatar, 1=apelido, 2=fonte
+    var avatarUrl by rememberSaveable { mutableStateOf(initialAvatarUrl.ifBlank { "preset:leitor" }) }
+    var apelido by rememberSaveable { mutableStateOf(initialName) }
+    var fontScale by rememberSaveable { mutableStateOf(initialFontScale) }
+    // Trava o submit final: sem isso, toque duplo em "Pronto!" persistia 2x.
+    var submitting by rememberSaveable { mutableStateOf(false) }
 
     // Fonte única em Avatar.kt (só domínio público — sem risco de IP).
     val presetNames = com.example.ui.components.presetAvatarKeys.map {
@@ -115,7 +123,17 @@ fun OnboardingScreen(
                                     modifier = Modifier
                                         .width(60.dp)
                                         .height(76.dp)
-                                        .clickable { avatarUrl = preset },
+                                        .selectable(
+                                            selected = isSelected,
+                                            role = Role.RadioButton,
+                                            onClick = { avatarUrl = preset },
+                                        )
+                                        // A11y: sem rotulo a selecao so era sinalizada por
+                                        // cor (invisivel pro leitor de tela).
+                                        .semantics {
+                                            contentDescription =
+                                                "Avatar $label" + if (isSelected) ", selecionado" else ""
+                                        },
                                     contentAlignment = Alignment.Center,
                                 ) {
                                     Avatar(
@@ -196,7 +214,17 @@ fun OnboardingScreen(
                                             if (selected) Terracota else Divider,
                                             RoundedCornerShape(12.dp),
                                         )
-                                        .clickable { fontScale = scale }
+                                        .selectable(
+                                            selected = selected,
+                                            role = Role.RadioButton,
+                                            onClick = { fontScale = scale },
+                                        )
+                                        // A11y: a selecao era so cor de fundo — sem isso o
+                                        // leitor de tela nao anuncia qual tamanho esta ativo.
+                                        .semantics {
+                                            contentDescription = "Tamanho da letra $label"
+                                            stateDescription = if (selected) "Selecionado" else "Não selecionado"
+                                        }
                                         .padding(vertical = 14.dp),
                                     contentAlignment = Alignment.Center,
                                 ) {
@@ -250,21 +278,34 @@ fun OnboardingScreen(
                     1 -> apelido.trim().length >= 2
                     else -> true
                 }
-                TbButton(
-                    text = if (step < 2) "Continuar" else "Pronto!",
-                    onClick = {
-                        if (!canAdvance) return@TbButton
-                        if (step < 2) {
-                            step++
-                        } else {
-                            onComplete(apelido.trim(), avatarUrl, fontScale)
-                        }
-                    },
-                    variant = TbButtonVariant.Terra,
-                    size = TbButtonSize.Lg,
-                    enabled = canAdvance,
-                    modifier = Modifier.weight(if (step > 0) 1f else 1f),
-                )
+                Box(
+                    modifier = Modifier.weight(1f),
+                    contentAlignment = Alignment.Center,
+                ) {
+                    TbButton(
+                        text = if (step < 2) "Continuar" else if (submitting) "" else "Pronto!",
+                        onClick = {
+                            if (!canAdvance) return@TbButton
+                            if (step < 2) {
+                                step++
+                            } else if (!submitting) {
+                                submitting = true
+                                onComplete(apelido.trim(), avatarUrl, fontScale)
+                            }
+                        },
+                        variant = TbButtonVariant.Terra,
+                        size = TbButtonSize.Lg,
+                        enabled = canAdvance && !submitting,
+                        modifier = Modifier.fillMaxWidth(),
+                    )
+                    if (submitting) {
+                        CircularProgressIndicator(
+                            color = Terracota,
+                            strokeWidth = 2.dp,
+                            modifier = Modifier.size(22.dp),
+                        )
+                    }
+                }
             }
             Spacer(modifier = Modifier.height(36.dp))
         }

@@ -1,5 +1,9 @@
 package com.example.ui.screens
 
+import android.content.Intent
+import android.net.Uri
+import android.provider.Settings
+import android.widget.Toast
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.PickVisualMediaRequest
 import androidx.activity.result.contract.ActivityResultContracts
@@ -69,8 +73,21 @@ fun AddBookManualScreen(
     var coverUrlInput by remember { mutableStateOf("") }
     var showUrlInput by remember { mutableStateOf(false) }
     var showCamera by remember { mutableStateOf(false) }
+    // Se o usuário tocou "Tirar foto" e a permissão ainda não estava concedida,
+    // abrimos a câmera automaticamente assim que a concessão chegar.
+    var pendingOpenCamera by remember { mutableStateOf(false) }
+    // Marca que já pedimos a permissão ao menos uma vez — sem isso, "negado
+    // permanente" (não concedido + sem rationale) é indistinguível de "nunca
+    // perguntado" e o botão de configurações apareceria de cara.
+    var permissionRequested by remember { mutableStateOf(false) }
 
-    val cameraPermission = rememberPermissionState(android.Manifest.permission.CAMERA)
+    val cameraPermission = rememberPermissionState(android.Manifest.permission.CAMERA) { granted ->
+        permissionRequested = true
+        if (granted && pendingOpenCamera) {
+            pendingOpenCamera = false
+            showCamera = true
+        }
+    }
 
     // Photo Picker — Android 11+ nativo, backport no AndroidX em <11
     val galleryLauncher = rememberLauncherForActivityResult(
@@ -104,7 +121,16 @@ fun AddBookManualScreen(
                     if (saved != null) coverPathOrUrl = saved
                     showCamera = false
                 },
-                onError = { showCamera = false }
+                onError = {
+                    // Antes fechava a câmera em silêncio — o usuário não sabia
+                    // que a captura falhou. Agora avisa pra tentar de novo.
+                    showCamera = false
+                    Toast.makeText(
+                        context,
+                        "Não deu pra usar a câmera. Tenta de novo.",
+                        Toast.LENGTH_LONG
+                    ).show()
+                }
             )
             IconButton(
                 onClick = { showCamera = false },
@@ -186,6 +212,10 @@ fun AddBookManualScreen(
                                 if (cameraPermission.status.isGranted) {
                                     showCamera = true
                                 } else {
+                                    // Marca a intenção pra o callback de concessão
+                                    // abrir a câmera sozinho (sem exigir 2º toque).
+                                    pendingOpenCamera = true
+                                    permissionRequested = true
                                     cameraPermission.launchPermissionRequest()
                                 }
                             },
@@ -218,6 +248,28 @@ fun AddBookManualScreen(
                         text = "Pra tirar foto da capa, o app precisa de permissão de câmera.",
                         style = MaterialTheme.typography.labelSmall.copy(color = Muted),
                         modifier = Modifier.padding(top = 6.dp)
+                    )
+                } else if (permissionRequested && !cameraPermission.status.isGranted) {
+                    // Negado permanentemente: launchPermissionRequest() não abre
+                    // mais diálogo. Único caminho é as configurações do sistema.
+                    Text(
+                        text = "Permissão de câmera negada. Abra as configurações do app pra liberar.",
+                        style = MaterialTheme.typography.labelSmall.copy(color = Muted),
+                        modifier = Modifier.padding(top = 6.dp)
+                    )
+                    Spacer(modifier = Modifier.height(6.dp))
+                    TbButton(
+                        text = "Abrir configurações",
+                        onClick = {
+                            val intent = Intent(
+                                Settings.ACTION_APPLICATION_DETAILS_SETTINGS,
+                                Uri.fromParts("package", context.packageName, null)
+                            ).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+                            context.startActivity(intent)
+                        },
+                        variant = TbButtonVariant.Outline,
+                        size = TbButtonSize.Sm,
+                        modifier = Modifier.fillMaxWidth()
                     )
                 }
                 if (showUrlInput) {

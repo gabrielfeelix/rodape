@@ -9,6 +9,8 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.semantics.heading
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.SpanStyle
 import androidx.compose.ui.text.buildAnnotatedString
 import androidx.compose.ui.text.font.FontStyle
@@ -74,6 +76,7 @@ fun NoClubsEmptyState(
                     },
                     style = MaterialTheme.typography.displaySmall,
                     textAlign = TextAlign.Center,
+                    modifier = Modifier.semantics { heading() },
                 )
 
                 Spacer(modifier = Modifier.height(12.dp))

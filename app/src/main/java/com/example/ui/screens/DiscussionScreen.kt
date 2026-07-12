@@ -20,6 +20,11 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.semantics.Role
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.role
+import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.semantics.stateDescription
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
@@ -106,7 +111,17 @@ fun DiscussionScreen(
         },
         containerColor = Paper
     ) { padding ->
-        if (isAheadOfProgress && !forceRevealDebate) {
+        if (progress == null) {
+            // Progresso ainda carregando: mostra loader em vez de assumir cap. 0
+            // (senão a barreira de spoiler pisca em capítulos já lidos).
+            Box(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .padding(padding)
+            ) {
+                com.example.ui.components.CenteredLoading()
+            }
+        } else if (isAheadOfProgress && !forceRevealDebate) {
             // Visual Spoiler Barrier
             Box(
                 modifier = Modifier
@@ -264,6 +279,10 @@ fun DiscussionScreen(
                             var showModMenu by remember(comment.id) { mutableStateOf(false) }
                             var showRemoveDialog by remember(comment.id) { mutableStateOf(false) }
                             var modMotivo by remember(comment.id) { mutableStateOf("") }
+                            var showOwnerMenu by remember(comment.id) { mutableStateOf(false) }
+                            var showEditDialog by remember(comment.id) { mutableStateOf(false) }
+                            var editText by remember(comment.id) { mutableStateOf(comment.texto) }
+                            var showDeleteDialog by remember(comment.id) { mutableStateOf(false) }
 
                             Row(
                                 modifier = Modifier.fillMaxWidth(),
@@ -294,6 +313,10 @@ fun DiscussionScreen(
                                             )
                                             .clip(RoundedCornerShape(14.dp))
                                             .clickable { selectedCommentToReact = comment }
+                                            .semantics {
+                                                role = Role.Button
+                                                contentDescription = "Reagir a este comentário"
+                                            }
                                             .padding(horizontal = 14.dp, vertical = 10.dp)
                                     ) {
                                         Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
@@ -355,6 +378,12 @@ fun DiscussionScreen(
                                                         .border(chipBorder, RoundedCornerShape(999.dp))
                                                         .clip(RoundedCornerShape(999.dp))
                                                         .clickable { viewModel.toggleReaction(comment.id, emoji) }
+                                                        .semantics {
+                                                            role = Role.Button
+                                                            contentDescription = "Reação $emoji, $count"
+                                                            stateDescription =
+                                                                if (hasUserReacted) "Você reagiu" else "Sem sua reação"
+                                                        }
                                                         .padding(horizontal = 8.dp, vertical = 3.dp)
                                                 ) {
                                                     Row(
@@ -408,6 +437,92 @@ fun DiscussionScreen(
                                         }
                                     }
                                 }
+
+                                if (isOwn && !comment.removido) {
+                                    Box {
+                                        IconButton(
+                                            onClick = { showOwnerMenu = true },
+                                            modifier = Modifier.minimumInteractiveComponentSize()
+                                        ) {
+                                            Icon(
+                                                imageVector = Icons.Outlined.MoreVert,
+                                                contentDescription = "Opções do comentário",
+                                                tint = Muted,
+                                                modifier = Modifier.size(18.dp)
+                                            )
+                                        }
+                                        DropdownMenu(
+                                            expanded = showOwnerMenu,
+                                            onDismissRequest = { showOwnerMenu = false }
+                                        ) {
+                                            DropdownMenuItem(
+                                                text = { Text("Editar") },
+                                                onClick = {
+                                                    showOwnerMenu = false
+                                                    editText = comment.texto
+                                                    showEditDialog = true
+                                                }
+                                            )
+                                            DropdownMenuItem(
+                                                text = { Text("Apagar") },
+                                                onClick = {
+                                                    showOwnerMenu = false
+                                                    showDeleteDialog = true
+                                                }
+                                            )
+                                        }
+                                    }
+                                }
+                            }
+
+                            if (showEditDialog) {
+                                AlertDialog(
+                                    containerColor = MaterialTheme.colorScheme.surface,
+                                    onDismissRequest = { showEditDialog = false },
+                                    title = { Text("Editar comentário") },
+                                    text = {
+                                        OutlinedTextField(
+                                            value = editText,
+                                            onValueChange = { editText = it.take(4000) },
+                                            minLines = 2,
+                                            modifier = Modifier.fillMaxWidth()
+                                        )
+                                    },
+                                    confirmButton = {
+                                        TextButton(
+                                            onClick = {
+                                                viewModel.editComment(comment.id, editText.trim())
+                                                showEditDialog = false
+                                            },
+                                            enabled = editText.trim().isNotEmpty()
+                                        ) { Text("Salvar", color = Terracota, fontWeight = FontWeight.SemiBold) }
+                                    },
+                                    dismissButton = {
+                                        TextButton(onClick = { showEditDialog = false }) {
+                                            Text("Cancelar", color = Muted)
+                                        }
+                                    }
+                                )
+                            }
+
+                            if (showDeleteDialog) {
+                                AlertDialog(
+                                    containerColor = MaterialTheme.colorScheme.surface,
+                                    onDismissRequest = { showDeleteDialog = false },
+                                    title = { Text("Apagar comentário?") },
+                                    text = { Text("Seu comentário será removido de vez. Não dá pra desfazer.") },
+                                    confirmButton = {
+                                        TextButton(onClick = {
+                                            viewModel.deleteOwnComment(comment.id)
+                                            showDeleteDialog = false
+                                        }) { Text("Apagar", color = Terracota, fontWeight = FontWeight.SemiBold) }
+                                    },
+                                    dismissButton = {
+                                        TextButton(onClick = { showDeleteDialog = false }) {
+                                            Text("Cancelar", color = Muted)
+                                        }
+                                    }
+                                )
                             }
 
                             if (showRemoveDialog) {
@@ -468,7 +583,7 @@ fun DiscussionScreen(
                         ) {
                             OutlinedTextField(
                                 value = commentText,
-                                onValueChange = { commentText = it },
+                                onValueChange = { commentText = it.take(4000) },
                                 placeholder = {
                                     Text(
                                         text = "Comenta esse capítulo...",
@@ -500,8 +615,9 @@ fun DiscussionScreen(
                                 )
                                 .clip(CircleShape)
                                 .clickable(enabled = commentText.trim().isNotEmpty()) {
-                                    if (commentText.trim().isNotEmpty()) {
-                                        viewModel.sendComment(chapterId, commentText)
+                                    val toSend = commentText.trim()
+                                    if (toSend.isNotEmpty()) {
+                                        viewModel.sendComment(chapterId, toSend)
                                         commentText = ""
                                     }
                                 },
@@ -541,6 +657,10 @@ fun DiscussionScreen(
                                 .clickable {
                                     viewModel.toggleReaction(comment.id, emoji)
                                     selectedCommentToReact = null
+                                }
+                                .semantics {
+                                    role = Role.Button
+                                    contentDescription = "Reagir com $emoji"
                                 }
                                 .padding(8.dp)
                         )
