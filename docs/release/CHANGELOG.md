@@ -1,5 +1,26 @@
 # Changelog — Rodapé
 
+## v1.0.8 — 2026-07-12 (build 9)
+
+### 🔴 "Clico e não vai" — CAUSA RAIZ REAL (não era rede nem conexão)
+Investigação a fundo (código + banco ao vivo + medição de latência + docs supabase):
+o banco responde em ~200ms e as escritas **funcionam** no servidor. O problema era
+**reatividade da UI** — dois bugs de arquitetura:
+
+- **Votar / "trocar pra esse" não aparecia:** a tela de votação lia os votos de
+  `getVotesForClubFlow`, um `MutableStateFlow` preenchido por **um único fetch de
+  rede** e que **nunca observava o banco local**. O voto era gravado (local + servidor),
+  mas a UI lia de um snapshot congelado — só atualizava se você saísse e voltasse.
+  **Correção:** a UI agora usa `votesForActiveRound`, um flow **Room-reativo** escopado
+  à rodada ativa. O voto otimista aparece na hora.
+- **"Marcar progresso" avançava e revertia:** `insertUserProgress` disparava um reload
+  do servidor **antes** de a escrita remota confirmar, sobrescrevendo o valor otimista
+  com o antigo ("pisca e some"). Esse fluxo tinha ficado de fora da correção anterior
+  dos 12 fluxos. **Correção:** o reload agora só roda no sucesso da escrita.
+
+Isso explica por que os ajustes de rede da 1.0.7 não resolveram: o defeito estava na
+camada de estado da UI, não na conexão.
+
 ## v1.0.7 — 2026-07-12 (build 8)
 
 ### ⚡ Ações de DB agora resolvem na hora (fim do "1 alteração aguardando conexão")

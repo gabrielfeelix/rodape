@@ -739,7 +739,8 @@ fun VotacaoTab(
 ) {
     val suggestedBooks by viewModel.suggestedBooks.collectAsState()
     val nextBooks by viewModel.nextBooks.collectAsState()
-    val votes by viewModel.suggestionsAndVotes.collectAsState()
+    // Room-backed reativo, já escopado à rodada ativa: o voto otimista reflete na hora.
+    val roundVotes by viewModel.votesForActiveRound.collectAsState()
     val members by viewModel.clubMembers.collectAsState()
     val activeRound by viewModel.activeVotingRound.collectAsState()
     val suggestionsByBookId by viewModel.bookSuggestionsByBookId.collectAsState()
@@ -747,12 +748,6 @@ fun VotacaoTab(
 
     val currentUserId = viewModel.currentUserId.collectAsState().value ?: ""
 
-    // Escopo por RODADA ATIVA: antes usava todos os votos do clube (todas as
-    // rodadas), então numa 2ª votação as contagens/percentuais vinham diluídos e
-    // o "limite" travava com votos de rodadas antigas (bug B1).
-    val roundVotes = remember(votes, activeRound) {
-        activeRound?.let { r -> votes.filter { it.votingRoundId == r.id } } ?: emptyList()
-    }
     val totalVotes = roundVotes.size
 
     // Perf: agrupa por livro uma vez por emissão. Voto ÚNICO por usuário por rodada

@@ -1922,14 +1922,18 @@ class RemoteRepository(
         // falhar, enfileira pra retry. Antes era remoto-primeiro dentro de
         // runCatching — offline, o progresso de leitura sumia sem aviso.
         dao.upsertProgress(progress)
-        notifyLocalMutation("user_progress")
+        // NÃO notificar antes do remoto confirmar: notifyLocalMutation dispara um
+        // reload (replace+prune) que sobrescrevia o progresso OTIMISTA com o valor
+        // ANTIGO do servidor — "marcar progresso" avançava e revertia na hora
+        // ("pisca e some"). Agora o notify vai como notifyTable e só roda no sucesso
+        // (aí o servidor já tem o novo valor e o reload reconcilia sem reverter).
         val payload = buildJsonObject {
             put("userId", progress.userId)
             put("clubId", progress.clubId)
             put("bookId", progress.bookId)
             put("currentChapter", progress.currentChapter.toString())
         }.toString()
-        tryRemoteOrEnqueue("upsert_user_progress", payload) {
+        tryRemoteOrEnqueue("upsert_user_progress", payload, notifyTable = "user_progress") {
             supabase.from("user_progress").upsert(progress.toDto())
         }
     }

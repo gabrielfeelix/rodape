@@ -203,11 +203,6 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
         if (meeting != null) repository.getRsvpsForMeetingFlow(meeting.id) else flowOf(emptyList())
     }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(60_000), emptyList())
 
-    // Votes
-    val suggestionsAndVotes: StateFlow<List<Vote>> = activeClubId.flatMapLatest { clubId ->
-        if (clubId != null) repository.getVotesForClubFlow(clubId) else flowOf(emptyList())
-    }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(60_000), emptyList())
-
     // Notifications
     val notifications: StateFlow<List<DbNotification>> = currentUserId.flatMapLatest { userId ->
         if (userId != null) repository.getNotificationsFlow(userId) else flowOf(emptyList())
@@ -223,6 +218,15 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
     val activeVotingRound: StateFlow<VotingRound?> = activeClubId.flatMapLatest { clubId ->
         if (clubId != null) repository.getActiveVotingRoundFlow(clubId) else flowOf(null)
     }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(60_000), null)
+
+    // Votos da RODADA ATIVA — Room-backed (REATIVO): o voto otimista aparece na
+    // hora. Antes a UI usava getVotesForClubFlow, um fetch de rede ÚNICO e
+    // NÃO-reativo (MutableStateFlow preenchido uma vez), então votar/"trocar pra
+    // esse" não refletia até sair e voltar da tela — parecia que "não ia".
+    // Definido DEPOIS de activeVotingRound de propósito (o initializer lê o flow).
+    val votesForActiveRound: StateFlow<List<Vote>> = activeVotingRound.flatMapLatest { round ->
+        if (round != null) repository.getVotesForRoundFlow(round.id) else flowOf(emptyList())
+    }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(60_000), emptyList())
 
     // Book suggestions for current club, indexed by bookId
     val bookSuggestionsByBookId: StateFlow<Map<String, BookSuggestion>> = activeClubId.flatMapLatest { clubId ->
