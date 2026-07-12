@@ -1,5 +1,6 @@
 package com.example.ui.screens
 
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.itemsIndexed
@@ -67,6 +68,7 @@ fun ManageChaptersScreen(
     var apiBanner by remember { mutableStateOf<String?>(null) }
     var showSaveConfirm by remember { mutableStateOf(false) }
     var genCount by rememberSaveable { mutableStateOf("") }
+    var shareToCommunity by rememberSaveable { mutableStateOf(true) }
 
     Scaffold(
         topBar = {
@@ -301,24 +303,53 @@ fun ManageChaptersScreen(
             }
 
             if (showSaveConfirm) {
+                val hasIsbn = currentBook?.isbn?.isNotBlank() == true
                 AlertDialog(
                     onDismissRequest = { showSaveConfirm = false },
                     title = { Text("Salvar capítulos?") },
                     text = {
-                        Text(
-                            "Editar os capítulos altera o cronograma de leitura do clube. " +
-                                "Os comentários dos capítulos mantidos são preservados."
-                        )
+                        Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
+                            Text(
+                                "Editar os capítulos altera o cronograma de leitura do clube. " +
+                                    "Os comentários dos capítulos mantidos são preservados."
+                            )
+                            if (hasIsbn) {
+                                // Crowdsourcing: compartilhar o índice por ISBN ajuda TODOS
+                                // os clubes que lerem este livro depois (um cadastro serve o
+                                // app inteiro). Marcado por padrão pra a comunidade crescer.
+                                Row(
+                                    verticalAlignment = Alignment.CenterVertically,
+                                    modifier = Modifier
+                                        .fillMaxWidth()
+                                        .clickable { shareToCommunity = !shareToCommunity }
+                                ) {
+                                    Checkbox(
+                                        checked = shareToCommunity,
+                                        onCheckedChange = { shareToCommunity = it }
+                                    )
+                                    Text(
+                                        "Compartilhar este índice com a comunidade (ajuda outros clubes)",
+                                        style = MaterialTheme.typography.bodyMedium,
+                                        modifier = Modifier.weight(1f)
+                                    )
+                                }
+                            }
+                        }
                     },
                     confirmButton = {
                         TextButton(onClick = {
                             // numero = posição (1..N contígua); id (uuid) é a identidade
                             // estável que preserva os comentários ao reordenar.
-                            val bookId = currentBook!!.id
+                            val book = currentBook!!
                             val chaptersToSave = draftList.mapIndexed { i, d ->
-                                Chapter(id = d.id, bookId = bookId, numero = i + 1, titulo = d.titulo)
+                                Chapter(id = d.id, bookId = book.id, numero = i + 1, titulo = d.titulo)
                             }
-                            viewModel.upsertChapters(bookId, chaptersToSave)
+                            viewModel.upsertChapters(book.id, chaptersToSave)
+                            if (hasIsbn && shareToCommunity) {
+                                viewModel.shareChapterTemplate(
+                                    book, chaptersToSave.map { it.numero to it.titulo }
+                                )
+                            }
                             showSaveConfirm = false
                             onNavigateBack()
                         }) { Text("Salvar", color = Terracota, fontWeight = FontWeight.SemiBold) }

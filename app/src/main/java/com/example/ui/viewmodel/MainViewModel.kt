@@ -1352,14 +1352,30 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
         }
     }
 
+    /**
+     * Busca capítulos automaticamente, em cascata (primeiro que acertar vence):
+     *  1) Índice compartilhado pela COMUNIDADE (por ISBN) — o que outro clube já
+     *     cadastrou serve todo mundo. Melhor fonte pra ficção PT-BR.
+     *  2) Open Library table_of_contents — bom pra técnico/inglês.
+     *  3) EPUB do Project Gutenberg — clássicos de domínio público.
+     *  4) Descrição do Google Books (fraco) — último recurso.
+     */
     fun fetchChaptersOnline(book: Book, onResult: (com.example.util.voting.ChapterFetchResult) -> Unit) {
         viewModelScope.launch {
             try {
-                // 1) Open Library table_of_contents (grátis, sem chave) — melhor fonte
-                //    pública, boa pra técnico/inglês (ficção/PT quase sempre vem vazio).
-                if (book.isbn.isNotBlank()) {
+                val isbn = book.isbn.trim()
+                // 1) COMUNIDADE (crowdsourcing por ISBN)
+                if (isbn.isNotBlank()) {
+                    val community = repository.getChapterTemplate(isbn)
+                    if (!community.isNullOrEmpty()) {
+                        onResult(com.example.util.voting.ChapterFetchResult.Success(community))
+                        return@launch
+                    }
+                }
+                // 2) Open Library
+                if (isbn.isNotBlank()) {
                     val edition = runCatching {
-                        com.example.data.api.OpenLibraryApi.service.editionByIsbn(book.isbn.trim())
+                        com.example.data.api.OpenLibraryApi.service.editionByIsbn(isbn)
                     }.getOrNull()
                     val toc = edition?.tableOfContents.orEmpty().map { it.label to it.title }
                     val fromOl = com.example.util.voting.ChapterFetcher.fromOpenLibraryToc(toc)
@@ -1368,24 +1384,74 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
                         return@launch
                     }
                 }
-                // 2) Fallback: raspar a descrição do Google Books (fraco, mas às vezes pega).
-                val query = if (book.isbn.isNotBlank()) "isbn:${book.isbn}"
+                // 3) EPUB (Project Gutenberg — domínio público)
+                val fromEpub = fetchChaptersFromEpub(book)
+                if (fromEpub is com.example.util.voting.ChapterFetchResult.Success) {
+                    onResult(fromEpub)
+                    return@launch
+                }
+                // 4) Fallback: descrição do Google Books
+                val query = if (isbn.isNotBlank()) "isbn:$isbn"
                     else "intitle:${book.title}+inauthor:${book.author}"
                 val gb = com.example.data.api.GoogleBooksApi.service.search(query)
-                val desc = gb.items
-                    ?.firstOrNull()
-                    ?.volumeInfo
-                    ?.description
-                    .orEmpty()
+                val desc = gb.items?.firstOrNull()?.volumeInfo?.description.orEmpty()
                 val candidates = com.example.util.voting.ChapterFetcher.extractFromText(desc)
-                val validated = com.example.util.voting.ChapterFetcher.validate(candidates)
-                onResult(validated)
+                onResult(com.example.util.voting.ChapterFetcher.validate(candidates))
             } catch (e: Exception) {
                 android.util.Log.e("Rodape/VM", "Operacao falhou silenciosamente", e)
                 onResult(com.example.util.voting.ChapterFetchResult.Failed)
             }
         }
     }
+
+    /** Compartilha o índice deste livro (por ISBN) com a comunidade. */
+    fun shareChapterTemplate(book: Book, chapters: List<Pair<Int, String>>) {
+        val isbn = book.isbn.trim()
+        if (isbn.isBlank() || chapters.isEmpty()) return
+        viewModelScope.launch {
+            val uid = currentUserId.value ?: return@launch
+            repository.shareChapterTemplate(isbn, book.title, chapters, uid)
+        }
+    }
+
+    private val epubHttpClient by lazy {
+        okhttp3.OkHttpClient.Builder()
+            .callTimeout(java.time.Duration.ofSeconds(25))
+            .build()
+    }
+
+    // Acha o EPUB no Gutenberg (por título+autor) e extrai o índice. Best-effort.
+    private suspend fun fetchChaptersFromEpub(book: Book): com.example.util.voting.ChapterFetchResult =
+        runCatching {
+            val query = listOf(book.title, book.author).filter { it.isNotBlank() }.joinToString(" ")
+            if (query.isBlank()) return com.example.util.voting.ChapterFetchResult.Failed
+            val resp = com.example.data.api.GutendexApi.service.search(query)
+            val norm = { s: String -> s.lowercase().filter { it.isLetterOrDigit() || it == ' ' } }
+            val wantTitle = norm(book.title)
+            val candidate = resp.results?.firstOrNull { b ->
+                val hasEpub = b.formats?.keys?.any { it.startsWith("application/epub+zip") } == true
+                val titleOk = wantTitle.isNotBlank() && (norm(b.title).contains(wantTitle) || wantTitle.contains(norm(b.title)))
+                hasEpub && titleOk
+            } ?: return com.example.util.voting.ChapterFetchResult.Failed
+            val epubUrl = candidate.formats!!.entries.first { it.key.startsWith("application/epub+zip") }.value
+            val bytes = downloadBytes(epubUrl) ?: return com.example.util.voting.ChapterFetchResult.Failed
+            com.example.util.voting.ChapterFetcher.validate(com.example.util.voting.EpubTocParser.parse(bytes))
+        }.getOrDefault(com.example.util.voting.ChapterFetchResult.Failed)
+
+    private suspend fun downloadBytes(url: String, maxBytes: Long = 12_000_000L): ByteArray? =
+        kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.IO) {
+            runCatching {
+                val req = okhttp3.Request.Builder().url(url)
+                    .header("User-Agent", "Mozilla/5.0 (Android; Rodape reading club)")
+                    .build()
+                epubHttpClient.newCall(req).execute().use { resp ->
+                    val body = resp.body
+                    if (!resp.isSuccessful || body == null) return@use null
+                    val len = body.contentLength()
+                    if (len in 1..maxBytes || len == -1L) body.bytes() else null
+                }
+            }.getOrNull()
+        }
 
     // ============================================================
     // Múltiplos encontros por livro (Fase 6)

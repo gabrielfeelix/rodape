@@ -223,6 +223,18 @@ private data class ChapterDto(
 
 private fun Chapter.toDto() = ChapterDto(id, bookId, numero, titulo)
 
+// ---- chapter_templates (índice compartilhado por ISBN — crowdsourcing) ----
+@Serializable
+private data class ChapterTemplateEntryDto(val numero: Int, val titulo: String = "")
+
+@Serializable
+private data class ChapterTemplateDto(
+    val isbn: String,
+    @SerialName("titulo_livro") val tituloLivro: String? = null,
+    val chapters: List<ChapterTemplateEntryDto> = emptyList(),
+    @SerialName("contributed_by") val contributedBy: String? = null,
+)
+
 // ---- user_progress ----
 @Serializable
 private data class UserProgressDto(
@@ -1911,6 +1923,32 @@ class RemoteRepository(
                 }
             }
         }.onFailure { android.util.Log.w("Rodape/Repo", "saveChapters remoto falhou: ${it.message}") }
+    }
+
+    // ---- Índice compartilhado por ISBN (crowdsourcing entre TODOS os clubes) ----
+
+    /** Busca o índice de capítulos que ALGUÉM já cadastrou pra este ISBN. Um
+     *  cadastro serve o app inteiro. Retorna null se ninguém compartilhou ainda. */
+    suspend fun getChapterTemplate(isbn: String): List<Pair<Int, String>>? = runCatching {
+        val row = supabase.from("chapter_templates").select {
+            filter { eq("isbn", isbn) }
+            limit(1)
+        }.decodeSingleOrNull<ChapterTemplateDto>()
+        row?.chapters?.map { it.numero to it.titulo }?.sortedBy { it.first }
+    }.getOrNull()?.takeIf { it.isNotEmpty() }
+
+    /** Compartilha (ou atualiza) o índice deste ISBN com a comunidade. */
+    suspend fun shareChapterTemplate(isbn: String, tituloLivro: String, chapters: List<Pair<Int, String>>, userId: String) {
+        runCatching {
+            supabase.from("chapter_templates").upsert(
+                ChapterTemplateDto(
+                    isbn = isbn,
+                    tituloLivro = tituloLivro,
+                    chapters = chapters.map { ChapterTemplateEntryDto(it.first, it.second) },
+                    contributedBy = userId,
+                )
+            ) { onConflict = "isbn" }
+        }.onFailure { android.util.Log.w("Rodape/Repo", "shareChapterTemplate falhou: ${it.message}") }
     }
 
     // ============================================================

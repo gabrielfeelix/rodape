@@ -1,5 +1,25 @@
 # Changelog — Rodapé
 
+## v1.0.11 — 2026-07-12 (build 12)
+
+### ✨ Capítulos automáticos: comunidade + EPUB (feature completa)
+Como as APIs não dão índice de capítulos de ficção, o app agora tem uma **cascata de
+fontes** no "buscar online" (Gerenciar clube → Capítulos), na ordem:
+
+1. **Índice compartilhado pela comunidade (crowdsourcing por ISBN)** — quando um admin
+   cadastra os capítulos de um livro e marca "compartilhar", aquele índice fica
+   disponível **pra todos os clubes** que lerem o mesmo ISBN depois. Um cadastro serve o
+   app inteiro. É a melhor fonte pra ficção em português. (Nova tabela `chapter_templates`
+   no Supabase, com RLS: qualquer membro lê; contribuições registram o autor.)
+2. **Open Library** (`table_of_contents`) — técnico/inglês.
+3. **EPUB do Project Gutenberg** — clássicos de domínio público. Testado ao vivo:
+   **Dom Casmurro = 153 capítulos**, Frankenstein = 32, Sherlock Holmes = 18. Baixa o
+   EPUB, lê o índice (nav.xhtml / toc.ncx) e preenche.
+4. **Descrição do Google Books** — último recurso.
+
+O primeiro que acertar vence; o admin revisa e salva. Ao salvar um livro com ISBN, um
+checkbox oferece **compartilhar o índice com a comunidade** (marcado por padrão).
+
 ## v1.0.10 — 2026-07-12 (build 11)
 
 ### ✨ "Buscar online" agora usa o Open Library (índice de capítulos)
