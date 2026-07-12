@@ -30,10 +30,16 @@ import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.text.input.VisualTransformation
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import com.example.R
 import com.example.ui.components.RodapeCard
+import com.example.ui.theme.InterFontFamily
+import com.example.ui.theme.Ink
+import com.example.ui.theme.LiterataFontFamily
 import com.example.ui.theme.Muted
 import com.example.ui.theme.Oliva
+import com.example.ui.theme.OlivaDark
+import com.example.ui.theme.Paper
 import com.example.ui.theme.Terracota
 import kotlinx.coroutines.launch
 
@@ -45,6 +51,7 @@ fun SignUpScreen(
     onSignInWithGoogle: suspend () -> Result<Unit>,
     onSignedUp: () -> Unit,
     onGoogleSignedIn: () -> Unit,
+    onNavigateToLogin: () -> Unit,
 ) {
     var name by rememberSaveable { mutableStateOf("") }
     var email by rememberSaveable { mutableStateOf("") }
@@ -114,13 +121,13 @@ fun SignUpScreen(
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { Text("Criar conta", style = MaterialTheme.typography.headlineLarge.copy(color = Terracota)) },
+                title = {},
                 navigationIcon = {
                     IconButton(onClick = onNavigateBack) {
-                        Icon(Icons.AutoMirrored.Outlined.ArrowBack, "Voltar", tint = Terracota)
+                        Icon(Icons.AutoMirrored.Outlined.ArrowBack, "Voltar", tint = Ink)
                     }
                 },
-                colors = TopAppBarDefaults.topAppBarColors(containerColor = MaterialTheme.colorScheme.background),
+                colors = TopAppBarDefaults.topAppBarColors(containerColor = Paper),
             )
         },
         containerColor = MaterialTheme.colorScheme.background,
@@ -131,7 +138,7 @@ fun SignUpScreen(
         ) {
             item {
                 Spacer(Modifier.height(24.dp))
-                RodapeCard(modifier = Modifier.fillMaxWidth(), contentPadding = PaddingValues(20.dp)) {
+                Column(modifier = Modifier.fillMaxWidth()) {
                     if (showConfirmHint) {
                         Text(
                             "Conta criada!",
@@ -219,13 +226,27 @@ fun SignUpScreen(
                             Text("Corrigir email", color = Muted)
                         }
                     } else {
+                        // Design: screens-onboarding.jsx — "Vamos criar." à esquerda.
                         Text(
-                            "Bem-vindo ao Rodapé",
-                            style = MaterialTheme.typography.displaySmall,
-                            textAlign = TextAlign.Center,
+                            "Vamos criar.",
+                            style = MaterialTheme.typography.displaySmall.copy(
+                                fontFamily = LiterataFontFamily,
+                                fontWeight = FontWeight.SemiBold,
+                                fontSize = 36.sp,
+                                letterSpacing = (-0.8).sp,
+                                color = Ink
+                            ),
                             modifier = Modifier.fillMaxWidth(),
                         )
-                        Spacer(Modifier.height(16.dp))
+                        Spacer(Modifier.height(6.dp))
+                        Text(
+                            "Em poucos segundos você está lendo junto.",
+                            style = MaterialTheme.typography.bodyLarge.copy(
+                                fontFamily = InterFontFamily, fontSize = 14.sp, color = Muted
+                            ),
+                            modifier = Modifier.fillMaxWidth(),
+                        )
+                        Spacer(Modifier.height(24.dp))
 
                         OutlinedTextField(
                             value = name,
@@ -375,6 +396,16 @@ fun SignUpScreen(
                                     color = Color(0xFF1F1F1F),
                                 ),
                             )
+                        }
+
+                        Spacer(Modifier.height(16.dp))
+                        // Link cruzado com o Login (a "frasezinha" que o dono pediu).
+                        TextButton(
+                            onClick = onNavigateToLogin,
+                            enabled = !isLoading,
+                            modifier = Modifier.fillMaxWidth(),
+                        ) {
+                            Text("Já tem conta? Entre", color = OlivaDark)
                         }
                     }
                 }

@@ -178,6 +178,12 @@ class MainActivity : ComponentActivity() {
                                     launchSingleTop = true
                                 }
                             },
+                            onNavigateToLogin = {
+                                navController.navigate("login") {
+                                    popUpTo("welcome") { inclusive = false }
+                                    launchSingleTop = true
+                                }
+                            },
                             onGoogleSignedIn = {
                                 navController.navigate("main_tabs") {
                                     popUpTo("welcome") { inclusive = true }

@@ -19,6 +19,7 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.ArrowForward
 import androidx.compose.material.icons.automirrored.outlined.ArrowBack
 import androidx.compose.material.icons.outlined.*
 import androidx.compose.material3.*
@@ -42,8 +43,11 @@ import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.text.input.VisualTransformation
 import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.example.ui.components.Pill
+import com.example.ui.components.PillVariant
 import com.example.ui.components.TbButton
 import com.example.ui.components.TbButtonSize
 import com.example.ui.components.TbButtonVariant
@@ -53,10 +57,14 @@ import com.example.ui.theme.CardSurface
 import com.example.ui.theme.ClubColors
 import com.example.ui.theme.Divider
 import com.example.ui.theme.Ink
+import com.example.ui.theme.InterFontFamily
+import com.example.ui.theme.LiterataFontFamily
 import com.example.ui.theme.Muted
 import com.example.ui.theme.Oliva
 import com.example.ui.theme.OlivaDark
+import com.example.ui.theme.OlivaDeep
 import com.example.ui.theme.OlivaSoft
+import com.example.ui.theme.Paper
 import com.example.ui.theme.PaperDeep
 import com.example.ui.theme.Terracota
 import com.example.ui.theme.Tertiary
@@ -73,134 +81,191 @@ fun WelcomeScreen(
     onNavigateToLogin: () -> Unit,
     onNavigateToSignUp: () -> Unit,
 ) {
-    var visible by remember { mutableStateOf(false) }
-
-    LaunchedEffect(Unit) {
-        delay(100)
-        visible = true
-    }
-
-    Scaffold(
-        containerColor = MaterialTheme.colorScheme.background
-    ) { paddingValues ->
+    // Design: claude-design/screens-onboarding.jsx (WelcomeScreen). Layout editorial
+    // alinhado à esquerda + painel oliva curvado com lombadas de livro. Mantém
+    // "Rodapé" (design diz "tramabook") e voz "você". Os CTAs são de AUTH porque o
+    // app exige login antes de criar/entrar em clube; "Criar um clube"/"Entrar num
+    // clube" acontecem DEPOIS, no estado vazio dentro do app.
+    Scaffold(containerColor = Paper) { paddingValues ->
         Column(
             modifier = Modifier
                 .fillMaxSize()
                 .padding(paddingValues)
-                .verticalScroll(rememberScrollState())
-                .padding(horizontal = 24.dp, vertical = 32.dp),
-            verticalArrangement = Arrangement.spacedBy(32.dp),
-            horizontalAlignment = Alignment.CenterHorizontally
         ) {
-            // Top Logo view
-            AnimatedVisibility(
-                visible = visible,
-                enter = fadeIn(animationSpec = tween(durationMillis = 300))
+            // ── Wordmark (topo-esquerda) ─────────────────────────────
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(start = 28.dp, end = 28.dp, top = 18.dp),
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(8.dp)
             ) {
-                Column(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(top = 40.dp),
-                    horizontalAlignment = Alignment.CenterHorizontally,
-                    verticalArrangement = Arrangement.Center
-                ) {
-                    // Logo representation
-                    Image(
-                        painter = painterResource(id = R.drawable.ic_logo),
-                        contentDescription = "Logo do Rodapé",
-                        modifier = Modifier.size(108.dp)
+                Image(
+                    painter = painterResource(id = R.drawable.ic_logo),
+                    contentDescription = "Logo do Rodapé",
+                    modifier = Modifier.size(28.dp)
+                )
+                Text(
+                    text = "Rodapé",
+                    style = MaterialTheme.typography.headlineLarge.copy(
+                        fontFamily = LiterataFontFamily,
+                        fontWeight = FontWeight.SemiBold,
+                        fontSize = 20.sp,
+                        color = Ink
                     )
-
-                    Spacer(modifier = Modifier.height(16.dp))
-
-                    // Wordmark: nome do app explicito acima da tagline pra fixar
-                    // a marca antes do hero. Literata + Terracota bate o tom
-                    // editorial dos demais wordmarks (login/signup topbar).
-                    Text(
-                        text = "Rodapé",
-                        style = MaterialTheme.typography.headlineLarge.copy(
-                            color = Terracota,
-                            fontWeight = FontWeight.Bold,
-                        ),
-                        textAlign = TextAlign.Center
-                    )
-
-                    Spacer(modifier = Modifier.height(12.dp))
-
-                    Text(
-                        text = buildAnnotatedString {
-                            append("Leituras")
-                            append("\n")
-                            withStyle(SpanStyle(fontStyle = FontStyle.Italic, color = Oliva)) {
-                                append("juntas")
-                            }
-                            withStyle(SpanStyle(color = Terracota)) {
-                                append(".")
-                            }
-                        },
-                        style = MaterialTheme.typography.displayLarge,
-                        textAlign = TextAlign.Center
-                    )
-
-                    Spacer(modifier = Modifier.height(12.dp))
-
-                    Text(
-                        text = "Um clube. Um livro. Conversa que não dá spoiler.",
-                        style = MaterialTheme.typography.bodyLarge.copy(
-                            color = MaterialTheme.colorScheme.onSurfaceVariant
-                        ),
-                        textAlign = TextAlign.Center,
-                        modifier = Modifier.widthIn(max = 300.dp)
-                    )
-                }
+                )
             }
 
-            // O que é o Rodapé, em 3 frases curtas — dá contexto antes dos CTAs
-            // pra quem chega sem saber o que o app faz.
-            AnimatedVisibility(
-                visible = visible,
-                enter = fadeIn(animationSpec = tween(durationMillis = 300))
-            ) {
-                Column(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .widthIn(max = 340.dp),
-                    verticalArrangement = Arrangement.spacedBy(12.dp),
-                ) {
-                    WelcomeBullet("Um clube de leitura presencial, com gente de verdade.")
-                    WelcomeBullet("Encontros marcados pra discutir o livro da vez.")
-                    WelcomeBullet("Conversa no seu ritmo, sem estragar o final.")
-                }
-            }
-
-            // Botoes de auth: o app exige autenticacao real (Supabase Auth + RLS),
-            // entao Welcome so oferece Entrar/Criar conta. Apos login, os botoes
-            // de Criar/Entrar em clube aparecem dentro do app no estado vazio.
+            // ── Hero (alinhado à esquerda) ───────────────────────────
             Column(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .padding(bottom = 16.dp),
-                verticalArrangement = Arrangement.spacedBy(16.dp),
-                horizontalAlignment = Alignment.CenterHorizontally
+                    .weight(1f)
+                    .padding(start = 28.dp, end = 28.dp, top = 44.dp)
             ) {
-                // Recém-chegado ainda não tem conta: "Criar conta" ganha o destaque
-                // primário (topo + Terra); "Entrar" fica como ação secundária.
-                TbButton(
-                    text = "Criar conta",
-                    onClick = onNavigateToSignUp,
-                    variant = TbButtonVariant.Terra,
-                    size = TbButtonSize.Lg,
-                    modifier = Modifier.fillMaxWidth()
+                Pill(text = "Clubes de leitura", variant = PillVariant.OliveDeep)
+                Spacer(modifier = Modifier.height(18.dp))
+                Text(
+                    text = buildAnnotatedString {
+                        append("Leituras\n")
+                        withStyle(SpanStyle(fontStyle = FontStyle.Italic, color = Oliva)) { append("juntas") }
+                        withStyle(SpanStyle(color = Terracota)) { append(".") }
+                    },
+                    style = MaterialTheme.typography.displayLarge.copy(
+                        fontFamily = LiterataFontFamily,
+                        fontWeight = FontWeight.SemiBold,
+                        fontSize = 54.sp,
+                        lineHeight = 54.sp,
+                        letterSpacing = (-1.8).sp,
+                        color = Ink
+                    )
                 )
-
-                TbButton(
-                    text = "Já tenho conta · Entrar",
-                    onClick = onNavigateToLogin,
-                    variant = TbButtonVariant.Outline,
-                    size = TbButtonSize.Lg,
-                    modifier = Modifier.fillMaxWidth()
+                Spacer(modifier = Modifier.height(18.dp))
+                Text(
+                    text = "Um clube. Um livro. Conversa que não dá spoiler.",
+                    style = MaterialTheme.typography.bodyLarge.copy(
+                        fontFamily = InterFontFamily,
+                        fontSize = 16.sp,
+                        color = Muted
+                    ),
+                    modifier = Modifier.widthIn(max = 290.dp)
                 )
             }
+
+            // ── Painel oliva curvado + lombadas + CTAs de auth ───────
+            Box(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .background(OlivaDeep, RoundedCornerShape(topStart = 40.dp, topEnd = 40.dp))
+            ) {
+                // Lombadas atravessando a curva (sobem acima da borda do painel).
+                Row(
+                    modifier = Modifier
+                        .align(Alignment.TopEnd)
+                        .offset(x = (-24).dp, y = (-68).dp),
+                    verticalAlignment = Alignment.Bottom,
+                    horizontalArrangement = Arrangement.spacedBy(5.dp)
+                ) {
+                    BookSpine(80.dp, Color(0xFFD9C9B0))
+                    BookSpine(110.dp, Terracota)
+                    BookSpine(92.dp, Cream, stroke = true)
+                    BookSpine(72.dp, Oliva)
+                }
+
+                Column(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(start = 22.dp, end = 22.dp, top = 38.dp, bottom = 40.dp)
+                ) {
+                    // Linha de "prateleira" no topo do painel.
+                    Box(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .height(1.dp)
+                            .background(Cream.copy(alpha = 0.10f))
+                    )
+                    Spacer(modifier = Modifier.height(26.dp))
+
+                    // CTA primário: Criar conta (terra) + seta.
+                    Box(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .height(54.dp)
+                            .clip(RoundedCornerShape(999.dp))
+                            .background(Terracota)
+                            .clickable { onNavigateToSignUp() },
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Row(
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.spacedBy(8.dp)
+                        ) {
+                            Text(
+                                text = "Criar conta",
+                                style = MaterialTheme.typography.bodyLarge.copy(
+                                    fontFamily = InterFontFamily,
+                                    fontWeight = FontWeight.SemiBold,
+                                    fontSize = 15.sp,
+                                    color = Cream
+                                )
+                            )
+                            Icon(
+                                imageVector = Icons.AutoMirrored.Filled.ArrowForward,
+                                contentDescription = null,
+                                tint = Cream,
+                                modifier = Modifier.size(18.dp)
+                            )
+                        }
+                    }
+                    Spacer(modifier = Modifier.height(10.dp))
+
+                    // CTA secundário: Entrar (contorno creme sobre o oliva).
+                    Box(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .height(54.dp)
+                            .clip(RoundedCornerShape(999.dp))
+                            .border(1.dp, Cream.copy(alpha = 0.25f), RoundedCornerShape(999.dp))
+                            .clickable { onNavigateToLogin() },
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Text(
+                            text = "Entrar",
+                            style = MaterialTheme.typography.bodyLarge.copy(
+                                fontFamily = InterFontFamily,
+                                fontWeight = FontWeight.SemiBold,
+                                fontSize = 15.sp,
+                                color = Cream
+                            )
+                        )
+                    }
+                }
+            }
+        }
+    }
+}
+
+/** Lombada de livro decorativa (ilustração da Welcome). Ref: screens-onboarding.jsx BookSpine. */
+@Composable
+private fun BookSpine(height: Dp, color: Color, stroke: Boolean = false) {
+    val shape = RoundedCornerShape(topStart = 3.dp, topEnd = 3.dp, bottomStart = 4.dp, bottomEnd = 4.dp)
+    Box(
+        modifier = Modifier
+            .width(24.dp)
+            .height(height)
+            .clip(shape)
+            .background(color)
+            .then(if (stroke) Modifier.border(1.dp, Color.Black.copy(alpha = 0.06f), shape) else Modifier)
+    ) {
+        Column(modifier = Modifier.fillMaxSize()) {
+            Spacer(modifier = Modifier.weight(0.4f))
+            Box(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(1.dp)
+                    .background(Color.Black.copy(alpha = 0.15f))
+            )
+            Spacer(modifier = Modifier.weight(0.6f))
         }
     }
 }
@@ -245,17 +310,17 @@ fun LoginScreen(
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { Text("Rodapé", style = MaterialTheme.typography.headlineLarge.copy(color = Terracota)) },
+                title = {},
                 navigationIcon = {
                     IconButton(onClick = onNavigateBack) {
                         Icon(
                             imageVector = Icons.AutoMirrored.Outlined.ArrowBack,
                             contentDescription = "Voltar",
-                            tint = Terracota
+                            tint = Ink
                         )
                     }
                 },
-                colors = TopAppBarDefaults.topAppBarColors(containerColor = MaterialTheme.colorScheme.background)
+                colors = TopAppBarDefaults.topAppBarColors(containerColor = Paper)
             )
         },
         containerColor = MaterialTheme.colorScheme.background
@@ -268,18 +333,32 @@ fun LoginScreen(
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
             item {
-                Spacer(modifier = Modifier.height(24.dp))
-                RodapeCard(
-                    modifier = Modifier.fillMaxWidth(),
-                    contentPadding = androidx.compose.foundation.layout.PaddingValues(20.dp)
-                ) {
+                Spacer(modifier = Modifier.height(8.dp))
+                Column(modifier = Modifier.fillMaxWidth()) {
+                    // Design: screens-onboarding.jsx (LoginScreen) — headline serif à
+                    // esquerda, sem cartão. "Oi de novo." + subtítulo.
                     Text(
-                        text = "Bem-vindo de volta",
-                        style = MaterialTheme.typography.displaySmall,
-                        modifier = Modifier.fillMaxWidth(),
-                        textAlign = TextAlign.Center
+                        text = "Oi de novo.",
+                        style = MaterialTheme.typography.displaySmall.copy(
+                            fontFamily = LiterataFontFamily,
+                            fontWeight = FontWeight.SemiBold,
+                            fontSize = 36.sp,
+                            letterSpacing = (-0.8).sp,
+                            color = Ink
+                        ),
+                        modifier = Modifier.fillMaxWidth()
                     )
-                    Spacer(modifier = Modifier.height(16.dp))
+                    Spacer(modifier = Modifier.height(6.dp))
+                    Text(
+                        text = "Sua leitura está esperando você.",
+                        style = MaterialTheme.typography.bodyLarge.copy(
+                            fontFamily = InterFontFamily,
+                            fontSize = 14.sp,
+                            color = Muted
+                        ),
+                        modifier = Modifier.fillMaxWidth()
+                    )
+                    Spacer(modifier = Modifier.height(24.dp))
 
                     OutlinedTextField(
                         value = email,
@@ -1085,27 +1164,6 @@ fun JoinClubScreen(
                 }
             }
         }
-    }
-}
-
-// Bullet curto da Welcome: ponto terracota + frase do que o app faz.
-@Composable
-private fun WelcomeBullet(text: String) {
-    Row(verticalAlignment = Alignment.Top) {
-        Box(
-            modifier = Modifier
-                .padding(top = 7.dp)
-                .size(6.dp)
-                .clip(CircleShape)
-                .background(Terracota)
-        )
-        Spacer(modifier = Modifier.width(12.dp))
-        Text(
-            text = text,
-            style = MaterialTheme.typography.bodyMedium.copy(
-                color = MaterialTheme.colorScheme.onSurfaceVariant
-            ),
-        )
     }
 }
 
