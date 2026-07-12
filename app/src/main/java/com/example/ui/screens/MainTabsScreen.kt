@@ -1624,12 +1624,20 @@ fun BookDetailScreenTab(
                             text = "Marcar progresso",
                             onClick = {
                                 val nextChap = currentChapIndex + 1
-                                if (nextChap <= chapters.size) {
-                                    viewModel.updateBookProgress(currentBook!!.id, nextChap)
-                                    onShowMessage(
-                                        if (nextChap == chapters.size) "Livro terminado! 🎉"
-                                        else "Progresso salvo — Cap. $nextChap"
-                                    )
+                                when {
+                                    // Antes o botão ficava MUDO quando o livro não tinha
+                                    // capítulos (nextChap=1 > chapters.size=0) — parecia
+                                    // "não faz nada". Agora avisa o que fazer.
+                                    chapters.isEmpty() ->
+                                        onShowMessage("Cadastre os capítulos do livro pra acompanhar a leitura.")
+                                    nextChap <= chapters.size -> {
+                                        viewModel.updateBookProgress(currentBook!!.id, nextChap)
+                                        onShowMessage(
+                                            if (nextChap == chapters.size) "Livro terminado! 🎉"
+                                            else "Progresso salvo — Cap. $nextChap"
+                                        )
+                                    }
+                                    else -> onShowMessage("Você já terminou o livro! 🎉")
                                 }
                             },
                             variant = TbButtonVariant.Terra,

@@ -980,7 +980,7 @@ class RemoteRepository(
                     userId = obj.str("userId"),
                     bookId = obj.str("bookId"),
                 )
-            )
+            ) { onConflict = "voting_round_id,user_id" }
         }
         registerHandler("insert_saved_quote") { json ->
             val obj = this.json.parseToJsonElement(json) as JsonObject
@@ -2186,16 +2186,26 @@ class RemoteRepository(
 
     suspend fun insertVote(vote: Vote) {
         val roundId = vote.votingRoundId ?: return
-        dao.upsertVotes(listOf(vote))
-        val payload = """{"votingRoundId":"$roundId","userId":"${vote.userId}","bookId":"${vote.clubBookId}"}"""
+        setUserVoteInRound(vote.userId, roundId, vote.clubBookId)
+    }
+
+    /**
+     * Define o voto do usuário na rodada (VOTO ÚNICO). Troca ATÔMICA:
+     *  - Local: apaga os votos do usuário na rodada + insere o novo (otimista). Sem
+     *    isso o Room ficava com [A,B] (PK local permite N) e um reload com dado velho
+     *    podava o novo e revertia pro antigo ("vira teu voto e volta, em loop").
+     *  - Remoto: UM upsert com onConflict na PK (round,user) — substitui A por B numa
+     *    operação só (sem delete+insert separados, que disparavam reload prematuro).
+     *  - notifyTable só no sucesso: o reload só roda quando o servidor já tem B.
+     */
+    suspend fun setUserVoteInRound(userId: String, roundId: String, bookId: String) {
+        dao.deleteUserVotesInRound(roundId, userId)
+        dao.upsertVotes(listOf(Vote(votingRoundId = roundId, clubBookId = bookId, userId = userId, votedAt = System.currentTimeMillis())))
+        val payload = """{"votingRoundId":"$roundId","userId":"$userId","bookId":"$bookId"}"""
         tryRemoteOrEnqueue("insert_vote", payload, notifyTable = "votes") {
             supabase.from("votes").upsert(
-                VoteInsertDto(
-                    votingRoundId = roundId,
-                    userId = vote.userId,
-                    bookId = vote.clubBookId,
-                )
-            )
+                VoteInsertDto(votingRoundId = roundId, userId = userId, bookId = bookId)
+            ) { onConflict = "voting_round_id,user_id" }
         }
     }
 

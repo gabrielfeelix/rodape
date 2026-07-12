@@ -13,6 +13,7 @@ import androidx.compose.material.icons.outlined.MenuBook
 import androidx.compose.material.icons.outlined.Refresh
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
@@ -65,6 +66,7 @@ fun ManageChaptersScreen(
     var fetching by remember { mutableStateOf(false) }
     var apiBanner by remember { mutableStateOf<String?>(null) }
     var showSaveConfirm by remember { mutableStateOf(false) }
+    var genCount by rememberSaveable { mutableStateOf("") }
 
     Scaffold(
         topBar = {
@@ -245,6 +247,38 @@ fun ManageChaptersScreen(
                         variant = TbButtonVariant.Outline,
                         modifier = Modifier.fillMaxWidth().padding(top = 8.dp)
                     )
+                }
+                item {
+                    // Gerador rápido: cria N capítulos de uma vez (títulos opcionais).
+                    // As APIs de livro não fornecem a lista de capítulos de forma
+                    // confiável, então o caminho prático é informar quantos são.
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(8.dp),
+                        modifier = Modifier.fillMaxWidth().padding(top = 8.dp)
+                    ) {
+                        OutlinedTextField(
+                            value = genCount,
+                            onValueChange = { genCount = it.filter { c -> c.isDigit() }.take(3) },
+                            placeholder = { Text("Nº de capítulos") },
+                            singleLine = true,
+                            modifier = Modifier.weight(1f)
+                        )
+                        TbButton(
+                            text = "Gerar",
+                            onClick = {
+                                val n = genCount.toIntOrNull() ?: 0
+                                if (n in 1..500) {
+                                    draftList = (draftList + (1..n).map {
+                                        ChapterDraft(UUID.randomUUID().toString(), "")
+                                    }).toMutableList()
+                                    genCount = ""
+                                }
+                            },
+                            variant = TbButtonVariant.OlivaSoft,
+                            enabled = (genCount.toIntOrNull() ?: 0) in 1..500,
+                        )
+                    }
                 }
             }
 

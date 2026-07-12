@@ -243,6 +243,12 @@ interface RodapeDao {
     @Query("DELETE FROM votes WHERE votingRoundId = :roundId AND userId = :userId AND clubBookId = :bookId")
     suspend fun deleteVote(roundId: String, userId: String, bookId: String)
 
+    // Remove TODOS os votos do usuário na rodada (voto único por rodada). Usado na
+    // troca atômica: apaga o voto anterior antes de inserir o novo, pra o estado
+    // local (PK permite N) bater com o servidor (PK (round,user) = 1 voto).
+    @Query("DELETE FROM votes WHERE votingRoundId = :roundId AND userId = :userId")
+    suspend fun deleteUserVotesInRound(roundId: String, userId: String)
+
     @Query("SELECT * FROM votes WHERE votingRoundId = :roundId")
     fun votesForRoundFlow(roundId: String): Flow<List<Vote>>
 

@@ -606,23 +606,17 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
             // usava getActiveVotingRound remoto: null offline -> voto virava no-op.
             val round = activeVotingRound.value ?: return@launch
 
-            val votes = repository.getVotesForRound(round.id) // cache-first
-            val mine = votes.filter { it.userId == userId }
-            // VOTO ÚNICO por usuário por rodada: o servidor tem PK (round,user), então
-            // multi-voto é impossível lá (o 2º upsert substituía o 1º e o voto sumia).
-            // Tocar no próprio voto desfaz.
-            if (mine.any { it.clubBookId == bookId }) {
+            val myVote = repository.getVotesForRound(round.id)
+                .firstOrNull { it.userId == userId }?.clubBookId
+            // VOTO ÚNICO por rodada. Tocar no próprio voto desfaz; votar em outro TROCA
+            // (upsert atômico com onConflict — sem delete+insert separados que causavam
+            // o "vira teu voto e volta em loop"). nLivros = nº de VENCEDORES, não votos.
+            if (myVote == bookId) {
                 repository.removeUserVoteForBookInRound(userId, round.id, bookId)
-                return@launch
+            } else {
+                repository.setUserVoteInRound(userId, round.id, bookId)
+                bumpEngagement()
             }
-            // Trocar de escolha: remove o voto anterior (se houver) em OUTRO livro antes
-            // de inserir, pro estado local bater com o servidor (que substitui em
-            // (round,user)). nLivros = nº de VENCEDORES da rodada, não votos por usuário.
-            mine.forEach { repository.removeUserVoteForBookInRound(userId, round.id, it.clubBookId) }
-            repository.insertVote(
-                Vote(votingRoundId = round.id, clubBookId = bookId, userId = userId, votedAt = System.currentTimeMillis())
-            )
-            bumpEngagement()
         }
     }
 

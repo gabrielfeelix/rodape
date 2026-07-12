@@ -1,5 +1,30 @@
 # Changelog — Rodapé
 
+## v1.0.9 — 2026-07-12 (build 10)
+
+Verificado no banco ao vivo que o servidor **aceita** troca de voto e progresso (upsert
+HTTP 200) — os bugs restantes eram client-side.
+
+### 🔴 "Trocar pra esse" virava "teu voto" e voltava, em loop
+Causa: a PK LOCAL de votos permite várias linhas por usuário, e o fluxo fazia
+delete-remoto + insert-remoto separados; um reload com estado antigo do servidor
+re-adicionava o voto anterior e podava o novo. **Correção:** troca ATÔMICA — apaga os
+votos do usuário na rodada localmente e faz **um único upsert** com `onConflict` na PK
+(round,user), que substitui no servidor numa operação só; o reload de reconciliação só
+roda no sucesso. Sem loop.
+
+### 🔴 "Marcar progresso" não fazia nada
+Causa: o botão só agia se `próximo_capítulo <= nº_de_capítulos`. Como capítulos não
+sincronizavam (bug anterior) e muitos livros estão com **0 capítulos**, o clique era
+silenciosamente ignorado. **Correção:** agora avisa "Cadastre os capítulos do livro" em
+vez de não fazer nada; com capítulos, funciona normalmente.
+
+### ✨ Gerar capítulos de uma vez
+As APIs de livro (Google Books/Open Library) **não fornecem a lista de capítulos** de
+forma confiável. Em vez de raspar a descrição (falhava quase sempre), agora dá pra
+**informar o número de capítulos e gerar todos** de uma vez em Gerenciar clube →
+Capítulos (títulos continuam opcionais). Isso destrava o "marcar progresso".
+
 ## v1.0.8 — 2026-07-12 (build 9)
 
 ### 🔴 "Clico e não vai" — CAUSA RAIZ REAL (não era rede nem conexão)
