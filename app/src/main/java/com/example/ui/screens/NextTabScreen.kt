@@ -146,9 +146,16 @@ fun EncontroTab(
     val rsvps by viewModel.latestMeetingRsvps.collectAsState()
     val members by viewModel.clubMembers.collectAsState()
     val meetingsForBook by viewModel.meetingsForCurrentBook.collectAsState()
-    val currentBookTitle = viewModel.currentBook.collectAsState().value?.title
+    val currentBook by viewModel.currentBook.collectAsState()
+    val currentBookTitle = currentBook?.title
     val currentUserId = viewModel.currentUserId.collectAsState().value
     val isAdmin by viewModel.isCurrentUserAdmin.collectAsState()
+    val chapters by viewModel.currentChapters.collectAsState()
+    val meetingPattern by viewModel.activeMeetingPattern.collectAsState()
+    // Agendamento DIRETO na aba Encontro (antes só existia enterrado em Gerenciar
+    // clube → Encontros — ninguém achava).
+    var creatingMeeting by remember { mutableStateOf(false) }
+    var suggestedRange by remember { mutableStateOf<Pair<Int, Int>?>(null) }
 
     var isConfirmadosExpanded by remember { mutableStateOf(true) }
     var isTalvezExpanded by remember { mutableStateOf(false) }
@@ -199,13 +206,22 @@ fun EncontroTab(
                 // microcopy por papel (admin vs membro). Ver relatório.
                 Text(
                     text = if (isAdmin)
-                        "Quando você agendar o próximo encontro, ele aparece aqui."
+                        "Marque o próximo encontro do clube — data, hora, local e capítulos."
                     else
                         "Assim que o organizador marcar um encontro, ele aparece aqui.",
                     style = MaterialTheme.typography.bodyMedium,
                     color = Muted,
                     textAlign = TextAlign.Center
                 )
+                if (isAdmin) {
+                    Spacer(modifier = Modifier.height(16.dp))
+                    TbButton(
+                        text = "Agendar encontro",
+                        onClick = { creatingMeeting = true },
+                        variant = TbButtonVariant.Terra,
+                        size = TbButtonSize.Lg,
+                    )
+                }
             }
         }
     } else {
@@ -723,10 +739,43 @@ fun EncontroTab(
                 }
             }
 
+            if (isAdmin) {
+                item {
+                    TbButton(
+                        text = "+ Agendar outro encontro",
+                        onClick = { creatingMeeting = true },
+                        variant = TbButtonVariant.Outline,
+                        size = TbButtonSize.Md,
+                        modifier = Modifier.fillMaxWidth(),
+                    )
+                }
+            }
             item {
                 Spacer(modifier = Modifier.height(32.dp))
             }
         }
+    }
+
+    // Editor de encontro reaproveitado do Gerenciar clube — agora acessível daqui.
+    if (creatingMeeting) {
+        LaunchedEffect(Unit) { suggestedRange = viewModel.suggestNextChapterRange() }
+        com.example.ui.admin.EditSingleMeetingDialog(
+            initialData = "",
+            initialHora = meetingPattern?.hora ?: "",
+            initialLocal = meetingPattern?.local ?: "",
+            initialAgenda = meetingPattern?.agendaTemplate ?: "",
+            initialBookId = currentBook?.id,
+            initialChapterStart = suggestedRange?.first ?: 1,
+            initialChapterEnd = suggestedRange?.second ?: chapters.size.coerceAtLeast(1),
+            currentBookId = currentBook?.id,
+            currentBookTitle = currentBook?.title,
+            totalChapters = chapters.size,
+            onDismiss = { creatingMeeting = false },
+            onSave = { d, h, l, a, bId, cs, ce ->
+                viewModel.upsertMeeting(null, d, h, l, a, bId, cs, ce)
+                creatingMeeting = false
+            }
+        )
     }
 }
 

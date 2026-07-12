@@ -880,19 +880,29 @@ fun HomeScreenTab(
             if (stillLoadingMeeting) {
                 com.example.ui.components.SkeletonMeetingCard()
             } else if (meeting == null) {
-                Box(
+                val isAdminHome by viewModel.isCurrentUserAdmin.collectAsState()
+                Column(
                     modifier = Modifier
                         .fillMaxWidth()
                         .padding(vertical = 16.dp)
                         .border(1.dp, MaterialTheme.colorScheme.onSurface.copy(alpha = 0.05f), RoundedCornerShape(16.dp))
                         .padding(24.dp),
-                    contentAlignment = Alignment.Center
+                    horizontalAlignment = Alignment.CenterHorizontally,
+                    verticalArrangement = Arrangement.spacedBy(12.dp),
                 ) {
                     Text(
                         text = "Nenhum próximo encontro agendado.",
                         style = MaterialTheme.typography.bodyMedium,
                         color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
+                    if (isAdminHome) {
+                        TbButton(
+                            text = "Agendar encontro",
+                            onClick = { onNavigateToTab("next", "encontro") },
+                            variant = TbButtonVariant.Terra,
+                            size = TbButtonSize.Md,
+                        )
+                    }
                 }
             } else {
                 val confirmedUsers = rsvps.filter { it.status == "Vou" }.mapNotNull { r ->

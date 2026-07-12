@@ -1,5 +1,18 @@
 # Changelog — Rodapé
 
+## v1.0.12 — 2026-07-12 (build 13)
+
+### 📅 Agendar encontro ficou fácil de achar
+Antes, criar/agendar o próximo encontro estava **enterrado** em Gerenciar clube →
+Encontros → "+ Novo encontro" — ninguém achava. Agora:
+- Na aba **Próximo › Encontro** (onde todo mundo procura o encontro), o admin tem um
+  botão grande **"Agendar encontro"** no estado vazio, e um **"+ Agendar outro
+  encontro"** quando já existe encontro. Abre o mesmo editor (data, hora, local,
+  capítulos), com data/hora/local já pré-preenchidos pelo padrão do clube e a faixa de
+  capítulos sugerida.
+- Na **Home**, o card "Nenhum próximo encontro" agora tem **"Agendar encontro"** (admin)
+  que leva direto pra lá.
+
 ## v1.0.11 — 2026-07-12 (build 12)
 
 ### ✨ Capítulos automáticos: comunidade + EPUB (feature completa)
