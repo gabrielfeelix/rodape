@@ -1,5 +1,5 @@
--- Snapshot das funções public (RPCs) — gerado da Management API 2026-07-12
--- NÃO editar à mão; reflita mudanças via migrations em supabase/migrations/
+-- Snapshot das funções public (RPCs) — Management API, atualizado 2026-07-12
+-- NÃO editar à mão; use migrations em supabase/migrations/
 
 CREATE OR REPLACE FUNCTION public.auto_close_expired_rounds()
  RETURNS integer
@@ -176,6 +176,67 @@ begin
     values (v_club.id, v_uid, 'super_admin');
 
   return v_club;
+end;
+$function$
+;
+
+CREATE OR REPLACE FUNCTION public.delete_own_account()
+ RETURNS void
+ LANGUAGE plpgsql
+ SECURITY DEFINER
+ SET search_path TO 'public'
+AS $function$
+declare
+  uid uuid := auth.uid();
+  blocking_club text;
+begin
+  if uid is null then
+    raise exception 'not authenticated';
+  end if;
+
+  -- Bloqueio: super_admin de clube com outros membros precisa transferir/sair antes.
+  select c.nome into blocking_club
+  from public.club_members cm
+  join public.clubs c on c.id = cm.club_id
+  where cm.user_id = uid
+    and cm.papel = 'super_admin'
+    and exists (select 1 from public.club_members o
+                where o.club_id = cm.club_id and o.user_id <> uid)
+  limit 1;
+
+  if blocking_club is not null then
+    raise exception
+      'Você é o super admin de "%". Transfira a coroa a outro membro ou saia do clube antes de excluir a conta.',
+      blocking_club;
+  end if;
+
+  -- Clubes onde o usuário é o ÚNICO membro: apaga o clube inteiro (cascata).
+  delete from public.clubs c
+  where exists (select 1 from public.club_members cm
+                where cm.club_id = c.id and cm.user_id = uid)
+    and not exists (select 1 from public.club_members o
+                    where o.club_id = c.id and o.user_id <> uid);
+
+  -- Conteúdo do próprio usuário com FK RESTRICT: remover.
+  delete from public.comments          where user_id = uid;
+  delete from public.book_suggestions  where sugerido_por = uid;
+  delete from public.voting_rounds     where criado_por = uid;   -- cascata: votos da rodada
+  delete from public.member_removals   where user_id = uid or removed_by = uid;
+
+  -- clubs.criador_id RESTRICT: reatribuir a outro membro (garantido existir, pois
+  -- clubes só-do-usuário já foram apagados acima).
+  update public.clubs c
+  set criador_id = (
+    select o.user_id from public.club_members o
+    where o.club_id = c.id and o.user_id <> uid
+    order by case o.papel when 'super_admin' then 0 when 'admin' then 1 else 2 end
+    limit 1)
+  where c.criador_id = uid;
+
+  -- Resto cascateia via profiles.id -> auth.users (ON DELETE CASCADE):
+  -- book_ratings, club_members, meeting_notes, meeting_rsvps, notifications,
+  -- reactions, saved_quotes, user_progress, votes.
+  delete from auth.users where id = uid;
 end;
 $function$
 ;
