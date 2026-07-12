@@ -20,6 +20,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.outlined.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -43,7 +44,7 @@ fun NextTabScreen(
     initialSubTab: String? = null,
     onSubTabConsumed: () -> Unit = {},
 ) {
-    var subTab by remember { mutableStateOf(initialSubTab ?: "encontro") }
+    var subTab by rememberSaveable { mutableStateOf(initialSubTab ?: "encontro") }
     // Se o caller setar initialSubTab depois da composicao inicial (ex: usuario
     // ja estava em Next > Encontro e clicou num CTA da Home pra Votacao), troca.
     LaunchedEffect(initialSubTab) {
@@ -147,25 +148,63 @@ fun EncontroTab(
     val meetingsForBook by viewModel.meetingsForCurrentBook.collectAsState()
     val currentBookTitle = viewModel.currentBook.collectAsState().value?.title
     val currentUserId = viewModel.currentUserId.collectAsState().value
+    val isAdmin by viewModel.isCurrentUserAdmin.collectAsState()
 
     var isConfirmadosExpanded by remember { mutableStateOf(true) }
     var isTalvezExpanded by remember { mutableStateOf(false) }
     var isNaoVouExpanded by remember { mutableStateOf(false) }
 
+    // Perf: agrupa/indexa uma vez por emissão em vez de refiltrar/rebuscar por card.
+    val rsvpsByStatus = remember(rsvps) { rsvps.groupBy { it.status } }
+    val membersById = remember(members) { members.associateBy { it.id } }
+
+    // Gate de loading: hasData = já temos encontro. Enquanto carrega, mostra
+    // skeleton; passada a janela sem dado, cai no empty state real.
+    val showLoading = com.example.ui.components.rememberShowLoading(hasData = meeting != null)
+
     if (meeting == null) {
-        Box(
-            modifier = Modifier.fillMaxSize(),
-            contentAlignment = Alignment.Center
-        ) {
-            // Gate: o flow começa null antes do primeiro sync — mostra loading em
+        if (showLoading) {
+            // Gate: o flow começa null antes do primeiro sync — mostra skeleton em
             // vez de "nenhum encontro" piscando enquanto os dados carregam.
-            if (com.example.ui.components.rememberShowLoading(hasData = false)) {
-                com.example.ui.components.CenteredLoading()
-            } else {
+            Column(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .padding(horizontal = 24.dp)
+            ) {
+                com.example.ui.components.SkeletonMeetingCard()
+            }
+        } else {
+            Column(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .padding(horizontal = 24.dp),
+                verticalArrangement = Arrangement.Center,
+                horizontalAlignment = Alignment.CenterHorizontally
+            ) {
+                Icon(
+                    imageVector = Icons.Outlined.EventNote,
+                    contentDescription = null,
+                    tint = Muted,
+                    modifier = Modifier.size(48.dp)
+                )
+                Spacer(modifier = Modifier.height(12.dp))
                 Text(
                     "Nenhum próximo encontro agendado.",
                     style = MaterialTheme.typography.bodyLarge,
-                    color = Muted
+                    color = Muted,
+                    textAlign = TextAlign.Center
+                )
+                Spacer(modifier = Modifier.height(8.dp))
+                // Sem callback de agendamento no escopo desta tela: mostra só a
+                // microcopy por papel (admin vs membro). Ver relatório.
+                Text(
+                    text = if (isAdmin)
+                        "Quando você agendar o próximo encontro, ele aparece aqui."
+                    else
+                        "Assim que o organizador marcar um encontro, ele aparece aqui.",
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = Muted,
+                    textAlign = TextAlign.Center
                 )
             }
         }
@@ -433,9 +472,9 @@ fun EncontroTab(
                     modifier = Modifier.padding(bottom = 8.dp)
                 )
                 RodapeCard {
-                    val confirmados = rsvps.filter { it.status == "Vou" }
-                    val talvez = rsvps.filter { it.status == "Talvez" }
-                    val naoVou = rsvps.filter { it.status == "Não vou" }
+                    val confirmados = rsvpsByStatus["Vou"] ?: emptyList()
+                    val talvez = rsvpsByStatus["Talvez"] ?: emptyList()
+                    val naoVou = rsvpsByStatus["Não vou"] ?: emptyList()
 
                     Row(
                         modifier = Modifier
@@ -520,7 +559,7 @@ fun EncontroTab(
                                 )
                             } else {
                                 confirmados.forEach { resp ->
-                                    val userObj = members.find { it.id == resp.userId }
+                                    val userObj = membersById[resp.userId]
                                     val nameVal = if (resp.userId == currentUserId) "Você" else userObj?.nome ?: "Membro"
                                     val urlVal = if (resp.userId == currentUserId) (viewModel.currentUser.value?.avatarUrl ?: "") else userObj?.avatarUrl ?: ""
                                     Row(
@@ -576,7 +615,7 @@ fun EncontroTab(
                                 )
                             } else {
                                 talvez.forEach { resp ->
-                                    val userObj = members.find { it.id == resp.userId }
+                                    val userObj = membersById[resp.userId]
                                     val nameVal = if (resp.userId == currentUserId) "Você" else userObj?.nome ?: "Membro"
                                     val urlVal = if (resp.userId == currentUserId) (viewModel.currentUser.value?.avatarUrl ?: "") else userObj?.avatarUrl ?: ""
                                     Row(
@@ -632,7 +671,7 @@ fun EncontroTab(
                                 )
                             } else {
                                 naoVou.forEach { resp ->
-                                    val userObj = members.find { it.id == resp.userId }
+                                    val userObj = membersById[resp.userId]
                                     val nameVal = if (resp.userId == currentUserId) "Você" else userObj?.nome ?: "Membro"
                                     val urlVal = if (resp.userId == currentUserId) (viewModel.currentUser.value?.avatarUrl ?: "") else userObj?.avatarUrl ?: ""
                                     Row(
@@ -710,6 +749,15 @@ fun VotacaoTab(
 
     val totalVotes = votes.size
 
+    // Perf: agrupa votos por livro e conta os votos do usuário uma vez por
+    // emissão, em vez de refiltrar/recontar dentro de cada card.
+    val votesByBook = remember(votes) { votes.groupBy { it.clubBookId } }
+    val userVotesInRound = remember(votes, currentUserId) { votes.count { it.userId == currentUserId } }
+
+    // Gate de loading: hasData = já há livros sugeridos. Enquanto carrega, mostra
+    // skeleton; passada a janela sem dado, cai no empty state real.
+    val showBooksLoading = com.example.ui.components.rememberShowLoading(hasData = suggestedBooks.isNotEmpty())
+
     var showOpenSheet by remember { mutableStateOf(false) }
     var showCloseDialog by remember { mutableStateOf(false) }
     var justificationSheetFor by remember { mutableStateOf<String?>(null) }
@@ -757,26 +805,37 @@ fun VotacaoTab(
         }
 
         if (activeRound != null) {
-            if (suggestedBooks.isEmpty()) {
+            if (showBooksLoading) {
                 item {
-                    Box(
+                    com.example.ui.components.SkeletonRowList(count = 3)
+                }
+            } else if (suggestedBooks.isEmpty()) {
+                item {
+                    Column(
                         modifier = Modifier
                             .fillMaxWidth()
                             .padding(vertical = 40.dp),
-                        contentAlignment = Alignment.Center
+                        horizontalAlignment = Alignment.CenterHorizontally
                     ) {
                         Text(
                             "Nenhum livro sugerido ainda.",
                             style = MaterialTheme.typography.bodyLarge,
-                            color = Muted
+                            color = Muted,
+                            textAlign = TextAlign.Center
+                        )
+                        Spacer(modifier = Modifier.height(16.dp))
+                        TbButton(
+                            text = "Sugerir o primeiro livro",
+                            onClick = onNavigateToSuggestBook,
+                            variant = TbButtonVariant.Primary,
+                            size = TbButtonSize.Md
                         )
                     }
                 }
             } else {
-                items(suggestedBooks) { book ->
-                    val bookVotes = votes.filter { it.clubBookId == book.id }
+                items(suggestedBooks, key = { it.id }) { book ->
+                    val bookVotes = votesByBook[book.id] ?: emptyList()
                     val hasUserVoted = bookVotes.any { it.userId == currentUserId }
-                    val userVotesInRound = votes.count { it.userId == currentUserId }
                     val limitReached = !hasUserVoted && userVotesInRound >= (activeRound?.nLivros ?: 1)
                     val pct = if (totalVotes > 0) bookVotes.size.toFloat() / totalVotes.toFloat() else 0f
                     val hasJustification = suggestionsByBookId[book.id]?.justificativa?.isNotBlank() == true

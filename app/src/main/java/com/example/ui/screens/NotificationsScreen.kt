@@ -29,6 +29,8 @@ import androidx.compose.ui.semantics.stateDescription
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.example.ui.components.Avatar
+import com.example.ui.components.SkeletonRowList
+import com.example.ui.components.rememberShowLoading
 import com.example.ui.theme.Cream
 import com.example.ui.theme.Ink
 import com.example.ui.theme.Muted
@@ -54,6 +56,7 @@ fun NotificationsScreen(
 ) {
     val list by viewModel.notifications.collectAsState()
     val chapters by viewModel.currentChapters.collectAsState()
+    val showLoading = rememberShowLoading(hasData = list.isNotEmpty())
 
     Scaffold(
         topBar = {
@@ -93,7 +96,15 @@ fun NotificationsScreen(
         },
         containerColor = MaterialTheme.colorScheme.background
     ) { padding ->
-        if (list.isEmpty()) {
+        if (showLoading) {
+            SkeletonRowList(
+                count = 5,
+                modifier = Modifier
+                    .fillMaxSize()
+                    .padding(padding)
+                    .padding(horizontal = 16.dp, vertical = 8.dp)
+            )
+        } else if (list.isEmpty()) {
             Box(
                 modifier = Modifier
                     .fillMaxSize()

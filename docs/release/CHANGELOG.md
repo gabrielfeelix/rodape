@@ -1,5 +1,50 @@
 # Changelog — Rodapé
 
+## v1.0.5 — 2026-07-12 (build 6)
+
+Revisão de app completa (6 auditorias paralelas do código real) → correções de
+sensação de lentidão, bugs de comportamento e telas sem ação. Plano completo em
+`docs/PLANO-CORRECOES-2026-07-12.md`.
+
+### Performance (fim do "engasga")
+- Discussão: Flows memoizados por capítulo (fim do refetch de rede em loop a cada
+  recomposição), listas com `key` estável, `isCurrentUserAdmin` içado pra fora do
+  `items{}`, reações/membros memoizados (`groupBy`/`associateBy`)
+- Votação e avaliações: contagens/filtros memoizados em vez de recalcular por item
+- Capas e avatares: `AsyncImage` (sem subcomposição) — rolagem mais leve em grids
+- Realtime: canais desregistrados no `close()` (fim do acúmulo por rotação) e race
+  de dedup fechada com `compute` atômico
+
+### Skeletons (sensação de carregamento)
+- Placeholders shimmer em todas as telas que carregam dados: Home, aba Livro,
+  Estante, Votação/Encontro, Discussão, Detalhe do livro, Frases, Encontro,
+  Notificações, Log de moderação, Cadastrar capítulos
+
+### Telas vazias agora têm ação (CTA por papel)
+- Aba "Livro" sem livro: ícone + orientação + botões (admin: gerenciar/abrir
+  votação; membro: sugerir/ver votação)
+- Estante: copy correta pro filtro "Favoritos" vazio + ícone/microcopy
+- Capítulos não cadastrados: botão "Gerenciar clube" pro admin
+- Votação sem sugestões e encontro sem agenda: CTA/microcopy por papel
+- Frases vazias: ícone + explicação do fluxo + saída
+
+### Bugs corrigidos
+- Entrar em clube por código não empilha mais `main_tabs` duplicado (voltar sai
+  do app em vez de reabrir a tela de código)
+- Promover/rebaixar/transferir admin agora mostram erro real (antes: "sucesso"
+  falso e nada mudava)
+- Formulários (cadastro manual de livro, etc.) não se perdem mais na rotação
+- Chat de capítulo rola pro comentário recém-enviado
+- Barreira de spoiler não vaza mais numa corrida de carregamento
+- Câmera: aviso de permissão não pisca mais atrás do diálogo do sistema
+- Erros de login/cadastro nunca mais aparecem crus em inglês
+- `MainActivity` com `launchMode=singleTop` (deep link de auth não duplica a tela)
+
+### Pendente (exige validação em 2 dispositivos — ver plano)
+- P0 de sincronização de capítulos/comentários (id de texto × uuid), criação
+  offline sem fila e modelo de voto da 2ª rodada — corretos por diagnóstico, mas
+  só se validam com o app rodando em contas/aparelhos diferentes
+
 ## Não lançado — 2026-07-11
 
 ### Visual (fidelidade ao Claude Design)

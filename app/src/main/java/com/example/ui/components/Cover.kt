@@ -26,7 +26,7 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import coil.compose.SubcomposeAsyncImage
+import coil.compose.AsyncImage
 import com.example.ui.theme.InterFontFamily
 import com.example.ui.theme.LiterataFontFamily
 import com.example.ui.theme.softShadow
@@ -84,14 +84,18 @@ fun Cover(
         }
 
     if (coverUrl.isNotBlank()) {
-        SubcomposeAsyncImage(
-            model = coverUrl,
-            contentDescription = "Capa de $title",
-            modifier = box,
-            contentScale = ContentScale.Crop,
-            loading = { GeneratedCover(title, author, width) },
-            error = { GeneratedCover(title, author, width) },
-        )
+        // AsyncImage (sem subcomposicao — mais leve em grids/rows que
+        // SubcomposeAsyncImage). A capa gerada fica ATRAS: aparece enquanto
+        // carrega e se a imagem falhar; a foto real cobre por cima quando chega.
+        Box(modifier = box) {
+            GeneratedCover(title, author, width)
+            AsyncImage(
+                model = coverUrl,
+                contentDescription = "Capa de $title",
+                modifier = Modifier.matchParentSize(),
+                contentScale = ContentScale.Crop,
+            )
+        }
     } else {
         Box(modifier = box.semantics { contentDescription = "Capa de $title" }) {
             GeneratedCover(title, author, width)

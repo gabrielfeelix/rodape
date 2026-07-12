@@ -19,6 +19,7 @@ import androidx.compose.material.icons.automirrored.outlined.ArrowBack
 import androidx.compose.material.icons.outlined.Clear
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -59,18 +60,19 @@ fun AddBookManualScreen(
 ) {
     val context = LocalContext.current
 
-    // Estado dos campos
-    var titulo by remember { mutableStateOf("") }
-    var autor by remember { mutableStateOf("") }
-    var isbn by remember { mutableStateOf("") }
-    var ano by remember { mutableStateOf("") }
-    var editora by remember { mutableStateOf("") }
-    var paginas by remember { mutableStateOf("") }
-    var idioma by remember { mutableStateOf("pt") }
+    // Estado dos campos — rememberSaveable pra não perder o formulário inteiro
+    // na rotação/recriação da Activity.
+    var titulo by rememberSaveable { mutableStateOf("") }
+    var autor by rememberSaveable { mutableStateOf("") }
+    var isbn by rememberSaveable { mutableStateOf("") }
+    var ano by rememberSaveable { mutableStateOf("") }
+    var editora by rememberSaveable { mutableStateOf("") }
+    var paginas by rememberSaveable { mutableStateOf("") }
+    var idioma by rememberSaveable { mutableStateOf("pt") }
 
     // Capa: pode ser path local (file://...) ou URL externa
-    var coverPathOrUrl by remember { mutableStateOf("") }
-    var coverUrlInput by remember { mutableStateOf("") }
+    var coverPathOrUrl by rememberSaveable { mutableStateOf("") }
+    var coverUrlInput by rememberSaveable { mutableStateOf("") }
     var showUrlInput by remember { mutableStateOf(false) }
     var showCamera by remember { mutableStateOf(false) }
     // Se o usuário tocou "Tirar foto" e a permissão ainda não estava concedida,
@@ -214,8 +216,11 @@ fun AddBookManualScreen(
                                 } else {
                                     // Marca a intenção pra o callback de concessão
                                     // abrir a câmera sozinho (sem exigir 2º toque).
+                                    // NÃO setar permissionRequested aqui: o callback
+                                    // (rememberPermissionState) já marca APÓS a resposta.
+                                    // Setar no toque fazia o aviso "negada/abra config"
+                                    // piscar ATRÁS do diálogo do sistema no 1º pedido.
                                     pendingOpenCamera = true
-                                    permissionRequested = true
                                     cameraPermission.launchPermissionRequest()
                                 }
                             },

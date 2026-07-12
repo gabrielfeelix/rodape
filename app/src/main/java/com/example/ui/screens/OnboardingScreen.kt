@@ -1,5 +1,6 @@
 package com.example.ui.screens
 
+import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
@@ -58,6 +59,10 @@ fun OnboardingScreen(
     // Trava o submit final: sem isso, toque duplo em "Pronto!" persistia 2x.
     var submitting by rememberSaveable { mutableStateOf(false) }
 
+    // Back físico espelha o "Voltar" on-screen nos steps > 0. No step 0 fica
+    // desabilitado, deixando o back seguir o comportamento padrão (sair).
+    BackHandler(enabled = step > 0) { step-- }
+
     // Fonte única em Avatar.kt (só domínio público — sem risco de IP).
     val presetNames = com.example.ui.components.presetAvatarKeys.map {
         it to com.example.ui.components.presetDisplayName(it)
@@ -91,7 +96,7 @@ fun OnboardingScreen(
                 text = when (step) {
                     0 -> "Escolha o avatar que vai te representar"
                     1 -> "Pode ser o seu primeiro nome ou um apelido"
-                    else -> "Vale pro app todo. Dá pra mudar depois nas configurações"
+                    else -> "Vale pro app todo. Dá pra mudar depois no seu perfil"
                 },
                 style = MaterialTheme.typography.bodyMedium.copy(color = Muted),
                 textAlign = TextAlign.Center,

@@ -1035,24 +1035,42 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
         }
     }
 
-    fun promoteMemberToAdmin(targetUserId: String) {
+    fun promoteMemberToAdmin(targetUserId: String, onError: (String) -> Unit = {}) {
         viewModelScope.launch {
             val clubId = activeClubId.value ?: return@launch
-            repository.promoteMemberViaRpc(clubId, targetUserId)
+            try {
+                repository.promoteMemberViaRpc(clubId, targetUserId)
+            } catch (e: Exception) {
+                onError(com.example.ui.auth.AuthErrors.friendly(
+                    e, fallback = "Não foi possível promover esse membro."
+                ))
+            }
         }
     }
 
-    fun demoteAdminToMember(targetUserId: String) {
+    fun demoteAdminToMember(targetUserId: String, onError: (String) -> Unit = {}) {
         viewModelScope.launch {
             val clubId = activeClubId.value ?: return@launch
-            repository.demoteAdminViaRpc(clubId, targetUserId)
+            try {
+                repository.demoteAdminViaRpc(clubId, targetUserId)
+            } catch (e: Exception) {
+                onError(com.example.ui.auth.AuthErrors.friendly(
+                    e, fallback = "Não foi possível rebaixar esse admin."
+                ))
+            }
         }
     }
 
-    fun transferSuperAdmin(toAdminUserId: String) {
+    fun transferSuperAdmin(toAdminUserId: String, onError: (String) -> Unit = {}) {
         viewModelScope.launch {
             val clubId = activeClubId.value ?: return@launch
-            repository.transferSuperAdminViaRpc(clubId, toAdminUserId)
+            try {
+                repository.transferSuperAdminViaRpc(clubId, toAdminUserId)
+            } catch (e: Exception) {
+                onError(com.example.ui.auth.AuthErrors.friendly(
+                    e, fallback = "Não foi possível transferir o super-admin."
+                ))
+            }
         }
     }
 

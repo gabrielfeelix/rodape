@@ -54,8 +54,13 @@ object AuthErrors {
                 "Nenhuma conta Google disponivel neste dispositivo. Adicione uma conta Google nas configuracoes e tente de novo."
 
             // Rate limit
-            lower.contains("over_email_send_rate_limit") || lower.contains("too many requests") ->
+            lower.contains("over_email_send_rate_limit") || lower.contains("too many requests") ||
+                lower.contains("for security purposes") || lower.contains("you can only request this after") ->
                 "Muitas tentativas em pouco tempo. Aguarde alguns minutos antes de tentar de novo."
+
+            // Senha ausente/invalida no cadastro
+            lower.contains("signup requires a valid password") || lower.contains("password is required") ->
+                "Informe uma senha valida."
 
             // Captcha (caso volte a ser habilitado)
             lower.contains("captcha") ->
@@ -66,10 +71,8 @@ object AuthErrors {
                 lower.contains("failed to connect") || lower.contains("timeout") ->
                 "Sem conexao com a internet. Verifique sua rede."
 
-            // Generico — se a msg crua e curta e nao tem URL/headers, usa ela
-            raw.length in 1..120 && !raw.contains("Headers") && !raw.contains("https://") ->
-                raw
-
+            // Fallback: NUNCA ecoar a mensagem crua (vem sempre em ingles do
+            // supabase-kt). Mensagem generica amigavel em pt-BR.
             else -> fallback
         }
     }

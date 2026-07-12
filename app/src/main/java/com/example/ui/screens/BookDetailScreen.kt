@@ -14,6 +14,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.outlined.ArrowBack
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -77,12 +78,12 @@ fun BookDetailScreen(
         return
     }
 
-    var tab by remember { mutableStateOf("resumo") }
+    var tab by rememberSaveable { mutableStateOf("resumo") }
 
     // --- Quote dialog state ---
-    var showQuoteDialog by remember { mutableStateOf(false) }
-    var quoteText by remember { mutableStateOf("") }
-    var quoteRef by remember { mutableStateOf("") }
+    var showQuoteDialog by rememberSaveable { mutableStateOf(false) }
+    var quoteText by rememberSaveable { mutableStateOf("") }
+    var quoteRef by rememberSaveable { mutableStateOf("") }
 
     // --- Flows ---
     val quotesFlow = remember(bookId) { viewModel.getSavedQuotesForBook(bookId) }
@@ -333,10 +334,14 @@ private fun SummaryTab(viewModel: MainViewModel, bookId: String) {
     val summaryFlow = remember(bookId) { viewModel.getBookSummaryFlow(bookId) }
     val summary by summaryFlow.collectAsState(initial = null)
     val members by viewModel.clubMembers.collectAsState()
+    val membersById = remember(members) { members.associateBy { it.id } }
     var showEditDialog by remember { mutableStateOf(false) }
     var draftText by remember { mutableStateOf("") }
 
-    if (summary == null) {
+    val showLoading = rememberShowLoading(hasData = summary != null)
+    if (showLoading) {
+        SkeletonRowList(count = 3)
+    } else if (summary == null) {
         RodapeCard(modifier = Modifier.fillMaxWidth()) {
             Text(
                 text = "Ninguém escreveu o resumo ainda. Que tal começar?",
@@ -365,7 +370,7 @@ private fun SummaryTab(viewModel: MainViewModel, bookId: String) {
             )
         }
         Spacer(modifier = Modifier.height(8.dp))
-        val editorName = members.find { it.id == summary!!.lastEditorId }?.nome ?: "alguém"
+        val editorName = membersById[summary!!.lastEditorId]?.nome ?: "alguém"
         Text(
             text = "Editado por $editorName · ${timeAgo(summary!!.updatedAt)}",
             style = MaterialTheme.typography.labelSmall.copy(color = Muted),
@@ -428,7 +433,11 @@ private fun FrasesTab(
     onShowQuoteDialog: () -> Unit
 ) {
     val members by viewModel.clubMembers.collectAsState()
-    if (quotes.isEmpty()) {
+    val membersById = remember(members) { members.associateBy { it.id } }
+    val showLoading = rememberShowLoading(hasData = quotes.isNotEmpty())
+    if (showLoading) {
+        SkeletonRowList(count = 3)
+    } else if (quotes.isEmpty()) {
         Text(
             text = "Nenhuma frase guardada deste livro ainda.",
             style = MaterialTheme.typography.bodyMedium.copy(
@@ -457,7 +466,7 @@ private fun FrasesTab(
             )
         }
         quotes.forEach { quote ->
-            val author = members.find { it.id == quote.userId }
+            val author = membersById[quote.userId]
             val authorName = author?.nome ?: "Membro"
             val authorAvatar = author?.avatarUrl ?: ""
 
@@ -499,6 +508,7 @@ private fun ChatTab(viewModel: MainViewModel, bookId: String) {
     val chaptersFlow = remember(bookId) { viewModel.getCommentsForBookFlow(bookId) }
     val comments by chaptersFlow.collectAsState(initial = emptyList())
     val members by viewModel.clubMembers.collectAsState()
+    val membersById = remember(members) { members.associateBy { it.id } }
 
     // Buscar chapters: precisamos resolver chapterId -> Chapter pra header.
     // Como `currentChapters` é só do livro atual do clube, usar uma fonte mais geral:
@@ -506,9 +516,12 @@ private fun ChatTab(viewModel: MainViewModel, bookId: String) {
     // Para mostrar título do capítulo, precisamos consultar os chapters do livro.
     // Reusamos currentChapters quando bate, senão fallback genérico.
     val currentChapters by viewModel.currentChapters.collectAsState()
-    val chapterById = currentChapters.associateBy { it.id }
+    val chapterById = remember(currentChapters) { currentChapters.associateBy { it.id } }
 
-    if (comments.isEmpty()) {
+    val showLoading = rememberShowLoading(hasData = comments.isNotEmpty())
+    if (showLoading) {
+        SkeletonRowList(count = 3)
+    } else if (comments.isEmpty()) {
         Text(
             text = "Esse livro não rendeu conversa por aqui.",
             style = MaterialTheme.typography.bodyMedium.copy(
@@ -518,6 +531,12 @@ private fun ChatTab(viewModel: MainViewModel, bookId: String) {
             modifier = Modifier
                 .padding(vertical = 16.dp)
                 .fillMaxWidth(),
+            textAlign = TextAlign.Center
+        )
+        Text(
+            text = "(somente leitura — comente em \"Livro atual\")",
+            style = MaterialTheme.typography.labelSmall.copy(color = Muted),
+            modifier = Modifier.fillMaxWidth(),
             textAlign = TextAlign.Center
         )
     } else {
@@ -544,7 +563,7 @@ private fun ChatTab(viewModel: MainViewModel, bookId: String) {
                 }
             }
 
-            val author = members.find { it.id == c.userId }
+            val author = membersById[c.userId]
             val authorName = author?.nome ?: "Membro"
             val authorAvatar = author?.avatarUrl ?: ""
 
@@ -610,6 +629,7 @@ private fun RatingsTab(viewModel: MainViewModel, bookId: String) {
     val myRatingFlow = remember(bookId) { viewModel.getBookRatingOfCurrentUserFlow(bookId) }
     val myRating by myRatingFlow.collectAsState(initial = null)
     val members by viewModel.clubMembers.collectAsState()
+    val membersById = remember(members) { members.associateBy { it.id } }
 
     var showRatingDialog by remember { mutableStateOf(false) }
     var draftStars by remember { mutableStateOf(0) }
@@ -644,49 +664,55 @@ private fun RatingsTab(viewModel: MainViewModel, bookId: String) {
 
     Spacer(modifier = Modifier.height(20.dp))
 
-    ratings.sortedByDescending { it.updatedAt }.forEach { r ->
-        val author = members.find { it.id == r.userId }
-        val authorName = author?.nome ?: "Membro"
-        val authorAvatar = author?.avatarUrl ?: ""
+    val sortedRatings = remember(ratings) { ratings.sortedByDescending { it.updatedAt } }
+    val showLoading = rememberShowLoading(hasData = ratings.isNotEmpty())
+    if (showLoading) {
+        SkeletonRowList(count = 3)
+    } else {
+        sortedRatings.forEach { r ->
+            val author = membersById[r.userId]
+            val authorName = author?.nome ?: "Membro"
+            val authorAvatar = author?.avatarUrl ?: ""
 
-        RodapeCard(modifier = Modifier.fillMaxWidth()) {
-            Row(
-                verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.spacedBy(10.dp)
-            ) {
-                Avatar(name = authorName, avatarUrl = authorAvatar, size = 28.dp)
-                Column(modifier = Modifier.weight(1f)) {
-                    Text(
-                        text = authorName,
-                        style = MaterialTheme.typography.bodyMedium.copy(
-                            fontWeight = FontWeight.SemiBold,
-                            color = Ink
-                        )
-                    )
-                    Row(
-                        verticalAlignment = Alignment.CenterVertically,
-                        horizontalArrangement = Arrangement.spacedBy(6.dp)
-                    ) {
-                        RatingStars(rating = r.stars.toFloat(), size = 12.dp)
+            RodapeCard(modifier = Modifier.fillMaxWidth()) {
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(10.dp)
+                ) {
+                    Avatar(name = authorName, avatarUrl = authorAvatar, size = 28.dp)
+                    Column(modifier = Modifier.weight(1f)) {
                         Text(
-                            text = timeAgo(r.updatedAt),
-                            style = MaterialTheme.typography.labelSmall.copy(color = Muted)
+                            text = authorName,
+                            style = MaterialTheme.typography.bodyMedium.copy(
+                                fontWeight = FontWeight.SemiBold,
+                                color = Ink
+                            )
                         )
+                        Row(
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.spacedBy(6.dp)
+                        ) {
+                            RatingStars(rating = r.stars.toFloat(), size = 12.dp)
+                            Text(
+                                text = timeAgo(r.updatedAt),
+                                style = MaterialTheme.typography.labelSmall.copy(color = Muted)
+                            )
+                        }
                     }
                 }
-            }
-            if (r.comment.isNotBlank()) {
-                Spacer(modifier = Modifier.height(8.dp))
-                Text(
-                    text = r.comment,
-                    style = MaterialTheme.typography.bodyMedium.copy(
-                        color = InkSoft,
-                        lineHeight = 20.sp
+                if (r.comment.isNotBlank()) {
+                    Spacer(modifier = Modifier.height(8.dp))
+                    Text(
+                        text = r.comment,
+                        style = MaterialTheme.typography.bodyMedium.copy(
+                            color = InkSoft,
+                            lineHeight = 20.sp
+                        )
                     )
-                )
+                }
             }
+            Spacer(modifier = Modifier.height(8.dp))
         }
-        Spacer(modifier = Modifier.height(8.dp))
     }
 
     val totalMembers = members.size

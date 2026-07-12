@@ -5,6 +5,7 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.outlined.ArrowBack
+import androidx.compose.material.icons.outlined.VerifiedUser
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -13,9 +14,11 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextDecoration
 import androidx.compose.ui.unit.dp
 import com.example.ui.components.Avatar
+import com.example.ui.components.SkeletonRowList
 import com.example.ui.components.TbButton
 import com.example.ui.components.TbButtonVariant
 import com.example.ui.components.RodapeCard
+import com.example.ui.components.rememberShowLoading
 import com.example.ui.theme.*
 import com.example.ui.viewmodel.MainViewModel
 import com.example.util.timeAgo
@@ -29,6 +32,7 @@ fun ModerationLogScreen(
     val removed by viewModel.removedCommentsInActiveClub.collectAsState()
     val members by viewModel.clubMembers.collectAsState()
     val isSuper by viewModel.isCurrentUserSuperAdmin.collectAsState()
+    val showLoading = rememberShowLoading(hasData = removed.isNotEmpty())
 
     // Restaurar reverte uma decisão de moderação — exige confirmação (evita
     // toque acidental). Guarda o id do comentário a restaurar.
@@ -46,16 +50,35 @@ fun ModerationLogScreen(
             )
         }
     ) { padding ->
-        if (removed.isEmpty()) {
+        if (showLoading) {
+            SkeletonRowList(
+                count = 3,
+                modifier = Modifier
+                    .fillMaxSize()
+                    .padding(padding)
+                    .padding(horizontal = 16.dp, vertical = 16.dp)
+            )
+        } else if (removed.isEmpty()) {
             Box(
                 modifier = Modifier.fillMaxSize().padding(padding),
                 contentAlignment = Alignment.Center
             ) {
-                Text(
-                    "Nenhum comentário removido por aqui.",
-                    style = MaterialTheme.typography.bodyLarge,
-                    color = Muted
-                )
+                Column(
+                    horizontalAlignment = Alignment.CenterHorizontally,
+                    verticalArrangement = Arrangement.spacedBy(16.dp)
+                ) {
+                    Icon(
+                        imageVector = Icons.Outlined.VerifiedUser,
+                        contentDescription = null,
+                        tint = Muted,
+                        modifier = Modifier.size(64.dp)
+                    )
+                    Text(
+                        "Nenhum comentário removido por aqui.",
+                        style = MaterialTheme.typography.bodyLarge,
+                        color = Muted
+                    )
+                }
             }
         } else {
             LazyColumn(

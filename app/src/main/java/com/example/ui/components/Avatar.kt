@@ -23,7 +23,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import coil.compose.SubcomposeAsyncImage
+import coil.compose.AsyncImage
 import com.example.R
 
 // 8 cores — origem: claude-design/tokens.jsx (Avatar).
@@ -159,14 +159,17 @@ fun Avatar(
     }
 
     if (avatarUrl.isNotBlank()) {
-        SubcomposeAsyncImage(
-            model = avatarUrl,
-            contentDescription = "Avatar de $name",
-            modifier = shaped,
-            contentScale = ContentScale.Crop,
-            loading = { InitialsAvatar(name, size) },
-            error = { InitialsAvatar(name, size) },
-        )
+        // AsyncImage (sem subcomposicao — mais leve em listas/grids). As iniciais
+        // ficam ATRAS: aparecem enquanto carrega e se a imagem falhar.
+        Box(modifier = shaped.semantics { contentDescription = "Avatar de $name" }) {
+            InitialsAvatar(name, size)
+            AsyncImage(
+                model = avatarUrl,
+                contentDescription = null,
+                modifier = Modifier.matchParentSize(),
+                contentScale = ContentScale.Crop,
+            )
+        }
     } else {
         Box(modifier = shaped.semantics { contentDescription = "Avatar de $name" }) {
             InitialsAvatar(name, size)

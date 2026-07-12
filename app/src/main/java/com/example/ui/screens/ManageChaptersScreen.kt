@@ -9,16 +9,20 @@ import androidx.compose.material.icons.automirrored.outlined.ArrowBack
 import androidx.compose.material.icons.outlined.Delete
 import androidx.compose.material.icons.outlined.KeyboardArrowDown
 import androidx.compose.material.icons.outlined.KeyboardArrowUp
+import androidx.compose.material.icons.outlined.MenuBook
 import androidx.compose.material.icons.outlined.Refresh
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import com.example.ui.components.TbButton
 import com.example.ui.components.TbButtonVariant
 import com.example.ui.components.RodapeCard
+import com.example.ui.components.SkeletonRowList
+import com.example.ui.components.rememberShowLoading
 import com.example.ui.theme.*
 import com.example.ui.viewmodel.MainViewModel
 import com.example.util.voting.ChapterFetchResult
@@ -92,11 +96,36 @@ fun ManageChaptersScreen(
                 .padding(padding)
         ) {
             if (currentBook == null) {
-                Box(
-                    modifier = Modifier.fillMaxSize(),
-                    contentAlignment = Alignment.Center
+                // Beco sem saída (U6): sem livro atual o admin não tem o que fazer aqui.
+                // Ícone + microcopy orientam pra ação certa. Não há callback de navegação
+                // pra "definir livro" nesta assinatura, então guiamos por texto + o back do topo.
+                Column(
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .padding(32.dp),
+                    horizontalAlignment = Alignment.CenterHorizontally,
+                    verticalArrangement = Arrangement.Center
                 ) {
-                    Text("Sem livro atual no clube.", style = MaterialTheme.typography.bodyLarge, color = Muted)
+                    Icon(
+                        Icons.Outlined.MenuBook,
+                        contentDescription = null,
+                        tint = Muted,
+                        modifier = Modifier.size(48.dp)
+                    )
+                    Spacer(modifier = Modifier.height(12.dp))
+                    Text(
+                        "Sem livro atual no clube.",
+                        style = MaterialTheme.typography.bodyLarge.copy(fontWeight = FontWeight.SemiBold),
+                        color = Ink,
+                        textAlign = TextAlign.Center
+                    )
+                    Spacer(modifier = Modifier.height(6.dp))
+                    Text(
+                        "Defina o livro atual em Gerenciar clube › Livro atual antes de cadastrar capítulos.",
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = Muted,
+                        textAlign = TextAlign.Center
+                    )
                 }
                 return@Column
             }
@@ -118,6 +147,20 @@ fun ManageChaptersScreen(
 
             if (fetching) {
                 LinearProgressIndicator(modifier = Modifier.fillMaxWidth(), color = Terracota)
+            }
+
+            // Local-first: o Room emite lista vazia no cold start antes do 1º sync.
+            // Mostra skeleton dentro da janela de graça em vez do estado vazio piscando.
+            val showChaptersLoading = rememberShowLoading(hasData = chapters.isNotEmpty())
+            if (showChaptersLoading) {
+                SkeletonRowList(
+                    count = 4,
+                    modifier = Modifier
+                        .weight(1f)
+                        .fillMaxWidth()
+                        .padding(16.dp)
+                )
+                return@Column
             }
 
             LazyColumn(

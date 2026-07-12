@@ -1048,6 +1048,11 @@ class RemoteRepository(
     // ConcurrentHashMap: registrado da main (getters de Flow) e lido de corrotinas
     // em Dispatchers.IO — mapa comum daria ConcurrentModificationException.
     private val realtimeJobs = java.util.concurrent.ConcurrentHashMap<String, Job>()
+    // Canais Realtime rastreados por key pra poder desregistrar no close() — antes
+    // o close() so cancelava as corrotinas, mas os canais ficavam registrados no
+    // SupabaseClient singleton e acumulavam a cada recriacao de ViewModel (rotacao).
+    private val realtimeChannels =
+        java.util.concurrent.ConcurrentHashMap<String, io.github.jan.supabase.realtime.RealtimeChannel>()
 
     // Reload registry: chave (table) -> mapa (key -> reload()).
     // Antes era um CopyOnWriteArraySet que CRESCIA SEM LIMITE — cada revisita de
@@ -1090,35 +1095,49 @@ class RemoteRepository(
         // Registra o reloader pro fast-path local (substitui o de mesma key).
         registerReloader(table, key, reload)
 
-        if (realtimeJobs[key]?.isActive == true) return
-
-        val job = scope.launch {
-            runCatching {
-                val ch = supabase.channel("rodape-rt-$key")
-                val flow = ch.postgresChangeFlow<PostgresAction>(schema = "public") {
-                    this.table = table
-                    if (filterColumn != null && filterValue != null) {
-                        filter(filterColumn, io.github.jan.supabase.postgrest.query.filter.FilterOperator.EQ, filterValue)
+        // compute() atomico fecha a race check-then-act: sem ele, dois coletores
+        // da mesma key podiam ambos passar o guard e lancar jobs concorrentes,
+        // deixando um canal subscrito porem untracked (leak).
+        realtimeJobs.compute(key) { _, current ->
+            if (current?.isActive == true) return@compute current
+            val ch = supabase.channel("rodape-rt-$key")
+            realtimeChannels[key] = ch
+            scope.launch {
+                runCatching {
+                    val flow = ch.postgresChangeFlow<PostgresAction>(schema = "public") {
+                        this.table = table
+                        if (filterColumn != null && filterValue != null) {
+                            filter(filterColumn, io.github.jan.supabase.postgrest.query.filter.FilterOperator.EQ, filterValue)
+                        }
                     }
+                    val collector = launch {
+                        flow.collect { runCatching { reload() } }
+                    }
+                    ch.subscribe()
+                    // Mantem o Job vivo enquanto coletar — liveness = subscription real.
+                    collector.join()
                 }
-                val collector = launch {
-                    flow.collect { runCatching { reload() } }
-                }
-                ch.subscribe()
-                // Mantem o Job vivo enquanto coletar — liveness = subscription real.
-                collector.join()
             }
         }
-        realtimeJobs[key] = job
     }
 
     /** Encerra o repo: cancela subscriptions/reloads pendentes. Chamar em
      *  MainViewModel.onCleared() e no fim do worker de drain. Sem isso, os
      *  coletores Realtime e loops de reload rodavam pra sempre (leak). */
     fun close() {
-        scope.cancel()
+        // Captura os canais ANTES de cancelar o scope, depois desregistra num scope
+        // detached (unsubscribe e suspend e o scope proprio ja morreu). Sem isso os
+        // canais ficavam registrados no SupabaseClient singleton acumulando.
+        val channelsToRemove = realtimeChannels.values.toList()
+        realtimeChannels.clear()
         realtimeJobs.clear()
         tableReloaders.clear()
+        scope.cancel()
+        if (channelsToRemove.isNotEmpty()) {
+            CoroutineScope(Dispatchers.IO).launch {
+                channelsToRemove.forEach { ch -> runCatching { ch.unsubscribe() } }
+            }
+        }
     }
 
     // ----------------------- Caches reativas -----------------------
@@ -1368,28 +1387,26 @@ class RemoteRepository(
         return resp.trim('"', ' ', '\n')
     }
 
+    /** RPC: promote_member. PROPAGA excecao (rede/RLS) pra UI mostrar o erro em
+     *  vez de reportar sucesso falso e nao mudar o papel. */
     suspend fun promoteMemberViaRpc(clubId: String, targetUserId: String) {
-        runCatching {
-            supabase.postgrest.rpc("promote_member", buildJsonObject {
-                put("p_club_id", clubId); put("p_target_user_id", targetUserId)
-            })
-        }
+        supabase.postgrest.rpc("promote_member", buildJsonObject {
+            put("p_club_id", clubId); put("p_target_user_id", targetUserId)
+        })
     }
 
+    /** RPC: demote_admin. PROPAGA excecao (ver promote). */
     suspend fun demoteAdminViaRpc(clubId: String, targetUserId: String) {
-        runCatching {
-            supabase.postgrest.rpc("demote_admin", buildJsonObject {
-                put("p_club_id", clubId); put("p_target_user_id", targetUserId)
-            })
-        }
+        supabase.postgrest.rpc("demote_admin", buildJsonObject {
+            put("p_club_id", clubId); put("p_target_user_id", targetUserId)
+        })
     }
 
+    /** RPC: transfer_super_admin. PROPAGA excecao (invariante super_admin/RLS). */
     suspend fun transferSuperAdminViaRpc(clubId: String, toUserId: String) {
-        runCatching {
-            supabase.postgrest.rpc("transfer_super_admin", buildJsonObject {
-                put("p_club_id", clubId); put("p_target_user_id", toUserId)
-            })
-        }
+        supabase.postgrest.rpc("transfer_super_admin", buildJsonObject {
+            put("p_club_id", clubId); put("p_target_user_id", toUserId)
+        })
     }
 
     /** RPC: remove_member. PROPAGA excecao (ex: admin tentando remover admin) pra

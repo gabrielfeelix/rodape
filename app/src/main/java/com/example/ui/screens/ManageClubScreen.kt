@@ -603,15 +603,21 @@ fun ManageClubScreen(
             canRemove = canRemove,
             onDismiss = { memberSheetFor = null },
             onPromote = {
-                viewModel.promoteMemberToAdmin(rawMember.userId)
+                viewModel.promoteMemberToAdmin(rawMember.userId) { msg ->
+                    scope.launch { snackbar.showSnackbar(msg) }
+                }
                 memberSheetFor = null
             },
             onDemote = {
-                viewModel.demoteAdminToMember(rawMember.userId)
+                viewModel.demoteAdminToMember(rawMember.userId) { msg ->
+                    scope.launch { snackbar.showSnackbar(msg) }
+                }
                 memberSheetFor = null
             },
             onTransferSuper = {
-                viewModel.transferSuperAdmin(rawMember.userId)
+                viewModel.transferSuperAdmin(rawMember.userId) { msg ->
+                    scope.launch { snackbar.showSnackbar(msg) }
+                }
                 memberSheetFor = null
             },
             onRemove = {

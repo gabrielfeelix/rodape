@@ -245,8 +245,13 @@ class MainActivity : ComponentActivity() {
                                 viewModel.joinClubWithCode(code) { success, errorMsg ->
                                     onResult(success, errorMsg)
                                     if (success) {
+                                        // popUpTo na propria rota (join_club) + inclusive + singleTop,
+                                        // igual ao create_club. NAO usar popUpTo("welcome"): welcome
+                                        // ja saiu do back stack no login, entao vira no-op e empilha
+                                        // main_tabs duplicado (voltar reabria a tela de codigo).
                                         navController.navigate("main_tabs") {
-                                            popUpTo("welcome") { inclusive = true }
+                                            popUpTo("join_club") { inclusive = true }
+                                            launchSingleTop = true
                                         }
                                     }
                                 }

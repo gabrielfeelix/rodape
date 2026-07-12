@@ -7,6 +7,7 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.outlined.ArrowBack
 import androidx.compose.material.icons.outlined.Clear
+import androidx.compose.material.icons.outlined.FormatQuote
 import androidx.compose.material.icons.outlined.Search
 import androidx.compose.material.icons.outlined.Share
 import androidx.compose.material3.*
@@ -146,11 +147,37 @@ fun FrasesScreen(
                 CenteredLoading()
             } else if (quotes.isEmpty()) {
                 Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                    Text(
-                        text = "Você ainda não guardou nenhuma frase.",
-                        style = MaterialTheme.typography.bodyMedium,
-                        color = Muted,
-                    )
+                    Column(
+                        horizontalAlignment = Alignment.CenterHorizontally,
+                        verticalArrangement = Arrangement.spacedBy(12.dp),
+                        modifier = Modifier.padding(horizontal = 40.dp),
+                    ) {
+                        Icon(
+                            Icons.Outlined.FormatQuote,
+                            contentDescription = null,
+                            tint = Muted,
+                            modifier = Modifier.size(48.dp),
+                        )
+                        Text(
+                            text = "Você ainda não guardou nenhuma frase.",
+                            style = MaterialTheme.typography.titleMedium,
+                            color = Muted,
+                            textAlign = androidx.compose.ui.text.style.TextAlign.Center,
+                        )
+                        Text(
+                            text = "As frases que você marcar durante a leitura aparecem aqui. Abra o livro atual e toque em marcar frase pra começar.",
+                            style = MaterialTheme.typography.bodyMedium,
+                            color = Muted,
+                            textAlign = androidx.compose.ui.text.style.TextAlign.Center,
+                        )
+                        Spacer(Modifier.height(4.dp))
+                        com.example.ui.components.TbButton(
+                            text = "Voltar",
+                            onClick = onNavigateBack,
+                            variant = com.example.ui.components.TbButtonVariant.OlivaSoft,
+                            size = com.example.ui.components.TbButtonSize.Md,
+                        )
+                    }
                 }
             } else if (filteredQuotes.isEmpty()) {
                 Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {

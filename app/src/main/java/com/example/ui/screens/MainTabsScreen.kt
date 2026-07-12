@@ -233,6 +233,9 @@ fun MainTabsScreen(
                     viewModel = viewModel,
                     onNavigateToDiscussion = onNavigateToDiscussion,
                     onShowMessage = showMessage,
+                    onNavigateToSuggestBook = onNavigateToSuggestBook,
+                    onNavigateToVoting = { selectedTab = "next" },
+                    onNavigateToManageClub = onNavigateToManageClub,
                 )
                 "next" -> NextTabScreen(
                     viewModel = viewModel,
@@ -1338,23 +1341,86 @@ fun BookDetailScreenTab(
     viewModel: MainViewModel,
     onNavigateToDiscussion: (String, String) -> Unit,
     onShowMessage: (String) -> Unit = {},
+    onNavigateToSuggestBook: () -> Unit = {},
+    onNavigateToVoting: () -> Unit = {},
+    onNavigateToManageClub: () -> Unit = {},
 ) {
     val currentBook by viewModel.currentBook.collectAsState()
     val chapters by viewModel.currentChapters.collectAsState()
     val progress by viewModel.userProgress.collectAsState()
+    val isAdmin by viewModel.isCurrentUserAdmin.collectAsState()
 
     val currentChapIndex = progress?.currentChapter ?: 0
 
     if (currentBook == null) {
-        Box(
-            modifier = Modifier.fillMaxSize(),
-            contentAlignment = Alignment.Center
-        ) {
-            Text(
-                text = "Nenhum livro atualmente em leitura.",
-                style = MaterialTheme.typography.bodyLarge,
-                color = MaterialTheme.colorScheme.onSurfaceVariant
-            )
+        // Distingue loading (cold start, ainda sincronizando) de vazio real.
+        val showLoading = rememberShowLoading(hasData = currentBook != null)
+        if (showLoading) {
+            Column(
+                modifier = Modifier.fillMaxSize().padding(24.dp),
+                verticalArrangement = Arrangement.spacedBy(20.dp),
+            ) {
+                SkeletonReadingCard()
+                SkeletonRowList(count = 3)
+            }
+        } else {
+            // Aba "Livro" sem livro: antes era um texto morto sem ação. Agora
+            // orienta e dá CTA por papel (admin escolhe/abre votação; membro
+            // sugere/vê votação).
+            Column(
+                modifier = Modifier.fillMaxSize().padding(horizontal = 40.dp),
+                horizontalAlignment = Alignment.CenterHorizontally,
+                verticalArrangement = Arrangement.spacedBy(14.dp),
+            ) {
+                Spacer(Modifier.weight(1f))
+                Icon(
+                    Icons.Outlined.MenuBook,
+                    contentDescription = null,
+                    tint = Muted,
+                    modifier = Modifier.size(52.dp),
+                )
+                Text(
+                    text = "Nenhuma leitura em andamento",
+                    style = MaterialTheme.typography.titleLarge,
+                    color = Ink,
+                    textAlign = TextAlign.Center,
+                )
+                Text(
+                    text = if (isAdmin) {
+                        "O clube ainda não escolheu um livro. Abra uma votação ou defina a leitura atual."
+                    } else {
+                        "O clube ainda não escolheu um livro. Sugira um título ou acompanhe a votação."
+                    },
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = Muted,
+                    textAlign = TextAlign.Center,
+                )
+                Spacer(Modifier.height(4.dp))
+                if (isAdmin) {
+                    TbButton(
+                        text = "Gerenciar clube",
+                        onClick = onNavigateToManageClub,
+                        variant = TbButtonVariant.Primary,
+                    )
+                    TbButton(
+                        text = "Abrir votação",
+                        onClick = onNavigateToVoting,
+                        variant = TbButtonVariant.OlivaSoft,
+                    )
+                } else {
+                    TbButton(
+                        text = "Sugerir um livro",
+                        onClick = onNavigateToSuggestBook,
+                        variant = TbButtonVariant.Primary,
+                    )
+                    TbButton(
+                        text = "Ver votação",
+                        onClick = onNavigateToVoting,
+                        variant = TbButtonVariant.OlivaSoft,
+                    )
+                }
+                Spacer(Modifier.weight(1.4f))
+            }
         }
     } else {
         val totalChapters = chapters.size
@@ -1650,10 +1716,23 @@ fun BookDetailScreenTab(
                                     )
                                 )
                                 Text(
-                                    text = "Peça pro admin abrir Gerenciar clube → Capítulos.",
+                                    text = if (isAdmin) {
+                                        "Cadastre os capítulos pra liberar a discussão por capítulo."
+                                    } else {
+                                        "Peça pro admin abrir Gerenciar clube → Capítulos."
+                                    },
                                     style = MaterialTheme.typography.bodySmall.copy(color = Muted),
                                     textAlign = TextAlign.Center
                                 )
+                                if (isAdmin) {
+                                    Spacer(Modifier.height(4.dp))
+                                    TbButton(
+                                        text = "Gerenciar clube",
+                                        onClick = onNavigateToManageClub,
+                                        variant = TbButtonVariant.Primary,
+                                        size = TbButtonSize.Sm,
+                                    )
+                                }
                             }
                         }
                     }

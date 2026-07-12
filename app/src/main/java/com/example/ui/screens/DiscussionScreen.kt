@@ -7,6 +7,7 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
@@ -17,6 +18,7 @@ import androidx.compose.material.icons.outlined.Send
 import androidx.compose.material.icons.outlined.Warning
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -35,6 +37,8 @@ import com.example.ui.components.Avatar
 import com.example.ui.components.TbButton
 import com.example.ui.components.TbButtonVariant
 import com.example.ui.components.RodapeCard
+import com.example.ui.components.SkeletonRowList
+import com.example.ui.components.rememberShowLoading
 import com.example.ui.theme.CardSoft
 import com.example.ui.theme.Cream
 import com.example.ui.theme.Divider
@@ -59,11 +63,15 @@ fun DiscussionScreen(
     chapterTitle: String,
     onNavigateBack: () -> Unit
 ) {
-    val comments by viewModel.getCommentsForChapter(chapterId).collectAsState(initial = emptyList())
+    // Flows memoizados por chapterId: sem isso, cada recomposição recriava o
+    // Flow e disparava um refetch em loop (maior gargalo de performance da tela).
+    val commentsFlow = remember(chapterId) { viewModel.getCommentsForChapter(chapterId) }
+    val comments by commentsFlow.collectAsState(initial = emptyList())
     val chapters by viewModel.currentChapters.collectAsState()
     val progress by viewModel.userProgress.collectAsState()
     val members by viewModel.clubMembers.collectAsState()
-    val reactions by viewModel.getReactionsForChapter(chapterId).collectAsState(initial = emptyList())
+    val reactionsFlow = remember(chapterId) { viewModel.getReactionsForChapter(chapterId) }
+    val reactions by reactionsFlow.collectAsState(initial = emptyList())
 
     val chapterObj = chapters.find { it.id == chapterId }
     val chapterNum = chapterObj?.numero ?: 1
@@ -72,7 +80,7 @@ fun DiscussionScreen(
     val isAheadOfProgress = chapterNum > currentProgNum
     var forceRevealDebate by remember { mutableStateOf(false) }
 
-    var commentText by remember { mutableStateOf("") }
+    var commentText by rememberSaveable { mutableStateOf("") }
     var selectedCommentToReact by remember { mutableStateOf<Comment?>(null) }
 
     Scaffold(
@@ -111,9 +119,11 @@ fun DiscussionScreen(
         },
         containerColor = Paper
     ) { padding ->
-        if (progress == null) {
-            // Progresso ainda carregando: mostra loader em vez de assumir cap. 0
-            // (senão a barreira de spoiler pisca em capítulos já lidos).
+        if (progress == null || chapters.isEmpty() || chapterObj == null) {
+            // Progresso OU capítulos ainda carregando: mostra loader em vez de
+            // assumir cap. 0 / cair no fallback chapterNum = 1. Numa corrida de
+            // load, liberar a discussão com chapterNum = 1 vazaria spoiler de
+            // capítulos à frente — então esperamos os dois chegarem.
             Box(
                 modifier = Modifier
                     .fillMaxSize()
@@ -247,7 +257,27 @@ fun DiscussionScreen(
                     }
                 }
 
-                if (comments.isEmpty()) {
+                // Coletores e derivações memoizados UMA vez, fora do items{}:
+                // evita 1 coletor de state + 1 filter/find por comentário a cada frame.
+                val currentUid by viewModel.currentUserId.collectAsState()
+                val isAdmin by viewModel.isCurrentUserAdmin.collectAsState()
+                val reactionsByComment = remember(reactions) { reactions.groupBy { it.commentId } }
+                val membersById = remember(members) { members.associateBy { it.id } }
+                val listState = rememberLazyListState()
+
+                // Skeleton no cold start (Room emite lista vazia antes do 1º sync):
+                // evita piscar o empty state e depois "pular" pro conteúdo real.
+                val showLoading = rememberShowLoading(hasData = comments.isNotEmpty())
+
+                if (showLoading) {
+                    SkeletonRowList(
+                        count = 3,
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .weight(1f)
+                            .padding(horizontal = 18.dp, vertical = 14.dp)
+                    )
+                } else if (comments.isEmpty()) {
                     Box(
                         modifier = Modifier
                             .fillMaxWidth()
@@ -262,20 +292,23 @@ fun DiscussionScreen(
                         )
                     }
                 } else {
-                    val currentUid by viewModel.currentUserId.collectAsState()
+                    // Comentários vêm em ordem ASC: rola pro último quando um novo entra.
+                    LaunchedEffect(comments.size) {
+                        if (comments.isNotEmpty()) listState.animateScrollToItem(comments.size - 1)
+                    }
                     LazyColumn(
+                        state = listState,
                         modifier = Modifier
                             .fillMaxWidth()
                             .weight(1f),
                         contentPadding = PaddingValues(horizontal = 18.dp, vertical = 14.dp),
                         verticalArrangement = Arrangement.spacedBy(14.dp)
                     ) {
-                        items(comments) { comment ->
-                            val userObj = members.find { it.id == comment.userId }
+                        items(comments, key = { it.id }) { comment ->
+                            val userObj = membersById[comment.userId]
                             val userNameVal = if (comment.userId == currentUid) "Você" else userObj?.nome ?: "Iniciante"
-                            val commentReactions = reactions.filter { it.commentId == comment.id }
+                            val commentReactions = reactionsByComment[comment.id].orEmpty()
                             val isOwn = comment.userId == currentUid
-                            val isAdmin by viewModel.isCurrentUserAdmin.collectAsState()
                             var showModMenu by remember(comment.id) { mutableStateOf(false) }
                             var showRemoveDialog by remember(comment.id) { mutableStateOf(false) }
                             var modMotivo by remember(comment.id) { mutableStateOf("") }

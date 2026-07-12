@@ -14,6 +14,7 @@ import androidx.compose.material.icons.outlined.DateRange
 import androidx.compose.material.icons.outlined.Place
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -27,6 +28,8 @@ import com.example.ui.components.TbButton
 import com.example.ui.components.TbButtonSize
 import com.example.ui.components.TbButtonVariant
 import com.example.ui.components.RodapeCard
+import com.example.ui.components.SkeletonText
+import com.example.ui.components.rememberShowLoading
 import com.example.ui.theme.*
 import com.example.ui.viewmodel.MainViewModel
 import com.example.util.timeAgo
@@ -49,10 +52,23 @@ fun MeetingDetailScreen(
     val noteFlow = remember(meetingId) { viewModel.getMyMeetingNoteFlow(meetingId) }
     val myNote by noteFlow.collectAsState(initial = null)
 
-    var showMinutesEdit by remember { mutableStateOf(false) }
-    var minutesDraft by remember { mutableStateOf("") }
-    var noteDraft by remember(myNote) { mutableStateOf(myNote?.texto ?: "") }
-    var noteEditing by remember { mutableStateOf(false) }
+    var showMinutesEdit by rememberSaveable { mutableStateOf(false) }
+    var minutesDraft by rememberSaveable { mutableStateOf("") }
+
+    // Seed-once (R1): o Room emite null no cold start e re-emite a cada sync.
+    // remember(myNote) resemeava o rascunho a cada emissão — apagando (a) o texto
+    // digitado antes da 1ª emissão e (b) o que o usuário edita quando o flow re-emite.
+    // Semeia só na primeira emissão não-nula; rememberSaveable sobrevive à rotação
+    // e noteSeeded (também salvo) evita re-semear depois da rotação.
+    var noteDraft by rememberSaveable { mutableStateOf(myNote?.texto ?: "") }
+    var noteSeeded by rememberSaveable { mutableStateOf(myNote != null) }
+    LaunchedEffect(myNote) {
+        if (!noteSeeded && myNote != null) {
+            noteDraft = myNote?.texto ?: ""
+            noteSeeded = true
+        }
+    }
+    var noteEditing by rememberSaveable { mutableStateOf(false) }
 
     val m = meeting
     Scaffold(
@@ -238,7 +254,18 @@ fun MeetingDetailScreen(
                     )
                 )
                 Spacer(modifier = Modifier.height(6.dp))
-                if (minutes == null) {
+                // Local-first: minutes vem null antes do 1º sync. Skeleton na janela
+                // de graça evita "ninguém escreveu a ata" piscando antes do dado chegar.
+                val minutesLoading = rememberShowLoading(hasData = minutes != null)
+                if (minutesLoading) {
+                    RodapeCard(modifier = Modifier.fillMaxWidth()) {
+                        Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                            SkeletonText(width = 240.dp)
+                            SkeletonText(width = 200.dp, height = 12.dp)
+                            SkeletonText(width = 140.dp, height = 12.dp)
+                        }
+                    }
+                } else if (minutes == null) {
                     RodapeCard(modifier = Modifier.fillMaxWidth()) {
                         Text(
                             text = "Ninguém escreveu a ata deste encontro ainda.",
@@ -298,6 +325,8 @@ fun MeetingDetailScreen(
                     )
                 )
                 Spacer(modifier = Modifier.height(6.dp))
+                // Local-first: myNote vem null antes do 1º sync — skeleton na janela de graça.
+                val noteLoading = rememberShowLoading(hasData = myNote != null)
                 if (noteEditing) {
                     OutlinedTextField(
                         value = noteDraft,
@@ -328,6 +357,13 @@ fun MeetingDetailScreen(
                             size = TbButtonSize.Sm,
                             modifier = Modifier.weight(1f)
                         )
+                    }
+                } else if (noteLoading) {
+                    RodapeCard(modifier = Modifier.fillMaxWidth()) {
+                        Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                            SkeletonText(width = 220.dp)
+                            SkeletonText(width = 160.dp, height = 12.dp)
+                        }
                     }
                 } else {
                     RodapeCard(modifier = Modifier.fillMaxWidth()) {

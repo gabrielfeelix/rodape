@@ -33,6 +33,7 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import com.example.data.api.OpenLibraryDoc
 import com.example.ui.components.Cover
+import com.example.ui.components.SkeletonRowList
 import com.example.ui.components.TbButton
 import com.example.ui.components.TbButtonVariant
 import com.example.ui.theme.Cream
@@ -52,7 +53,7 @@ fun SuggestScreen(
     onNavigateBack: () -> Unit,
     onNavigateToAddManual: () -> Unit = {}
 ) {
-    var query by remember { mutableStateOf("") }
+    var query by rememberSaveable { mutableStateOf("") }
     val searchResults by viewModel.searchResults.collectAsState()
     val loading by viewModel.searchLoading.collectAsState()
     val keyboardController = LocalSoftwareKeyboardController.current
@@ -65,16 +66,32 @@ fun SuggestScreen(
     var gbConflictAuthor by remember { mutableStateOf<String?>(null) }
     var pickedAuthor by remember { mutableStateOf<String?>(null) }
 
+    // Flag de "busca por digitação em andamento" — cobre tanto o debounce
+    // (antes de o loading do VM ligar) quanto o próprio loading. Serve pra
+    // mostrar skeleton em vez de área vazia/"nada achado" (erro ≠ vazio).
+    var searchInFlight by remember { mutableStateOf(false) }
+
     // Implement 400ms Debounce explicitly in LaunchedEffect/Kotlin
     LaunchedEffect(query) {
+        // R8: ao mudar/limpar a busca, a seleção antiga deixa de ser válida —
+        // o doc some da lista, então o botão "Adicionar" não pode seguir ativo.
+        selectedDoc = null
         if (query.trim().length >= 3) {
+            searchInFlight = true
             delay(400)
             viewModel.searchOpenLibrary(query)
         } else {
+            searchInFlight = false
             // Apagar a busca pra 0-2 chars deve limpar os hits antigos —
             // searchOpenLibrary("") é tratado como "limpar" no ViewModel.
             viewModel.searchOpenLibrary("")
         }
+    }
+
+    // Quando o loading do VM cai pra false, a busca terminou — desliga o
+    // skeleton pra o empty/erro real poder aparecer.
+    LaunchedEffect(loading) {
+        if (!loading) searchInFlight = false
     }
 
     // Exclude books with missing covers or missing author_name
@@ -86,6 +103,18 @@ fun SuggestScreen(
             doc.title.isNotBlank() && !doc.authorName.isNullOrEmpty()
         }
     }
+
+    // R8: "Adicionar" só habilita se a seleção AINDA está entre os itens
+    // visíveis (resultados da busca, ou populares quando não há busca ativa).
+    // Sem isso, ao mudar/limpar a busca o botão seguia ativo apontando pra um
+    // doc que já sumiu da lista.
+    val selectedStillVisible = selectedDoc?.let { sel ->
+        if (query.trim().length < 3) com.example.data.PopularBooks.list.contains(sel)
+        else filteredResults.contains(sel)
+    } ?: false
+
+    // "Buscando": há query válida e o resultado dela ainda não chegou.
+    val searching = loading || searchInFlight
 
     Scaffold(
         topBar = {
@@ -123,7 +152,7 @@ fun SuggestScreen(
                                 showJustifySheetForDoc = doc
                             }
                         },
-                        enabled = selectedDoc != null && !verifying,
+                        enabled = selectedStillVisible && !verifying,
                         colors = ButtonDefaults.textButtonColors(
                             contentColor = Terracota,
                             disabledContentColor = Terracota.copy(alpha = 0.4f)
