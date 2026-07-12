@@ -241,7 +241,10 @@ fun BookDetailScreen(
                         style = MaterialTheme.typography.bodyMedium.copy(
                             fontFamily = LiterataFontFamily,
                             fontWeight = if (isSelected) FontWeight.SemiBold else FontWeight.Normal,
-                            color = if (isSelected) Ink else Muted
+                            color = if (isSelected) Ink else Muted,
+                            // 12.5sp cabe "Avaliações" nos 5 slots em telas estreitas
+                            // sem truncar (era bodyMedium 14sp e virava "Avaliaçõ…").
+                            fontSize = 12.5.sp
                         ),
                         maxLines = 1,
                         overflow = TextOverflow.Ellipsis,

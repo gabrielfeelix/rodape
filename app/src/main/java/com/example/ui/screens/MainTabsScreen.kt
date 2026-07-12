@@ -99,6 +99,7 @@ import androidx.compose.ui.text.buildAnnotatedString
 import androidx.compose.ui.text.withStyle
 import androidx.compose.ui.text.SpanStyle
 import androidx.compose.ui.text.font.FontStyle
+import androidx.compose.material.icons.automirrored.outlined.ArrowBack
 import androidx.compose.material.icons.automirrored.outlined.KeyboardArrowRight
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -363,7 +364,9 @@ fun MainTabsScreen(
                 )
 
                 Text(
-                    text = "Trocar de clube",
+                    // Com 1 clube só não há "troca" possível — o conteúdo real é
+                    // criar/entrar em outro clube.
+                    text = if (allClubs.size <= 1) "Seus clubes" else "Trocar de clube",
                     style = MaterialTheme.typography.titleMedium.copy(
                         fontFamily = LiterataFontFamily,
                         fontSize = 18.sp,
@@ -2084,27 +2087,39 @@ fun ProfileScreenTab(
                         colors = CardDefaults.cardColors(containerColor = Oliva, contentColor = Cream),
                         elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
                     ) {
-                        Column(
+                        Box(
                             modifier = Modifier
                                 .fillMaxWidth()
                                 .padding(14.dp)
                         ) {
-                            Text(
-                                text = savedQuotes.size.toString(),
-                                style = MaterialTheme.typography.displaySmall.copy(
-                                    fontFamily = LiterataFontFamily,
-                                    fontSize = 28.sp,
-                                    fontWeight = FontWeight.SemiBold,
-                                    color = Cream
+                            Column {
+                                Text(
+                                    text = savedQuotes.size.toString(),
+                                    style = MaterialTheme.typography.displaySmall.copy(
+                                        fontFamily = LiterataFontFamily,
+                                        fontSize = 28.sp,
+                                        fontWeight = FontWeight.SemiBold,
+                                        color = Cream
+                                    )
                                 )
-                            )
-                            Spacer(modifier = Modifier.height(4.dp))
-                            Text(
-                                text = "frases\nguardadas",
-                                style = MaterialTheme.typography.bodySmall.copy(
-                                    fontFamily = InterFontFamily,
-                                    color = Cream.copy(alpha = 0.85f)
+                                Spacer(modifier = Modifier.height(4.dp))
+                                Text(
+                                    text = "frases\nguardadas",
+                                    style = MaterialTheme.typography.bodySmall.copy(
+                                        fontFamily = InterFontFamily,
+                                        color = Cream.copy(alpha = 0.85f)
+                                    )
                                 )
+                            }
+                            // Chevron: sinaliza que este é o único stat card navegável
+                            // (os outros dois são só números, não clicáveis).
+                            Icon(
+                                imageVector = Icons.AutoMirrored.Outlined.KeyboardArrowRight,
+                                contentDescription = null,
+                                tint = Cream.copy(alpha = 0.8f),
+                                modifier = Modifier
+                                    .align(Alignment.TopEnd)
+                                    .size(18.dp)
                             )
                         }
                     }
@@ -2838,17 +2853,33 @@ fun EditProfileView(
     ) {
         item {
             Spacer(modifier = Modifier.height(16.dp))
-            Text(
-                text = "Editar perfil",
-                style = MaterialTheme.typography.titleLarge.copy(
-                    fontFamily = LiterataFontFamily,
-                    fontWeight = FontWeight.SemiBold,
-                    fontSize = 22.sp,
-                    color = Ink
-                ),
-                textAlign = TextAlign.Center,
-                modifier = Modifier.fillMaxWidth()
-            )
+            // Header com seta de voltar visível: antes só dava pra sair pelo
+            // "Cancelar" lá embaixo (exigia scroll) ou pelo back do sistema.
+            Box(modifier = Modifier.fillMaxWidth()) {
+                IconButton(
+                    onClick = onCancel,
+                    modifier = Modifier.align(Alignment.CenterStart)
+                ) {
+                    Icon(
+                        imageVector = Icons.AutoMirrored.Outlined.ArrowBack,
+                        contentDescription = "Voltar",
+                        tint = Ink
+                    )
+                }
+                Text(
+                    text = "Editar perfil",
+                    style = MaterialTheme.typography.titleLarge.copy(
+                        fontFamily = LiterataFontFamily,
+                        fontWeight = FontWeight.SemiBold,
+                        fontSize = 22.sp,
+                        color = Ink
+                    ),
+                    textAlign = TextAlign.Center,
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .align(Alignment.Center)
+                )
+            }
         }
 
         // ── Large avatar preview ──
