@@ -237,7 +237,10 @@ fun MainTabsScreen(
                     onNavigateToDiscussion = onNavigateToDiscussion,
                     onShowMessage = showMessage,
                     onNavigateToSuggestBook = onNavigateToSuggestBook,
-                    onNavigateToVoting = { selectedTab = "next" },
+                    // "Abrir/Ver votação" tem que cair no sub-tab Votação — antes só
+                    // trocava a aba principal e abria no default (Encontro): o botão
+                    // prometia votação e entregava agenda.
+                    onNavigateToVoting = { pendingNextSubTab = "votacao"; selectedTab = "next" },
                     onNavigateToManageClub = onNavigateToManageClub,
                     onNavigateToManageChapters = onNavigateToManageChapters,
                 )
@@ -1820,7 +1823,10 @@ fun BookDetailScreenTab(
                             Surface(
                                 modifier = Modifier
                                     .fillMaxWidth()
-                                    .clickable(enabled = !isLocked) {
+                                    // Capítulo à frente NÃO é mais bloqueado: abrir cai na
+                                    // barreira de spoiler (revelável), em vez de exigir
+                                    // "Marcar progresso" +1 N vezes pra destravar o cap N.
+                                    .clickable {
                                         onNavigateToDiscussion(chapter.id, chapter.titulo)
                                     },
                                 shape = RoundedCornerShape(16.dp),

@@ -618,10 +618,12 @@ fun EditSingleMeetingDialog(
         confirmButton = {
             TextButton(
                 onClick = {
-                    val effectiveStart = if (linkedToCurrentBook && currentBookId != null) chapterStart else null
-                    val effectiveEnd = if (linkedToCurrentBook && currentBookId != null) {
-                        chapterEnd.coerceAtLeast(chapterStart)
-                    } else null
+                    // Só grava a faixa quando o livro TEM capítulos — senão saía
+                    // "Caps 1–1" falso pra livro sem índice (o picker já esconde com
+                    // totalChapters > 0, mas o valor era gravado assim mesmo).
+                    val hasRange = linkedToCurrentBook && currentBookId != null && totalChapters > 0
+                    val effectiveStart = if (hasRange) chapterStart else null
+                    val effectiveEnd = if (hasRange) chapterEnd.coerceAtLeast(chapterStart) else null
                     val effectiveBookId = if (linkedToCurrentBook) currentBookId else null
                     // Envia data em dd/MM/yyyy (formato que o parser aceita) e hora HH:MM.
                     val dataOut = dateMillis?.let { formatMillisDdMmYyyy(it) } ?: ""

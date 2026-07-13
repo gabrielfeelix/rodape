@@ -262,27 +262,50 @@ fun DiscussionScreen(
                             }
                         }
                     } else {
-                        Row(
+                        Column(
                             modifier = Modifier
                                 .fillMaxWidth()
                                 .background(TerracotaSoft, RoundedCornerShape(14.dp))
                                 .padding(horizontal = 16.dp, vertical = 12.dp),
-                            verticalAlignment = Alignment.CenterVertically,
-                            horizontalArrangement = Arrangement.spacedBy(10.dp)
+                            verticalArrangement = Arrangement.spacedBy(10.dp)
                         ) {
-                            Icon(
-                                imageVector = Icons.Outlined.Warning,
-                                contentDescription = null,
-                                tint = Terracota,
-                                modifier = Modifier.size(20.dp)
-                            )
+                            Row(
+                                verticalAlignment = Alignment.CenterVertically,
+                                horizontalArrangement = Arrangement.spacedBy(10.dp)
+                            ) {
+                                Icon(
+                                    imageVector = Icons.Outlined.Warning,
+                                    contentDescription = null,
+                                    tint = Terracota,
+                                    modifier = Modifier.size(20.dp)
+                                )
+                                Text(
+                                    text = "não lido – cuidado com o spoiler!",
+                                    style = MaterialTheme.typography.bodyMedium.copy(
+                                        fontFamily = InterFontFamily,
+                                        fontWeight = FontWeight.Medium,
+                                        color = TerracotaDark
+                                    )
+                                )
+                            }
+                            // Marcar leitura DIRETO daqui: pula o progresso pro cap N (sem
+                            // tocar "Marcar progresso" +1 N vezes na aba Livro). Ao marcar,
+                            // este banner vira "Você já passou daqui" na hora.
                             Text(
-                                text = "não lido – cuidado com o spoiler!",
+                                text = "Marcar que li este capítulo",
                                 style = MaterialTheme.typography.bodyMedium.copy(
                                     fontFamily = InterFontFamily,
-                                    fontWeight = FontWeight.Medium,
+                                    fontWeight = FontWeight.SemiBold,
                                     color = TerracotaDark
-                                )
+                                ),
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .clickable {
+                                        chapterObj?.let { ch ->
+                                            viewModel.updateBookProgress(ch.bookId, chapterNum)
+                                        }
+                                    }
+                                    .padding(top = 2.dp)
                             )
                         }
                     }

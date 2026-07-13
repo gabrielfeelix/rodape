@@ -1044,6 +1044,62 @@ fun VotacaoTab(
                     }
                 }
             }
+        } else if (!showBooksLoading && suggestedBooks.isNotEmpty()) {
+            // Sem rodada aberta: as sugestões NÃO somem mais — ficam visíveis como
+            // "na fila", pra o membro ver que a sugestão dele pegou (antes a lista
+            // só renderizava com rodada aberta e o membro sugeria no vazio → bug).
+            item {
+                Text(
+                    text = "Sugestões na fila (${suggestedBooks.size})",
+                    style = MaterialTheme.typography.titleMedium.copy(
+                        fontWeight = FontWeight.SemiBold, color = Ink
+                    )
+                )
+            }
+            items(suggestedBooks, key = { it.id }) { book ->
+                val hasJustification = suggestionsByBookId[book.id]?.justificativa?.isNotBlank() == true
+                RodapeCard {
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.spacedBy(16.dp)
+                    ) {
+                        Cover(
+                            title = book.title, author = book.author, coverUrl = book.coverUrl,
+                            width = 56.dp, height = 84.dp
+                        )
+                        Column(modifier = Modifier.weight(1f)) {
+                            Text(
+                                text = book.title,
+                                style = MaterialTheme.typography.headlineLarge.copy(fontSize = 16.sp, color = Ink),
+                                maxLines = 2, overflow = TextOverflow.Ellipsis
+                            )
+                            Text(
+                                text = book.author,
+                                style = MaterialTheme.typography.bodyMedium.copy(color = Muted),
+                                maxLines = 1, overflow = TextOverflow.Ellipsis
+                            )
+                            if (hasJustification) {
+                                Spacer(modifier = Modifier.height(4.dp))
+                                Text(
+                                    text = "Ver justificativa",
+                                    style = MaterialTheme.typography.labelSmall.copy(
+                                        color = OlivaMid, fontWeight = FontWeight.SemiBold
+                                    ),
+                                    modifier = Modifier.clickable { justificationSheetFor = book.id }
+                                )
+                            }
+                        }
+                    }
+                }
+            }
+            item {
+                Text(
+                    text = if (isAdmin) "Abra a votação pra o clube escolher entre elas."
+                           else "Quando um admin abrir a votação, vocês votam entre elas.",
+                    style = MaterialTheme.typography.bodySmall.copy(color = Muted),
+                    modifier = Modifier.padding(top = 4.dp)
+                )
+            }
         }
 
         // Fila do clube (status = "next")

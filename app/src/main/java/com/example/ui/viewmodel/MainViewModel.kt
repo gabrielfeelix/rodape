@@ -1275,6 +1275,17 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
         }
     }
 
+    // Promove o primeiro da fila ("next", ordenado por ordem) a "current". Retorna
+    // o id promovido ou null se a fila está vazia. Faz o ciclo AVANÇAR sozinho ao
+    // finalizar um livro — antes o clube ficava "sem leitura" com a fila cheia até
+    // alguém trocar o livro manualmente em settings.
+    private suspend fun promoteNextQueuedBook(clubId: String): String? {
+        val next = repository.getBookByStatusFlow(clubId, "next").first()
+        val head = next.firstOrNull() ?: return null
+        repository.updateClubBookStatus(clubId, head.id, "current")
+        return head.id
+    }
+
     fun markCurrentBookFinished() {
         viewModelScope.launch {
             val clubId = activeClubId.value ?: return@launch
@@ -1286,6 +1297,8 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
                 repository.updateClubBookStatus(clubId, b.id, "finished")
                 repository.updateClubBookMeetingDate(clubId, b.id, System.currentTimeMillis())
             }
+            // Loop avança: o próximo da fila vira o livro atual (se houver).
+            promoteNextQueuedBook(clubId)
         }
     }
 
@@ -1571,6 +1584,8 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
                     // As notificações de "livro finalizado" são criadas server-side
                     // pelo trigger club_books_notify_finished (migration 0002). O
                     // insert via cliente falhava (sem INSERT policy + enum inválido).
+                    // Loop avança: promove o próximo da fila a atual (se houver).
+                    promoteNextQueuedBook(clubId)
                 }
             }
         }
