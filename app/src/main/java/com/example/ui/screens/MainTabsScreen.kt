@@ -1065,7 +1065,7 @@ private fun ClubSetupChecklist(
 
                         if (isNext) {
                             Icon(
-                                imageVector = Icons.AutoMirrored.Outlined.KeyboardArrowRight,
+                                imageVector = RodapeIcons.ChevR,
                                 contentDescription = null,
                                 tint = RodapeTheme.colors.terracota,
                                 modifier = Modifier.padding(top = 6.dp)
@@ -1309,7 +1309,7 @@ fun HomeScreenTab(
                                 )
                             }
                             Icon(
-                                imageVector = Icons.AutoMirrored.Outlined.KeyboardArrowRight,
+                                imageVector = RodapeIcons.ChevR,
                                 contentDescription = null,
                                 tint = RodapeTheme.colors.terracota,
                             )
@@ -1452,7 +1452,7 @@ fun HomeScreenTab(
                     }
 
                     Icon(
-                        imageVector = Icons.AutoMirrored.Outlined.KeyboardArrowRight,
+                        imageVector = RodapeIcons.ChevR,
                         contentDescription = "Ver livro",
                         tint = RodapeTheme.colors.muted.copy(alpha = 0.5f),
                         modifier = Modifier.size(20.dp)
@@ -2547,7 +2547,7 @@ fun ProfileScreenTab(
                             // Chevron: sinaliza que este é o único stat card navegável
                             // (os outros dois são só números, não clicáveis).
                             Icon(
-                                imageVector = Icons.AutoMirrored.Outlined.KeyboardArrowRight,
+                                imageVector = RodapeIcons.ChevR,
                                 contentDescription = null,
                                 tint = RodapeTheme.colors.cream.copy(alpha = 0.8f),
                                 modifier = Modifier
@@ -2691,7 +2691,7 @@ fun ProfileScreenTab(
                                     }
                                 }
                                 Icon(
-                                    imageVector = Icons.Outlined.KeyboardArrowRight,
+                                    imageVector = RodapeIcons.ChevR,
                                     contentDescription = "Selecionar",
                                     tint = RodapeTheme.colors.muted,
                                     modifier = Modifier.size(18.dp)
@@ -2825,7 +2825,7 @@ fun ProfileScreenTab(
                                     )
                                 }
                                 Icon(
-                                    imageVector = Icons.Outlined.KeyboardArrowRight,
+                                    imageVector = RodapeIcons.ChevR,
                                     contentDescription = "Reativar",
                                     tint = RodapeTheme.colors.muted,
                                     modifier = Modifier.size(18.dp)
@@ -3007,7 +3007,7 @@ fun ProfileScreenTab(
                         )
                     }
                     Icon(
-                        imageVector = Icons.AutoMirrored.Outlined.KeyboardArrowRight,
+                        imageVector = RodapeIcons.ChevR,
                         contentDescription = null,
                         tint = RodapeTheme.colors.muted,
                         modifier = Modifier.size(18.dp)

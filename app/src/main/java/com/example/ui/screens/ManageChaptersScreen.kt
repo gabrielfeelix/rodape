@@ -323,7 +323,7 @@ fun ManageChaptersScreen(
                                     }
                                 },
                                 enabled = idx > 0
-                            ) { Icon(Icons.Outlined.KeyboardArrowUp, contentDescription = "Subir") }
+                            ) { Icon(RodapeIcons.ChevU, contentDescription = "Subir") }
                             IconButton(
                                 onClick = {
                                     if (idx < draftList.size - 1) {
@@ -335,7 +335,7 @@ fun ManageChaptersScreen(
                                     }
                                 },
                                 enabled = idx < draftList.size - 1
-                            ) { Icon(Icons.Outlined.KeyboardArrowDown, contentDescription = "Descer") }
+                            ) { Icon(RodapeIcons.ChevD, contentDescription = "Descer") }
                             IconButton(onClick = {
                                 draftList = draftList.toMutableList().apply { removeAt(idx) }
                             }) { Icon(Icons.Outlined.Delete, contentDescription = "Remover", tint = RodapeTheme.colors.terracota) }

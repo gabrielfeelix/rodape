@@ -569,7 +569,7 @@ fun EncontroTab(
                         verticalAlignment = Alignment.CenterVertically
                     ) {
                         Icon(
-                            imageVector = if (isConfirmadosExpanded) Icons.Outlined.KeyboardArrowDown else Icons.Outlined.KeyboardArrowRight,
+                            imageVector = if (isConfirmadosExpanded) RodapeIcons.ChevD else RodapeIcons.ChevR,
                             contentDescription = null,
                             tint = RodapeTheme.colors.olivaMid,
                             modifier = Modifier.size(20.dp)
@@ -625,7 +625,7 @@ fun EncontroTab(
                         verticalAlignment = Alignment.CenterVertically
                     ) {
                         Icon(
-                            imageVector = if (isTalvezExpanded) Icons.Outlined.KeyboardArrowDown else Icons.Outlined.KeyboardArrowRight,
+                            imageVector = if (isTalvezExpanded) RodapeIcons.ChevD else RodapeIcons.ChevR,
                             contentDescription = null,
                             tint = RodapeTheme.colors.olivaMid,
                             modifier = Modifier.size(20.dp)
@@ -681,7 +681,7 @@ fun EncontroTab(
                         verticalAlignment = Alignment.CenterVertically
                     ) {
                         Icon(
-                            imageVector = if (isNaoVouExpanded) Icons.Outlined.KeyboardArrowDown else Icons.Outlined.KeyboardArrowRight,
+                            imageVector = if (isNaoVouExpanded) RodapeIcons.ChevD else RodapeIcons.ChevR,
                             contentDescription = null,
                             tint = RodapeTheme.colors.olivaMid,
                             modifier = Modifier.size(20.dp)
