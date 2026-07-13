@@ -558,6 +558,53 @@ object RodapeIcons {
             }
         }
     }
+
+    // info: circle(12,12,10) + ponto(12,8) + haste(12,11→16)
+    val Info: ImageVector by lazy {
+        icon("Info") {
+            strokePath {
+                circle(12f, 12f, 10f)
+                moveTo(12f, 8f); horizontalLineToRelative(0.01f)
+                moveTo(12f, 11f); verticalLineToRelative(5f)
+            }
+        }
+    }
+
+    // warning: triângulo + "!" (haste 10→14 + ponto 17)
+    val Warning: ImageVector by lazy {
+        icon("Warning") {
+            strokePath {
+                moveTo(12f, 4f)
+                lineTo(21f, 19f)
+                horizontalLineTo(3f)
+                close()
+                moveTo(12f, 10f); verticalLineToRelative(4f)
+                moveTo(12f, 17f); horizontalLineToRelative(0.01f)
+            }
+        }
+    }
+
+    // camera: corpo arredondado + saliência superior + lente circle(12,13.5,3)
+    val Camera: ImageVector by lazy {
+        icon("Camera") {
+            strokePath {
+                moveTo(9f, 8f)
+                lineTo(10f, 6f)
+                horizontalLineTo(14f)
+                lineTo(15f, 8f)
+                horizontalLineTo(19f)
+                arcToRelative(2f, 2f, 0f, false, true, 2f, 2f)
+                verticalLineTo(17f)
+                arcToRelative(2f, 2f, 0f, false, true, -2f, 2f)
+                horizontalLineTo(5f)
+                arcToRelative(2f, 2f, 0f, false, true, -2f, -2f)
+                verticalLineTo(10f)
+                arcToRelative(2f, 2f, 0f, false, true, 2f, -2f)
+                close()
+                circle(12f, 13.5f, 3f)
+            }
+        }
+    }
 }
 
 // Geometria compartilhada entre Star (stroke) e StarFill (fill).

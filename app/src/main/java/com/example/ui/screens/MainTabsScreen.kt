@@ -2985,9 +2985,11 @@ fun ProfileScreenTab(
                         .padding(horizontal = 16.dp, vertical = 14.dp),
                     verticalAlignment = Alignment.CenterVertically
                 ) {
-                    Text(
-                        text = "ℹ️",
-                        style = MaterialTheme.typography.titleMedium
+                    Icon(
+                        imageVector = RodapeIcons.Info,
+                        contentDescription = null,
+                        tint = RodapeTheme.colors.oliva,
+                        modifier = Modifier.size(22.dp),
                     )
                     Spacer(modifier = Modifier.width(12.dp))
                     Column(modifier = Modifier.weight(1f)) {

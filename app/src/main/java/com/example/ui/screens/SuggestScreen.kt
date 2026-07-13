@@ -40,8 +40,10 @@ import com.example.ui.theme.Cream
 import com.example.ui.theme.Divider
 import com.example.ui.theme.InterFontFamily
 import com.example.ui.theme.LiterataFontFamily
+import androidx.compose.material3.Icon
 import com.example.ui.theme.RodapeTheme
 import com.example.ui.theme.RodapeRadii
+import com.example.ui.theme.RodapeIcons
 import com.example.ui.theme.Terracota
 import com.example.ui.viewmodel.MainViewModel
 import kotlinx.coroutines.delay
@@ -432,13 +434,24 @@ fun SuggestScreen(
                             modifier = Modifier.fillMaxWidth()
                         ) {
                             Column(modifier = Modifier.padding(12.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                                Text(
-                                    "⚠️ Conflito de autor detectado",
-                                    style = MaterialTheme.typography.bodyMedium.copy(
-                                        fontWeight = FontWeight.SemiBold,
-                                        color = RodapeTheme.colors.warning
+                                Row(
+                                    verticalAlignment = Alignment.CenterVertically,
+                                    horizontalArrangement = Arrangement.spacedBy(6.dp),
+                                ) {
+                                    Icon(
+                                        imageVector = RodapeIcons.Warning,
+                                        contentDescription = null,
+                                        tint = RodapeTheme.colors.warning,
+                                        modifier = Modifier.size(16.dp),
                                     )
-                                )
+                                    Text(
+                                        "Conflito de autor detectado",
+                                        style = MaterialTheme.typography.bodyMedium.copy(
+                                            fontWeight = FontWeight.SemiBold,
+                                            color = RodapeTheme.colors.warning
+                                        )
+                                    )
+                                }
                                 Text(
                                     "As fontes discordam. Qual autor está correto?",
                                     style = MaterialTheme.typography.bodySmall.copy(color = RodapeTheme.colors.warning)

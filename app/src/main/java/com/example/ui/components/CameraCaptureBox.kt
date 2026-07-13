@@ -16,7 +16,10 @@ import androidx.compose.ui.semantics.semantics
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material3.Icon
 import androidx.compose.material3.Text
+import androidx.compose.foundation.layout.size
+import com.example.ui.theme.RodapeIcons
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
@@ -147,9 +150,11 @@ fun CameraCaptureBox(
                 },
             contentAlignment = Alignment.Center
         ) {
-            Text(
-                text = "📷",
-                style = MaterialTheme.typography.titleLarge.copy(color = RodapeTheme.colors.cream)
+            Icon(
+                imageVector = RodapeIcons.Camera,
+                contentDescription = null,
+                tint = RodapeTheme.colors.cream,
+                modifier = Modifier.size(28.dp),
             )
         }
 
