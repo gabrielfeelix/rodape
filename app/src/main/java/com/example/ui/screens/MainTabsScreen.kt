@@ -79,6 +79,8 @@ import com.example.ui.theme.RodapeIcons
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.PathEffect
 import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.liveRegion
+import androidx.compose.ui.semantics.LiveRegionMode
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.semantics.heading
 import androidx.compose.ui.semantics.stateDescription
@@ -152,6 +154,8 @@ fun MainTabsScreen(
     }
     val unreadNotificationsCount by unreadFlow.collectAsState(initial = 0)
     val isAdmin by viewModel.isCurrentUserAdmin.collectAsState()
+    // A2: badge na aba "Clube" quando há votação aberta (algo pra você votar).
+    val activeVotingRoundForBadge by viewModel.activeVotingRound.collectAsState()
 
     // Estado vazio: usuario logado mas nao tem clubes. Mostra CTAs em vez das tabs
     // (as tabs todas dependem de um clube ativo — sem clube, todas mostrariam vazio).
@@ -187,6 +191,18 @@ fun MainTabsScreen(
         }
     }
     val pendingCount by viewModel.pendingMutationsCount.collectAsState()
+    // G1: depois de drenar a fila, mostra um "Tudo salvo ✓" transitório em vez de
+    // a pill só sumir — pro leigo, a rodinha que some sozinha parecia "travado".
+    var showSavedPill by remember { mutableStateOf(false) }
+    var prevPendingCount by remember { mutableStateOf(0) }
+    LaunchedEffect(pendingCount) {
+        if (pendingCount == 0 && prevPendingCount > 0) {
+            showSavedPill = true
+            kotlinx.coroutines.delay(2200)
+            showSavedPill = false
+        }
+        prevPendingCount = pendingCount
+    }
     // Preserva o estado de cada tab (scroll da LazyColumn, etc.) mesmo quando o
     // when(selectedTab) troca o composable ativo — cada tab guarda seu proprio estado.
     val saveableStateHolder = rememberSaveableStateHolder()
@@ -210,7 +226,8 @@ fun MainTabsScreen(
         bottomBar = {
             CustomBottomBar(
                 selectedTab = selectedTab,
-                onTabSelected = { selectedTab = it }
+                onTabSelected = { selectedTab = it },
+                hasOpenVoting = activeVotingRoundForBadge != null,
             )
         },
         snackbarHost = { SnackbarHost(snackbarHostState) },
@@ -271,6 +288,7 @@ fun MainTabsScreen(
 
             // Indicador de sync offline: a fila de mutações sempre existiu,
             // mas era invisível — o usuário não sabia se a ação tinha "pegado".
+            // C1: liveRegion faz o leitor de tela anunciar "aguardando"/"salvo".
             if (pendingCount > 0) {
                 Row(
                     modifier = Modifier
@@ -278,7 +296,8 @@ fun MainTabsScreen(
                         .padding(bottom = 10.dp)
                         .clip(RoundedCornerShape(999.dp))
                         .background(Ink.copy(alpha = 0.88f))
-                        .padding(horizontal = 12.dp, vertical = 6.dp),
+                        .padding(horizontal = 12.dp, vertical = 6.dp)
+                        .semantics { liveRegion = LiveRegionMode.Polite },
                     verticalAlignment = Alignment.CenterVertically,
                     horizontalArrangement = Arrangement.spacedBy(6.dp),
                 ) {
@@ -293,6 +312,26 @@ fun MainTabsScreen(
                         fontFamily = InterFontFamily,
                         fontSize = 11.sp,
                         fontWeight = FontWeight.Medium,
+                        color = Cream,
+                    )
+                }
+            } else if (showSavedPill) {
+                Row(
+                    modifier = Modifier
+                        .align(Alignment.BottomCenter)
+                        .padding(bottom = 10.dp)
+                        .clip(RoundedCornerShape(999.dp))
+                        .background(Oliva)
+                        .padding(horizontal = 12.dp, vertical = 6.dp)
+                        .semantics { liveRegion = LiveRegionMode.Polite },
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(6.dp),
+                ) {
+                    Text(
+                        text = "Tudo salvo ✓",
+                        fontFamily = InterFontFamily,
+                        fontSize = 11.sp,
+                        fontWeight = FontWeight.SemiBold,
                         color = Cream,
                     )
                 }
@@ -663,7 +702,8 @@ private fun HeaderCircleButton(
 @Composable
 fun CustomBottomBar(
     selectedTab: String,
-    onTabSelected: (String) -> Unit
+    onTabSelected: (String) -> Unit,
+    hasOpenVoting: Boolean = false,
 ) {
     Box(
         modifier = Modifier
@@ -707,10 +747,13 @@ fun CustomBottomBar(
                     onClick = { onTabSelected("book") }
                 )
                 BottomBarItem(
-                    label = "Encontros",
+                    // "Encontros" escondia a votação (que vive aqui dentro). "Clube"
+                    // é o hub de coordenação: votar no próximo livro + encontros.
+                    label = "Clube",
                     icon = RodapeIcons.Calendar,
                     selected = selectedTab == "next",
-                    onClick = { onTabSelected("next") }
+                    onClick = { onTabSelected("next") },
+                    badge = hasOpenVoting,
                 )
                 BottomBarItem(
                     label = "Estante",
@@ -730,11 +773,39 @@ fun CustomBottomBar(
 }
 
 @Composable
+private fun TabIconWithBadge(
+    icon: androidx.compose.ui.graphics.vector.ImageVector,
+    tint: androidx.compose.ui.graphics.Color,
+    badge: Boolean,
+) {
+    Box(contentAlignment = Alignment.Center) {
+        Icon(
+            imageVector = icon,
+            // contentDescription = null: o Text(label) irmão já rotula (o
+            // clickable mescla os filhos). Sem isso, o TalkBack lia o rótulo 2x.
+            contentDescription = null,
+            tint = tint,
+            modifier = Modifier.size(20.dp),
+        )
+        if (badge) {
+            Box(
+                modifier = Modifier
+                    .align(Alignment.TopEnd)
+                    .size(8.dp)
+                    .clip(CircleShape)
+                    .background(Terracota),
+            )
+        }
+    }
+}
+
+@Composable
 fun BottomBarItem(
     label: String,
     icon: androidx.compose.ui.graphics.vector.ImageVector,
     selected: Boolean,
-    onClick: () -> Unit
+    onClick: () -> Unit,
+    badge: Boolean = false,
 ) {
     if (selected) {
         Row(
@@ -753,12 +824,7 @@ fun BottomBarItem(
             verticalAlignment = Alignment.CenterVertically,
             horizontalArrangement = Arrangement.spacedBy(6.dp)
         ) {
-            Icon(
-                imageVector = icon,
-                contentDescription = label,
-                tint = Cream,
-                modifier = Modifier.size(20.dp)
-            )
+            TabIconWithBadge(icon = icon, tint = Cream, badge = badge)
             Text(
                 text = label,
                 style = MaterialTheme.typography.labelLarge.copy(
@@ -784,12 +850,7 @@ fun BottomBarItem(
             horizontalAlignment = Alignment.CenterHorizontally,
             verticalArrangement = Arrangement.spacedBy(2.dp)
         ) {
-            Icon(
-                imageVector = icon,
-                contentDescription = label,
-                tint = Cream.copy(alpha = 0.7f),
-                modifier = Modifier.size(20.dp)
-            )
+            TabIconWithBadge(icon = icon, tint = Cream.copy(alpha = 0.7f), badge = badge)
             // Rótulo sempre visível: sem ele, 4 das 5 abas viram só ícone e o
             // usuário precisa decorar o que cada uma faz.
             Text(
@@ -811,20 +872,33 @@ fun BottomBarItem(
 // clube já está "rodando" (livro + capítulos + encontro).
 @Composable
 private fun ClubSetupChecklist(
+    isAdmin: Boolean,
     hasBook: Boolean,
     hasChapters: Boolean,
     hasMeeting: Boolean,
-    isAdmin: Boolean,
-    onStepBook: () -> Unit,
+    hasOpenRound: Boolean,
+    hasSuggestions: Boolean,
+    hasUserVoted: Boolean,
+    onStepVote: () -> Unit,
     onStepChapters: () -> Unit,
     onStepMeeting: () -> Unit,
+    onStepRead: () -> Unit,
 ) {
     data class SetupStep(val title: String, val hint: String, val done: Boolean, val onClick: () -> Unit)
-    val steps = listOf(
+    // Passos DIFERENTES por papel: o admin conduz o ciclo (abrir → encerrar →
+    // capítulos → encontro); o membro só faz o que está ao alcance dele (sugerir
+    // → votar → ler). Antes os dois viam os mesmos 3 passos, e o membro ficava
+    // com tarefas de admin que não conseguia executar.
+    val steps = if (isAdmin) listOf(
         SetupStep(
-            "Escolher o primeiro livro",
-            if (isAdmin) "Abra a votação e o clube decide" else "Sugira um livro pro clube",
-            hasBook, onStepBook
+            "Abrir a votação",
+            "O clube sugere e vota no próximo livro",
+            hasOpenRound || hasBook, onStepVote
+        ),
+        SetupStep(
+            "Encerrar a votação",
+            "Quando todos votarem, encerre pra definir a leitura atual",
+            hasBook, onStepVote
         ),
         SetupStep(
             "Cadastrar os capítulos",
@@ -835,6 +909,22 @@ private fun ClubSetupChecklist(
             "Agendar o primeiro encontro",
             "Marque a data e a faixa de capítulos",
             hasMeeting, onStepMeeting
+        ),
+    ) else listOf(
+        SetupStep(
+            "Sugerir um livro",
+            "Sugira um título pro clube votar",
+            hasSuggestions || hasBook, onStepVote
+        ),
+        SetupStep(
+            "Votar no próximo",
+            "Escolha entre as sugestões do clube",
+            hasUserVoted || hasBook, onStepVote
+        ),
+        SetupStep(
+            "Ler e marcar progresso",
+            "Abra o livro e acompanhe sua leitura",
+            false, onStepRead
         ),
     )
     val doneCount = steps.count { it.done }
@@ -1001,6 +1091,15 @@ fun HomeScreenTab(
     val meeting by viewModel.latestMeeting.collectAsState()
     val rsvps by viewModel.latestMeetingRsvps.collectAsState()
     val homeIsAdmin by viewModel.isCurrentUserAdmin.collectAsState()
+    // Estado do ciclo pro checklist guiado (A1): votação aberta, sugestões na
+    // fila e se este membro já votou na rodada ativa.
+    val activeRound by viewModel.activeVotingRound.collectAsState()
+    val suggestedForChecklist by viewModel.suggestedBooks.collectAsState()
+    val roundVotesForChecklist by viewModel.votesForActiveRound.collectAsState()
+    val homeUserId by viewModel.currentUserId.collectAsState()
+    val hasUserVotedChecklist = remember(roundVotesForChecklist, homeUserId) {
+        homeUserId != null && roundVotesForChecklist.any { it.userId == homeUserId }
+    }
 
     val hour = remember { java.util.Calendar.getInstance().get(java.util.Calendar.HOUR_OF_DAY) }
     val salutation = when (hour) {
@@ -1071,13 +1170,17 @@ fun HomeScreenTab(
         if (activeClub != null && !clubRolling) {
             item {
                 ClubSetupChecklist(
+                    isAdmin = homeIsAdmin,
                     hasBook = currentBook != null,
                     hasChapters = chapters.isNotEmpty(),
                     hasMeeting = meeting != null,
-                    isAdmin = homeIsAdmin,
-                    onStepBook = { onNavigateToTab("next", "votacao") },
+                    hasOpenRound = activeRound != null,
+                    hasSuggestions = suggestedForChecklist.isNotEmpty(),
+                    hasUserVoted = hasUserVotedChecklist,
+                    onStepVote = { onNavigateToTab("next", "votacao") },
                     onStepChapters = { onNavigateToTab("book", null) },
                     onStepMeeting = { onNavigateToTab("next", "encontro") },
+                    onStepRead = { onNavigateToTab("book", null) },
                 )
             }
         }
@@ -1659,6 +1762,77 @@ fun BookDetailScreenTab(
         } else 0f
         val pctInt = (pct * 100).toInt()
 
+        // D1: pular pro capítulo lido (em vez de tocar "Marcar progresso" N vezes
+        // pra quem leu em bloco ou voltou atrasado).
+        var showJumpDialog by remember { mutableStateOf(false) }
+        if (showJumpDialog && chapters.isNotEmpty()) {
+            AlertDialog(
+                onDismissRequest = { showJumpDialog = false },
+                containerColor = MaterialTheme.colorScheme.surface,
+                title = {
+                    Text(
+                        "Li até o capítulo…",
+                        style = MaterialTheme.typography.titleLarge.copy(
+                            fontFamily = LiterataFontFamily,
+                            fontWeight = FontWeight.SemiBold,
+                        ),
+                    )
+                },
+                text = {
+                    LazyColumn(modifier = Modifier.heightIn(max = 360.dp)) {
+                        items(chapters, key = { it.id }) { ch ->
+                            val isCurrent = ch.numero == currentChapIndex
+                            Row(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .clip(RoundedCornerShape(10.dp))
+                                    .clickable {
+                                        viewModel.updateBookProgress(currentBook!!.id, ch.numero)
+                                        onShowMessage(
+                                            if (ch.numero == chapters.size) "Livro terminado! 🎉"
+                                            else "Progresso salvo — Cap. ${ch.numero}"
+                                        )
+                                        showJumpDialog = false
+                                    }
+                                    .padding(vertical = 12.dp, horizontal = 8.dp),
+                                verticalAlignment = Alignment.CenterVertically,
+                                horizontalArrangement = Arrangement.spacedBy(10.dp),
+                            ) {
+                                Text(
+                                    text = "${ch.numero}",
+                                    style = MaterialTheme.typography.bodyMedium.copy(
+                                        fontWeight = FontWeight.Bold,
+                                        color = if (isCurrent) Oliva else Terracota,
+                                    ),
+                                    modifier = Modifier.width(28.dp),
+                                )
+                                Text(
+                                    text = ch.titulo.ifBlank { "Capítulo ${ch.numero}" },
+                                    style = MaterialTheme.typography.bodyMedium.copy(color = Ink),
+                                    maxLines = 2,
+                                    modifier = Modifier.weight(1f),
+                                )
+                                if (isCurrent) {
+                                    Text(
+                                        text = "atual",
+                                        style = MaterialTheme.typography.labelSmall.copy(
+                                            color = Oliva,
+                                            fontWeight = FontWeight.SemiBold,
+                                        ),
+                                    )
+                                }
+                            }
+                        }
+                    }
+                },
+                confirmButton = {
+                    TextButton(onClick = { showJumpDialog = false }) {
+                        Text("Fechar", color = Muted)
+                    }
+                },
+            )
+        }
+
         LazyColumn(
             modifier = Modifier.fillMaxSize(),
             verticalArrangement = Arrangement.spacedBy(0.dp),
@@ -1874,6 +2048,24 @@ fun BookDetailScreenTab(
                             size = TbButtonSize.Lg,
                             modifier = Modifier.fillMaxWidth()
                         )
+
+                        // D1: pular pro capítulo certo (quem leu vários de uma vez).
+                        if (chapters.size > 1) {
+                            Text(
+                                text = "Li vários — escolher o capítulo",
+                                style = MaterialTheme.typography.bodySmall.copy(
+                                    color = Terracota,
+                                    fontWeight = FontWeight.SemiBold
+                                ),
+                                textAlign = TextAlign.Center,
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .padding(top = 10.dp)
+                                    .clip(RoundedCornerShape(8.dp))
+                                    .clickable { showJumpDialog = true }
+                                    .padding(vertical = 4.dp)
+                            )
+                        }
 
                         // Recuperação de toque errado: sem isso não há como voltar atrás
                         if (currentChapIndex > 0) {

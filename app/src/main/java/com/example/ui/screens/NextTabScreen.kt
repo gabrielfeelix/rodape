@@ -5,7 +5,9 @@ import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.selection.selectable
 import androidx.compose.ui.semantics.Role
+import androidx.compose.ui.semantics.LiveRegionMode
 import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.liveRegion
 import androidx.compose.ui.semantics.role
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.foundation.layout.*
@@ -482,6 +484,8 @@ fun EncontroTab(
                                         role = Role.RadioButton,
                                         onClick = { viewModel.rsvpMeeting(meeting!!.id, statusOption) },
                                     )
+                                    // C1: a opção escolhida anuncia a mudança (RSVP salvo).
+                                    .semantics { if (isSelected) liveRegion = LiveRegionMode.Polite }
                                     .border(
                                         width = 1.dp,
                                         color = if (isSelected) Color.Transparent else Divider,
@@ -958,7 +962,15 @@ fun VotacaoTab(
                                         Text(text = book.author, style = MaterialTheme.typography.bodyLarge.copy(color = Muted))
                                     }
                                     if (hasUserVoted) {
-                                        Pill(text = "Seu voto", variant = PillVariant.OliveDeep, modifier = Modifier.padding(start = 8.dp))
+                                        // C1: liveRegion faz o leitor de tela anunciar
+                                        // "Seu voto" quando o voto é registrado/trocado.
+                                        Pill(
+                                            text = "Seu voto",
+                                            variant = PillVariant.OliveDeep,
+                                            modifier = Modifier
+                                                .padding(start = 8.dp)
+                                                .semantics { liveRegion = LiveRegionMode.Polite },
+                                        )
                                     }
                                     if (isAdmin) {
                                         var showMenu by remember(book.id) { mutableStateOf(false) }

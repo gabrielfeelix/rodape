@@ -1,5 +1,43 @@
 # Changelog — Rodapé
 
+## v1.1.3 — 2026-07-12 (em progresso) · Onda 1 do plano de pendências
+
+Correções priorizadas a partir do estudo de 15 personas (`docs/PERSONAS-2026-07-12.md`)
+e do plano em `docs/PLANO-PENDENCIAS-2026-07-12.md`. Onda 1 = "destrava quem importa".
+
+### ✨ Intro de primeiro uso (novo)
+- Antes do welcome, uma **introdução de 4 telas** ("como funciona o Rodapé") explica o
+  produto — clube privado, ler no ritmo do grupo, discutir sem spoiler, encontros de
+  verdade. **Pulável** a qualquer momento; aparece uma vez por device (DataStore
+  `intro_seen`). UI fiel ao design (Literata/Inter, terracota/oliva), sem assets
+  externos.
+
+### 🧭 Checklist guiado agora é POR PAPEL (A1)
+- O admin conduz o ciclo: **Abrir votação → Encerrar votação → Cadastrar capítulos →
+  Agendar encontro**. O passo "Encerrar votação" (que faltava) fecha o vão entre
+  "votaram" e "tem livro atual".
+- O membro vê só o que consegue fazer: **Sugerir um livro → Votar → Ler e marcar
+  progresso** (antes via tarefas de admin que não podia executar).
+
+### 🗳️ Aba "Encontros" virou "Clube" + badge de votação (A2)
+- A votação vivia numa aba chamada "Encontros" — ninguém achava. Agora a aba é
+  **"Clube"** (hub de votação + encontros) e ganha um **ponto de destaque** quando há
+  **votação aberta**.
+
+### 📖 "Li vários — escolher o capítulo" (D1)
+- Além do "Marcar progresso" (+1), dá pra **pular direto pro capítulo lido** — fim do
+  toque-toque-toque pra quem leu em bloco ou voltou atrasado.
+
+### 🔊 Acessibilidade: ações agora são faladas (C1)
+- Live regions no **voto** ("Seu voto"), no **RSVP**, no **envio de comentário**
+  ("Comentário enviado") e na **pill de sync** — quem usa leitor de tela deixa de
+  "agir às cegas".
+- Bônus: o rótulo das abas parou de ser lido 2× no TalkBack.
+
+### ✅ Pill de sync com fim explícito (G1)
+- Depois de sincronizar, mostra **"Tudo salvo ✓"** por 2s em vez de a rodinha só
+  sumir (que parecia "travado" pra leigo).
+
 ## v1.0.12 — 2026-07-12 (build 13)
 
 ### 📅 Agendar encontro ficou fácil de achar

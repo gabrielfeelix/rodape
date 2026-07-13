@@ -47,6 +47,10 @@ class DataStoreManager(private val context: Context) {
         // Ultimo clube ativo selecionado — restaura a escolha no cold start
         // em vez de sempre cair no primeiro clube.
         val LAST_ACTIVE_CLUB_KEY = stringPreferencesKey("last_active_club")
+        // Intro de primeiro uso ("como funciona o Rodapé") ja foi vista/pulada
+        // neste device? E pre-login (nao depende de userId): explica o produto
+        // antes de pedir conta.
+        val INTRO_SEEN_KEY = booleanPreferencesKey("intro_seen")
     }
 
     val ratedAppFlow: Flow<Boolean> = context.dataStore.data.map { prefs ->
@@ -109,6 +113,21 @@ class DataStoreManager(private val context: Context) {
         context.dataStore.edit { prefs ->
             if (clubId == null) prefs.remove(LAST_ACTIVE_CLUB_KEY)
             else prefs[LAST_ACTIVE_CLUB_KEY] = clubId
+        }
+    }
+
+    /**
+     * A intro de primeiro uso ja foi vista/pulada? Emite `null` enquanto ainda
+     * nao leu do disco — o caller usa isso pra nao piscar a intro pra quem ja
+     * viu (nem o welcome pra quem ainda vai ver).
+     */
+    val introSeenFlow: Flow<Boolean> = context.dataStore.data.map { prefs ->
+        prefs[INTRO_SEEN_KEY] ?: false
+    }
+
+    suspend fun markIntroSeen() {
+        context.dataStore.edit { prefs ->
+            prefs[INTRO_SEEN_KEY] = true
         }
     }
 

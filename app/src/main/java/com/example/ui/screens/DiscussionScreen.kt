@@ -709,6 +709,9 @@ fun DiscussionScreen(
                         }
 
                         // Circular send button — Terracota when active
+                        // C1: sem live region, o envio era mudo pro leitor de tela —
+                        // anuncia "Comentário enviado" via a View de acessibilidade.
+                        val sendView = androidx.compose.ui.platform.LocalView.current
                         Box(
                             modifier = Modifier
                                 .size(44.dp)
@@ -722,6 +725,7 @@ fun DiscussionScreen(
                                     if (toSend.isNotEmpty()) {
                                         viewModel.sendComment(chapterId, toSend)
                                         commentText = ""
+                                        sendView.announceForAccessibility("Comentário enviado")
                                     }
                                 },
                             contentAlignment = Alignment.Center

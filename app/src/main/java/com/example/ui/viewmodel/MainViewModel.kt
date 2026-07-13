@@ -95,6 +95,19 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
         viewModelScope.launch { dataStoreManager.setFontScale(scale) }
     }
 
+    /**
+     * Intro de primeiro uso ("como funciona"). `null` = ainda lendo do disco
+     * (nao renderiza nada pra nao piscar), `false` = mostrar intro, `true` = ja
+     * viu, segue pro welcome.
+     */
+    val introSeen: StateFlow<Boolean?> = dataStoreManager.introSeenFlow
+        .map { it as Boolean? }
+        .stateIn(viewModelScope, SharingStarted.Eagerly, null)
+
+    fun markIntroSeen() {
+        viewModelScope.launch { dataStoreManager.markIntroSeen() }
+    }
+
     /** Conjunto de userIds que ja viram o onboarding pos-login neste device. */
     val onboardedUsers: StateFlow<Set<String>> = dataStoreManager.onboardedUsersFlow
         .stateIn(viewModelScope, SharingStarted.Eagerly, emptySet())

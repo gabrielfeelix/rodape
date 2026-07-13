@@ -121,10 +121,18 @@ class MainActivity : ComponentActivity() {
                         startDestination = "welcome"
                     ) {
                     composable("welcome") {
-                        WelcomeScreen(
-                            onNavigateToLogin = { navController.navigate("login") },
-                            onNavigateToSignUp = { navController.navigate("signup") },
-                        )
+                        // Intro de primeiro uso antes do welcome. introSeen == null:
+                        // ainda lendo do DataStore — não renderiza nada (evita piscar
+                        // a intro pra quem já viu, ou o welcome pra quem ainda vai ver).
+                        val introSeen by viewModel.introSeen.collectAsState()
+                        when (introSeen) {
+                            null -> { /* aguarda o DataStore (1 frame) */ }
+                            false -> IntroScreen(onFinished = { viewModel.markIntroSeen() })
+                            else -> WelcomeScreen(
+                                onNavigateToLogin = { navController.navigate("login") },
+                                onNavigateToSignUp = { navController.navigate("signup") },
+                            )
+                        }
                     }
 
                     composable("login") {
