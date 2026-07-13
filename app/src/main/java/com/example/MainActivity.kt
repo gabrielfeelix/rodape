@@ -302,6 +302,7 @@ class MainActivity : ComponentActivity() {
                                 onNavigateToBookDetail = { bookId -> navController.navigate("book_detail/$bookId") },
                                 onNavigateToFrases = { navController.navigate("frases") },
                                 onNavigateToManageClub = { navController.navigate("manage_club") },
+                                onNavigateToManageChapters = { navController.navigate("manage_chapters") },
                                 onNavigateToMeetingDetail = { mid -> navController.navigate("meeting_detail/$mid") },
                                 onNavigateToAbout = { navController.navigate("about") }
                             )

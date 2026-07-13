@@ -78,7 +78,13 @@ fun DiscussionScreen(
     val chapterNum = chapterObj?.numero ?: 1
     val currentProgNum = progress?.currentChapter ?: 0
 
-    val isAheadOfProgress = chapterNum > currentProgNum
+    // Alinha com a aba Livro (effectiveChap = maxOf(prog, 1)): um leitor sem
+    // progresso está "no capítulo 1", então o cap 1 abre DIRETO. A barreira de
+    // spoiler vale só pra capítulos realmente à frente da posição atual — antes
+    // usava `> currentProgNum` cru e o cap 1 caía na barreira pra quem tinha
+    // progresso 0 (todo leitor novo), contradizendo a aba Livro que o libera.
+    val effectiveProg = maxOf(currentProgNum, 1)
+    val isAheadOfProgress = chapterNum > effectiveProg
     var forceRevealDebate by remember { mutableStateOf(false) }
 
     var commentText by rememberSaveable { mutableStateOf("") }
@@ -120,17 +126,36 @@ fun DiscussionScreen(
         },
         containerColor = Paper
     ) { padding ->
-        if (progress == null || chapters.isEmpty() || chapterObj == null) {
-            // Progresso OU capítulos ainda carregando: mostra loader em vez de
-            // assumir cap. 0 / cair no fallback chapterNum = 1. Numa corrida de
-            // load, liberar a discussão com chapterNum = 1 vazaria spoiler de
-            // capítulos à frente — então esperamos os dois chegarem.
+        // Loading = o CAPÍTULO ainda não resolveu (grace de 2.5s no cold start,
+        // como o resto do app). `progress == null` NÃO é loading: é "ainda não
+        // marquei leitura" (= cap 0) — estado PERMANENTE em todo livro recém-criado.
+        // Antes o gate incluía `progress == null` e travava no spinner PARA SEMPRE
+        // nesses livros (bug do "carregando infinito"). O fallback seguro já existe:
+        // currentProgNum = progress?.currentChapter ?: 0, e cap à frente cai na
+        // barreira de spoiler (esconde conteúdo), então tratar null como 0 é seguro.
+        val chapterResolving = rememberShowLoading(hasData = chapterObj != null)
+        if (chapterResolving) {
             Box(
                 modifier = Modifier
                     .fillMaxSize()
                     .padding(padding)
             ) {
                 com.example.ui.components.CenteredLoading()
+            }
+        } else if (chapterObj == null) {
+            // Capítulos resolveram mas este id não existe (ex.: capítulo de um livro
+            // que não é o atual do clube). Estado honesto em vez de spinner eterno.
+            Box(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .padding(padding),
+                contentAlignment = Alignment.Center
+            ) {
+                Text(
+                    text = "Capítulo não encontrado.",
+                    style = MaterialTheme.typography.bodyLarge,
+                    color = Tertiary
+                )
             }
         } else if (isAheadOfProgress && !forceRevealDebate) {
             // Visual Spoiler Barrier

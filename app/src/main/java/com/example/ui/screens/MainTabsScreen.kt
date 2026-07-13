@@ -115,6 +115,7 @@ fun MainTabsScreen(
     onNavigateToBookDetail: (String) -> Unit = {},
     onNavigateToFrases: () -> Unit = {},
     onNavigateToManageClub: () -> Unit = {},
+    onNavigateToManageChapters: () -> Unit = {},
     onNavigateToMeetingDetail: (String) -> Unit = {},
     onNavigateToAbout: () -> Unit = {},
 ) {
@@ -238,6 +239,7 @@ fun MainTabsScreen(
                     onNavigateToSuggestBook = onNavigateToSuggestBook,
                     onNavigateToVoting = { selectedTab = "next" },
                     onNavigateToManageClub = onNavigateToManageClub,
+                    onNavigateToManageChapters = onNavigateToManageChapters,
                 )
                 "next" -> NextTabScreen(
                     viewModel = viewModel,
@@ -1377,6 +1379,7 @@ fun BookDetailScreenTab(
     onNavigateToSuggestBook: () -> Unit = {},
     onNavigateToVoting: () -> Unit = {},
     onNavigateToManageClub: () -> Unit = {},
+    onNavigateToManageChapters: () -> Unit = {},
 ) {
     val currentBook by viewModel.currentBook.collectAsState()
     val chapters by viewModel.currentChapters.collectAsState()
@@ -1726,11 +1729,27 @@ fun BookDetailScreenTab(
                                 color = Ink
                             )
                         )
-                        val readCount = chapters.count { it.numero < currentChapIndex }
-                        Text(
-                            text = "$readCount lidos",
-                            style = MaterialTheme.typography.bodySmall.copy(color = Muted)
-                        )
+                        Row(
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.spacedBy(12.dp)
+                        ) {
+                            val readCount = chapters.count { it.numero < currentChapIndex }
+                            Text(
+                                text = "$readCount lidos",
+                                style = MaterialTheme.typography.bodySmall.copy(color = Muted)
+                            )
+                            // Admin edita o índice direto daqui (sem ir em Gerenciar clube).
+                            if (isAdmin && chapters.isNotEmpty()) {
+                                Text(
+                                    text = "Editar",
+                                    style = MaterialTheme.typography.bodySmall.copy(
+                                        fontWeight = FontWeight.SemiBold,
+                                        color = Terracota
+                                    ),
+                                    modifier = Modifier.clickable { onNavigateToManageChapters() }
+                                )
+                            }
+                        }
                     }
 
                     if (chapters.isEmpty()) {
@@ -1767,9 +1786,12 @@ fun BookDetailScreenTab(
                                 )
                                 if (isAdmin) {
                                     Spacer(Modifier.height(4.dp))
+                                    // Atalho DIRETO pro índice de capítulos (antes ia
+                                    // pro "Gerenciar clube" e o admin tinha que caçar
+                                    // "Capítulos" lá dentro — 2 passos e escondido).
                                     TbButton(
-                                        text = "Gerenciar clube",
-                                        onClick = onNavigateToManageClub,
+                                        text = "Gerenciar capítulos",
+                                        onClick = onNavigateToManageChapters,
                                         variant = TbButtonVariant.Primary,
                                         size = TbButtonSize.Sm,
                                     )
