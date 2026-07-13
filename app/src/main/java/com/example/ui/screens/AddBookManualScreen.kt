@@ -29,6 +29,7 @@ import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.ui.components.CameraCaptureBox
+import com.example.ui.components.Overline
 import com.example.ui.components.Cover
 import com.example.ui.components.TbButton
 import com.example.ui.components.TbButtonSize
@@ -174,14 +175,7 @@ fun AddBookManualScreen(
 
             // ── Capa ──────────────────────────────────────────────────
             item {
-                Text(
-                    text = "CAPA",
-                    style = MaterialTheme.typography.labelSmall.copy(
-                        fontWeight = FontWeight.Bold,
-                        color = RodapeTheme.colors.muted,
-                        letterSpacing = 1.sp
-                    )
-                )
+                Overline(text = "CAPA")
             }
             item {
                 Row(
@@ -314,14 +308,7 @@ fun AddBookManualScreen(
             // ── Dados obrigatórios ────────────────────────────────────
             item {
                 Spacer(modifier = Modifier.height(8.dp))
-                Text(
-                    text = "DADOS DO LIVRO",
-                    style = MaterialTheme.typography.labelSmall.copy(
-                        fontWeight = FontWeight.Bold,
-                        color = RodapeTheme.colors.muted,
-                        letterSpacing = 1.sp
-                    )
-                )
+                Overline(text = "DADOS DO LIVRO")
             }
             item {
                 OutlinedTextField(
@@ -349,14 +336,7 @@ fun AddBookManualScreen(
             // ── Dados opcionais ───────────────────────────────────────
             item {
                 Spacer(modifier = Modifier.height(8.dp))
-                Text(
-                    text = "OPCIONAIS",
-                    style = MaterialTheme.typography.labelSmall.copy(
-                        fontWeight = FontWeight.Bold,
-                        color = RodapeTheme.colors.muted,
-                        letterSpacing = 1.sp
-                    )
-                )
+                Overline(text = "OPCIONAIS")
             }
             item {
                 OutlinedTextField(

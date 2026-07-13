@@ -248,13 +248,9 @@ fun EncontroTab(
                         modifier = Modifier.padding(top = 4.dp)
                     ) {
                         Box(modifier = Modifier.size(6.dp).background(RodapeTheme.colors.terracota, androidx.compose.foundation.shape.CircleShape))
-                        Text(
+                        Overline(
                             text = "CRONOGRAMA · ${currentBookTitle ?: "—"}",
-                            style = MaterialTheme.typography.labelSmall.copy(
-                                fontWeight = FontWeight.Bold,
-                                color = RodapeTheme.colors.terracota,
-                                letterSpacing = 1.sp
-                            ),
+                            color = RodapeTheme.colors.terracota,
                             maxLines = 1,
                             overflow = TextOverflow.Ellipsis
                         )
@@ -1127,14 +1123,7 @@ fun VotacaoTab(
                             .size(6.dp)
                             .background(RodapeTheme.colors.terracota, androidx.compose.foundation.shape.CircleShape)
                     )
-                    Text(
-                        text = "FILA DO CLUBE",
-                        style = MaterialTheme.typography.labelSmall.copy(
-                            fontWeight = FontWeight.Bold,
-                            letterSpacing = 1.sp,
-                            color = RodapeTheme.colors.terracota
-                        )
-                    )
+                    Overline(text = "FILA DO CLUBE", color = RodapeTheme.colors.terracota)
                 }
             }
             item {

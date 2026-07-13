@@ -16,6 +16,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.BuildConfig
+import com.example.ui.components.Overline
 import com.example.ui.components.TbButton
 import com.example.ui.components.TbButtonSize
 import com.example.ui.components.TbButtonVariant
@@ -223,14 +224,8 @@ fun AboutScreen(
 
 @Composable
 private fun SectionTitle(text: String) {
-    Text(
+    Overline(
         text = text,
-        style = MaterialTheme.typography.labelSmall.copy(
-            fontFamily = InterFontFamily,
-            fontWeight = FontWeight.Bold,
-            color = RodapeTheme.colors.muted,
-            letterSpacing = 1.sp
-        ),
         modifier = Modifier.padding(start = 4.dp, bottom = 4.dp)
     )
 }

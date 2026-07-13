@@ -879,14 +879,7 @@ private fun HistoryTab(viewModel: MainViewModel, bookId: String, dataEncontro: L
         Spacer(modifier = Modifier.height(24.dp))
         HorizontalDivider(thickness = 0.5.dp, color = RodapeTheme.colors.divider)
         Spacer(modifier = Modifier.height(12.dp))
-        Text(
-            text = "ADMIN",
-            style = MaterialTheme.typography.labelSmall.copy(
-                fontWeight = FontWeight.Bold,
-                color = RodapeTheme.colors.terracota,
-                letterSpacing = 1.sp
-            )
-        )
+        Overline(text = "ADMIN", color = RodapeTheme.colors.terracota)
         Spacer(modifier = Modifier.height(8.dp))
         Row(
             verticalAlignment = Alignment.CenterVertically,

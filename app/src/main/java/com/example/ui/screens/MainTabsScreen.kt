@@ -2774,14 +2774,8 @@ fun ProfileScreenTab(
             if (archivedClubs.isNotEmpty()) {
                 item {
                     Spacer(modifier = Modifier.height(16.dp))
-                    Text(
+                    Overline(
                         text = "ARQUIVADOS",
-                        style = MaterialTheme.typography.labelSmall.copy(
-                            fontFamily = InterFontFamily,
-                            fontWeight = FontWeight.Bold,
-                            color = RodapeTheme.colors.muted,
-                            letterSpacing = 1.sp
-                        ),
                         modifier = Modifier.padding(start = 4.dp, bottom = 8.dp)
                     )
                     Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
@@ -2840,14 +2834,8 @@ fun ProfileScreenTab(
             // ── Aparência (tamanho de fonte) ─────────────────────────────
             item {
                 Spacer(modifier = Modifier.height(16.dp))
-                Text(
+                Overline(
                     text = "APARÊNCIA",
-                    style = MaterialTheme.typography.labelSmall.copy(
-                        fontFamily = InterFontFamily,
-                        fontWeight = FontWeight.Bold,
-                        color = RodapeTheme.colors.muted,
-                        letterSpacing = 1.sp
-                    ),
                     modifier = Modifier.padding(start = 4.dp, bottom = 8.dp)
                 )
                 val fontScale by viewModel.fontScale.collectAsState()
@@ -3019,14 +3007,8 @@ fun ProfileScreenTab(
             // ── Ajude o app a crescer ────────────────────────────────────
             item {
                 Spacer(modifier = Modifier.height(16.dp))
-                Text(
+                Overline(
                     text = "AJUDE O RODAPÉ A CRESCER",
-                    style = MaterialTheme.typography.labelSmall.copy(
-                        fontFamily = InterFontFamily,
-                        fontWeight = FontWeight.Bold,
-                        color = RodapeTheme.colors.muted,
-                        letterSpacing = 1.sp
-                    ),
                     modifier = Modifier.padding(start = 4.dp, bottom = 8.dp)
                 )
                 Card(

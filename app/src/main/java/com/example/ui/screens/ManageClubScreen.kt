@@ -29,6 +29,7 @@ import androidx.compose.ui.unit.sp
 import com.example.data.model.ClubMember
 import com.example.ui.admin.*
 import com.example.ui.components.Avatar
+import com.example.ui.components.Overline
 import com.example.ui.components.TbButton
 import com.example.ui.components.TbButtonSize
 import com.example.ui.components.TbButtonVariant
@@ -257,13 +258,9 @@ fun ManageClubScreen(
                                 )
                             }
                             Column(modifier = Modifier.weight(1f)) {
-                                Text(
+                                Overline(
                                     text = recurrenceShortLabel(p.tipoRecorrencia).uppercase(),
-                                    style = MaterialTheme.typography.labelSmall.copy(
-                                        fontWeight = FontWeight.Bold,
-                                        color = RodapeTheme.colors.olivaDark,
-                                        letterSpacing = 1.sp
-                                    )
+                                    color = RodapeTheme.colors.olivaDark
                                 )
                                 Text(
                                     text = recurrenceFullLabel(p.tipoRecorrencia, p.diaSemana, p.valorRecorrencia, p.hora),
@@ -325,13 +322,9 @@ fun ManageClubScreen(
                             tint = RodapeTheme.colors.terracota,
                             modifier = Modifier.size(16.dp)
                         )
-                        Text(
+                        Overline(
                             text = if (meetingsBook.isNotEmpty()) "ENCONTROS DESTE LIVRO" else "PRÓXIMOS ENCONTROS",
-                            style = MaterialTheme.typography.labelSmall.copy(
-                                fontWeight = FontWeight.Bold,
-                                color = RodapeTheme.colors.terracota,
-                                letterSpacing = 1.sp
-                            )
+                            color = RodapeTheme.colors.terracota
                         )
                     }
                     Spacer(modifier = Modifier.height(8.dp))
@@ -405,13 +398,9 @@ fun ManageClubScreen(
                                 height = 84.dp
                             )
                             Column(modifier = Modifier.weight(1f)) {
-                                Text(
+                                Overline(
                                     text = "LENDO AGORA",
-                                    style = MaterialTheme.typography.labelSmall.copy(
-                                        fontWeight = FontWeight.Bold,
-                                        color = RodapeTheme.colors.olivaDark,
-                                        letterSpacing = 1.sp
-                                    )
+                                    color = RodapeTheme.colors.olivaDark
                                 )
                                 Spacer(modifier = Modifier.height(2.dp))
                                 Text(
