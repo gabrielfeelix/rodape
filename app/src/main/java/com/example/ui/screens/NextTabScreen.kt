@@ -86,7 +86,7 @@ fun NextTabScreen(
                         .fillMaxHeight()
                         .background(
                             if (isSelected) RodapeTheme.colors.oliva else Color.Transparent,
-                            RoundedCornerShape(20.dp)
+                            RoundedCornerShape(RodapeRadii.md)
                         )
                         .clickable { subTab = tab },
                     contentAlignment = Alignment.Center
@@ -265,9 +265,9 @@ fun EncontroTab(
                     Row(
                         modifier = Modifier
                             .fillMaxWidth()
-                            .clip(RoundedCornerShape(12.dp))
+                            .clip(RoundedCornerShape(RodapeRadii.sm))
                             .background(if (concluded) RodapeTheme.colors.dividerSoft.copy(alpha = 0.3f) else RodapeTheme.colors.cream)
-                            .border(0.5.dp, RodapeTheme.colors.divider, RoundedCornerShape(12.dp))
+                            .border(0.5.dp, RodapeTheme.colors.divider, RoundedCornerShape(RodapeRadii.sm))
                             .clickable { onNavigateToMeetingDetail(m.id) }
                             // A11y: card navega — anuncia como botão com rótulo.
                             .semantics {
@@ -366,7 +366,7 @@ fun EncontroTab(
                             Box(
                                 modifier = Modifier
                                     .size(64.dp)
-                                    .background(RodapeTheme.colors.cream.copy(alpha = 0.15f), RoundedCornerShape(12.dp)),
+                                    .background(RodapeTheme.colors.cream.copy(alpha = 0.15f), RoundedCornerShape(RodapeRadii.sm)),
                                 contentAlignment = Alignment.Center
                             ) {
                                 Box(contentAlignment = Alignment.Center) {

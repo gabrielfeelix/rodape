@@ -198,7 +198,7 @@ fun ManageChaptersScreen(
                 // dava a impressão errada quando a busca NÃO encontrava os capítulos.
                 Surface(
                     color = if (apiError) RodapeTheme.colors.terracotaSoft else RodapeTheme.colors.olivaSoft,
-                    shape = RoundedCornerShape(12.dp),
+                    shape = RoundedCornerShape(RodapeRadii.sm),
                     modifier = Modifier.padding(16.dp).fillMaxWidth()
                 ) {
                     Text(

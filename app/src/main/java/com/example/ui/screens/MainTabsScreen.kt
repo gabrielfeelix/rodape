@@ -51,6 +51,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.data.model.*
 import com.example.data.ThemeMode
+import com.example.ui.theme.RodapeRadii
 import com.example.ui.theme.RodapeTheme
 import com.example.util.displayName
 import com.example.util.displayFirstName
@@ -299,7 +300,7 @@ fun MainTabsScreen(
                     modifier = Modifier
                         .align(Alignment.BottomCenter)
                         .padding(bottom = 10.dp)
-                        .clip(RoundedCornerShape(999.dp))
+                        .clip(RoundedCornerShape(RodapeRadii.full))
                         .background(RodapeTheme.colors.ink.copy(alpha = 0.88f))
                         .padding(horizontal = 12.dp, vertical = 6.dp)
                         .semantics { liveRegion = LiveRegionMode.Polite },
@@ -325,7 +326,7 @@ fun MainTabsScreen(
                     modifier = Modifier
                         .align(Alignment.BottomCenter)
                         .padding(bottom = 10.dp)
-                        .clip(RoundedCornerShape(999.dp))
+                        .clip(RoundedCornerShape(RodapeRadii.full))
                         .background(RodapeTheme.colors.oliva)
                         .padding(horizontal = 12.dp, vertical = 6.dp)
                         .semantics { liveRegion = LiveRegionMode.Polite },
@@ -580,9 +581,9 @@ private fun GlobalHeader(
         Row(
             modifier = Modifier
                 .weight(1f)
-                .clip(RoundedCornerShape(999.dp))
+                .clip(RoundedCornerShape(RodapeRadii.full))
                 .background(RodapeTheme.colors.cardSurface)
-                .border(1.dp, RodapeTheme.colors.divider, RoundedCornerShape(999.dp))
+                .border(1.dp, RodapeTheme.colors.divider, RoundedCornerShape(RodapeRadii.full))
                 .clickable(onClick = onClubTap)
                 .padding(start = 8.dp, end = 14.dp, top = 7.dp, bottom = 7.dp),
             verticalAlignment = Alignment.CenterVertically,
@@ -728,7 +729,7 @@ fun CustomBottomBar(
             modifier = Modifier
                 .fillMaxWidth()
                 .navShadow(cornerRadius = 32.dp),
-            shape = RoundedCornerShape(999.dp),
+            shape = RoundedCornerShape(RodapeRadii.full),
             color = RodapeTheme.colors.olivaDeep,
             shadowElevation = 0.dp
         ) {
@@ -822,7 +823,7 @@ fun BottomBarItem(
             modifier = Modifier
                 // Alvo de toque de 48dp + anuncia como aba selecionada (Role.Tab)
                 .minimumInteractiveComponentSize()
-                .clip(RoundedCornerShape(999.dp))
+                .clip(RoundedCornerShape(RodapeRadii.full))
                 .background(RodapeTheme.colors.terracota)
                 .clickable(
                     interactionSource = remember { MutableInteractionSource() },
@@ -849,7 +850,7 @@ fun BottomBarItem(
             modifier = Modifier
                 // Alvo de toque de 48dp + anuncia como aba (nao selecionada)
                 .minimumInteractiveComponentSize()
-                .clip(RoundedCornerShape(999.dp))
+                .clip(RoundedCornerShape(RodapeRadii.full))
                 .clickable(
                     interactionSource = remember { MutableInteractionSource() },
                     indication = ripple(bounded = true),
@@ -1280,7 +1281,7 @@ fun HomeScreenTab(
                             Box(
                                 modifier = Modifier
                                     .size(48.dp)
-                                    .clip(RoundedCornerShape(12.dp))
+                                    .clip(RoundedCornerShape(RodapeRadii.sm))
                                     .background(RodapeTheme.colors.terracota.copy(alpha = 0.18f)),
                                 contentAlignment = Alignment.Center,
                             ) {
@@ -1341,7 +1342,7 @@ fun HomeScreenTab(
                                 Box(
                                     modifier = Modifier
                                         .size(48.dp)
-                                        .clip(RoundedCornerShape(12.dp))
+                                        .clip(RoundedCornerShape(RodapeRadii.sm))
                                         .background(RodapeTheme.colors.oliva.copy(alpha = 0.18f)),
                                     contentAlignment = Alignment.Center,
                                 ) {
@@ -2516,7 +2517,7 @@ fun ProfileScreenTab(
                             .weight(1f)
                             .cardShadow(cornerRadius = 20.dp)
                             .clickable { onNavigateToFrases() },
-                        shape = RoundedCornerShape(20.dp),
+                        shape = RoundedCornerShape(RodapeRadii.md),
                         colors = CardDefaults.cardColors(containerColor = RodapeTheme.colors.oliva, contentColor = RodapeTheme.colors.cream),
                         elevation = CardDefaults.cardElevation(defaultElevation = 0.dp)
                     ) {
@@ -2880,12 +2881,12 @@ fun ProfileScreenTab(
                             Box(
                                 modifier = Modifier
                                     .weight(1f)
-                                    .clip(RoundedCornerShape(12.dp))
+                                    .clip(RoundedCornerShape(RodapeRadii.sm))
                                     .background(if (selected) RodapeTheme.colors.terracota else RodapeTheme.colors.cream)
                                     .border(
                                         1.dp,
                                         if (selected) RodapeTheme.colors.terracota else RodapeTheme.colors.divider,
-                                        RoundedCornerShape(12.dp)
+                                        RoundedCornerShape(RodapeRadii.sm)
                                     )
                                     .selectable(
                                         selected = selected,
@@ -2943,12 +2944,12 @@ fun ProfileScreenTab(
                             Box(
                                 modifier = Modifier
                                     .weight(1f)
-                                    .clip(RoundedCornerShape(12.dp))
+                                    .clip(RoundedCornerShape(RodapeRadii.sm))
                                     .background(if (selected) RodapeTheme.colors.terracota else RodapeTheme.colors.cream)
                                     .border(
                                         1.dp,
                                         if (selected) RodapeTheme.colors.terracota else RodapeTheme.colors.divider,
-                                        RoundedCornerShape(12.dp)
+                                        RoundedCornerShape(RodapeRadii.sm)
                                     )
                                     .selectable(
                                         selected = selected,
@@ -3030,7 +3031,7 @@ fun ProfileScreenTab(
                 )
                 Card(
                     modifier = Modifier.fillMaxWidth(),
-                    shape = RoundedCornerShape(20.dp),
+                    shape = RoundedCornerShape(RodapeRadii.md),
                     colors = CardDefaults.cardColors(containerColor = RodapeTheme.colors.olivaSoft.copy(alpha = 0.4f)),
                     border = BorderStroke(1.dp, RodapeTheme.colors.oliva.copy(alpha = 0.3f))
                 ) {
@@ -3536,12 +3537,12 @@ fun EditProfileView(
                         Box(
                             modifier = Modifier
                                 .weight(1f)
-                                .clip(RoundedCornerShape(12.dp))
+                                .clip(RoundedCornerShape(RodapeRadii.sm))
                                 .background(if (selected) RodapeTheme.colors.terracota else RodapeTheme.colors.cream)
                                 .border(
                                     1.dp,
                                     if (selected) RodapeTheme.colors.terracota else RodapeTheme.colors.divider,
-                                    RoundedCornerShape(12.dp)
+                                    RoundedCornerShape(RodapeRadii.sm)
                                 )
                                 .selectable(
                                     selected = selected,
@@ -3719,7 +3720,7 @@ private fun MeetingTicket(
                 if (daysUntil != null && daysUntil >= 0) {
                     Row(
                         modifier = Modifier
-                            .clip(RoundedCornerShape(999.dp))
+                            .clip(RoundedCornerShape(RodapeRadii.full))
                             .background(RodapeTheme.colors.cream.copy(alpha = 0.12f))
                             .padding(horizontal = 9.dp, vertical = 3.dp),
                         verticalAlignment = Alignment.CenterVertically,
@@ -3901,7 +3902,7 @@ private fun MeetingTicket(
                 Row(
                     modifier = Modifier
                         .minimumInteractiveComponentSize()
-                        .clip(RoundedCornerShape(999.dp))
+                        .clip(RoundedCornerShape(RodapeRadii.full))
                         .background(if (isParticipating) RodapeTheme.colors.oliva else RodapeTheme.colors.cream)
                         .clickable(onClick = onRsvp, role = Role.Button)
                         .semantics {

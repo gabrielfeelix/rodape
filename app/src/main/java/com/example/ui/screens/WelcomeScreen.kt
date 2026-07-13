@@ -53,6 +53,7 @@ import com.example.ui.components.TbButton
 import com.example.ui.components.TbButtonSize
 import com.example.ui.components.TbButtonVariant
 import com.example.ui.components.RodapeCard
+import com.example.ui.theme.RodapeRadii
 import com.example.ui.theme.RodapeIcons
 import com.example.ui.theme.Cream
 import com.example.ui.theme.CardSurface
@@ -202,7 +203,7 @@ fun WelcomeScreen(
                         modifier = Modifier
                             .fillMaxWidth()
                             .height(54.dp)
-                            .clip(RoundedCornerShape(999.dp))
+                            .clip(RoundedCornerShape(RodapeRadii.full))
                             .background(RodapeTheme.colors.terracota)
                             .clickable { onNavigateToSignUp() }
                             // C4: TalkBack anuncia "botão" (era Box.clickable mudo).
@@ -237,8 +238,8 @@ fun WelcomeScreen(
                         modifier = Modifier
                             .fillMaxWidth()
                             .height(54.dp)
-                            .clip(RoundedCornerShape(999.dp))
-                            .border(1.dp, RodapeTheme.colors.cream.copy(alpha = 0.25f), RoundedCornerShape(999.dp))
+                            .clip(RoundedCornerShape(RodapeRadii.full))
+                            .border(1.dp, RodapeTheme.colors.cream.copy(alpha = 0.25f), RoundedCornerShape(RodapeRadii.full))
                             .clickable { onNavigateToLogin() }
                             .semantics { role = Role.Button },
                         contentAlignment = Alignment.Center
@@ -267,7 +268,7 @@ fun WelcomeScreen(
                         textAlign = TextAlign.Center,
                         modifier = Modifier
                             .fillMaxWidth()
-                            .clip(RoundedCornerShape(999.dp))
+                            .clip(RoundedCornerShape(RodapeRadii.full))
                             .clickable { showInviteDialog = true }
                             .semantics { role = Role.Button }
                             .padding(vertical = 8.dp)
@@ -1112,7 +1113,7 @@ fun JoinClubScreen(
                                             .semantics {
                                                 contentDescription = "Dígito ${i + 1} de 6 do código de convite"
                                             },
-                                        shape = RoundedCornerShape(12.dp),
+                                        shape = RoundedCornerShape(RodapeRadii.sm),
                                         placeholder = {
                                             Text(
                                                 "-",

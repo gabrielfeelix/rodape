@@ -526,7 +526,7 @@ fun ManageClubScreen(
                         modifier = Modifier.fillMaxWidth(),
                         colors = CardDefaults.cardColors(containerColor = RodapeTheme.colors.terracota.copy(alpha = 0.05f)),
                         border = androidx.compose.foundation.BorderStroke(1.dp, RodapeTheme.colors.terracota.copy(alpha = 0.3f)),
-                        shape = RoundedCornerShape(20.dp)
+                        shape = RoundedCornerShape(RodapeRadii.md)
                     ) {
                         Column(modifier = Modifier.padding(16.dp)) {
                             Text(
@@ -919,7 +919,7 @@ private fun ChangeCurrentBookDialog(
                     onValueChange = { query = it },
                     placeholder = { Text("Buscar um livro pra ler…") },
                     singleLine = true,
-                    shape = RoundedCornerShape(12.dp),
+                    shape = RoundedCornerShape(RodapeRadii.sm),
                     modifier = Modifier.fillMaxWidth()
                 )
                 val q = query.trim()
@@ -997,7 +997,7 @@ private fun MeetingRow(
             Box(
                 modifier = Modifier
                     .size(56.dp)
-                    .clip(RoundedCornerShape(12.dp))
+                    .clip(RoundedCornerShape(RodapeRadii.sm))
                     .background(
                         if (concluded) RodapeTheme.colors.muted.copy(alpha = 0.15f)
                         else RodapeTheme.colors.terracota.copy(alpha = 0.12f)

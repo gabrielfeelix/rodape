@@ -213,7 +213,7 @@ fun MeetingDetailScreen(
                                     modifier = Modifier
                                         .weight(1f)
                                         .height(48.dp)
-                                        .clip(RoundedCornerShape(20.dp))
+                                        .clip(RoundedCornerShape(RodapeRadii.md))
                                         .background(if (sel) RodapeTheme.colors.ink else androidx.compose.ui.graphics.Color.Transparent)
                                         .selectable(
                                             selected = sel,

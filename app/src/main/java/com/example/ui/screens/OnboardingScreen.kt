@@ -201,7 +201,7 @@ fun OnboardingScreen(
                 Spacer(modifier = Modifier.height(24.dp))
                 Surface(
                     modifier = Modifier.fillMaxWidth(),
-                    shape = RoundedCornerShape(20.dp),
+                    shape = RoundedCornerShape(RodapeRadii.md),
                     color = RodapeTheme.colors.cardSoft,
                     border = BorderStroke(1.dp, RodapeTheme.colors.divider),
                 ) {
@@ -230,12 +230,12 @@ fun OnboardingScreen(
                                 Box(
                                     modifier = Modifier
                                         .weight(1f)
-                                        .clip(RoundedCornerShape(12.dp))
+                                        .clip(RoundedCornerShape(RodapeRadii.sm))
                                         .background(if (selected) RodapeTheme.colors.terracota else RodapeTheme.colors.cream)
                                         .border(
                                             1.dp,
                                             if (selected) RodapeTheme.colors.terracota else RodapeTheme.colors.divider,
-                                            RoundedCornerShape(12.dp),
+                                            RoundedCornerShape(RodapeRadii.sm),
                                         )
                                         .selectable(
                                             selected = selected,

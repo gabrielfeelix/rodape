@@ -384,7 +384,7 @@ fun SuggestScreen(
                         Row(
                             modifier = Modifier
                                 .fillMaxWidth()
-                                .clip(RoundedCornerShape(12.dp))
+                                .clip(RoundedCornerShape(RodapeRadii.sm))
                                 .clickable { onNavigateToAddManual() }
                                 .padding(vertical = 14.dp),
                             horizontalArrangement = Arrangement.Center,
@@ -494,7 +494,7 @@ fun SuggestScreen(
                         modifier = Modifier
                             .fillMaxWidth()
                             .height(100.dp),
-                        shape = RoundedCornerShape(12.dp),
+                        shape = RoundedCornerShape(RodapeRadii.sm),
                         colors = OutlinedTextFieldDefaults.colors(
                             unfocusedContainerColor = RodapeTheme.colors.cream,
                             focusedContainerColor = RodapeTheme.colors.cream,

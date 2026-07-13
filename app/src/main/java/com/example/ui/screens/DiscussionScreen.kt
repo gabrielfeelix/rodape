@@ -42,6 +42,7 @@ import com.example.ui.components.TbButtonVariant
 import com.example.ui.components.RodapeCard
 import com.example.ui.components.SkeletonRowList
 import com.example.ui.components.rememberShowLoading
+import com.example.ui.theme.RodapeRadii
 import com.example.ui.theme.RodapeIcons
 import com.example.ui.theme.InterFontFamily
 import com.example.ui.theme.LiterataFontFamily
@@ -484,9 +485,9 @@ fun DiscussionScreen(
 
                                                 Box(
                                                     modifier = Modifier
-                                                        .background(chipBg, RoundedCornerShape(999.dp))
-                                                        .border(chipBorder, RoundedCornerShape(999.dp))
-                                                        .clip(RoundedCornerShape(999.dp))
+                                                        .background(chipBg, RoundedCornerShape(RodapeRadii.full))
+                                                        .border(chipBorder, RoundedCornerShape(RodapeRadii.full))
+                                                        .clip(RoundedCornerShape(RodapeRadii.full))
                                                         .clickable { viewModel.toggleReaction(comment.id, emoji) }
                                                         .semantics {
                                                             role = Role.Button
@@ -702,7 +703,7 @@ fun DiscussionScreen(
                                     )
                                 },
                                 modifier = Modifier.fillMaxWidth(),
-                                shape = RoundedCornerShape(999.dp),
+                                shape = RoundedCornerShape(RodapeRadii.full),
                                 maxLines = 4,
                                 colors = OutlinedTextFieldDefaults.colors(
                                     focusedBorderColor = RodapeTheme.colors.oliva,

@@ -27,6 +27,7 @@ import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import coil.compose.AsyncImage
+import com.example.ui.theme.RodapeRadii
 import com.example.ui.theme.InterFontFamily
 import com.example.ui.theme.LiterataFontFamily
 import com.example.ui.theme.softShadow
@@ -56,7 +57,7 @@ fun Cover(
     width: Dp = 92.dp,
     height: Dp = 138.dp,
 ) {
-    val shape = RoundedCornerShape(3.dp)
+    val shape = RoundedCornerShape(RodapeRadii.xs)
     val box = modifier
         .width(width)
         .height(height)
