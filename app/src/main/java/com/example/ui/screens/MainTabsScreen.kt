@@ -347,20 +347,11 @@ fun MainTabsScreen(
 
     // Prompt automático de avaliar Play Store após engajamento
     if (showRateDialog) {
-        AlertDialog(
+        RodapeDialog(
             onDismissRequest = {
                 ratePromptShown = true
             },
-            containerColor = MaterialTheme.colorScheme.surface,
-            title = {
-                Text(
-                    "Curtindo o Rodapé? ⭐",
-                    style = MaterialTheme.typography.titleLarge.copy(
-                        fontFamily = LiterataFontFamily,
-                        fontWeight = FontWeight.SemiBold
-                    )
-                )
-            },
+            title = "Curtindo o Rodapé? ⭐",
             text = {
                 Text(
                     "Se o app tá ajudando vocês a ler juntos, uma avaliação na Play Store nos ajuda demais a chegar em outros clubes. Leva 30 segundos 💚",
@@ -1779,18 +1770,9 @@ fun BookDetailScreenTab(
         // pra quem leu em bloco ou voltou atrasado).
         var showJumpDialog by remember { mutableStateOf(false) }
         if (showJumpDialog && chapters.isNotEmpty()) {
-            AlertDialog(
+            RodapeDialog(
                 onDismissRequest = { showJumpDialog = false },
-                containerColor = MaterialTheme.colorScheme.surface,
-                title = {
-                    Text(
-                        "Li até o capítulo…",
-                        style = MaterialTheme.typography.titleLarge.copy(
-                            fontFamily = LiterataFontFamily,
-                            fontWeight = FontWeight.SemiBold,
-                        ),
-                    )
-                },
+                title = "Li até o capítulo…",
                 text = {
                     LazyColumn(modifier = Modifier.heightIn(max = 360.dp)) {
                         items(chapters, key = { it.id }) { ch ->
@@ -3135,10 +3117,9 @@ fun ProfileScreenTab(
 
     // Dialog: sair do clube
     if (showLeaveClubDialog) {
-        AlertDialog(
+        RodapeDialog(
             onDismissRequest = { showLeaveClubDialog = false },
-            containerColor = MaterialTheme.colorScheme.surface,
-            title = { Text("Sair do clube?") },
+            title = "Sair do clube?",
             text = {
                 Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
                     Text(
@@ -3171,10 +3152,9 @@ fun ProfileScreenTab(
         // G2: confirmação por digitação numa ação IRREVERSÍVEL — atrito de propósito.
         var confirmText by remember { mutableStateOf("") }
         val confirmedToDelete = confirmText.trim().equals("EXCLUIR", ignoreCase = true)
-        AlertDialog(
+        RodapeDialog(
             onDismissRequest = { if (!deleting) showDeleteAccountDialog = false },
-            containerColor = MaterialTheme.colorScheme.surface,
-            title = { Text("Excluir sua conta?") },
+            title = "Excluir sua conta?",
             text = {
                 Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
                     Text(
@@ -3236,18 +3216,9 @@ fun ProfileScreenTab(
     // Dialog de feedback
     if (showFeedbackDialog) {
         var feedbackText by remember { mutableStateOf("") }
-        AlertDialog(
+        RodapeDialog(
             onDismissRequest = { showFeedbackDialog = false },
-            containerColor = MaterialTheme.colorScheme.surface,
-            title = {
-                Text(
-                    "Envie esse feedback 💚",
-                    style = MaterialTheme.typography.titleLarge.copy(
-                        fontFamily = LiterataFontFamily,
-                        fontWeight = FontWeight.SemiBold
-                    )
-                )
-            },
+            title = "Envie esse feedback 💚",
             text = {
                 Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
                     Text(
@@ -3287,20 +3258,9 @@ fun ProfileScreenTab(
     }
 
     if (showLogoutDialog) {
-        AlertDialog(
+        RodapeDialog(
             onDismissRequest = { showLogoutDialog = false },
-            containerColor = RodapeTheme.colors.cream,
-            title = {
-                Text(
-                    "Deseja sair?",
-                    style = MaterialTheme.typography.titleMedium.copy(
-                        fontFamily = LiterataFontFamily,
-                        fontSize = 18.sp,
-                        fontWeight = FontWeight.Bold,
-                        color = RodapeTheme.colors.ink
-                    )
-                )
-            },
+            title = "Deseja sair?",
             text = {
                 Text(
                     "Tem certeza que deseja desconectar da sua conta?",

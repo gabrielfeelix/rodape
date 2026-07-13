@@ -23,6 +23,9 @@ import androidx.compose.ui.semantics.role
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import com.example.ui.components.RodapeDialog
+import com.example.ui.components.ThemedCheckbox
+import com.example.ui.components.ThemedRadio
 import com.example.ui.theme.*
 
 @Composable
@@ -39,18 +42,9 @@ fun EditClubInfoDialog(
     var corIndex by remember { mutableStateOf(initialCorIndex.toIntOrNull() ?: 0) }
     var privacidade by remember { mutableStateOf(initialPrivacidade) }
 
-    AlertDialog(
-        containerColor = MaterialTheme.colorScheme.surface,
+    RodapeDialog(
         onDismissRequest = onDismiss,
-        title = {
-            Text(
-                "Editar clube",
-                style = MaterialTheme.typography.titleLarge.copy(
-                    fontFamily = LiterataFontFamily,
-                    fontWeight = FontWeight.SemiBold
-                )
-            )
-        },
+        title = "Editar clube",
         text = {
             Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
                 OutlinedTextField(
@@ -95,7 +89,7 @@ fun EditClubInfoDialog(
                                 .clickable { privacidade = key }
                                 .padding(vertical = 4.dp)
                         ) {
-                            RadioButton(selected = privacidade == key, onClick = { privacidade = key })
+                            ThemedRadio(selected = privacidade == key, onClick = { privacidade = key })
                             Spacer(modifier = Modifier.width(4.dp))
                             Text(label)
                         }
@@ -122,10 +116,9 @@ fun RemoveMemberDialog(
     onConfirm: (String) -> Unit
 ) {
     var motivo by remember { mutableStateOf("") }
-    AlertDialog(
-        containerColor = MaterialTheme.colorScheme.surface,
+    RodapeDialog(
         onDismissRequest = onDismiss,
-        title = { Text("Remover $memberName?") },
+        title = "Remover $memberName?",
         text = {
             Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
                 Text(
@@ -157,10 +150,9 @@ fun RegenerateCodeDialog(
     onDismiss: () -> Unit,
     onConfirm: () -> Unit
 ) {
-    AlertDialog(
-        containerColor = MaterialTheme.colorScheme.surface,
+    RodapeDialog(
         onDismissRequest = onDismiss,
-        title = { Text("Gerar novo código?") },
+        title = "Gerar novo código?",
         text = {
             Text(
                 "O código atual deixa de funcionar. Quem ainda não entrou precisa receber o novo código.",
@@ -214,10 +206,9 @@ fun EditMeetingPatternDialog(
         "personalizado_dias" to "A cada N dias"
     )
 
-    AlertDialog(
-        containerColor = MaterialTheme.colorScheme.surface,
+    RodapeDialog(
         onDismissRequest = onDismiss,
-        title = { Text("Padrão de encontros") },
+        title = "Padrão de encontros",
         text = {
             androidx.compose.foundation.lazy.LazyColumn(
                 verticalArrangement = Arrangement.spacedBy(14.dp),
@@ -245,7 +236,7 @@ fun EditMeetingPatternDialog(
                                     }
                                     .padding(vertical = 2.dp)
                             ) {
-                                RadioButton(
+                                ThemedRadio(
                                     selected = tipo == key,
                                     onClick = {
                                         tipo = key
@@ -456,10 +447,9 @@ fun EditSingleMeetingDialog(
     var chapterStart by remember { mutableStateOf(initialChapterStart ?: 1) }
     var chapterEnd by remember { mutableStateOf(initialChapterEnd ?: totalChapters.coerceAtLeast(1)) }
 
-    AlertDialog(
-        containerColor = MaterialTheme.colorScheme.surface,
+    RodapeDialog(
         onDismissRequest = onDismiss,
-        title = { Text("Encontro") },
+        title = "Encontro",
         text = {
             androidx.compose.foundation.lazy.LazyColumn(
                 verticalArrangement = Arrangement.spacedBy(12.dp),
@@ -557,7 +547,7 @@ fun EditSingleMeetingDialog(
                                 .clickable { linkedToCurrentBook = !linkedToCurrentBook }
                                 .padding(vertical = 4.dp)
                         ) {
-                            Checkbox(
+                            ThemedCheckbox(
                                 checked = linkedToCurrentBook,
                                 onCheckedChange = { linkedToCurrentBook = it }
                             )
@@ -672,10 +662,9 @@ fun EditSingleMeetingDialog(
             initialMinute = initHora.substringAfter(":").toIntOrNull()?.coerceIn(0, 59) ?: 0,
             is24Hour = true,
         )
-        AlertDialog(
-            containerColor = MaterialTheme.colorScheme.surface,
+        RodapeDialog(
             onDismissRequest = { showTimePicker = false },
-            title = { Text("Hora do encontro") },
+            title = "Hora do encontro",
             text = {
                 Box(modifier = Modifier.fillMaxWidth(), contentAlignment = Alignment.Center) {
                     TimePicker(state = timeState)
@@ -758,10 +747,9 @@ fun CancelMeetingDialog(
     onDismiss: () -> Unit,
     onConfirm: () -> Unit
 ) {
-    AlertDialog(
-        containerColor = MaterialTheme.colorScheme.surface,
+    RodapeDialog(
         onDismissRequest = onDismiss,
-        title = { Text("Cancelar encontro?") },
+        title = "Cancelar encontro?",
         text = { Text("Os RSVPs serão descartados. Sem volta.") },
         confirmButton = {
             TextButton(onClick = onConfirm) {
