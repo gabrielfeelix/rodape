@@ -72,6 +72,7 @@ import com.example.ui.theme.Muted
 import com.example.ui.theme.DividerSoft
 import com.example.ui.theme.LiterataFontFamily
 import com.example.ui.theme.clubColorFor
+import com.example.ui.theme.cardShadow
 import com.example.ui.theme.navShadow
 import com.example.ui.theme.ticketShadow
 import com.example.ui.theme.floatShadow
@@ -2507,14 +2508,17 @@ fun ProfileScreenTab(
                         )
                     }
 
-                    // Card 3: Frases guardadas (Oliva background, Cream text)
+                    // Card 3: Frases guardadas (Oliva background, Cream text).
+                    // Sombra tingida (cardShadow) + elevação Material 0 — antes usava
+                    // cardElevation(2dp), o cinza Material que o design proíbe.
                     Card(
                         modifier = Modifier
                             .weight(1f)
+                            .cardShadow(cornerRadius = 20.dp)
                             .clickable { onNavigateToFrases() },
                         shape = RoundedCornerShape(20.dp),
                         colors = CardDefaults.cardColors(containerColor = RodapeTheme.colors.oliva, contentColor = RodapeTheme.colors.cream),
-                        elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
+                        elevation = CardDefaults.cardElevation(defaultElevation = 0.dp)
                     ) {
                         Box(
                             modifier = Modifier

@@ -41,6 +41,7 @@ import com.example.ui.theme.Divider
 import com.example.ui.theme.InterFontFamily
 import com.example.ui.theme.LiterataFontFamily
 import com.example.ui.theme.RodapeTheme
+import com.example.ui.theme.RodapeRadii
 import com.example.ui.theme.Terracota
 import com.example.ui.viewmodel.MainViewModel
 import kotlinx.coroutines.delay
@@ -426,8 +427,8 @@ fun SuggestScreen(
                     if (gbConflictAuthor != null) {
                         // Banner de conflito de autor
                         Surface(
-                            color = Color(0xFFFFF4D6),
-                            shape = RoundedCornerShape(12.dp),
+                            color = RodapeTheme.colors.warningSoft,
+                            shape = RoundedCornerShape(RodapeRadii.sm),
                             modifier = Modifier.fillMaxWidth()
                         ) {
                             Column(modifier = Modifier.padding(12.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
@@ -435,12 +436,12 @@ fun SuggestScreen(
                                     "⚠️ Conflito de autor detectado",
                                     style = MaterialTheme.typography.bodyMedium.copy(
                                         fontWeight = FontWeight.SemiBold,
-                                        color = Color(0xFF8B6B00)
+                                        color = RodapeTheme.colors.warning
                                     )
                                 )
                                 Text(
                                     "As fontes discordam. Qual autor está correto?",
-                                    style = MaterialTheme.typography.bodySmall.copy(color = Color(0xFF8B6B00))
+                                    style = MaterialTheme.typography.bodySmall.copy(color = RodapeTheme.colors.warning)
                                 )
                                 Row(
                                     verticalAlignment = Alignment.CenterVertically,
