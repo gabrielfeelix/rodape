@@ -63,6 +63,17 @@ e do plano em `docs/PLANO-PENDENCIAS-2026-07-12.md`. Onda 1 = "destrava quem imp
 - **B3** — o "salvar perfil falha em silêncio" já estava, na prática, **coberto pela
   camada de dados** (`insertUser` é local-first + fila offline); sem mudança de risco.
 
+### Onda 3 — push notifications (F1), backend pronto
+
+- **Backend completo e seguro** (não quebra o build): `supabase/migrations/0007_push_device_tokens.sql`
+  (tabela `device_tokens` + RLS + trigger que chama a função a cada notificação) e a
+  Edge Function `supabase/functions/send-push/index.ts` (resolve tokens + FCM HTTP v1).
+- **Falta ligar** com suas credenciais Firebase — passo-a-passo em
+  `docs/release/push-fcm-setup.md`. Enquanto não liga, o trigger é **no-op seguro**.
+  O cliente Android (FirebaseMessagingService + registro de token + permissão) fica
+  como código pronto pra colar no runbook, **fora do build** de propósito (sem
+  `google-services.json` o build quebraria).
+
 ## v1.0.12 — 2026-07-12 (build 13)
 
 ### 📅 Agendar encontro ficou fácil de achar
