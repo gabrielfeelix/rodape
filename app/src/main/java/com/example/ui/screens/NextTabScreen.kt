@@ -1292,7 +1292,7 @@ private fun OpenVotingSheet(
                     verticalAlignment = Alignment.CenterVertically
                 ) {
                     TbButton(text = "−", onClick = { if (n > 1) n-- }, variant = TbButtonVariant.Outline, size = TbButtonSize.Sm)
-                    Text("$n", style = MaterialTheme.typography.headlineLarge.copy(fontSize = 22.sp))
+                    Text("$n", style = MaterialTheme.typography.headlineLarge)
                     TbButton(text = "+", onClick = { if (n < 12) n++ }, variant = TbButtonVariant.Outline, size = TbButtonSize.Sm)
                 }
             }

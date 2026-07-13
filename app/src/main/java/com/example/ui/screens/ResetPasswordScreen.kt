@@ -71,7 +71,7 @@ fun ResetPasswordScreen(
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { Text("Nova senha", style = MaterialTheme.typography.headlineLarge.copy(color = RodapeTheme.colors.terracota)) },
+                title = { Text("Nova senha", style = MaterialTheme.typography.titleLarge.copy(color = RodapeTheme.colors.terracota)) },
                 navigationIcon = {
                     IconButton(onClick = onCancel) {
                         Icon(
@@ -95,7 +95,7 @@ fun ResetPasswordScreen(
                 RodapeCard(modifier = Modifier.fillMaxWidth(), contentPadding = PaddingValues(20.dp)) {
                     Text(
                         "Defina uma nova senha",
-                        style = MaterialTheme.typography.displaySmall,
+                        style = MaterialTheme.typography.titleMedium,
                         textAlign = TextAlign.Center,
                         modifier = Modifier.fillMaxWidth(),
                     )

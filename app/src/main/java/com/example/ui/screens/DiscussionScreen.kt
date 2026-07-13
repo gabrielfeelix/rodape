@@ -757,7 +757,7 @@ fun DiscussionScreen(
         AlertDialog(
             containerColor = MaterialTheme.colorScheme.surface,
             onDismissRequest = { selectedCommentToReact = null },
-            title = { Text("Adicionar reação", style = MaterialTheme.typography.headlineLarge) },
+            title = { Text("Adicionar reação", style = MaterialTheme.typography.titleLarge) },
             text = {
                 // E2: paleta um pouco maior (era só 5). Duas linhas de 5 pra caber
                 // no diálogo sem espremer/estourar.

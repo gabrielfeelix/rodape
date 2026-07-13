@@ -58,7 +58,7 @@ fun ForgotPasswordScreen(
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { Text("Recuperar senha", style = MaterialTheme.typography.headlineLarge.copy(color = RodapeTheme.colors.terracota)) },
+                title = { Text("Recuperar senha", style = MaterialTheme.typography.titleLarge.copy(color = RodapeTheme.colors.terracota)) },
                 navigationIcon = {
                     IconButton(onClick = onNavigateBack) {
                         Icon(RodapeIcons.Back, "Voltar", tint = RodapeTheme.colors.terracota)
@@ -86,7 +86,7 @@ fun ForgotPasswordScreen(
                     } else {
                         Text(
                             "Digite seu email e enviamos o link de redefinição.",
-                            style = MaterialTheme.typography.displaySmall,
+                            style = MaterialTheme.typography.bodyLarge,
                             textAlign = TextAlign.Center,
                             modifier = Modifier.fillMaxWidth(),
                         )
