@@ -296,7 +296,7 @@ fun SuggestScreen(
                         .weight(1f)
                 ) {
                     Text(
-                        text = "📚 Populares — toque para selecionar",
+                        text = "Populares — toque para selecionar",
                         style = MaterialTheme.typography.bodyMedium,
                         color = RodapeTheme.colors.muted
                     )
@@ -352,7 +352,8 @@ fun SuggestScreen(
                         )
                         Spacer(modifier = Modifier.height(10.dp))
                         TbButton(
-                            text = "📚 Cadastrar manualmente",
+                            text = "Cadastrar manualmente",
+                            leadingIcon = RodapeIcons.Book,
                             onClick = onNavigateToAddManual,
                             variant = TbButtonVariant.Terra,
                             modifier = Modifier.fillMaxWidth(0.8f)

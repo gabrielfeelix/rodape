@@ -323,7 +323,7 @@ fun EncontroTab(
                             }
                             if (m.chapterStart != null && m.chapterEnd != null) {
                                 Text(
-                                    text = "📖 Caps ${m.chapterStart}–${m.chapterEnd}",
+                                    text = "Caps ${m.chapterStart}–${m.chapterEnd}",
                                     style = MaterialTheme.typography.labelSmall.copy(
                                         color = if (concluded) RodapeTheme.colors.muted else RodapeTheme.colors.terracota,
                                         fontWeight = FontWeight.SemiBold
@@ -417,7 +417,7 @@ fun EncontroTab(
                                 )
                                 if (meeting!!.chapterStart != null && meeting!!.chapterEnd != null) {
                                     Text(
-                                        text = "📖 Caps ${meeting!!.chapterStart}–${meeting!!.chapterEnd}",
+                                        text = "Caps ${meeting!!.chapterStart}–${meeting!!.chapterEnd}",
                                         style = MaterialTheme.typography.labelSmall.copy(
                                             color = RodapeTheme.colors.olivaSoft,
                                             fontWeight = FontWeight.SemiBold

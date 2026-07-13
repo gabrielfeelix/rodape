@@ -168,7 +168,7 @@ fun MeetingDetailScreen(
                         if (m.chapterStart != null && m.chapterEnd != null) {
                             Spacer(modifier = Modifier.height(4.dp))
                             Text(
-                                text = "📖 Caps ${m.chapterStart}–${m.chapterEnd}",
+                                text = "Caps ${m.chapterStart}–${m.chapterEnd}",
                                 style = MaterialTheme.typography.labelSmall.copy(
                                     color = RodapeTheme.colors.terracota,
                                     fontWeight = FontWeight.SemiBold

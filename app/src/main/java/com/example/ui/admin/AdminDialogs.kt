@@ -567,7 +567,7 @@ fun EditSingleMeetingDialog(
                                     style = MaterialTheme.typography.bodyMedium.copy(fontWeight = FontWeight.SemiBold)
                                 )
                                 Text(
-                                    "📖 ${currentBookTitle ?: "—"}",
+                                    "${currentBookTitle ?: "—"}",
                                     style = MaterialTheme.typography.bodySmall.copy(color = RodapeTheme.colors.muted)
                                 )
                             }

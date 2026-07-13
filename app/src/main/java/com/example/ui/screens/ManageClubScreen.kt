@@ -151,7 +151,8 @@ fun ManageClubScreen(
                     Spacer(modifier = Modifier.height(12.dp))
                     val ctx = androidx.compose.ui.platform.LocalContext.current
                     TbButton(
-                        text = "📲 Compartilhar convite",
+                        text = "Compartilhar convite",
+                        leadingIcon = RodapeIcons.Share,
                         onClick = {
                             val code = club?.codigo ?: return@TbButton
                             val name = club?.nome ?: "Clube"
@@ -273,7 +274,7 @@ fun ManageClubScreen(
                                     )
                                 )
                                 Text(
-                                    text = "📍 ${p.local}",
+                                    text = "${p.local}",
                                     style = MaterialTheme.typography.bodySmall.copy(color = RodapeTheme.colors.muted)
                                 )
                             }
@@ -1038,7 +1039,7 @@ private fun MeetingRow(
                 Text(text = meeting.hora, style = MaterialTheme.typography.bodySmall.copy(color = RodapeTheme.colors.muted))
                 if (meeting.chapterStart != null && meeting.chapterEnd != null) {
                     Text(
-                        text = "📖 Caps ${meeting.chapterStart}–${meeting.chapterEnd}",
+                        text = "Caps ${meeting.chapterStart}–${meeting.chapterEnd}",
                         style = MaterialTheme.typography.labelSmall.copy(
                             color = RodapeTheme.colors.terracota,
                             fontWeight = FontWeight.SemiBold
@@ -1046,7 +1047,7 @@ private fun MeetingRow(
                     )
                 }
                 Text(
-                    text = "📍 ${meeting.local}",
+                    text = "${meeting.local}",
                     style = MaterialTheme.typography.bodySmall.copy(color = RodapeTheme.colors.muted),
                     maxLines = 1,
                     overflow = TextOverflow.Ellipsis

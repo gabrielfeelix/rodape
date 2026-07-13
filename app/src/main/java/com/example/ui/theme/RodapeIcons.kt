@@ -605,6 +605,113 @@ object RodapeIcons {
             }
         }
     }
+
+    // back: seta pra esquerda — M20 12H4 M10 6l-6 6 6 6
+    val Back: ImageVector by lazy {
+        icon("Back") {
+            strokePath {
+                moveTo(20f, 12f); horizontalLineTo(4f)
+                moveTo(10f, 6f); lineToRelative(-6f, 6f); lineToRelative(6f, 6f)
+            }
+        }
+    }
+
+    // moreV: 3 pontos verticais preenchidos r=1.5 em (12,5),(12,12),(12,19)
+    val MoreV: ImageVector by lazy {
+        icon("MoreV") {
+            fillPath {
+                circle(12f, 5f, 1.5f)
+                circle(12f, 12f, 1.5f)
+                circle(12f, 19f, 1.5f)
+            }
+        }
+    }
+
+    // close: X — M6 6l12 12 M18 6l-12 12
+    val Close: ImageVector by lazy {
+        icon("Close") {
+            strokePath {
+                moveTo(6f, 6f); lineTo(18f, 18f)
+                moveTo(18f, 6f); lineTo(6f, 18f)
+            }
+        }
+    }
+
+    // share: 3 nós + 2 conexões
+    val Share: ImageVector by lazy {
+        icon("Share") {
+            strokePath {
+                circle(18f, 5f, 3f)
+                circle(6f, 12f, 3f)
+                circle(18f, 19f, 3f)
+                moveTo(8.6f, 13.5f); lineToRelative(6.8f, 4f)
+                moveTo(15.4f, 6.5f); lineToRelative(-6.8f, 4f)
+            }
+        }
+    }
+
+    // trash: tampa + lata — M4 7h16 M9 7V5a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2 M6 7l1 13...
+    val Trash: ImageVector by lazy {
+        icon("Trash") {
+            strokePath {
+                moveTo(4f, 7f); horizontalLineTo(20f)
+                moveTo(9f, 7f)
+                verticalLineTo(5f)
+                arcToRelative(1f, 1f, 0f, false, true, 1f, -1f)
+                horizontalLineToRelative(4f)
+                arcToRelative(1f, 1f, 0f, false, true, 1f, 1f)
+                verticalLineTo(7f)
+                moveTo(6f, 7f)
+                lineToRelative(1f, 13f)
+                arcToRelative(1f, 1f, 0f, false, false, 1f, 1f)
+                horizontalLineToRelative(8f)
+                arcToRelative(1f, 1f, 0f, false, false, 1f, -1f)
+                lineToRelative(1f, -13f)
+            }
+        }
+    }
+
+    // image: moldura + sol + montanhas
+    val Image: ImageVector by lazy {
+        icon("Image") {
+            strokePath {
+                moveTo(5f, 4f)
+                horizontalLineTo(19f)
+                arcToRelative(2f, 2f, 0f, false, true, 2f, 2f)
+                verticalLineTo(18f)
+                arcToRelative(2f, 2f, 0f, false, true, -2f, 2f)
+                horizontalLineTo(5f)
+                arcToRelative(2f, 2f, 0f, false, true, -2f, -2f)
+                verticalLineTo(6f)
+                arcToRelative(2f, 2f, 0f, false, true, 2f, -2f)
+                close()
+                circle(8.5f, 9f, 1.5f)
+                moveTo(4f, 17f)
+                lineToRelative(4f, -4f)
+                lineToRelative(3f, 3f)
+                lineToRelative(4f, -5f)
+                lineToRelative(6f, 6f)
+            }
+        }
+    }
+
+    // link (link-2): M9 17H7a5 5 0 0 1 0-10h2 M15 7h2a5 5 0 0 1 0 10h-2 M8 12h8
+    val Link: ImageVector by lazy {
+        icon("Link") {
+            strokePath {
+                moveTo(9f, 17f)
+                horizontalLineTo(7f)
+                arcToRelative(5f, 5f, 0f, false, true, 0f, -10f)
+                horizontalLineToRelative(2f)
+                moveTo(15f, 7f)
+                horizontalLineToRelative(2f)
+                arcToRelative(5f, 5f, 0f, false, true, 0f, 10f)
+                horizontalLineToRelative(-2f)
+                moveTo(8f, 12f)
+                horizontalLineToRelative(8f)
+            }
+        }
+    }
 }
 
 // Geometria compartilhada entre Star (stroke) e StarFill (fill).

@@ -209,7 +209,8 @@ fun AddBookManualScreen(
                         verticalArrangement = Arrangement.spacedBy(6.dp)
                     ) {
                         TbButton(
-                            text = "📷 Tirar foto",
+                            text = "Tirar foto",
+                            leadingIcon = RodapeIcons.Camera,
                             onClick = {
                                 if (cameraPermission.status.isGranted) {
                                     showCamera = true
@@ -229,7 +230,8 @@ fun AddBookManualScreen(
                             modifier = Modifier.fillMaxWidth()
                         )
                         TbButton(
-                            text = "🖼️ Da galeria",
+                            text = "Da galeria",
+                            leadingIcon = RodapeIcons.Image,
                             onClick = {
                                 galleryLauncher.launch(
                                     PickVisualMediaRequest(ActivityResultContracts.PickVisualMedia.ImageOnly)
@@ -240,7 +242,8 @@ fun AddBookManualScreen(
                             modifier = Modifier.fillMaxWidth()
                         )
                         TbButton(
-                            text = "🔗 URL",
+                            text = "URL",
+                            leadingIcon = RodapeIcons.Link,
                             onClick = { showUrlInput = !showUrlInput },
                             variant = TbButtonVariant.Outline,
                             size = TbButtonSize.Sm,
