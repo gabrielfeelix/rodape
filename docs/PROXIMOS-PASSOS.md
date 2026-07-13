@@ -1,12 +1,12 @@
-# Próximos passos — features maiores adiadas
+# Próximos passos — features maiores
 
-> Adiadas de propósito na 1.1.1 (revisão de fluxo do ciclo do clube). São
-> **features**, não bugs — por isso ficaram fora do lote de correções, pra não
-> serem feitas meia-boca. Contexto completo em [REVISAO-UX-2026-07-12.md](REVISAO-UX-2026-07-12.md).
+> **Status: as duas features abaixo foram IMPLEMENTADAS na 1.1.2 (commit 09c85ad).**
+> Ficam aqui como registro do que eram e onde vivem. Contexto da revisão de fluxo
+> em [REVISAO-UX-2026-07-12.md](REVISAO-UX-2026-07-12.md).
 
 ---
 
-## 1. Checklist guiado de clube novo (onboarding do ciclo)
+## 1. Checklist guiado de clube novo (onboarding do ciclo) — ✅ feito (1.1.2)
 
 **Problema (achado #8 da auditoria de fluxo):** um clube recém-criado mostra 4 telas
 vazias desconexas (Home, Livro, Encontro, Votação), cada uma com seu CTA, mas nada
@@ -38,7 +38,7 @@ ganho de UX pro primeiro clube.
 
 ---
 
-## 2. Buscar/adicionar livro dentro do diálogo "Trocar livro"
+## 2. Buscar/adicionar livro dentro do diálogo "Trocar livro" — ✅ feito (1.1.2)
 
 **Problema (achados #7 e #12):** o diálogo "Trocar livro" (Gerenciar clube) só lista
 livros já `suggested`/`next`. Se não há nenhum, ele diz *"Sugira um livro primeiro na
