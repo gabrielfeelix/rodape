@@ -191,7 +191,7 @@ fun EncontroTab(
                 horizontalAlignment = Alignment.CenterHorizontally
             ) {
                 Icon(
-                    imageVector = Icons.Outlined.EventNote,
+                    imageVector = RodapeIcons.Calendar,
                     contentDescription = null,
                     tint = RodapeTheme.colors.muted,
                     modifier = Modifier.size(48.dp)
@@ -371,7 +371,7 @@ fun EncontroTab(
                             ) {
                                 Box(contentAlignment = Alignment.Center) {
                                     Icon(
-                                        imageVector = Icons.Outlined.DateRange,
+                                        imageVector = RodapeIcons.Calendar,
                                         contentDescription = null,
                                         tint = RodapeTheme.colors.cream.copy(alpha = 0.35f),
                                         modifier = Modifier.size(56.dp)
@@ -435,7 +435,7 @@ fun EncontroTab(
                             horizontalArrangement = Arrangement.spacedBy(8.dp)
                         ) {
                             Icon(
-                                imageVector = Icons.Outlined.Place,
+                                imageVector = RodapeIcons.Pin,
                                 contentDescription = "Local",
                                 tint = RodapeTheme.colors.olivaMid,
                                 modifier = Modifier.size(20.dp)
@@ -950,7 +950,7 @@ fun VotacaoTab(
                                             )
                                             if (hasJustification) {
                                                 Icon(
-                                                    imageVector = Icons.Outlined.Info,
+                                                    imageVector = RodapeIcons.Info,
                                                     contentDescription = "Ver justificativa",
                                                     tint = RodapeTheme.colors.olivaMid,
                                                     modifier = Modifier
@@ -980,7 +980,7 @@ fun VotacaoTab(
                                                 onClick = { showMenu = true },
                                                 modifier = Modifier.minimumInteractiveComponentSize()
                                             ) {
-                                                Icon(Icons.Outlined.MoreVert, contentDescription = "Ações do livro na votação", tint = RodapeTheme.colors.muted, modifier = Modifier.size(18.dp))
+                                                Icon(RodapeIcons.MoreV, contentDescription = "Ações do livro na votação", tint = RodapeTheme.colors.muted, modifier = Modifier.size(18.dp))
                                             }
                                             DropdownMenu(expanded = showMenu, onDismissRequest = { showMenu = false }) {
                                                 DropdownMenuItem(

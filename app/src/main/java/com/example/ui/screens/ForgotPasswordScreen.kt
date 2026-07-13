@@ -22,6 +22,7 @@ import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import com.example.ui.components.RodapeCard
+import com.example.ui.theme.RodapeIcons
 import com.example.ui.theme.RodapeTheme
 import com.example.ui.theme.Terracota
 import kotlinx.coroutines.launch
@@ -59,7 +60,7 @@ fun ForgotPasswordScreen(
                 title = { Text("Recuperar senha", style = MaterialTheme.typography.headlineLarge.copy(color = RodapeTheme.colors.terracota)) },
                 navigationIcon = {
                     IconButton(onClick = onNavigateBack) {
-                        Icon(Icons.AutoMirrored.Outlined.ArrowBack, "Voltar", tint = RodapeTheme.colors.terracota)
+                        Icon(RodapeIcons.Back, "Voltar", tint = RodapeTheme.colors.terracota)
                     }
                 },
                 colors = TopAppBarDefaults.topAppBarColors(containerColor = MaterialTheme.colorScheme.background),

@@ -21,6 +21,7 @@ import androidx.compose.ui.unit.dp
 import com.example.ui.components.CenteredLoading
 import com.example.ui.components.QuoteCard
 import com.example.ui.components.rememberShowLoading
+import com.example.ui.theme.RodapeIcons
 import com.example.ui.theme.LiterataFontFamily
 import com.example.ui.theme.RodapeTheme
 import com.example.ui.viewmodel.MainViewModel
@@ -71,7 +72,7 @@ fun FrasesScreen(
                 navigationIcon = {
                     IconButton(onClick = onNavigateBack) {
                         Icon(
-                            imageVector = Icons.AutoMirrored.Outlined.ArrowBack,
+                            imageVector = RodapeIcons.Back,
                             contentDescription = "Voltar",
                         )
                     }
@@ -87,7 +88,7 @@ fun FrasesScreen(
                             )
                         }) {
                             Icon(
-                                imageVector = Icons.Outlined.Share,
+                                imageVector = RodapeIcons.Share,
                                 contentDescription = "Exportar/Compartilhar frases",
                                 tint = RodapeTheme.colors.terracota
                             )
@@ -116,12 +117,12 @@ fun FrasesScreen(
                         )
                     },
                     leadingIcon = {
-                        Icon(Icons.Outlined.Search, contentDescription = null, tint = RodapeTheme.colors.muted)
+                        Icon(RodapeIcons.Search, contentDescription = null, tint = RodapeTheme.colors.muted)
                     },
                     trailingIcon = {
                         if (query.isNotBlank()) {
                             IconButton(onClick = { query = "" }) {
-                                Icon(Icons.Outlined.Clear, contentDescription = "Limpar", tint = RodapeTheme.colors.muted)
+                                Icon(RodapeIcons.Close, contentDescription = "Limpar", tint = RodapeTheme.colors.muted)
                             }
                         }
                     },

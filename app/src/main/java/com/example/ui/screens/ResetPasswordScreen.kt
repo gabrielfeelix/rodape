@@ -26,6 +26,7 @@ import androidx.compose.ui.text.input.VisualTransformation
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import com.example.ui.components.RodapeCard
+import com.example.ui.theme.RodapeIcons
 import com.example.ui.theme.Muted
 import com.example.ui.theme.RodapeTheme
 import com.example.ui.theme.Terracota
@@ -73,7 +74,7 @@ fun ResetPasswordScreen(
                 navigationIcon = {
                     IconButton(onClick = onCancel) {
                         Icon(
-                            imageVector = Icons.AutoMirrored.Outlined.ArrowBack,
+                            imageVector = RodapeIcons.Back,
                             contentDescription = "Cancelar",
                             tint = RodapeTheme.colors.terracota,
                         )

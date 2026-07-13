@@ -44,7 +44,7 @@ fun ModerationLogScreen(
                 title = { Text("Moderação") },
                 navigationIcon = {
                     IconButton(onClick = onNavigateBack) {
-                        Icon(Icons.AutoMirrored.Outlined.ArrowBack, contentDescription = "Voltar")
+                        Icon(RodapeIcons.Back, contentDescription = "Voltar")
                     }
                 }
             )

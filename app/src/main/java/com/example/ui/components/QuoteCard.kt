@@ -13,6 +13,7 @@ import androidx.compose.ui.text.font.FontStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.example.ui.theme.RodapeIcons
 import com.example.ui.theme.Divider
 import com.example.ui.theme.LiterataFontFamily
 import com.example.ui.theme.RodapeTheme
@@ -82,7 +83,7 @@ fun QuoteCard(
                             modifier = Modifier.minimumInteractiveComponentSize(),
                         ) {
                             Icon(
-                                imageVector = Icons.Outlined.Delete,
+                                imageVector = RodapeIcons.Trash,
                                 contentDescription = "Apagar frase",
                                 tint = RodapeTheme.colors.muted,
                                 modifier = Modifier.size(18.dp),

@@ -27,6 +27,7 @@ import com.example.ui.components.TbButton
 import com.example.ui.components.SkeletonBox
 import com.example.ui.components.SkeletonText
 import com.example.ui.components.rememberShowLoading
+import com.example.ui.theme.RodapeIcons
 import com.example.ui.theme.Ink
 import com.example.ui.theme.Muted
 import com.example.ui.theme.RodapeTheme
@@ -125,7 +126,7 @@ fun ShelfTabScreen(
                         modifier = Modifier.padding(horizontal = 40.dp)
                     ) {
                         Icon(
-                            imageVector = Icons.Outlined.Book,
+                            imageVector = RodapeIcons.Book,
                             contentDescription = null,
                             tint = RodapeTheme.colors.muted,
                             modifier = Modifier.size(48.dp)

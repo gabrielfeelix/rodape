@@ -80,7 +80,7 @@ fun MeetingDetailScreen(
                 title = { Text("Encontro") },
                 navigationIcon = {
                     IconButton(onClick = onNavigateBack) {
-                        Icon(Icons.AutoMirrored.Outlined.ArrowBack, contentDescription = "Voltar")
+                        Icon(RodapeIcons.Back, contentDescription = "Voltar")
                     }
                 }
             )
@@ -162,7 +162,7 @@ fun MeetingDetailScreen(
                         }
                         Text(m.hora, style = MaterialTheme.typography.bodyMedium.copy(color = RodapeTheme.colors.muted))
                         Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(4.dp)) {
-                            Icon(Icons.Outlined.Place, contentDescription = null, tint = RodapeTheme.colors.muted, modifier = Modifier.size(14.dp))
+                            Icon(RodapeIcons.Pin, contentDescription = null, tint = RodapeTheme.colors.muted, modifier = Modifier.size(14.dp))
                             Text(m.local, style = MaterialTheme.typography.bodySmall.copy(color = RodapeTheme.colors.muted))
                         }
                         if (m.chapterStart != null && m.chapterEnd != null) {

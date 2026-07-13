@@ -84,7 +84,7 @@ fun ManageClubScreen(
                 title = { Text("Gerenciar clube") },
                 navigationIcon = {
                     IconButton(onClick = onNavigateBack) {
-                        Icon(Icons.AutoMirrored.Outlined.ArrowBack, contentDescription = "Voltar")
+                        Icon(RodapeIcons.Back, contentDescription = "Voltar")
                     }
                 }
             )
@@ -216,7 +216,7 @@ fun ManageClubScreen(
                                 if (rawMember.papel != "super_admin") {
                                     IconButton(onClick = { memberSheetFor = rawMember }) {
                                         Icon(
-                                            Icons.Outlined.MoreVert,
+                                            RodapeIcons.MoreV,
                                             contentDescription = "Ações para ${user?.nome ?: "membro"}"
                                         )
                                     }
@@ -320,7 +320,7 @@ fun ManageClubScreen(
                         horizontalArrangement = Arrangement.spacedBy(6.dp)
                     ) {
                         Icon(
-                            imageVector = Icons.Outlined.DateRange,
+                            imageVector = RodapeIcons.Calendar,
                             contentDescription = null,
                             tint = RodapeTheme.colors.terracota,
                             modifier = Modifier.size(16.dp)
@@ -350,7 +350,7 @@ fun ManageClubScreen(
                             verticalArrangement = Arrangement.spacedBy(8.dp)
                         ) {
                             Icon(
-                                imageVector = Icons.Outlined.DateRange,
+                                imageVector = RodapeIcons.Calendar,
                                 contentDescription = null,
                                 tint = RodapeTheme.colors.muted.copy(alpha = 0.6f),
                                 modifier = Modifier.size(36.dp)
@@ -436,7 +436,7 @@ fun ManageClubScreen(
                                     horizontalArrangement = Arrangement.spacedBy(4.dp)
                                 ) {
                                     Icon(
-                                        imageVector = Icons.Outlined.List,
+                                        imageVector = RodapeIcons.Log,
                                         contentDescription = null,
                                         tint = RodapeTheme.colors.olivaMid,
                                         modifier = Modifier.size(14.dp)
@@ -459,7 +459,7 @@ fun ManageClubScreen(
                             verticalArrangement = Arrangement.spacedBy(8.dp)
                         ) {
                             Icon(
-                                imageVector = Icons.Outlined.List,
+                                imageVector = RodapeIcons.Log,
                                 contentDescription = null,
                                 tint = RodapeTheme.colors.muted.copy(alpha = 0.6f),
                                 modifier = Modifier.size(36.dp)

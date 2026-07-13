@@ -138,7 +138,7 @@ fun AddBookManualScreen(
                 onClick = { showCamera = false },
                 modifier = Modifier.align(Alignment.TopEnd).padding(16.dp)
             ) {
-                Icon(Icons.Outlined.Clear, contentDescription = "Fechar", tint = RodapeTheme.colors.cream)
+                Icon(RodapeIcons.Close, contentDescription = "Fechar", tint = RodapeTheme.colors.cream)
             }
         }
         return
@@ -150,7 +150,7 @@ fun AddBookManualScreen(
                 title = { Text("Sugerir livro") },
                 navigationIcon = {
                     IconButton(onClick = onNavigateBack) {
-                        Icon(Icons.AutoMirrored.Outlined.ArrowBack, contentDescription = "Voltar")
+                        Icon(RodapeIcons.Back, contentDescription = "Voltar")
                     }
                 }
             )

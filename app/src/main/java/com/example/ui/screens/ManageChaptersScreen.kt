@@ -137,7 +137,7 @@ fun ManageChaptersScreen(
                 title = { Text("Capítulos") },
                 navigationIcon = {
                     IconButton(onClick = requestDiscard) {
-                        Icon(Icons.AutoMirrored.Outlined.ArrowBack, contentDescription = "Voltar")
+                        Icon(RodapeIcons.Back, contentDescription = "Voltar")
                     }
                 },
                 actions = {
@@ -170,7 +170,7 @@ fun ManageChaptersScreen(
                     verticalArrangement = Arrangement.Center
                 ) {
                     Icon(
-                        Icons.Outlined.MenuBook,
+                        RodapeIcons.Book,
                         contentDescription = null,
                         tint = RodapeTheme.colors.muted,
                         modifier = Modifier.size(48.dp)
@@ -241,7 +241,7 @@ fun ManageChaptersScreen(
                     verticalArrangement = Arrangement.Center
                 ) {
                     Icon(
-                        Icons.Outlined.MenuBook,
+                        RodapeIcons.Book,
                         contentDescription = null,
                         tint = RodapeTheme.colors.muted,
                         modifier = Modifier.size(48.dp)
@@ -338,7 +338,7 @@ fun ManageChaptersScreen(
                             ) { Icon(RodapeIcons.ChevD, contentDescription = "Descer") }
                             IconButton(onClick = {
                                 draftList = draftList.toMutableList().apply { removeAt(idx) }
-                            }) { Icon(Icons.Outlined.Delete, contentDescription = "Remover", tint = RodapeTheme.colors.terracota) }
+                            }) { Icon(RodapeIcons.Trash, contentDescription = "Remover", tint = RodapeTheme.colors.terracota) }
                         }
                     }
                 }

@@ -36,7 +36,7 @@ fun AboutScreen(
                 title = { Text("Sobre o Rodapé") },
                 navigationIcon = {
                     IconButton(onClick = onNavigateBack) {
-                        Icon(Icons.AutoMirrored.Outlined.ArrowBack, contentDescription = "Voltar")
+                        Icon(RodapeIcons.Back, contentDescription = "Voltar")
                     }
                 }
             )

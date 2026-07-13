@@ -149,7 +149,7 @@ fun SuggestScreen(
                 navigationIcon = {
                     IconButton(onClick = onNavigateBack) {
                         Icon(
-                            imageVector = Icons.AutoMirrored.Outlined.ArrowBack,
+                            imageVector = RodapeIcons.Back,
                             contentDescription = "Voltar",
                             tint = RodapeTheme.colors.terracota
                         )
@@ -233,7 +233,7 @@ fun SuggestScreen(
                 shape = RoundedCornerShape(14.dp),
                 leadingIcon = {
                     Icon(
-                        imageVector = Icons.Outlined.Search,
+                        imageVector = RodapeIcons.Search,
                         contentDescription = "Buscar",
                         tint = RodapeTheme.colors.muted
                     )
@@ -635,7 +635,7 @@ private fun BookResultRow(
                 contentAlignment = Alignment.Center
             ) {
                 Icon(
-                    imageVector = Icons.Outlined.Check,
+                    imageVector = RodapeIcons.Check,
                     contentDescription = "Selecionado",
                     tint = RodapeTheme.colors.cream,
                     modifier = Modifier.size(14.dp)

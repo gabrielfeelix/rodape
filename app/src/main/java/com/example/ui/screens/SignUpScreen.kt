@@ -33,6 +33,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.R
 import com.example.ui.components.RodapeCard
+import com.example.ui.theme.RodapeIcons
 import com.example.ui.theme.InterFontFamily
 import com.example.ui.theme.Ink
 import com.example.ui.theme.LiterataFontFamily
@@ -125,7 +126,7 @@ fun SignUpScreen(
                 title = {},
                 navigationIcon = {
                     IconButton(onClick = onNavigateBack) {
-                        Icon(Icons.AutoMirrored.Outlined.ArrowBack, "Voltar", tint = RodapeTheme.colors.ink)
+                        Icon(RodapeIcons.Back, "Voltar", tint = RodapeTheme.colors.ink)
                     }
                 },
                 colors = TopAppBarDefaults.topAppBarColors(containerColor = RodapeTheme.colors.paper),

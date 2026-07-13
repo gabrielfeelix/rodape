@@ -42,6 +42,7 @@ import com.example.ui.components.TbButtonVariant
 import com.example.ui.components.RodapeCard
 import com.example.ui.components.SkeletonRowList
 import com.example.ui.components.rememberShowLoading
+import com.example.ui.theme.RodapeIcons
 import com.example.ui.theme.InterFontFamily
 import com.example.ui.theme.LiterataFontFamily
 import com.example.ui.theme.RodapeTheme
@@ -105,7 +106,7 @@ fun DiscussionScreen(
                 navigationIcon = {
                     IconButton(onClick = onNavigateBack) {
                         Icon(
-                            imageVector = Icons.AutoMirrored.Outlined.ArrowBack,
+                            imageVector = RodapeIcons.Back,
                             contentDescription = "Voltar",
                             tint = RodapeTheme.colors.terracota
                         )
@@ -230,7 +231,7 @@ fun DiscussionScreen(
                                 contentAlignment = Alignment.Center
                             ) {
                                 Icon(
-                                    imageVector = Icons.Outlined.CheckCircle,
+                                    imageVector = RodapeIcons.CheckCircle,
                                     contentDescription = null,
                                     tint = RodapeTheme.colors.cream,
                                     modifier = Modifier.size(18.dp)
@@ -267,7 +268,7 @@ fun DiscussionScreen(
                                 horizontalArrangement = Arrangement.spacedBy(10.dp)
                             ) {
                                 Icon(
-                                    imageVector = Icons.Outlined.Warning,
+                                    imageVector = RodapeIcons.Warning,
                                     contentDescription = null,
                                     tint = RodapeTheme.colors.terracota,
                                     modifier = Modifier.size(20.dp)
@@ -430,7 +431,7 @@ fun DiscussionScreen(
                                                     contentAlignment = Alignment.Center,
                                                 ) {
                                                     Icon(
-                                                        imageVector = Icons.Outlined.AddReaction,
+                                                        imageVector = RodapeIcons.Smile,
                                                         contentDescription = null,
                                                         tint = RodapeTheme.colors.muted,
                                                         modifier = Modifier.size(18.dp)
@@ -525,7 +526,7 @@ fun DiscussionScreen(
                                             modifier = Modifier.minimumInteractiveComponentSize()
                                         ) {
                                             Icon(
-                                                imageVector = Icons.Outlined.MoreVert,
+                                                imageVector = RodapeIcons.MoreV,
                                                 contentDescription = "Moderação",
                                                 tint = RodapeTheme.colors.muted,
                                                 modifier = Modifier.size(18.dp)
@@ -554,7 +555,7 @@ fun DiscussionScreen(
                                             modifier = Modifier.minimumInteractiveComponentSize()
                                         ) {
                                             Icon(
-                                                imageVector = Icons.Outlined.MoreVert,
+                                                imageVector = RodapeIcons.MoreV,
                                                 contentDescription = "Opções do comentário",
                                                 tint = RodapeTheme.colors.muted,
                                                 modifier = Modifier.size(18.dp)
@@ -737,7 +738,7 @@ fun DiscussionScreen(
                             contentAlignment = Alignment.Center
                         ) {
                             Icon(
-                                imageVector = Icons.Outlined.Send,
+                                imageVector = RodapeIcons.Send,
                                 contentDescription = "Enviar",
                                 tint = if (commentText.trim().isNotEmpty()) RodapeTheme.colors.cream else MaterialTheme.colorScheme.onSurfaceVariant,
                                 modifier = Modifier.size(20.dp)

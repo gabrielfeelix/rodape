@@ -31,6 +31,7 @@ import androidx.compose.ui.unit.dp
 import com.example.ui.components.Avatar
 import com.example.ui.components.SkeletonRowList
 import com.example.ui.components.rememberShowLoading
+import com.example.ui.theme.RodapeIcons
 import com.example.ui.theme.RodapeTheme
 import com.example.ui.viewmodel.MainViewModel
 import kotlinx.serialization.json.Json
@@ -64,7 +65,7 @@ fun NotificationsScreen(
                 navigationIcon = {
                     IconButton(onClick = onNavigateBack) {
                         Icon(
-                            imageVector = Icons.AutoMirrored.Outlined.ArrowBack,
+                            imageVector = RodapeIcons.Back,
                             contentDescription = "Voltar",
                             tint = RodapeTheme.colors.terracota
                         )
@@ -110,7 +111,7 @@ fun NotificationsScreen(
                     verticalArrangement = Arrangement.spacedBy(16.dp)
                 ) {
                     Icon(
-                        imageVector = Icons.Outlined.Notifications,
+                        imageVector = RodapeIcons.Bell,
                         contentDescription = "Sino",
                         tint = RodapeTheme.colors.muted,
                         modifier = Modifier.size(64.dp)
@@ -263,14 +264,14 @@ private fun NotificationItem(
 
     // Icon type
     val iconInfo: Pair<ImageVector, Pair<androidx.compose.ui.graphics.Color, androidx.compose.ui.graphics.Color>> = when (tipo) {
-        "comment_on_chapter" -> Pair(Icons.Outlined.FavoriteBorder, Pair(RodapeTheme.colors.olivaSoft, RodapeTheme.colors.olivaDark))
-        "voting_open", "next_book_decided", "voting_closed" -> Pair(Icons.Outlined.ThumbUp, Pair(RodapeTheme.colors.terracotaSoft, RodapeTheme.colors.terracota))
-        "meeting_reminder" -> Pair(Icons.Outlined.DateRange, Pair(RodapeTheme.colors.olivaSoft, RodapeTheme.colors.olivaDark))
-        "member_finished" -> Pair(Icons.Outlined.CheckCircle, Pair(RodapeTheme.colors.ink, RodapeTheme.colors.cream))
-        "book_finished" -> Pair(Icons.Outlined.CheckCircle, Pair(RodapeTheme.colors.olivaSoft, RodapeTheme.colors.olivaDark))
-        "member_removed" -> Pair(Icons.Outlined.Info, Pair(RodapeTheme.colors.terracotaSoft, RodapeTheme.colors.terracota))
-        "promoted_to_admin", "super_admin_transferred" -> Pair(Icons.Outlined.Star, Pair(RodapeTheme.colors.terracotaSoft, RodapeTheme.colors.terracota))
-        else -> Pair(Icons.Outlined.Notifications, Pair(RodapeTheme.colors.olivaSoft, RodapeTheme.colors.olivaDark))
+        "comment_on_chapter" -> Pair(RodapeIcons.Heart, Pair(RodapeTheme.colors.olivaSoft, RodapeTheme.colors.olivaDark))
+        "voting_open", "next_book_decided", "voting_closed" -> Pair(RodapeIcons.Vote, Pair(RodapeTheme.colors.terracotaSoft, RodapeTheme.colors.terracota))
+        "meeting_reminder" -> Pair(RodapeIcons.Calendar, Pair(RodapeTheme.colors.olivaSoft, RodapeTheme.colors.olivaDark))
+        "member_finished" -> Pair(RodapeIcons.CheckCircle, Pair(RodapeTheme.colors.ink, RodapeTheme.colors.cream))
+        "book_finished" -> Pair(RodapeIcons.CheckCircle, Pair(RodapeTheme.colors.olivaSoft, RodapeTheme.colors.olivaDark))
+        "member_removed" -> Pair(RodapeIcons.Info, Pair(RodapeTheme.colors.terracotaSoft, RodapeTheme.colors.terracota))
+        "promoted_to_admin", "super_admin_transferred" -> Pair(RodapeIcons.StarFill, Pair(RodapeTheme.colors.terracotaSoft, RodapeTheme.colors.terracota))
+        else -> Pair(RodapeIcons.Bell, Pair(RodapeTheme.colors.olivaSoft, RodapeTheme.colors.olivaDark))
     }
 
     Row(

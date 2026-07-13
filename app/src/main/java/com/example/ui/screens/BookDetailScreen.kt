@@ -51,7 +51,7 @@ fun BookDetailScreen(
                     navigationIcon = {
                         IconButton(onClick = onNavigateBack) {
                             Icon(
-                                imageVector = Icons.AutoMirrored.Outlined.ArrowBack,
+                                imageVector = RodapeIcons.Back,
                                 contentDescription = "Voltar"
                             )
                         }
@@ -160,7 +160,7 @@ fun BookDetailScreen(
                 contentAlignment = Alignment.Center
             ) {
                 Icon(
-                    imageVector = Icons.AutoMirrored.Outlined.ArrowBack,
+                    imageVector = RodapeIcons.Back,
                     contentDescription = "Voltar",
                     tint = RodapeTheme.colors.ink,
                     modifier = Modifier.size(20.dp)

@@ -1285,7 +1285,7 @@ fun HomeScreenTab(
                                 contentAlignment = Alignment.Center,
                             ) {
                                 Icon(
-                                    imageVector = Icons.Outlined.MenuBook,
+                                    imageVector = RodapeIcons.Book,
                                     contentDescription = null,
                                     tint = RodapeTheme.colors.terracota,
                                     modifier = Modifier.size(26.dp)
@@ -1346,7 +1346,7 @@ fun HomeScreenTab(
                                     contentAlignment = Alignment.Center,
                                 ) {
                                     Icon(
-                                        imageVector = Icons.Outlined.PersonAdd,
+                                        imageVector = RodapeIcons.Groups,
                                         contentDescription = null,
                                         tint = RodapeTheme.colors.olivaDeep,
                                         modifier = Modifier.size(26.dp)
@@ -1367,7 +1367,7 @@ fun HomeScreenTab(
                                     )
                                 }
                                 Icon(
-                                    imageVector = Icons.Outlined.Share,
+                                    imageVector = RodapeIcons.Share,
                                     contentDescription = null,
                                     tint = RodapeTheme.colors.olivaDeep,
                                 )
@@ -1636,7 +1636,7 @@ fun HomeScreenTab(
                     horizontalArrangement = Arrangement.spacedBy(6.dp)
                 ) {
                     Icon(
-                        imageVector = Icons.Outlined.Info,
+                        imageVector = RodapeIcons.Info,
                         contentDescription = null,
                         tint = MaterialTheme.colorScheme.onSurfaceVariant,
                         modifier = Modifier.size(16.dp)
@@ -1719,7 +1719,7 @@ fun BookDetailScreenTab(
             ) {
                 Spacer(Modifier.weight(1f))
                 Icon(
-                    Icons.Outlined.MenuBook,
+                    RodapeIcons.Book,
                     contentDescription = null,
                     tint = RodapeTheme.colors.muted,
                     modifier = Modifier.size(52.dp),
@@ -2445,7 +2445,7 @@ fun ProfileScreenTab(
                     }
                     IconButton(onClick = { isEditingProfile = true }) {
                         Icon(
-                            imageVector = Icons.Outlined.Edit,
+                            imageVector = RodapeIcons.Edit,
                             contentDescription = "Editar Perfil",
                             tint = RodapeTheme.colors.terracota
                         )
@@ -2715,7 +2715,7 @@ fun ProfileScreenTab(
                             verticalAlignment = Alignment.CenterVertically
                         ) {
                             Icon(
-                                imageVector = Icons.Outlined.Add,
+                                imageVector = RodapeIcons.Plus,
                                 contentDescription = null,
                                 tint = RodapeTheme.colors.cream,
                                 modifier = Modifier.size(16.dp)
@@ -2751,7 +2751,7 @@ fun ProfileScreenTab(
                             verticalAlignment = Alignment.CenterVertically
                         ) {
                             Icon(
-                                imageVector = Icons.Outlined.Add,
+                                imageVector = RodapeIcons.Plus,
                                 contentDescription = null,
                                 tint = RodapeTheme.colors.muted,
                                 modifier = Modifier.size(16.dp)
@@ -3380,7 +3380,7 @@ fun EditProfileView(
                     modifier = Modifier.align(Alignment.CenterStart)
                 ) {
                     Icon(
-                        imageVector = Icons.AutoMirrored.Outlined.ArrowBack,
+                        imageVector = RodapeIcons.Back,
                         contentDescription = "Voltar",
                         tint = RodapeTheme.colors.ink
                     )

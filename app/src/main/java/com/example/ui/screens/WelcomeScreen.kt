@@ -53,6 +53,7 @@ import com.example.ui.components.TbButton
 import com.example.ui.components.TbButtonSize
 import com.example.ui.components.TbButtonVariant
 import com.example.ui.components.RodapeCard
+import com.example.ui.theme.RodapeIcons
 import com.example.ui.theme.Cream
 import com.example.ui.theme.CardSurface
 import com.example.ui.theme.ClubColors
@@ -222,7 +223,7 @@ fun WelcomeScreen(
                                 )
                             )
                             Icon(
-                                imageVector = Icons.AutoMirrored.Filled.ArrowForward,
+                                imageVector = RodapeIcons.Arrow,
                                 contentDescription = null,
                                 tint = RodapeTheme.colors.cream,
                                 modifier = Modifier.size(18.dp)
@@ -404,7 +405,7 @@ fun LoginScreen(
                 navigationIcon = {
                     IconButton(onClick = onNavigateBack) {
                         Icon(
-                            imageVector = Icons.AutoMirrored.Outlined.ArrowBack,
+                            imageVector = RodapeIcons.Back,
                             contentDescription = "Voltar",
                             tint = RodapeTheme.colors.ink
                         )
@@ -641,7 +642,7 @@ fun CreateClubScreen(
                 navigationIcon = {
                     IconButton(onClick = onNavigateBack) {
                         Icon(
-                            imageVector = Icons.AutoMirrored.Outlined.ArrowBack,
+                            imageVector = RodapeIcons.Back,
                             contentDescription = "Voltar",
                             tint = RodapeTheme.colors.terracota
                         )
@@ -839,7 +840,7 @@ fun CreateClubScreen(
                                 contentAlignment = Alignment.Center
                             ) {
                                 Icon(
-                                    imageVector = Icons.Outlined.Lock,
+                                    imageVector = RodapeIcons.Lock,
                                     contentDescription = null,
                                     tint = if (isOption1) RodapeTheme.colors.terracota else MaterialTheme.colorScheme.onSurfaceVariant
                                 )
@@ -861,7 +862,7 @@ fun CreateClubScreen(
                                     contentAlignment = Alignment.Center
                                 ) {
                                     Icon(
-                                        imageVector = Icons.Outlined.Check,
+                                        imageVector = RodapeIcons.Check,
                                         contentDescription = "Selecionado",
                                         tint = Color.White,
                                         modifier = Modifier.size(16.dp)
@@ -900,7 +901,7 @@ fun CreateClubScreen(
                                 contentAlignment = Alignment.Center
                             ) {
                                 Icon(
-                                    imageVector = Icons.Outlined.Share,
+                                    imageVector = RodapeIcons.Share,
                                     contentDescription = null,
                                     tint = if (isOption2) RodapeTheme.colors.terracota else MaterialTheme.colorScheme.onSurfaceVariant
                                 )
@@ -922,7 +923,7 @@ fun CreateClubScreen(
                                     contentAlignment = Alignment.Center
                                 ) {
                                     Icon(
-                                        imageVector = Icons.Outlined.Check,
+                                        imageVector = RodapeIcons.Check,
                                         contentDescription = "Selecionado",
                                         tint = Color.White,
                                         modifier = Modifier.size(16.dp)
@@ -1012,7 +1013,7 @@ fun JoinClubScreen(
                 navigationIcon = {
                     IconButton(onClick = onNavigateBack) {
                         Icon(
-                            imageVector = Icons.AutoMirrored.Outlined.ArrowBack,
+                            imageVector = RodapeIcons.Back,
                             contentDescription = "Voltar",
                             tint = RodapeTheme.colors.terracota
                         )

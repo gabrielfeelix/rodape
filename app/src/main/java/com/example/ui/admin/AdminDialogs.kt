@@ -486,7 +486,7 @@ fun EditSingleMeetingDialog(
                         label = { Text("Data do encontro") },
                         placeholder = { Text("Toque para escolher") },
                         trailingIcon = {
-                            Icon(Icons.Outlined.DateRange, contentDescription = null, tint = RodapeTheme.colors.muted)
+                            Icon(RodapeIcons.Calendar, contentDescription = null, tint = RodapeTheme.colors.muted)
                         },
                         singleLine = true,
                         modifier = Modifier
@@ -515,7 +515,7 @@ fun EditSingleMeetingDialog(
                         label = { Text("Hora (24h)") },
                         placeholder = { Text("Toque para escolher") },
                         trailingIcon = {
-                            Icon(Icons.Outlined.Schedule, contentDescription = null, tint = RodapeTheme.colors.muted)
+                            Icon(RodapeIcons.Clock, contentDescription = null, tint = RodapeTheme.colors.muted)
                         },
                         singleLine = true,
                         modifier = Modifier
