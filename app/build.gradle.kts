@@ -31,8 +31,8 @@ android {
     applicationId = "app.rodape"
     minSdk = 24
     targetSdk = 36
-    versionCode = 15
-    versionName = "1.1.1"
+    versionCode = 16
+    versionName = "1.1.2"
 
     testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
   }

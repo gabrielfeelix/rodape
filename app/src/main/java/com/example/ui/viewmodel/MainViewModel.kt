@@ -1275,6 +1275,37 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
         }
     }
 
+    // Busca → define como leitura atual, direto do diálogo "Trocar livro": cria o
+    // livro (se novo) e o promove a "current" finalizando o anterior. Reaproveita a
+    // dedup (existingClubBookId) e a mesma transição de changeCurrentBookManually.
+    fun setSearchedBookAsCurrent(result: com.example.data.search.UnifiedBookResult) {
+        viewModelScope.launch {
+            val clubId = activeClubId.value ?: return@launch
+            val isbn = result.isbn ?: ""
+            val existingId = existingClubBookId(result.title, isbn)
+            val bookId = existingId ?: UUID.randomUUID().toString()
+            if (existingId == null) {
+                repository.insertBook(
+                    Book(
+                        id = bookId, title = result.title, author = result.author,
+                        coverUrl = result.coverUrl ?: "", openlibraryId = "", isbn = isbn,
+                        isManual = false, totalPaginas = null, editora = null,
+                        anoPublicacao = result.firstPublishYear, idioma = "pt"
+                    )
+                )
+                repository.insertClubBook(ClubBook(clubId, bookId, "suggested", 0, null))
+            }
+            val currentList = repository.getBookByStatusFlow(clubId, "current").first()
+            currentList.forEach { b ->
+                repository.updateClubBookStatus(clubId, b.id, "finished")
+                repository.updateClubBookMeetingDate(clubId, b.id, System.currentTimeMillis())
+            }
+            repository.updateClubBookStatus(clubId, bookId, "current")
+            _searchResults.value = emptyList()
+            _searchResultsUnified.value = emptyList()
+        }
+    }
+
     // Promove o primeiro da fila ("next", ordenado por ordem) a "current". Retorna
     // o id promovido ou null se a fila está vazia. Faz o ciclo AVANÇAR sozinho ao
     // finalizar um livro — antes o clube ficava "sem leitura" com a fila cheia até

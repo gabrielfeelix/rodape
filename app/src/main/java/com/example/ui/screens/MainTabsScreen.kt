@@ -805,6 +805,179 @@ fun BottomBarItem(
     }
 }
 
+// ── Checklist guiado de clube novo (onboarding do ciclo) ─────────────────────
+// Stepper: círculos com conector, ✓ oliva nos passos feitos, passo atual em
+// terracota (clicável, com dica + chevron), futuros esmaecidos. Some quando o
+// clube já está "rodando" (livro + capítulos + encontro).
+@Composable
+private fun ClubSetupChecklist(
+    hasBook: Boolean,
+    hasChapters: Boolean,
+    hasMeeting: Boolean,
+    isAdmin: Boolean,
+    onStepBook: () -> Unit,
+    onStepChapters: () -> Unit,
+    onStepMeeting: () -> Unit,
+) {
+    data class SetupStep(val title: String, val hint: String, val done: Boolean, val onClick: () -> Unit)
+    val steps = listOf(
+        SetupStep(
+            "Escolher o primeiro livro",
+            if (isAdmin) "Abra a votação e o clube decide" else "Sugira um livro pro clube",
+            hasBook, onStepBook
+        ),
+        SetupStep(
+            "Cadastrar os capítulos",
+            "Busque online ou gere o índice",
+            hasChapters, onStepChapters
+        ),
+        SetupStep(
+            "Agendar o primeiro encontro",
+            "Marque a data e a faixa de capítulos",
+            hasMeeting, onStepMeeting
+        ),
+    )
+    val doneCount = steps.count { it.done }
+    val nextIndex = steps.indexOfFirst { !it.done }
+
+    RodapeCard(contentPadding = PaddingValues(20.dp)) {
+        Column(verticalArrangement = Arrangement.spacedBy(16.dp)) {
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Column(modifier = Modifier.weight(1f)) {
+                    Text(
+                        text = "Primeiros passos",
+                        style = MaterialTheme.typography.titleLarge.copy(
+                            fontFamily = LiterataFontFamily,
+                            fontWeight = FontWeight.SemiBold,
+                            color = Ink
+                        )
+                    )
+                    Spacer(modifier = Modifier.height(2.dp))
+                    Text(
+                        text = "Pra primeira leitura do clube rolar",
+                        style = MaterialTheme.typography.bodySmall.copy(
+                            fontFamily = InterFontFamily,
+                            color = Muted
+                        )
+                    )
+                }
+                Box(
+                    modifier = Modifier
+                        .size(46.dp)
+                        .background(OlivaSoft, CircleShape),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Text(
+                        text = "$doneCount/${steps.size}",
+                        style = MaterialTheme.typography.labelLarge.copy(
+                            fontFamily = InterFontFamily,
+                            fontWeight = FontWeight.Bold,
+                            color = OlivaDark
+                        )
+                    )
+                }
+            }
+
+            Column {
+                steps.forEachIndexed { i, step ->
+                    val isNext = i == nextIndex
+                    val isLast = i == steps.lastIndex
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .clip(RoundedCornerShape(10.dp))
+                            .then(if (isNext) Modifier.clickable { step.onClick() } else Modifier)
+                    ) {
+                        Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                            Box(
+                                modifier = Modifier
+                                    .size(32.dp)
+                                    .background(
+                                        color = when {
+                                            step.done -> Oliva
+                                            isNext -> Terracota
+                                            else -> Cream
+                                        },
+                                        shape = CircleShape
+                                    )
+                                    .then(
+                                        if (!step.done && !isNext) Modifier.border(1.5.dp, Divider, CircleShape)
+                                        else Modifier
+                                    ),
+                                contentAlignment = Alignment.Center
+                            ) {
+                                if (step.done) {
+                                    Text(
+                                        text = "✓",
+                                        color = Cream,
+                                        style = MaterialTheme.typography.labelLarge.copy(fontWeight = FontWeight.Bold)
+                                    )
+                                } else {
+                                    Text(
+                                        text = "${i + 1}",
+                                        style = MaterialTheme.typography.labelLarge.copy(
+                                            fontWeight = FontWeight.Bold,
+                                            color = if (isNext) Cream else Muted
+                                        )
+                                    )
+                                }
+                            }
+                            if (!isLast) {
+                                Box(
+                                    modifier = Modifier
+                                        .width(2.dp)
+                                        .height(26.dp)
+                                        .background(if (step.done) Oliva else Divider)
+                                )
+                            }
+                        }
+
+                        Spacer(modifier = Modifier.width(14.dp))
+
+                        Column(
+                            modifier = Modifier
+                                .weight(1f)
+                                .padding(top = 5.dp, bottom = if (isLast) 0.dp else 12.dp)
+                        ) {
+                            Text(
+                                text = step.title,
+                                style = MaterialTheme.typography.bodyLarge.copy(
+                                    fontFamily = InterFontFamily,
+                                    fontWeight = if (isNext) FontWeight.SemiBold else FontWeight.Medium,
+                                    color = if (step.done) Muted else Ink
+                                )
+                            )
+                            if (isNext) {
+                                Spacer(modifier = Modifier.height(2.dp))
+                                Text(
+                                    text = step.hint,
+                                    style = MaterialTheme.typography.bodySmall.copy(
+                                        fontFamily = InterFontFamily,
+                                        color = Muted
+                                    )
+                                )
+                            }
+                        }
+
+                        if (isNext) {
+                            Icon(
+                                imageVector = Icons.AutoMirrored.Outlined.KeyboardArrowRight,
+                                contentDescription = null,
+                                tint = Terracota,
+                                modifier = Modifier.padding(top = 6.dp)
+                            )
+                        }
+                    }
+                }
+            }
+        }
+    }
+}
+
 // --- HOME SCREEN TAB ---
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -827,6 +1000,7 @@ fun HomeScreenTab(
 
     val meeting by viewModel.latestMeeting.collectAsState()
     val rsvps by viewModel.latestMeetingRsvps.collectAsState()
+    val homeIsAdmin by viewModel.isCurrentUserAdmin.collectAsState()
 
     val hour = remember { java.util.Calendar.getInstance().get(java.util.Calendar.HOUR_OF_DAY) }
     val salutation = when (hour) {
@@ -889,6 +1063,23 @@ fun HomeScreenTab(
                     lineHeight = 34.sp
                 )
             )
+        }
+
+        // Checklist guiado de clube novo — some quando o clube já está "rodando"
+        // (livro atual + capítulos + encontro agendado).
+        val clubRolling = currentBook != null && chapters.isNotEmpty() && meeting != null
+        if (activeClub != null && !clubRolling) {
+            item {
+                ClubSetupChecklist(
+                    hasBook = currentBook != null,
+                    hasChapters = chapters.isNotEmpty(),
+                    hasMeeting = meeting != null,
+                    isAdmin = homeIsAdmin,
+                    onStepBook = { onNavigateToTab("next", "votacao") },
+                    onStepChapters = { onNavigateToTab("book", null) },
+                    onStepMeeting = { onNavigateToTab("next", "encontro") },
+                )
+            }
         }
 
         // Section: Próximo encontro card. Tres estados:

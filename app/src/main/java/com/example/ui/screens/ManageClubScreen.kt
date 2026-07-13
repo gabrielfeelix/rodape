@@ -3,6 +3,8 @@ package com.example.ui.screens
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -56,6 +58,8 @@ fun ManageClubScreen(
     val currentUserPapel by viewModel.currentUserPapel.collectAsState()
     val suggestedBooks by viewModel.suggestedBooks.collectAsState()
     val nextBooks by viewModel.nextBooks.collectAsState()
+    val bookSearchResults by viewModel.searchResultsUnified.collectAsState()
+    val bookSearchLoading by viewModel.searchLoading.collectAsState()
 
     var showEditInfo by remember { mutableStateOf(false) }
     var showRegenCode by remember { mutableStateOf(false) }
@@ -761,9 +765,20 @@ fun ManageClubScreen(
         ChangeCurrentBookDialog(
             suggested = suggestedBooks,
             next = nextBooks,
-            onDismiss = { showChangeBook = false },
+            searchResults = bookSearchResults,
+            searchLoading = bookSearchLoading,
+            onSearch = { viewModel.searchOpenLibrary(it) },
+            onDismiss = {
+                showChangeBook = false
+                viewModel.searchOpenLibrary("")
+            },
             onPick = { bookId ->
                 viewModel.changeCurrentBookManually(bookId)
+                showChangeBook = false
+                viewModel.searchOpenLibrary("")
+            },
+            onPickSearchResult = { r ->
+                viewModel.setSearchedBookAsCurrent(r)
                 showChangeBook = false
             }
         )
@@ -873,19 +888,73 @@ private fun MemberActionSheet(
 private fun ChangeCurrentBookDialog(
     suggested: List<com.example.data.model.Book>,
     next: List<com.example.data.model.Book>,
+    searchResults: List<com.example.data.search.UnifiedBookResult>,
+    searchLoading: Boolean,
+    onSearch: (String) -> Unit,
     onDismiss: () -> Unit,
-    onPick: (String) -> Unit
+    onPick: (String) -> Unit,
+    onPickSearchResult: (com.example.data.search.UnifiedBookResult) -> Unit,
 ) {
     val all = (next + suggested).distinctBy { it.id }
+    var query by remember { mutableStateOf("") }
+    // Debounce da busca (400ms), só a partir de 3 letras — mesma regra da tela Sugerir.
+    LaunchedEffect(query) {
+        val q = query.trim()
+        if (q.length >= 3) { kotlinx.coroutines.delay(400); onSearch(q) } else onSearch("")
+    }
     AlertDialog(
         containerColor = MaterialTheme.colorScheme.surface,
         onDismissRequest = onDismiss,
         title = { Text("Trocar livro atual") },
         text = {
-            if (all.isEmpty()) {
-                Text("Nenhuma sugestão disponível. Sugira um livro primeiro na aba Votação.")
-            } else {
-                Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+            Column(
+                modifier = Modifier
+                    .heightIn(max = 440.dp)
+                    .verticalScroll(rememberScrollState()),
+                verticalArrangement = Arrangement.spacedBy(10.dp)
+            ) {
+                OutlinedTextField(
+                    value = query,
+                    onValueChange = { query = it },
+                    placeholder = { Text("Buscar um livro pra ler…") },
+                    singleLine = true,
+                    shape = RoundedCornerShape(12.dp),
+                    modifier = Modifier.fillMaxWidth()
+                )
+                val q = query.trim()
+                if (q.length >= 3) {
+                    when {
+                        searchLoading -> Text(
+                            "Buscando…",
+                            style = MaterialTheme.typography.bodySmall,
+                            color = Muted
+                        )
+                        searchResults.isEmpty() -> Text(
+                            "Nada encontrado pra “$q”.",
+                            style = MaterialTheme.typography.bodySmall,
+                            color = Muted
+                        )
+                        else -> searchResults.take(8).forEach { r ->
+                            TbButton(
+                                text = "${r.title} — ${r.author}",
+                                onClick = { onPickSearchResult(r) },
+                                variant = TbButtonVariant.Outline,
+                                modifier = Modifier.fillMaxWidth()
+                            )
+                        }
+                    }
+                } else if (all.isEmpty()) {
+                    Text(
+                        "Digite acima pra buscar um livro e definir a leitura do clube.",
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = Muted
+                    )
+                } else {
+                    Text(
+                        "Ou escolha um já sugerido:",
+                        style = MaterialTheme.typography.labelSmall,
+                        color = Muted
+                    )
                     all.forEach { b ->
                         TbButton(
                             text = "${b.title} — ${b.author}",
