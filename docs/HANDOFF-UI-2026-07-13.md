@@ -4,6 +4,17 @@
 
 O `PLANO-UI-2026-07-13.md` é o **plano-mestre** (5 ondas). Este doc diz **onde paramos**, **as regras** e **exatamente o que fazer a seguir** pra você não errar.
 
+> **Atualização 2026-07-13 (sessão 2):** Onda 1 fechada na parte estrutural.
+> Desde o handoff original: swap Material→RodapeIcons não-chevron (`ebf0f99`),
+> raio → RodapeRadii (`9be7ac9`+`13be272`), tipografia type-misuse parcial
+> (`8f57477`), **Overline compartilhado** (`e80c1b6`, render idêntico) e
+> **RodapeDialog + ThemedRadio/Checkbox** (`0d1bda9`, AdminDialogs 6 + MainTabs 6).
+> **Adiado de propósito pro checkpoint visual** (muda render, não dá pra validar
+> só com compile): os `.copy(fontSize=14/16/20)` que espremem headline em
+> Shelf/NextTab (1.4). **Follow-up maior:** ~24 `AlertDialog` Material ainda
+> espalhados por 9 telas → migrar pra RodapeDialog app-wide, incremental.
+> Próximo grande passo real: **Onda 2 (movimento)** — 100% visual em runtime.
+
 ---
 
 ## 0. PRIMEIRA COISA A FAZER (obrigatório)
@@ -136,4 +147,4 @@ Criar `RodapeDialog` (shell: título Literata sempre, raio `.md`, sombra tingida
 ---
 
 ## 7. RESUMO DE 1 LINHA
-Onda 0 ✅ · Onda 1 fundação ✅ · Onda 1 migrações: sombra ✅, RatingStars ✅, warning ✅, emoji-ícone ✅, chevrons ✅ · FALTA na Onda 1: resto do swap Material→RodapeIcons (não-chevron), raio, tipografia, RodapeDialog · Depois Ondas 2/3/4. Compile e commite a cada batch. Não vaze segredo.
+Onda 0 ✅ · Onda 1 fundação ✅ · Onda 1 migrações: sombra ✅, RatingStars ✅, warning ✅, emoji-ícone ✅, chevrons ✅, swap Material→RodapeIcons ✅, raio ✅, tipografia (títulos + Overline) ✅, RodapeDialog ✅ · ADIADO pro checkpoint visual: `.copy(fontSize)` de headline (Shelf/NextTab) · FOLLOW-UP: ~24 AlertDialog Material app-wide → RodapeDialog · Próximo: **Onda 2 (movimento)**, 100% visual. Compile e commite a cada batch. Não vaze segredo.
