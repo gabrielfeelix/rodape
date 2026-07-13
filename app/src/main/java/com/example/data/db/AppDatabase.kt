@@ -36,7 +36,7 @@ import com.example.data.model.*
         MeetingNote::class,
         PendingMutation::class,
     ],
-    version = 4,
+    version = 5,
     exportSchema = true,
 )
 abstract class AppDatabase : RoomDatabase() {
@@ -94,6 +94,13 @@ abstract class AppDatabase : RoomDatabase() {
             }
         }
 
+        // v4 -> v5: profiles ganha pronome opcional (users.pronome, nullable).
+        private val MIGRATION_4_5 = object : Migration(4, 5) {
+            override fun migrate(db: SupportSQLiteDatabase) {
+                db.execSQL("ALTER TABLE `users` ADD COLUMN `pronome` TEXT")
+            }
+        }
+
         /**
          * Banco e GLOBAL pro app, nao por usuario — porque RLS no servidor ja garante
          * que cada user so consegue baixar SEU dado, entao o cache local naturalmente
@@ -106,7 +113,7 @@ abstract class AppDatabase : RoomDatabase() {
                 AppDatabase::class.java,
                 "rodape-cache.db"
             )
-                .addMigrations(MIGRATION_1_2, MIGRATION_2_3, MIGRATION_3_4)
+                .addMigrations(MIGRATION_1_2, MIGRATION_2_3, MIGRATION_3_4, MIGRATION_4_5)
                 .apply {
                     // Migrations explicitas acima preservam o cache e a fila offline
                     // no upgrade. Em DEBUG mantemos o fallback destrutivo como rede de

@@ -146,7 +146,7 @@ fun ManageChaptersScreen(
                     // capítulos; no estado vazio, o caminho primário fica no corpo da tela.
                     if (currentBook != null && draftList.isNotEmpty()) {
                         TextButton(onClick = requestFetch, enabled = !fetching) {
-                            Text("Buscar capítulos online", color = Terracota)
+                            Text("Buscar capítulos online", color = RodapeTheme.colors.terracota)
                         }
                     }
                 }
@@ -172,21 +172,21 @@ fun ManageChaptersScreen(
                     Icon(
                         Icons.Outlined.MenuBook,
                         contentDescription = null,
-                        tint = Muted,
+                        tint = RodapeTheme.colors.muted,
                         modifier = Modifier.size(48.dp)
                     )
                     Spacer(modifier = Modifier.height(12.dp))
                     Text(
                         "Sem livro atual no clube.",
                         style = MaterialTheme.typography.bodyLarge.copy(fontWeight = FontWeight.SemiBold),
-                        color = Ink,
+                        color = RodapeTheme.colors.ink,
                         textAlign = TextAlign.Center
                     )
                     Spacer(modifier = Modifier.height(6.dp))
                     Text(
                         "Defina o livro atual em Gerenciar clube › Livro atual antes de cadastrar capítulos.",
                         style = MaterialTheme.typography.bodyMedium,
-                        color = Muted,
+                        color = RodapeTheme.colors.muted,
                         textAlign = TextAlign.Center
                     )
                 }
@@ -197,21 +197,21 @@ fun ManageChaptersScreen(
                 // Falha usa tom terracota (P2): o verde OlivaSoft é cor de sucesso e
                 // dava a impressão errada quando a busca NÃO encontrava os capítulos.
                 Surface(
-                    color = if (apiError) TerracotaSoft else OlivaSoft,
+                    color = if (apiError) RodapeTheme.colors.terracotaSoft else RodapeTheme.colors.olivaSoft,
                     shape = RoundedCornerShape(12.dp),
                     modifier = Modifier.padding(16.dp).fillMaxWidth()
                 ) {
                     Text(
                         apiBanner!!,
                         style = MaterialTheme.typography.bodyMedium,
-                        color = if (apiError) TerracotaDark else OlivaDark,
+                        color = if (apiError) RodapeTheme.colors.terracotaDark else RodapeTheme.colors.olivaDark,
                         modifier = Modifier.padding(12.dp)
                     )
                 }
             }
 
             if (fetching) {
-                LinearProgressIndicator(modifier = Modifier.fillMaxWidth(), color = Terracota)
+                LinearProgressIndicator(modifier = Modifier.fillMaxWidth(), color = RodapeTheme.colors.terracota)
             }
 
             // Local-first: o Room emite lista vazia no cold start antes do 1º sync.
@@ -243,21 +243,21 @@ fun ManageChaptersScreen(
                     Icon(
                         Icons.Outlined.MenuBook,
                         contentDescription = null,
-                        tint = Muted,
+                        tint = RodapeTheme.colors.muted,
                         modifier = Modifier.size(48.dp)
                     )
                     Spacer(modifier = Modifier.height(12.dp))
                     Text(
                         "Este livro ainda não tem capítulos.",
                         style = MaterialTheme.typography.bodyLarge.copy(fontWeight = FontWeight.SemiBold),
-                        color = Ink,
+                        color = RodapeTheme.colors.ink,
                         textAlign = TextAlign.Center
                     )
                     Spacer(modifier = Modifier.height(6.dp))
                     Text(
                         "Cadastre os capítulos para o clube discutir e marcar o progresso da leitura.",
                         style = MaterialTheme.typography.bodyMedium,
-                        color = Muted,
+                        color = RodapeTheme.colors.muted,
                         textAlign = TextAlign.Center
                     )
                     Spacer(modifier = Modifier.height(20.dp))
@@ -297,7 +297,7 @@ fun ManageChaptersScreen(
                                 "Cap. ${idx + 1}",
                                 style = MaterialTheme.typography.labelSmall.copy(
                                     fontWeight = FontWeight.SemiBold,
-                                    color = Muted
+                                    color = RodapeTheme.colors.muted
                                 ),
                                 modifier = Modifier.width(60.dp)
                             )
@@ -338,7 +338,7 @@ fun ManageChaptersScreen(
                             ) { Icon(Icons.Outlined.KeyboardArrowDown, contentDescription = "Descer") }
                             IconButton(onClick = {
                                 draftList = draftList.toMutableList().apply { removeAt(idx) }
-                            }) { Icon(Icons.Outlined.Delete, contentDescription = "Remover", tint = Terracota) }
+                            }) { Icon(Icons.Outlined.Delete, contentDescription = "Remover", tint = RodapeTheme.colors.terracota) }
                         }
                     }
                 }
@@ -432,11 +432,11 @@ fun ManageChaptersScreen(
                             }
                             showSaveConfirm = false
                             onNavigateBack()
-                        }) { Text("Salvar", color = Terracota, fontWeight = FontWeight.SemiBold) }
+                        }) { Text("Salvar", color = RodapeTheme.colors.terracota, fontWeight = FontWeight.SemiBold) }
                     },
                     dismissButton = {
                         TextButton(onClick = { showSaveConfirm = false }) {
-                            Text("Cancelar", color = Muted)
+                            Text("Cancelar", color = RodapeTheme.colors.muted)
                         }
                     }
                 )
@@ -457,11 +457,11 @@ fun ManageChaptersScreen(
                         TextButton(onClick = {
                             showFetchConfirm = false
                             runFetch()
-                        }) { Text("Continuar", color = Terracota, fontWeight = FontWeight.SemiBold) }
+                        }) { Text("Continuar", color = RodapeTheme.colors.terracota, fontWeight = FontWeight.SemiBold) }
                     },
                     dismissButton = {
                         TextButton(onClick = { showFetchConfirm = false }) {
-                            Text("Cancelar", color = Muted)
+                            Text("Cancelar", color = RodapeTheme.colors.muted)
                         }
                     }
                 )
@@ -481,11 +481,11 @@ fun ManageChaptersScreen(
                         TextButton(onClick = {
                             showDiscardConfirm = false
                             onNavigateBack()
-                        }) { Text("Descartar", color = Terracota, fontWeight = FontWeight.SemiBold) }
+                        }) { Text("Descartar", color = RodapeTheme.colors.terracota, fontWeight = FontWeight.SemiBold) }
                     },
                     dismissButton = {
                         TextButton(onClick = { showDiscardConfirm = false }) {
-                            Text("Continuar editando", color = Muted)
+                            Text("Continuar editando", color = RodapeTheme.colors.muted)
                         }
                     }
                 )
@@ -511,7 +511,7 @@ private fun ChapterGeneratorSection(
         Text(
             "Não sabe os títulos? Gere N capítulos numerados.",
             style = MaterialTheme.typography.bodySmall,
-            color = Muted
+            color = RodapeTheme.colors.muted
         )
         Row(
             verticalAlignment = Alignment.CenterVertically,

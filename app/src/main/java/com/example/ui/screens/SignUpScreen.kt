@@ -40,6 +40,7 @@ import com.example.ui.theme.Muted
 import com.example.ui.theme.Oliva
 import com.example.ui.theme.OlivaDark
 import com.example.ui.theme.Paper
+import com.example.ui.theme.RodapeTheme
 import com.example.ui.theme.Terracota
 import kotlinx.coroutines.launch
 
@@ -124,10 +125,10 @@ fun SignUpScreen(
                 title = {},
                 navigationIcon = {
                     IconButton(onClick = onNavigateBack) {
-                        Icon(Icons.AutoMirrored.Outlined.ArrowBack, "Voltar", tint = Ink)
+                        Icon(Icons.AutoMirrored.Outlined.ArrowBack, "Voltar", tint = RodapeTheme.colors.ink)
                     }
                 },
-                colors = TopAppBarDefaults.topAppBarColors(containerColor = Paper),
+                colors = TopAppBarDefaults.topAppBarColors(containerColor = RodapeTheme.colors.paper),
             )
         },
         containerColor = MaterialTheme.colorScheme.background,
@@ -158,7 +159,7 @@ fun SignUpScreen(
                             confirmedEmail,
                             style = MaterialTheme.typography.bodyLarge.copy(
                                 fontWeight = FontWeight.Bold,
-                                color = Terracota,
+                                color = RodapeTheme.colors.terracota,
                             ),
                             textAlign = TextAlign.Center,
                             modifier = Modifier.fillMaxWidth(),
@@ -166,7 +167,7 @@ fun SignUpScreen(
                         Spacer(Modifier.height(8.dp))
                         Text(
                             "Abra o link antes de entrar. Confira também a caixa de spam.",
-                            style = MaterialTheme.typography.bodyMedium.copy(color = Muted),
+                            style = MaterialTheme.typography.bodyMedium.copy(color = RodapeTheme.colors.muted),
                             textAlign = TextAlign.Center,
                             modifier = Modifier.fillMaxWidth(),
                         )
@@ -175,7 +176,7 @@ fun SignUpScreen(
                             Spacer(Modifier.height(8.dp))
                             Text(
                                 it,
-                                color = Oliva,
+                                color = RodapeTheme.colors.oliva,
                                 style = MaterialTheme.typography.bodyMedium,
                                 textAlign = TextAlign.Center,
                                 modifier = Modifier
@@ -190,7 +191,7 @@ fun SignUpScreen(
                             enabled = !isLoading,
                             modifier = Modifier.fillMaxWidth().height(52.dp),
                             shape = RoundedCornerShape(26.dp),
-                            colors = ButtonDefaults.buttonColors(containerColor = Terracota),
+                            colors = ButtonDefaults.buttonColors(containerColor = RodapeTheme.colors.terracota),
                         ) {
                             Text("Voltar para login", color = Color.White)
                         }
@@ -201,11 +202,11 @@ fun SignUpScreen(
                             enabled = !isLoading,
                             modifier = Modifier.fillMaxWidth().height(52.dp),
                             shape = RoundedCornerShape(26.dp),
-                            border = BorderStroke(1.dp, Terracota),
-                            colors = ButtonDefaults.outlinedButtonColors(contentColor = Terracota),
+                            border = BorderStroke(1.dp, RodapeTheme.colors.terracota),
+                            colors = ButtonDefaults.outlinedButtonColors(contentColor = RodapeTheme.colors.terracota),
                         ) {
                             if (isLoading) {
-                                CircularProgressIndicator(color = Terracota, strokeWidth = 2.dp, modifier = Modifier.size(20.dp))
+                                CircularProgressIndicator(color = RodapeTheme.colors.terracota, strokeWidth = 2.dp, modifier = Modifier.size(20.dp))
                             } else {
                                 Text("Reenviar email")
                             }
@@ -223,7 +224,7 @@ fun SignUpScreen(
                             enabled = !isLoading,
                             modifier = Modifier.fillMaxWidth(),
                         ) {
-                            Text("Corrigir email", color = Muted)
+                            Text("Corrigir email", color = RodapeTheme.colors.muted)
                         }
                     } else {
                         // Design: screens-onboarding.jsx — "Vamos criar." à esquerda.
@@ -234,7 +235,7 @@ fun SignUpScreen(
                                 fontWeight = FontWeight.SemiBold,
                                 fontSize = 36.sp,
                                 letterSpacing = (-0.8).sp,
-                                color = Ink
+                                color = RodapeTheme.colors.ink
                             ),
                             modifier = Modifier.fillMaxWidth(),
                         )
@@ -242,7 +243,7 @@ fun SignUpScreen(
                         Text(
                             "Em poucos segundos você está lendo junto.",
                             style = MaterialTheme.typography.bodyLarge.copy(
-                                fontFamily = InterFontFamily, fontSize = 14.sp, color = Muted
+                                fontFamily = InterFontFamily, fontSize = 14.sp, color = RodapeTheme.colors.muted
                             ),
                             modifier = Modifier.fillMaxWidth(),
                         )
@@ -289,7 +290,7 @@ fun SignUpScreen(
                                     Icon(
                                         imageVector = if (passwordVisible) Icons.Outlined.VisibilityOff else Icons.Outlined.Visibility,
                                         contentDescription = if (passwordVisible) "Ocultar senha" else "Mostrar senha",
-                                        tint = Muted,
+                                        tint = RodapeTheme.colors.muted,
                                     )
                                 }
                             },
@@ -333,7 +334,7 @@ fun SignUpScreen(
                             Spacer(Modifier.height(12.dp))
                             Text(
                                 "Falta: " + faltamCampos.joinToString(", "),
-                                style = MaterialTheme.typography.bodySmall.copy(color = Muted),
+                                style = MaterialTheme.typography.bodySmall.copy(color = RodapeTheme.colors.muted),
                                 modifier = Modifier.fillMaxWidth(),
                             )
                         }
@@ -344,7 +345,7 @@ fun SignUpScreen(
                             enabled = formValid && !isLoading,
                             modifier = Modifier.fillMaxWidth().height(52.dp),
                             shape = RoundedCornerShape(26.dp),
-                            colors = ButtonDefaults.buttonColors(containerColor = Terracota),
+                            colors = ButtonDefaults.buttonColors(containerColor = RodapeTheme.colors.terracota),
                         ) {
                             if (isLoading) {
                                 CircularProgressIndicator(color = Color.White, strokeWidth = 2.dp, modifier = Modifier.size(20.dp))
@@ -405,7 +406,7 @@ fun SignUpScreen(
                             enabled = !isLoading,
                             modifier = Modifier.fillMaxWidth(),
                         ) {
-                            Text("Já tem conta? Entre", color = OlivaDark)
+                            Text("Já tem conta? Entre", color = RodapeTheme.colors.olivaDark)
                         }
                     }
                 }
@@ -424,13 +425,13 @@ private fun PasswordReq(label: String, met: Boolean) {
     ) {
         Text(
             if (met) "✓" else "○",
-            color = if (met) Oliva else Muted,
+            color = if (met) RodapeTheme.colors.oliva else RodapeTheme.colors.muted,
             style = MaterialTheme.typography.bodySmall,
         )
         Spacer(Modifier.width(8.dp))
         Text(
             label,
-            color = if (met) Oliva else Muted,
+            color = if (met) RodapeTheme.colors.oliva else RodapeTheme.colors.muted,
             style = MaterialTheme.typography.bodySmall,
         )
     }

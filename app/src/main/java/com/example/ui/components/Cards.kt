@@ -23,6 +23,7 @@ import androidx.compose.ui.unit.dp
 import com.example.ui.theme.CardSurface
 import com.example.ui.theme.Divider
 import com.example.ui.theme.Ink
+import com.example.ui.theme.RodapeTheme
 import com.example.ui.theme.cardShadow
 
 @Composable
@@ -35,10 +36,10 @@ fun RodapeCard(
         modifier = modifier.cardShadow(cornerRadius = 20.dp),
         shape = RoundedCornerShape(20.dp),
         colors = CardDefaults.cardColors(
-            containerColor = CardSurface,
-            contentColor = Ink,
+            containerColor = RodapeTheme.colors.cardSurface,
+            contentColor = RodapeTheme.colors.ink,
         ),
-        border = BorderStroke(0.5.dp, Divider),
+        border = BorderStroke(0.5.dp, RodapeTheme.colors.divider),
         elevation = CardDefaults.cardElevation(defaultElevation = 0.dp),
     ) {
         Column(

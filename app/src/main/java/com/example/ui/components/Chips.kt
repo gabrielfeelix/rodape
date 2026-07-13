@@ -29,6 +29,7 @@ import com.example.ui.theme.Ink
 import com.example.ui.theme.Oliva
 import com.example.ui.theme.OlivaDark
 import com.example.ui.theme.OlivaSoft
+import com.example.ui.theme.RodapeTheme
 import com.example.ui.theme.Tertiary
 import com.example.ui.theme.TerracotaDark
 import com.example.ui.theme.TerracotaSoft
@@ -44,13 +45,13 @@ fun Pill(
     variant: PillVariant = PillVariant.Default,
 ) {
     val style = when (variant) {
-        PillVariant.Default -> PillStyle(CardSoft, Tertiary, Divider)
-        PillVariant.Olive -> PillStyle(OlivaSoft, OlivaDark, null)
-        PillVariant.OliveDeep -> PillStyle(Oliva, Cream, null)
-        PillVariant.Terra -> PillStyle(TerracotaSoft, TerracotaDark, null)
+        PillVariant.Default -> PillStyle(RodapeTheme.colors.cardSoft, RodapeTheme.colors.tertiary, RodapeTheme.colors.divider)
+        PillVariant.Olive -> PillStyle(RodapeTheme.colors.olivaSoft, RodapeTheme.colors.olivaDark, null)
+        PillVariant.OliveDeep -> PillStyle(RodapeTheme.colors.oliva, RodapeTheme.colors.cream, null)
+        PillVariant.Terra -> PillStyle(RodapeTheme.colors.terracotaSoft, RodapeTheme.colors.terracotaDark, null)
         PillVariant.Mustard -> PillStyle(Color(0xFFF1E3BE), Color(0xFF6E5316), null)
-        PillVariant.Ink -> PillStyle(Ink, Cream, null)
-        PillVariant.Outline -> PillStyle(Color.Transparent, Tertiary, Divider)
+        PillVariant.Ink -> PillStyle(RodapeTheme.colors.ink, RodapeTheme.colors.cream, null)
+        PillVariant.Outline -> PillStyle(Color.Transparent, RodapeTheme.colors.tertiary, RodapeTheme.colors.divider)
     }
     val base = modifier.clip(CircleShape).background(style.bg)
     val bordered = if (style.border != null) {
@@ -72,8 +73,8 @@ fun Pill(
 fun ProgressBar(
     value: Float,
     modifier: Modifier = Modifier,
-    color: Color = Oliva,
-    track: Color = DividerSoft,
+    color: Color = RodapeTheme.colors.oliva,
+    track: Color = RodapeTheme.colors.dividerSoft,
     height: Dp = 6.dp,
 ) {
     val clamped = value.coerceIn(0f, 1f)

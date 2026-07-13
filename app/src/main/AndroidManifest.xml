@@ -4,6 +4,8 @@
 
     <uses-permission android:name="android.permission.INTERNET" />
     <uses-permission android:name="android.permission.CAMERA" />
+    <!-- Push (Android 13+ exige permissão em runtime pra notificar) -->
+    <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
     <uses-feature android:name="android.hardware.camera" android:required="false" />
     <uses-feature android:name="android.hardware.camera.autofocus" android:required="false" />
 
@@ -35,6 +37,15 @@
                 <data android:scheme="app.rodape" android:host="login-callback" />
             </intent-filter>
         </activity>
+
+        <!-- FCM: recebe push e registra token (F1) -->
+        <service
+            android:name=".push.RodapeMessagingService"
+            android:exported="false">
+            <intent-filter>
+                <action android:name="com.google.firebase.MESSAGING_EVENT" />
+            </intent-filter>
+        </service>
     </application>
 
 </manifest>

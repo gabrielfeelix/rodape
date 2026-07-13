@@ -109,7 +109,7 @@ fun ManageClubScreen(
                     Spacer(modifier = Modifier.height(4.dp))
                     Text(
                         text = club?.descricao ?: "",
-                        style = MaterialTheme.typography.bodyMedium.copy(color = Muted)
+                        style = MaterialTheme.typography.bodyMedium.copy(color = RodapeTheme.colors.muted)
                     )
                     Spacer(modifier = Modifier.height(8.dp))
                     val corIdx = club?.cor?.toIntOrNull() ?: 0
@@ -121,7 +121,7 @@ fun ManageClubScreen(
                         Box(modifier = Modifier.size(16.dp).clip(CircleShape).background(corClub.bg))
                         Text(
                             text = if (club?.privacidade == "convidados") "Só convidados" else "Aberto a quem tem link",
-                            style = MaterialTheme.typography.bodySmall.copy(color = Muted)
+                            style = MaterialTheme.typography.bodySmall.copy(color = RodapeTheme.colors.muted)
                         )
                     }
                     Spacer(modifier = Modifier.height(12.dp))
@@ -143,7 +143,7 @@ fun ManageClubScreen(
                         style = MaterialTheme.typography.displaySmall.copy(
                             fontFamily = LiterataFontFamily,
                             fontWeight = FontWeight.Bold,
-                            color = Terracota,
+                            color = RodapeTheme.colors.terracota,
                             letterSpacing = 4.sp
                         ),
                         modifier = Modifier.fillMaxWidth()
@@ -196,9 +196,9 @@ fun ManageClubScreen(
                                 else -> "Membro"
                             }
                             val papelColor = when (rawMember.papel) {
-                                "super_admin" -> Terracota
-                                "admin" -> Oliva
-                                else -> Muted
+                                "super_admin" -> RodapeTheme.colors.terracota
+                                "admin" -> RodapeTheme.colors.oliva
+                                else -> RodapeTheme.colors.muted
                             }
                             Row(
                                 verticalAlignment = Alignment.CenterVertically,
@@ -236,7 +236,7 @@ fun ManageClubScreen(
                             modifier = Modifier
                                 .fillMaxWidth()
                                 .clip(RoundedCornerShape(14.dp))
-                                .background(OlivaSoft.copy(alpha = 0.4f))
+                                .background(RodapeTheme.colors.olivaSoft.copy(alpha = 0.4f))
                                 .padding(12.dp),
                             verticalAlignment = Alignment.CenterVertically,
                             horizontalArrangement = Arrangement.spacedBy(12.dp)
@@ -245,13 +245,13 @@ fun ManageClubScreen(
                                 modifier = Modifier
                                     .size(40.dp)
                                     .clip(CircleShape)
-                                    .background(Oliva),
+                                    .background(RodapeTheme.colors.oliva),
                                 contentAlignment = Alignment.Center
                             ) {
                                 Icon(
                                     imageVector = Icons.Outlined.Refresh,
                                     contentDescription = null,
-                                    tint = Cream,
+                                    tint = RodapeTheme.colors.cream,
                                     modifier = Modifier.size(20.dp)
                                 )
                             }
@@ -260,7 +260,7 @@ fun ManageClubScreen(
                                     text = recurrenceShortLabel(p.tipoRecorrencia).uppercase(),
                                     style = MaterialTheme.typography.labelSmall.copy(
                                         fontWeight = FontWeight.Bold,
-                                        color = OlivaDark,
+                                        color = RodapeTheme.colors.olivaDark,
                                         letterSpacing = 1.sp
                                     )
                                 )
@@ -269,12 +269,12 @@ fun ManageClubScreen(
                                     style = MaterialTheme.typography.bodyMedium.copy(
                                         fontFamily = LiterataFontFamily,
                                         fontWeight = FontWeight.SemiBold,
-                                        color = Ink
+                                        color = RodapeTheme.colors.ink
                                     )
                                 )
                                 Text(
                                     text = "📍 ${p.local}",
-                                    style = MaterialTheme.typography.bodySmall.copy(color = Muted)
+                                    style = MaterialTheme.typography.bodySmall.copy(color = RodapeTheme.colors.muted)
                                 )
                             }
                         }
@@ -283,7 +283,7 @@ fun ManageClubScreen(
                             modifier = Modifier
                                 .fillMaxWidth()
                                 .clip(RoundedCornerShape(14.dp))
-                                .background(DividerSoft.copy(alpha = 0.3f))
+                                .background(RodapeTheme.colors.dividerSoft.copy(alpha = 0.3f))
                                 .padding(14.dp),
                             verticalAlignment = Alignment.CenterVertically,
                             horizontalArrangement = Arrangement.spacedBy(12.dp)
@@ -291,12 +291,12 @@ fun ManageClubScreen(
                             Icon(
                                 imageVector = Icons.Outlined.Refresh,
                                 contentDescription = null,
-                                tint = Muted,
+                                tint = RodapeTheme.colors.muted,
                                 modifier = Modifier.size(24.dp)
                             )
                             Text(
                                 text = "Sem padrão recorrente definido.",
-                                style = MaterialTheme.typography.bodyMedium.copy(color = Muted)
+                                style = MaterialTheme.typography.bodyMedium.copy(color = RodapeTheme.colors.muted)
                             )
                         }
                     }
@@ -321,14 +321,14 @@ fun ManageClubScreen(
                         Icon(
                             imageVector = Icons.Outlined.DateRange,
                             contentDescription = null,
-                            tint = Terracota,
+                            tint = RodapeTheme.colors.terracota,
                             modifier = Modifier.size(16.dp)
                         )
                         Text(
                             text = if (meetingsBook.isNotEmpty()) "ENCONTROS DESTE LIVRO" else "PRÓXIMOS ENCONTROS",
                             style = MaterialTheme.typography.labelSmall.copy(
                                 fontWeight = FontWeight.Bold,
-                                color = Terracota,
+                                color = RodapeTheme.colors.terracota,
                                 letterSpacing = 1.sp
                             )
                         )
@@ -343,7 +343,7 @@ fun ManageClubScreen(
                             modifier = Modifier
                                 .fillMaxWidth()
                                 .clip(RoundedCornerShape(14.dp))
-                                .background(DividerSoft.copy(alpha = 0.3f))
+                                .background(RodapeTheme.colors.dividerSoft.copy(alpha = 0.3f))
                                 .padding(20.dp),
                             horizontalAlignment = Alignment.CenterHorizontally,
                             verticalArrangement = Arrangement.spacedBy(8.dp)
@@ -351,12 +351,12 @@ fun ManageClubScreen(
                             Icon(
                                 imageVector = Icons.Outlined.DateRange,
                                 contentDescription = null,
-                                tint = Muted.copy(alpha = 0.6f),
+                                tint = RodapeTheme.colors.muted.copy(alpha = 0.6f),
                                 modifier = Modifier.size(36.dp)
                             )
                             Text(
                                 text = "Nenhum encontro agendado",
-                                style = MaterialTheme.typography.bodyMedium.copy(color = Muted)
+                                style = MaterialTheme.typography.bodyMedium.copy(color = RodapeTheme.colors.muted)
                             )
                         }
                     } else {
@@ -391,7 +391,7 @@ fun ManageClubScreen(
                             modifier = Modifier
                                 .fillMaxWidth()
                                 .clip(RoundedCornerShape(14.dp))
-                                .background(OlivaSoft.copy(alpha = 0.4f))
+                                .background(RodapeTheme.colors.olivaSoft.copy(alpha = 0.4f))
                                 .padding(12.dp),
                             verticalAlignment = Alignment.CenterVertically,
                             horizontalArrangement = Arrangement.spacedBy(14.dp)
@@ -408,7 +408,7 @@ fun ManageClubScreen(
                                     text = "LENDO AGORA",
                                     style = MaterialTheme.typography.labelSmall.copy(
                                         fontWeight = FontWeight.Bold,
-                                        color = OlivaDark,
+                                        color = RodapeTheme.colors.olivaDark,
                                         letterSpacing = 1.sp
                                     )
                                 )
@@ -418,14 +418,14 @@ fun ManageClubScreen(
                                     style = MaterialTheme.typography.bodyMedium.copy(
                                         fontFamily = LiterataFontFamily,
                                         fontWeight = FontWeight.SemiBold,
-                                        color = Ink
+                                        color = RodapeTheme.colors.ink
                                     ),
                                     maxLines = 2,
                                     overflow = TextOverflow.Ellipsis
                                 )
                                 Text(
                                     text = b.author,
-                                    style = MaterialTheme.typography.bodySmall.copy(color = Muted),
+                                    style = MaterialTheme.typography.bodySmall.copy(color = RodapeTheme.colors.muted),
                                     maxLines = 1,
                                     overflow = TextOverflow.Ellipsis
                                 )
@@ -437,12 +437,12 @@ fun ManageClubScreen(
                                     Icon(
                                         imageVector = Icons.Outlined.List,
                                         contentDescription = null,
-                                        tint = OlivaMid,
+                                        tint = RodapeTheme.colors.olivaMid,
                                         modifier = Modifier.size(14.dp)
                                     )
                                     Text(
                                         text = "${chapters.size} ${if (chapters.size == 1) "capítulo" else "capítulos"}",
-                                        style = MaterialTheme.typography.labelSmall.copy(color = OlivaDark)
+                                        style = MaterialTheme.typography.labelSmall.copy(color = RodapeTheme.colors.olivaDark)
                                     )
                                 }
                             }
@@ -452,7 +452,7 @@ fun ManageClubScreen(
                             modifier = Modifier
                                 .fillMaxWidth()
                                 .clip(RoundedCornerShape(14.dp))
-                                .background(DividerSoft.copy(alpha = 0.3f))
+                                .background(RodapeTheme.colors.dividerSoft.copy(alpha = 0.3f))
                                 .padding(20.dp),
                             horizontalAlignment = Alignment.CenterHorizontally,
                             verticalArrangement = Arrangement.spacedBy(8.dp)
@@ -460,12 +460,12 @@ fun ManageClubScreen(
                             Icon(
                                 imageVector = Icons.Outlined.List,
                                 contentDescription = null,
-                                tint = Muted.copy(alpha = 0.6f),
+                                tint = RodapeTheme.colors.muted.copy(alpha = 0.6f),
                                 modifier = Modifier.size(36.dp)
                             )
                             Text(
                                 text = "Nenhum livro em leitura no momento",
-                                style = MaterialTheme.typography.bodyMedium.copy(color = Muted)
+                                style = MaterialTheme.typography.bodyMedium.copy(color = RodapeTheme.colors.muted)
                             )
                         }
                     }
@@ -523,8 +523,8 @@ fun ManageClubScreen(
                 item {
                     Card(
                         modifier = Modifier.fillMaxWidth(),
-                        colors = CardDefaults.cardColors(containerColor = Terracota.copy(alpha = 0.05f)),
-                        border = androidx.compose.foundation.BorderStroke(1.dp, Terracota.copy(alpha = 0.3f)),
+                        colors = CardDefaults.cardColors(containerColor = RodapeTheme.colors.terracota.copy(alpha = 0.05f)),
+                        border = androidx.compose.foundation.BorderStroke(1.dp, RodapeTheme.colors.terracota.copy(alpha = 0.3f)),
                         shape = RoundedCornerShape(20.dp)
                     ) {
                         Column(modifier = Modifier.padding(16.dp)) {
@@ -533,13 +533,13 @@ fun ManageClubScreen(
                                 style = MaterialTheme.typography.titleMedium.copy(
                                     fontFamily = LiterataFontFamily,
                                     fontWeight = FontWeight.SemiBold,
-                                    color = Terracota
+                                    color = RodapeTheme.colors.terracota
                                 )
                             )
                             Spacer(modifier = Modifier.height(4.dp))
                             Text(
                                 "Arquivar este clube remove ele da lista ativa. Histórico é preservado.",
-                                style = MaterialTheme.typography.bodySmall.copy(color = Muted)
+                                style = MaterialTheme.typography.bodySmall.copy(color = RodapeTheme.colors.muted)
                             )
                             Spacer(modifier = Modifier.height(12.dp))
                             TbButton(
@@ -753,10 +753,10 @@ fun ManageClubScreen(
                 TextButton(onClick = {
                     viewModel.markCurrentBookFinished()
                     showFinishBook = false
-                }) { Text("Finalizar", color = Terracota, fontWeight = FontWeight.SemiBold) }
+                }) { Text("Finalizar", color = RodapeTheme.colors.terracota, fontWeight = FontWeight.SemiBold) }
             },
             dismissButton = {
-                TextButton(onClick = { showFinishBook = false }) { Text("Cancelar", color = Muted) }
+                TextButton(onClick = { showFinishBook = false }) { Text("Cancelar", color = RodapeTheme.colors.muted) }
             }
         )
     }
@@ -797,10 +797,10 @@ fun ManageClubScreen(
                     viewModel.archiveClub()
                     showArchiveClub = false
                     onNavigateBack()
-                }) { Text("Arquivar", color = Terracota, fontWeight = FontWeight.SemiBold) }
+                }) { Text("Arquivar", color = RodapeTheme.colors.terracota, fontWeight = FontWeight.SemiBold) }
             },
             dismissButton = {
-                TextButton(onClick = { showArchiveClub = false }) { Text("Cancelar", color = Muted) }
+                TextButton(onClick = { showArchiveClub = false }) { Text("Cancelar", color = RodapeTheme.colors.muted) }
             }
         )
     }
@@ -848,10 +848,10 @@ private fun MemberActionSheet(
                 TextButton(onClick = {
                     showTransferConfirm = false
                     onTransferSuper()
-                }) { Text("Transferir", color = Terracota, fontWeight = FontWeight.SemiBold) }
+                }) { Text("Transferir", color = RodapeTheme.colors.terracota, fontWeight = FontWeight.SemiBold) }
             },
             dismissButton = {
-                TextButton(onClick = { showTransferConfirm = false }) { Text("Voltar", color = Muted) }
+                TextButton(onClick = { showTransferConfirm = false }) { Text("Voltar", color = RodapeTheme.colors.muted) }
             },
         )
     }
@@ -927,12 +927,12 @@ private fun ChangeCurrentBookDialog(
                         searchLoading -> Text(
                             "Buscando…",
                             style = MaterialTheme.typography.bodySmall,
-                            color = Muted
+                            color = RodapeTheme.colors.muted
                         )
                         searchResults.isEmpty() -> Text(
                             "Nada encontrado pra “$q”.",
                             style = MaterialTheme.typography.bodySmall,
-                            color = Muted
+                            color = RodapeTheme.colors.muted
                         )
                         else -> searchResults.take(8).forEach { r ->
                             TbButton(
@@ -947,13 +947,13 @@ private fun ChangeCurrentBookDialog(
                     Text(
                         "Digite acima pra buscar um livro e definir a leitura do clube.",
                         style = MaterialTheme.typography.bodyMedium,
-                        color = Muted
+                        color = RodapeTheme.colors.muted
                     )
                 } else {
                     Text(
                         "Ou escolha um já sugerido:",
                         style = MaterialTheme.typography.labelSmall,
-                        color = Muted
+                        color = RodapeTheme.colors.muted
                     )
                     all.forEach { b ->
                         TbButton(
@@ -967,7 +967,7 @@ private fun ChangeCurrentBookDialog(
             }
         },
         confirmButton = {
-            TextButton(onClick = onDismiss) { Text("Fechar", color = Muted) }
+            TextButton(onClick = onDismiss) { Text("Fechar", color = RodapeTheme.colors.muted) }
         }
     )
 }
@@ -984,8 +984,8 @@ private fun MeetingRow(
         modifier = Modifier
             .fillMaxWidth()
             .clip(RoundedCornerShape(14.dp))
-            .background(if (concluded) DividerSoft.copy(alpha = 0.3f) else Cream)
-            .border(0.5.dp, Divider, RoundedCornerShape(14.dp))
+            .background(if (concluded) RodapeTheme.colors.dividerSoft.copy(alpha = 0.3f) else RodapeTheme.colors.cream)
+            .border(0.5.dp, RodapeTheme.colors.divider, RoundedCornerShape(14.dp))
             .padding(14.dp),
         verticalArrangement = Arrangement.spacedBy(8.dp)
     ) {
@@ -998,8 +998,8 @@ private fun MeetingRow(
                     .size(56.dp)
                     .clip(RoundedCornerShape(12.dp))
                     .background(
-                        if (concluded) Muted.copy(alpha = 0.15f)
-                        else Terracota.copy(alpha = 0.12f)
+                        if (concluded) RodapeTheme.colors.muted.copy(alpha = 0.15f)
+                        else RodapeTheme.colors.terracota.copy(alpha = 0.12f)
                     ),
                 contentAlignment = Alignment.Center
             ) {
@@ -1013,7 +1013,7 @@ private fun MeetingRow(
                     style = MaterialTheme.typography.displayMedium.copy(
                         fontSize = 22.sp,
                         fontWeight = FontWeight.Bold,
-                        color = if (concluded) Muted else Terracota,
+                        color = if (concluded) RodapeTheme.colors.muted else RodapeTheme.colors.terracota,
                         fontFamily = LiterataFontFamily
                     )
                 )
@@ -1025,7 +1025,7 @@ private fun MeetingRow(
                         style = MaterialTheme.typography.bodyMedium.copy(
                             fontFamily = LiterataFontFamily,
                             fontWeight = FontWeight.SemiBold,
-                            color = if (concluded) Muted else Ink
+                            color = if (concluded) RodapeTheme.colors.muted else RodapeTheme.colors.ink
                         ),
                         maxLines = 1,
                         overflow = TextOverflow.Ellipsis,
@@ -1035,19 +1035,19 @@ private fun MeetingRow(
                         com.example.ui.components.Pill(text = "Concluído", variant = com.example.ui.components.PillVariant.Olive)
                     }
                 }
-                Text(text = meeting.hora, style = MaterialTheme.typography.bodySmall.copy(color = Muted))
+                Text(text = meeting.hora, style = MaterialTheme.typography.bodySmall.copy(color = RodapeTheme.colors.muted))
                 if (meeting.chapterStart != null && meeting.chapterEnd != null) {
                     Text(
                         text = "📖 Caps ${meeting.chapterStart}–${meeting.chapterEnd}",
                         style = MaterialTheme.typography.labelSmall.copy(
-                            color = Terracota,
+                            color = RodapeTheme.colors.terracota,
                             fontWeight = FontWeight.SemiBold
                         )
                     )
                 }
                 Text(
                     text = "📍 ${meeting.local}",
-                    style = MaterialTheme.typography.bodySmall.copy(color = Muted),
+                    style = MaterialTheme.typography.bodySmall.copy(color = RodapeTheme.colors.muted),
                     maxLines = 1,
                     overflow = TextOverflow.Ellipsis
                 )

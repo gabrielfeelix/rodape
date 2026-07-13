@@ -13,13 +13,9 @@ import androidx.compose.ui.text.font.FontStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import com.example.ui.theme.CardSurface
 import com.example.ui.theme.Divider
-import com.example.ui.theme.DividerSoft
-import com.example.ui.theme.InkSoft
 import com.example.ui.theme.LiterataFontFamily
-import com.example.ui.theme.Muted
-import com.example.ui.theme.OlivaSoft
+import com.example.ui.theme.RodapeTheme
 
 @Composable
 fun QuoteCard(
@@ -31,8 +27,8 @@ fun QuoteCard(
     Card(
         modifier = modifier.fillMaxWidth(),
         shape = RoundedCornerShape(16.dp),
-        colors = CardDefaults.cardColors(containerColor = CardSurface),
-        border = BorderStroke(0.5.dp, Divider),
+        colors = CardDefaults.cardColors(containerColor = RodapeTheme.colors.cardSurface),
+        border = BorderStroke(0.5.dp, RodapeTheme.colors.divider),
         elevation = CardDefaults.cardElevation(defaultElevation = 1.dp),
     ) {
         Box(modifier = Modifier.padding(top = 0.dp)) {
@@ -41,7 +37,7 @@ fun QuoteCard(
                 text = "“",
                 fontFamily = LiterataFontFamily,
                 fontSize = 72.sp,
-                color = OlivaSoft,
+                color = RodapeTheme.colors.olivaSoft,
                 lineHeight = 72.sp,
                 modifier = Modifier
                     .padding(start = 12.dp, top = 0.dp)
@@ -56,13 +52,13 @@ fun QuoteCard(
                     fontStyle = FontStyle.Italic,
                     fontSize = 16.sp,
                     lineHeight = 24.sp,
-                    color = InkSoft,
+                    color = RodapeTheme.colors.inkSoft,
                     modifier = Modifier.padding(start = 20.dp, end = 20.dp, top = 40.dp, bottom = 12.dp),
                 )
 
                 // Divider + footer row
                 HorizontalDivider(
-                    color = DividerSoft,
+                    color = RodapeTheme.colors.dividerSoft,
                     thickness = 1.dp,
                     modifier = Modifier.padding(horizontal = 20.dp),
                 )
@@ -76,7 +72,7 @@ fun QuoteCard(
                     Text(
                         text = ref,
                         style = MaterialTheme.typography.bodySmall,
-                        color = Muted,
+                        color = RodapeTheme.colors.muted,
                         modifier = Modifier.weight(1f),
                     )
                     if (onDelete != null) {
@@ -88,7 +84,7 @@ fun QuoteCard(
                             Icon(
                                 imageVector = Icons.Outlined.Delete,
                                 contentDescription = "Apagar frase",
-                                tint = Muted,
+                                tint = RodapeTheme.colors.muted,
                                 modifier = Modifier.size(18.dp),
                             )
                         }

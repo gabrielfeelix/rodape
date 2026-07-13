@@ -70,13 +70,13 @@ fun ModerationLogScreen(
                     Icon(
                         imageVector = Icons.Outlined.VerifiedUser,
                         contentDescription = null,
-                        tint = Muted,
+                        tint = RodapeTheme.colors.muted,
                         modifier = Modifier.size(64.dp)
                     )
                     Text(
                         "Nenhum comentário removido por aqui.",
                         style = MaterialTheme.typography.bodyLarge,
-                        color = Muted
+                        color = RodapeTheme.colors.muted
                     )
                 }
             }
@@ -100,12 +100,12 @@ fun ModerationLogScreen(
                                     author?.nome ?: "Membro",
                                     style = MaterialTheme.typography.bodyMedium.copy(
                                         fontWeight = FontWeight.SemiBold,
-                                        color = Ink
+                                        color = RodapeTheme.colors.ink
                                     )
                                 )
                                 Text(
                                     timeAgo(c.criadoEm),
-                                    style = MaterialTheme.typography.labelSmall.copy(color = Muted)
+                                    style = MaterialTheme.typography.labelSmall.copy(color = RodapeTheme.colors.muted)
                                 )
                             }
                         }
@@ -113,7 +113,7 @@ fun ModerationLogScreen(
                         Text(
                             text = c.texto,
                             style = MaterialTheme.typography.bodyMedium.copy(
-                                color = Muted,
+                                color = RodapeTheme.colors.muted,
                                 textDecoration = TextDecoration.LineThrough
                             )
                         )
@@ -121,7 +121,7 @@ fun ModerationLogScreen(
                         Text(
                             text = "Removido por ${remover?.nome ?: "admin"}" +
                                 (if (c.motivoRemocao?.isNotBlank() == true) " · Motivo: ${c.motivoRemocao}" else ""),
-                            style = MaterialTheme.typography.labelSmall.copy(color = Terracota)
+                            style = MaterialTheme.typography.labelSmall.copy(color = RodapeTheme.colors.terracota)
                         )
                         if (isSuper) {
                             Spacer(modifier = Modifier.height(8.dp))
@@ -146,17 +146,17 @@ fun ModerationLogScreen(
             text = {
                 Text(
                     "O comentário volta a aparecer na conversa para todos os membros.",
-                    style = MaterialTheme.typography.bodyMedium.copy(color = Muted)
+                    style = MaterialTheme.typography.bodyMedium.copy(color = RodapeTheme.colors.muted)
                 )
             },
             confirmButton = {
                 TextButton(onClick = {
                     viewModel.restoreRemovedComment(restoreCommentId!!)
                     restoreCommentId = null
-                }) { Text("Restaurar", color = Terracota, fontWeight = FontWeight.SemiBold) }
+                }) { Text("Restaurar", color = RodapeTheme.colors.terracota, fontWeight = FontWeight.SemiBold) }
             },
             dismissButton = {
-                TextButton(onClick = { restoreCommentId = null }) { Text("Cancelar", color = Muted) }
+                TextButton(onClick = { restoreCommentId = null }) { Text("Cancelar", color = RodapeTheme.colors.muted) }
             }
         )
     }

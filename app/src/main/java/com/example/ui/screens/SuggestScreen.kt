@@ -38,10 +38,9 @@ import com.example.ui.components.TbButton
 import com.example.ui.components.TbButtonVariant
 import com.example.ui.theme.Cream
 import com.example.ui.theme.Divider
-import com.example.ui.theme.Ink
 import com.example.ui.theme.InterFontFamily
 import com.example.ui.theme.LiterataFontFamily
-import com.example.ui.theme.Muted
+import com.example.ui.theme.RodapeTheme
 import com.example.ui.theme.Terracota
 import com.example.ui.viewmodel.MainViewModel
 import kotlinx.coroutines.delay
@@ -149,7 +148,7 @@ fun SuggestScreen(
                         Icon(
                             imageVector = Icons.AutoMirrored.Outlined.ArrowBack,
                             contentDescription = "Voltar",
-                            tint = Terracota
+                            tint = RodapeTheme.colors.terracota
                         )
                     }
                 },
@@ -161,13 +160,13 @@ fun SuggestScreen(
                         },
                         enabled = selectedStillVisible && !verifying,
                         colors = ButtonDefaults.textButtonColors(
-                            contentColor = Terracota,
-                            disabledContentColor = Terracota.copy(alpha = 0.4f)
+                            contentColor = RodapeTheme.colors.terracota,
+                            disabledContentColor = RodapeTheme.colors.terracota.copy(alpha = 0.4f)
                         )
                     ) {
                         if (verifying) {
                             CircularProgressIndicator(
-                                color = Terracota,
+                                color = RodapeTheme.colors.terracota,
                                 strokeWidth = 2.dp,
                                 modifier = Modifier.size(18.dp)
                             )
@@ -224,7 +223,7 @@ fun SuggestScreen(
                     Text(
                         "Buscar por título, autor ou ISBN",
                         style = MaterialTheme.typography.bodyMedium,
-                        color = Muted
+                        color = RodapeTheme.colors.muted
                     )
                 },
                 modifier = Modifier.fillMaxWidth(),
@@ -233,7 +232,7 @@ fun SuggestScreen(
                     Icon(
                         imageVector = Icons.Outlined.Search,
                         contentDescription = "Buscar",
-                        tint = Muted
+                        tint = RodapeTheme.colors.muted
                     )
                 },
                 singleLine = true,
@@ -247,13 +246,13 @@ fun SuggestScreen(
                     }
                 ),
                 colors = OutlinedTextFieldDefaults.colors(
-                    unfocusedContainerColor = Cream,
-                    focusedContainerColor = Cream,
-                    unfocusedBorderColor = Divider,
-                    focusedBorderColor = Terracota,
-                    unfocusedLeadingIconColor = Muted,
-                    focusedLeadingIconColor = Muted,
-                    cursorColor = Terracota,
+                    unfocusedContainerColor = RodapeTheme.colors.cream,
+                    focusedContainerColor = RodapeTheme.colors.cream,
+                    unfocusedBorderColor = RodapeTheme.colors.divider,
+                    focusedBorderColor = RodapeTheme.colors.terracota,
+                    unfocusedLeadingIconColor = RodapeTheme.colors.muted,
+                    focusedLeadingIconColor = RodapeTheme.colors.muted,
+                    cursorColor = RodapeTheme.colors.terracota,
                 )
             )
 
@@ -296,7 +295,7 @@ fun SuggestScreen(
                     Text(
                         text = "📚 Populares — toque para selecionar",
                         style = MaterialTheme.typography.bodyMedium,
-                        color = Muted
+                        color = RodapeTheme.colors.muted
                     )
                     Spacer(modifier = Modifier.height(8.dp))
                     LazyColumn(
@@ -334,7 +333,7 @@ fun SuggestScreen(
                         // tentar de novo logo abaixo.
                             "Não achamos nada — verifique a conexão e tente de novo.",
                         style = MaterialTheme.typography.bodyLarge,
-                        color = Muted,
+                        color = RodapeTheme.colors.muted,
                         textAlign = androidx.compose.ui.text.style.TextAlign.Center
                     )
                     if (query.trim().length >= 3) {
@@ -389,12 +388,12 @@ fun SuggestScreen(
                         ) {
                             Text(
                                 text = "Não achei meu livro · ",
-                                style = MaterialTheme.typography.bodyMedium.copy(color = Muted)
+                                style = MaterialTheme.typography.bodyMedium.copy(color = RodapeTheme.colors.muted)
                             )
                             Text(
                                 text = "cadastrar manualmente",
                                 style = MaterialTheme.typography.bodyMedium.copy(
-                                    color = Terracota,
+                                    color = RodapeTheme.colors.terracota,
                                     fontWeight = FontWeight.SemiBold
                                 )
                             )
@@ -464,7 +463,7 @@ fun SuggestScreen(
                     Text(
                         text = "Conte pro pessoal por que você sugere esse. Opcional.",
                         style = MaterialTheme.typography.bodyMedium,
-                        color = Muted
+                        color = RodapeTheme.colors.muted
                     )
 
                     OutlinedTextField(
@@ -474,7 +473,7 @@ fun SuggestScreen(
                             Text(
                                 "Ex: É um clássico excelente e curto...",
                                 style = MaterialTheme.typography.bodyMedium,
-                                color = Muted
+                                color = RodapeTheme.colors.muted
                             )
                         },
                         modifier = Modifier
@@ -482,11 +481,11 @@ fun SuggestScreen(
                             .height(100.dp),
                         shape = RoundedCornerShape(12.dp),
                         colors = OutlinedTextFieldDefaults.colors(
-                            unfocusedContainerColor = Cream,
-                            focusedContainerColor = Cream,
-                            unfocusedBorderColor = Divider,
-                            focusedBorderColor = Terracota,
-                            cursorColor = Terracota,
+                            unfocusedContainerColor = RodapeTheme.colors.cream,
+                            focusedContainerColor = RodapeTheme.colors.cream,
+                            unfocusedBorderColor = RodapeTheme.colors.divider,
+                            focusedBorderColor = RodapeTheme.colors.terracota,
+                            cursorColor = RodapeTheme.colors.terracota,
                         )
                     )
                 }
@@ -546,10 +545,10 @@ private fun BookResultRow(
         modifier = Modifier
             .fillMaxWidth()
             .clip(RoundedCornerShape(14.dp))
-            .background(if (isSelected) Cream else Color.Transparent)
+            .background(if (isSelected) RodapeTheme.colors.cream else Color.Transparent)
             .border(
                 width = if (isSelected) 1.5.dp else 0.5.dp,
-                color = if (isSelected) Terracota else Divider,
+                color = if (isSelected) RodapeTheme.colors.terracota else RodapeTheme.colors.divider,
                 shape = RoundedCornerShape(14.dp)
             )
             .clickable { onClick() }
@@ -586,7 +585,7 @@ private fun BookResultRow(
                     fontFamily = LiterataFontFamily,
                     fontWeight = FontWeight.SemiBold
                 ),
-                color = Ink,
+                color = RodapeTheme.colors.ink,
                 maxLines = 2,
                 overflow = TextOverflow.Ellipsis
             )
@@ -596,7 +595,7 @@ private fun BookResultRow(
                 style = MaterialTheme.typography.bodySmall.copy(
                     fontFamily = InterFontFamily
                 ),
-                color = Muted,
+                color = RodapeTheme.colors.muted,
                 maxLines = 1,
                 overflow = TextOverflow.Ellipsis
             )
@@ -607,7 +606,7 @@ private fun BookResultRow(
                     style = MaterialTheme.typography.labelSmall.copy(
                         fontFamily = InterFontFamily
                     ),
-                    color = Muted
+                    color = RodapeTheme.colors.muted
                 )
             }
         }
@@ -617,13 +616,13 @@ private fun BookResultRow(
                 modifier = Modifier
                     .size(24.dp)
                     .clip(CircleShape)
-                    .background(Terracota),
+                    .background(RodapeTheme.colors.terracota),
                 contentAlignment = Alignment.Center
             ) {
                 Icon(
                     imageVector = Icons.Outlined.Check,
                     contentDescription = "Selecionado",
-                    tint = Cream,
+                    tint = RodapeTheme.colors.cream,
                     modifier = Modifier.size(14.dp)
                 )
             }

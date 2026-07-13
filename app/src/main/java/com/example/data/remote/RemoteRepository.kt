@@ -78,12 +78,14 @@ private data class ProfileDto(
     val sobrenome: String? = null,
     @SerialName("avatar_key") val avatarKey: String = "preset:leitor",
     @SerialName("font_scale") val fontScale: Double = 1.0,
+    val pronome: String? = null,
 ) {
     fun toDomain(): User = User(
         id = id,
         nome = listOfNotNull(nome, sobrenome).joinToString(" ").trim().ifBlank { nome },
         email = "", // email mora em auth.users; UI le de supabaseEmail
         avatarUrl = avatarKey,
+        pronome = pronome?.trim()?.ifBlank { null },
     )
 }
 
@@ -1085,6 +1087,7 @@ class RemoteRepository(
                     nome = obj.str("nome"),
                     sobrenome = obj.strOrNull("sobrenome"),
                     avatarKey = obj.str("avatarKey"),
+                    pronome = obj.strOrNull("pronome"),
                 )
             )
         }
@@ -1301,17 +1304,19 @@ class RemoteRepository(
         val nome = partes.firstOrNull()?.ifBlank { user.nome } ?: user.nome
         val sobrenome = if (partes.size > 1) partes[1].trim().ifBlank { null } else null
         val avatarKey = user.avatarUrl.ifBlank { "preset:leitor" }
-        dao.upsertUser(user.copy(avatarUrl = avatarKey))
+        val pronome = user.pronome?.trim()?.ifBlank { null }
+        dao.upsertUser(user.copy(avatarUrl = avatarKey, pronome = pronome))
         notifyLocalMutation("profiles")
         val payload = buildJsonObject {
             put("id", user.id)
             put("nome", nome)
             if (sobrenome != null) put("sobrenome", sobrenome)
             put("avatarKey", avatarKey)
+            if (pronome != null) put("pronome", pronome)
         }.toString()
         tryRemoteOrEnqueue("upsert_profile", payload) {
             supabase.from("profiles").upsert(
-                ProfileUpdateDto(id = user.id, nome = nome, sobrenome = sobrenome, avatarKey = avatarKey)
+                ProfileUpdateDto(id = user.id, nome = nome, sobrenome = sobrenome, avatarKey = avatarKey, pronome = pronome)
             )
         }
     }
@@ -1322,6 +1327,7 @@ class RemoteRepository(
         val nome: String,
         val sobrenome: String? = null,
         @SerialName("avatar_key") val avatarKey: String,
+        val pronome: String? = null,
     )
 
     suspend fun updateFontScale(userId: String, scale: Float) {

@@ -235,13 +235,15 @@ CREATE TABLE public.profiles (
   sobrenome text,
   avatar_key text NOT NULL DEFAULT 'preset:leitor'::text,
   font_scale numeric(3,2) NOT NULL DEFAULT 1.00,
+  pronome text,
   created_at timestamp with time zone NOT NULL DEFAULT now(),
   updated_at timestamp with time zone NOT NULL DEFAULT now(),
   CONSTRAINT profiles_pkey PRIMARY KEY (id),
   CONSTRAINT profiles_id_fkey FOREIGN KEY (id) REFERENCES auth.users(id) ON DELETE CASCADE,
   CONSTRAINT profiles_font_scale_check CHECK (((font_scale >= 0.80) AND (font_scale <= 1.40))),
   CONSTRAINT profiles_nome_check CHECK (((char_length(nome) >= 1) AND (char_length(nome) <= 60))),
-  CONSTRAINT profiles_sobrenome_check CHECK (((sobrenome IS NULL) OR (char_length(sobrenome) <= 60)))
+  CONSTRAINT profiles_sobrenome_check CHECK (((sobrenome IS NULL) OR (char_length(sobrenome) <= 60))),
+  CONSTRAINT profiles_pronome_check CHECK (((pronome IS NULL) OR (char_length(pronome) <= 40)))
 );
 
 CREATE TABLE public.reactions (

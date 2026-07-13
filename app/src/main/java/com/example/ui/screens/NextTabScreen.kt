@@ -66,12 +66,12 @@ fun NextTabScreen(
                 .padding(horizontal = 24.dp, vertical = 8.dp)
                 .height(48.dp)
                 .background(
-                    OlivaSoft.copy(alpha = 0.5f),
+                    RodapeTheme.colors.olivaSoft.copy(alpha = 0.5f),
                     RoundedCornerShape(24.dp)
                 )
                 .border(
                     0.5.dp,
-                    Divider,
+                    RodapeTheme.colors.divider,
                     RoundedCornerShape(24.dp)
                 )
                 .padding(4.dp),
@@ -85,7 +85,7 @@ fun NextTabScreen(
                         .weight(1f)
                         .fillMaxHeight()
                         .background(
-                            if (isSelected) Oliva else Color.Transparent,
+                            if (isSelected) RodapeTheme.colors.oliva else Color.Transparent,
                             RoundedCornerShape(20.dp)
                         )
                         .clickable { subTab = tab },
@@ -93,7 +93,7 @@ fun NextTabScreen(
                 ) {
                     Text(
                         label,
-                        color = if (isSelected) Cream else Tertiary,
+                        color = if (isSelected) RodapeTheme.colors.cream else RodapeTheme.colors.tertiary,
                         style = MaterialTheme.typography.titleMedium.copy(
                             fontFamily = LiterataFontFamily,
                             fontWeight = if (isSelected) FontWeight.SemiBold else FontWeight.Normal
@@ -116,7 +116,7 @@ fun NextTabScreen(
                         .weight(1f)
                         .height(2.dp)
                         .background(
-                            if (subTab == tab) Terracota else Color.Transparent,
+                            if (subTab == tab) RodapeTheme.colors.terracota else Color.Transparent,
                             RoundedCornerShape(1.dp)
                         )
                 )
@@ -193,14 +193,14 @@ fun EncontroTab(
                 Icon(
                     imageVector = Icons.Outlined.EventNote,
                     contentDescription = null,
-                    tint = Muted,
+                    tint = RodapeTheme.colors.muted,
                     modifier = Modifier.size(48.dp)
                 )
                 Spacer(modifier = Modifier.height(12.dp))
                 Text(
                     "Nenhum próximo encontro agendado.",
                     style = MaterialTheme.typography.bodyLarge,
-                    color = Muted,
+                    color = RodapeTheme.colors.muted,
                     textAlign = TextAlign.Center
                 )
                 Spacer(modifier = Modifier.height(8.dp))
@@ -212,7 +212,7 @@ fun EncontroTab(
                     else
                         "Assim que o organizador marcar um encontro, ele aparece aqui.",
                     style = MaterialTheme.typography.bodyMedium,
-                    color = Muted,
+                    color = RodapeTheme.colors.muted,
                     textAlign = TextAlign.Center
                 )
                 if (isAdmin) {
@@ -247,12 +247,12 @@ fun EncontroTab(
                         horizontalArrangement = Arrangement.spacedBy(6.dp),
                         modifier = Modifier.padding(top = 4.dp)
                     ) {
-                        Box(modifier = Modifier.size(6.dp).background(Terracota, androidx.compose.foundation.shape.CircleShape))
+                        Box(modifier = Modifier.size(6.dp).background(RodapeTheme.colors.terracota, androidx.compose.foundation.shape.CircleShape))
                         Text(
                             text = "CRONOGRAMA · ${currentBookTitle ?: "—"}",
                             style = MaterialTheme.typography.labelSmall.copy(
                                 fontWeight = FontWeight.Bold,
-                                color = Terracota,
+                                color = RodapeTheme.colors.terracota,
                                 letterSpacing = 1.sp
                             ),
                             maxLines = 1,
@@ -266,8 +266,8 @@ fun EncontroTab(
                         modifier = Modifier
                             .fillMaxWidth()
                             .clip(RoundedCornerShape(12.dp))
-                            .background(if (concluded) DividerSoft.copy(alpha = 0.3f) else Cream)
-                            .border(0.5.dp, Divider, RoundedCornerShape(12.dp))
+                            .background(if (concluded) RodapeTheme.colors.dividerSoft.copy(alpha = 0.3f) else RodapeTheme.colors.cream)
+                            .border(0.5.dp, RodapeTheme.colors.divider, RoundedCornerShape(12.dp))
                             .clickable { onNavigateToMeetingDetail(m.id) }
                             // A11y: card navega — anuncia como botão com rótulo.
                             .semantics {
@@ -283,8 +283,8 @@ fun EncontroTab(
                                 .size(40.dp)
                                 .clip(RoundedCornerShape(10.dp))
                                 .background(
-                                    if (concluded) Muted.copy(alpha = 0.2f)
-                                    else Terracota.copy(alpha = 0.12f)
+                                    if (concluded) RodapeTheme.colors.muted.copy(alpha = 0.2f)
+                                    else RodapeTheme.colors.terracota.copy(alpha = 0.12f)
                                 ),
                             contentAlignment = Alignment.Center
                         ) {
@@ -297,7 +297,7 @@ fun EncontroTab(
                                 text = dayNum,
                                 style = MaterialTheme.typography.bodyLarge.copy(
                                     fontWeight = FontWeight.Bold,
-                                    color = if (concluded) Muted else Terracota,
+                                    color = if (concluded) RodapeTheme.colors.muted else RodapeTheme.colors.terracota,
                                     fontFamily = LiterataFontFamily
                                 )
                             )
@@ -311,7 +311,7 @@ fun EncontroTab(
                                     text = m.data,
                                     style = MaterialTheme.typography.bodyMedium.copy(
                                         fontFamily = LiterataFontFamily,
-                                        color = if (concluded) Muted else Ink
+                                        color = if (concluded) RodapeTheme.colors.muted else RodapeTheme.colors.ink
                                     ),
                                     maxLines = 1,
                                     overflow = TextOverflow.Ellipsis,
@@ -325,7 +325,7 @@ fun EncontroTab(
                                 Text(
                                     text = "📖 Caps ${m.chapterStart}–${m.chapterEnd}",
                                     style = MaterialTheme.typography.labelSmall.copy(
-                                        color = if (concluded) Muted else Terracota,
+                                        color = if (concluded) RodapeTheme.colors.muted else RodapeTheme.colors.terracota,
                                         fontWeight = FontWeight.SemiBold
                                     )
                                 )
@@ -354,7 +354,7 @@ fun EncontroTab(
                             .fillMaxWidth()
                             .background(
                                 Brush.linearGradient(
-                                    colors = listOf(Oliva, OlivaDark)
+                                    colors = listOf(RodapeTheme.colors.oliva, RodapeTheme.colors.olivaDark)
                                 )
                             )
                             .padding(20.dp)
@@ -366,14 +366,14 @@ fun EncontroTab(
                             Box(
                                 modifier = Modifier
                                     .size(64.dp)
-                                    .background(Cream.copy(alpha = 0.15f), RoundedCornerShape(12.dp)),
+                                    .background(RodapeTheme.colors.cream.copy(alpha = 0.15f), RoundedCornerShape(12.dp)),
                                 contentAlignment = Alignment.Center
                             ) {
                                 Box(contentAlignment = Alignment.Center) {
                                     Icon(
                                         imageVector = Icons.Outlined.DateRange,
                                         contentDescription = null,
-                                        tint = Cream.copy(alpha = 0.35f),
+                                        tint = RodapeTheme.colors.cream.copy(alpha = 0.35f),
                                         modifier = Modifier.size(56.dp)
                                     )
                                     val dayNumber = meeting!!.data
@@ -387,7 +387,7 @@ fun EncontroTab(
                                         text = dayNumber,
                                         style = MaterialTheme.typography.displayLarge.copy(
                                             fontSize = 20.sp,
-                                            color = Cream,
+                                            color = RodapeTheme.colors.cream,
                                             fontWeight = FontWeight.Bold
                                         ),
                                         modifier = Modifier.padding(top = 8.dp)
@@ -399,7 +399,7 @@ fun EncontroTab(
                                 Text(
                                     text = "Próximo encontro",
                                     style = MaterialTheme.typography.bodyLarge.copy(
-                                        color = OlivaSoft,
+                                        color = RodapeTheme.colors.olivaSoft,
                                         fontWeight = FontWeight.Medium
                                     )
                                 )
@@ -408,18 +408,18 @@ fun EncontroTab(
                                     style = MaterialTheme.typography.headlineLarge.copy(
                                         fontSize = 18.sp,
                                         fontWeight = FontWeight.Bold,
-                                        color = Cream
+                                        color = RodapeTheme.colors.cream
                                     )
                                 )
                                 Text(
                                     text = meeting!!.hora,
-                                    style = MaterialTheme.typography.bodyLarge.copy(color = OlivaSoft.copy(alpha = 0.9f))
+                                    style = MaterialTheme.typography.bodyLarge.copy(color = RodapeTheme.colors.olivaSoft.copy(alpha = 0.9f))
                                 )
                                 if (meeting!!.chapterStart != null && meeting!!.chapterEnd != null) {
                                     Text(
                                         text = "📖 Caps ${meeting!!.chapterStart}–${meeting!!.chapterEnd}",
                                         style = MaterialTheme.typography.labelSmall.copy(
-                                            color = OlivaSoft,
+                                            color = RodapeTheme.colors.olivaSoft,
                                             fontWeight = FontWeight.SemiBold
                                         )
                                     )
@@ -437,13 +437,13 @@ fun EncontroTab(
                             Icon(
                                 imageVector = Icons.Outlined.Place,
                                 contentDescription = "Local",
-                                tint = OlivaMid,
+                                tint = RodapeTheme.colors.olivaMid,
                                 modifier = Modifier.size(20.dp)
                             )
                             Text(
                                 text = meeting!!.local,
                                 style = MaterialTheme.typography.bodyLarge,
-                                color = Tertiary
+                                color = RodapeTheme.colors.tertiary
                             )
                         }
                     }
@@ -460,7 +460,7 @@ fun EncontroTab(
                         "Você vai participar desse encontro?",
                         style = MaterialTheme.typography.bodyMedium.copy(
                             fontWeight = FontWeight.SemiBold,
-                            color = Ink
+                            color = RodapeTheme.colors.ink
                         )
                     )
                     Spacer(modifier = Modifier.height(16.dp))
@@ -477,7 +477,7 @@ fun EncontroTab(
                                     .weight(1f)
                                     .height(48.dp)
                                     .clip(RoundedCornerShape(22.dp))
-                                    .background(if (isSelected) Ink else Color.Transparent)
+                                    .background(if (isSelected) RodapeTheme.colors.ink else Color.Transparent)
                                     // A11y: anuncia "selecionado" e papel de opção única.
                                     .selectable(
                                         selected = isSelected,
@@ -488,14 +488,14 @@ fun EncontroTab(
                                     .semantics { if (isSelected) liveRegion = LiveRegionMode.Polite }
                                     .border(
                                         width = 1.dp,
-                                        color = if (isSelected) Color.Transparent else Divider,
+                                        color = if (isSelected) Color.Transparent else RodapeTheme.colors.divider,
                                         shape = RoundedCornerShape(22.dp)
                                     ),
                                 contentAlignment = Alignment.Center
                             ) {
                                 Text(
                                     text = statusOption,
-                                    color = if (isSelected) Cream else Tertiary,
+                                    color = if (isSelected) RodapeTheme.colors.cream else RodapeTheme.colors.tertiary,
                                     style = MaterialTheme.typography.bodyLarge.copy(fontWeight = FontWeight.Medium)
                                 )
                             }
@@ -526,38 +526,38 @@ fun EncontroTab(
                             Text(
                                 confirmados.size.toString(),
                                 style = MaterialTheme.typography.displayLarge.copy(
-                                    color = Oliva,
+                                    color = RodapeTheme.colors.oliva,
                                     fontWeight = FontWeight.Bold
                                 )
                             )
-                            Text("Vou", style = MaterialTheme.typography.labelSmall.copy(color = Muted))
+                            Text("Vou", style = MaterialTheme.typography.labelSmall.copy(color = RodapeTheme.colors.muted))
                         }
 
                         Column(horizontalAlignment = Alignment.CenterHorizontally) {
                             Text(
                                 talvez.size.toString(),
                                 style = MaterialTheme.typography.displayLarge.copy(
-                                    color = OlivaMid, // substituído de Color(0xFFD4A373)
+                                    color = RodapeTheme.colors.olivaMid, // substituído de Color(0xFFD4A373)
                                     fontWeight = FontWeight.Bold
                                 )
                             )
-                            Text("Talvez", style = MaterialTheme.typography.labelSmall.copy(color = Muted))
+                            Text("Talvez", style = MaterialTheme.typography.labelSmall.copy(color = RodapeTheme.colors.muted))
                         }
 
                         Column(horizontalAlignment = Alignment.CenterHorizontally) {
                             Text(
                                 naoVou.size.toString(),
                                 style = MaterialTheme.typography.displayLarge.copy(
-                                    color = Tertiary,
+                                    color = RodapeTheme.colors.tertiary,
                                     fontWeight = FontWeight.Bold
                                 )
                             )
-                            Text("Não vou", style = MaterialTheme.typography.labelSmall.copy(color = Muted))
+                            Text("Não vou", style = MaterialTheme.typography.labelSmall.copy(color = RodapeTheme.colors.muted))
                         }
                     }
 
                     Spacer(modifier = Modifier.height(16.dp))
-                    HorizontalDivider(thickness = 0.5.dp, color = Divider)
+                    HorizontalDivider(thickness = 0.5.dp, color = RodapeTheme.colors.divider)
                     Spacer(modifier = Modifier.height(8.dp))
 
                     // Group 1: Confirmados
@@ -571,7 +571,7 @@ fun EncontroTab(
                         Icon(
                             imageVector = if (isConfirmadosExpanded) Icons.Outlined.KeyboardArrowDown else Icons.Outlined.KeyboardArrowRight,
                             contentDescription = null,
-                            tint = OlivaMid,
+                            tint = RodapeTheme.colors.olivaMid,
                             modifier = Modifier.size(20.dp)
                         )
                         Spacer(modifier = Modifier.width(8.dp))
@@ -579,7 +579,7 @@ fun EncontroTab(
                             text = "Vou (${confirmados.size})",
                             style = MaterialTheme.typography.titleMedium.copy(
                                 fontWeight = FontWeight.Bold,
-                                color = Ink
+                                color = RodapeTheme.colors.ink
                             ),
                             modifier = Modifier.weight(1f)
                         )
@@ -594,7 +594,7 @@ fun EncontroTab(
                                 Text(
                                     "Nenhum membro confirmado ainda.",
                                     style = MaterialTheme.typography.bodyMedium,
-                                    color = Muted
+                                    color = RodapeTheme.colors.muted
                                 )
                             } else {
                                 confirmados.forEach { resp ->
@@ -609,7 +609,7 @@ fun EncontroTab(
                                             .padding(vertical = 4.dp)
                                     ) {
                                         Avatar(name = nameVal, avatarUrl = urlVal, size = 32.dp)
-                                        Text(text = nameVal, style = MaterialTheme.typography.bodyLarge.copy(color = Ink))
+                                        Text(text = nameVal, style = MaterialTheme.typography.bodyLarge.copy(color = RodapeTheme.colors.ink))
                                     }
                                 }
                             }
@@ -627,7 +627,7 @@ fun EncontroTab(
                         Icon(
                             imageVector = if (isTalvezExpanded) Icons.Outlined.KeyboardArrowDown else Icons.Outlined.KeyboardArrowRight,
                             contentDescription = null,
-                            tint = OlivaMid,
+                            tint = RodapeTheme.colors.olivaMid,
                             modifier = Modifier.size(20.dp)
                         )
                         Spacer(modifier = Modifier.width(8.dp))
@@ -635,7 +635,7 @@ fun EncontroTab(
                             text = "Talvez (${talvez.size})",
                             style = MaterialTheme.typography.titleMedium.copy(
                                 fontWeight = FontWeight.Bold,
-                                color = Ink
+                                color = RodapeTheme.colors.ink
                             ),
                             modifier = Modifier.weight(1f)
                         )
@@ -650,7 +650,7 @@ fun EncontroTab(
                                 Text(
                                     "Ninguém em dúvida por enquanto.",
                                     style = MaterialTheme.typography.bodyMedium,
-                                    color = Muted
+                                    color = RodapeTheme.colors.muted
                                 )
                             } else {
                                 talvez.forEach { resp ->
@@ -665,7 +665,7 @@ fun EncontroTab(
                                             .padding(vertical = 4.dp)
                                     ) {
                                         Avatar(name = nameVal, avatarUrl = urlVal, size = 32.dp)
-                                        Text(text = nameVal, style = MaterialTheme.typography.bodyLarge.copy(color = Ink))
+                                        Text(text = nameVal, style = MaterialTheme.typography.bodyLarge.copy(color = RodapeTheme.colors.ink))
                                     }
                                 }
                             }
@@ -683,7 +683,7 @@ fun EncontroTab(
                         Icon(
                             imageVector = if (isNaoVouExpanded) Icons.Outlined.KeyboardArrowDown else Icons.Outlined.KeyboardArrowRight,
                             contentDescription = null,
-                            tint = OlivaMid,
+                            tint = RodapeTheme.colors.olivaMid,
                             modifier = Modifier.size(20.dp)
                         )
                         Spacer(modifier = Modifier.width(8.dp))
@@ -691,7 +691,7 @@ fun EncontroTab(
                             text = "Não vou (${naoVou.size})",
                             style = MaterialTheme.typography.titleMedium.copy(
                                 fontWeight = FontWeight.Bold,
-                                color = Ink
+                                color = RodapeTheme.colors.ink
                             ),
                             modifier = Modifier.weight(1f)
                         )
@@ -706,7 +706,7 @@ fun EncontroTab(
                                 Text(
                                     "Ninguém recusou até agora.",
                                     style = MaterialTheme.typography.bodyMedium,
-                                    color = Muted
+                                    color = RodapeTheme.colors.muted
                                 )
                             } else {
                                 naoVou.forEach { resp ->
@@ -721,7 +721,7 @@ fun EncontroTab(
                                             .padding(vertical = 4.dp)
                                     ) {
                                         Avatar(name = nameVal, avatarUrl = urlVal, size = 32.dp)
-                                        Text(text = nameVal, style = MaterialTheme.typography.bodyLarge.copy(color = Ink))
+                                        Text(text = nameVal, style = MaterialTheme.typography.bodyLarge.copy(color = RodapeTheme.colors.ink))
                                     }
                                 }
                             }
@@ -748,13 +748,13 @@ fun EncontroTab(
                                 Text(
                                     text = "•",
                                     style = MaterialTheme.typography.bodyLarge.copy(
-                                        color = Terracota,
+                                        color = RodapeTheme.colors.terracota,
                                         fontWeight = FontWeight.Bold
                                     )
                                 )
                                 Text(
                                     text = line,
-                                    style = MaterialTheme.typography.bodyLarge.copy(color = Ink)
+                                    style = MaterialTheme.typography.bodyLarge.copy(color = RodapeTheme.colors.ink)
                                 )
                             }
                         }
@@ -851,7 +851,7 @@ fun VotacaoTab(
             RodapeCard {
                 Text(
                     text = "Votação do próximo livro",
-                    style = MaterialTheme.typography.headlineLarge.copy(color = OlivaDark),
+                    style = MaterialTheme.typography.headlineLarge.copy(color = RodapeTheme.colors.olivaDark),
                     modifier = Modifier.padding(bottom = 4.dp)
                 )
                 if (activeRound != null) {
@@ -861,13 +861,13 @@ fun VotacaoTab(
                     Text(
                         text = "Aberta até $dataLabel · $nLabel",
                         style = MaterialTheme.typography.bodyLarge,
-                        color = Tertiary
+                        color = RodapeTheme.colors.tertiary
                     )
                 } else {
                     Text(
                         text = "Não há votação aberta no momento.",
                         style = MaterialTheme.typography.bodyLarge,
-                        color = Muted
+                        color = RodapeTheme.colors.muted
                     )
                     if (isAdmin) {
                         Spacer(modifier = Modifier.height(12.dp))
@@ -899,7 +899,7 @@ fun VotacaoTab(
                         Text(
                             "Nenhum livro sugerido ainda.",
                             style = MaterialTheme.typography.bodyLarge,
-                            color = Muted,
+                            color = RodapeTheme.colors.muted,
                             textAlign = TextAlign.Center
                         )
                         Spacer(modifier = Modifier.height(16.dp))
@@ -943,7 +943,7 @@ fun VotacaoTab(
                                         ) {
                                             Text(
                                                 text = book.title,
-                                                style = MaterialTheme.typography.headlineLarge.copy(fontSize = 16.sp, color = Ink),
+                                                style = MaterialTheme.typography.headlineLarge.copy(fontSize = 16.sp, color = RodapeTheme.colors.ink),
                                                 maxLines = 2,
                                                 overflow = TextOverflow.Ellipsis,
                                                 modifier = Modifier.weight(1f, fill = false)
@@ -952,14 +952,14 @@ fun VotacaoTab(
                                                 Icon(
                                                     imageVector = Icons.Outlined.Info,
                                                     contentDescription = "Ver justificativa",
-                                                    tint = OlivaMid,
+                                                    tint = RodapeTheme.colors.olivaMid,
                                                     modifier = Modifier
                                                         .size(16.dp)
                                                         .clickable { justificationSheetFor = book.id }
                                                 )
                                             }
                                         }
-                                        Text(text = book.author, style = MaterialTheme.typography.bodyLarge.copy(color = Muted))
+                                        Text(text = book.author, style = MaterialTheme.typography.bodyLarge.copy(color = RodapeTheme.colors.muted))
                                     }
                                     if (hasUserVoted) {
                                         // C1: liveRegion faz o leitor de tela anunciar
@@ -980,7 +980,7 @@ fun VotacaoTab(
                                                 onClick = { showMenu = true },
                                                 modifier = Modifier.minimumInteractiveComponentSize()
                                             ) {
-                                                Icon(Icons.Outlined.MoreVert, contentDescription = "Ações do livro na votação", tint = Muted, modifier = Modifier.size(18.dp))
+                                                Icon(Icons.Outlined.MoreVert, contentDescription = "Ações do livro na votação", tint = RodapeTheme.colors.muted, modifier = Modifier.size(18.dp))
                                             }
                                             DropdownMenu(expanded = showMenu, onDismissRequest = { showMenu = false }) {
                                                 DropdownMenuItem(
@@ -1002,11 +1002,11 @@ fun VotacaoTab(
                                                     TextButton(onClick = {
                                                         viewModel.removeSuggestion(book.id)
                                                         showConfirm = false
-                                                    }) { Text("Remover", color = Terracota, fontWeight = FontWeight.SemiBold) }
+                                                    }) { Text("Remover", color = RodapeTheme.colors.terracota, fontWeight = FontWeight.SemiBold) }
                                                 },
                                                 dismissButton = {
                                                     TextButton(onClick = { showConfirm = false }) {
-                                                        Text("Cancelar", color = Muted)
+                                                        Text("Cancelar", color = RodapeTheme.colors.muted)
                                                     }
                                                 }
                                             )
@@ -1017,8 +1017,8 @@ fun VotacaoTab(
                                 ProgressBar(
                                     value = pct,
                                     modifier = Modifier.fillMaxWidth(),
-                                    color = if (hasUserVoted) Oliva else Terracota,
-                                    track = DividerSoft,
+                                    color = if (hasUserVoted) RodapeTheme.colors.oliva else RodapeTheme.colors.terracota,
+                                    track = RodapeTheme.colors.dividerSoft,
                                     height = 8.dp
                                 )
                                 Spacer(modifier = Modifier.height(6.dp))
@@ -1028,11 +1028,11 @@ fun VotacaoTab(
                                 ) {
                                     Text(
                                         text = "${bookVotes.size} ${if (bookVotes.size == 1) "voto" else "votos"}",
-                                        style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Bold, color = Ink)
+                                        style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Bold, color = RodapeTheme.colors.ink)
                                     )
                                     Text(
                                         text = "${(pct * 100).toInt()}%",
-                                        style = MaterialTheme.typography.labelSmall.copy(color = Muted)
+                                        style = MaterialTheme.typography.labelSmall.copy(color = RodapeTheme.colors.muted)
                                     )
                                 }
                                 Spacer(modifier = Modifier.height(12.dp))
@@ -1064,7 +1064,7 @@ fun VotacaoTab(
                 Text(
                     text = "Sugestões na fila (${suggestedBooks.size})",
                     style = MaterialTheme.typography.titleMedium.copy(
-                        fontWeight = FontWeight.SemiBold, color = Ink
+                        fontWeight = FontWeight.SemiBold, color = RodapeTheme.colors.ink
                     )
                 )
             }
@@ -1082,12 +1082,12 @@ fun VotacaoTab(
                         Column(modifier = Modifier.weight(1f)) {
                             Text(
                                 text = book.title,
-                                style = MaterialTheme.typography.headlineLarge.copy(fontSize = 16.sp, color = Ink),
+                                style = MaterialTheme.typography.headlineLarge.copy(fontSize = 16.sp, color = RodapeTheme.colors.ink),
                                 maxLines = 2, overflow = TextOverflow.Ellipsis
                             )
                             Text(
                                 text = book.author,
-                                style = MaterialTheme.typography.bodyMedium.copy(color = Muted),
+                                style = MaterialTheme.typography.bodyMedium.copy(color = RodapeTheme.colors.muted),
                                 maxLines = 1, overflow = TextOverflow.Ellipsis
                             )
                             if (hasJustification) {
@@ -1095,7 +1095,7 @@ fun VotacaoTab(
                                 Text(
                                     text = "Ver justificativa",
                                     style = MaterialTheme.typography.labelSmall.copy(
-                                        color = OlivaMid, fontWeight = FontWeight.SemiBold
+                                        color = RodapeTheme.colors.olivaMid, fontWeight = FontWeight.SemiBold
                                     ),
                                     modifier = Modifier.clickable { justificationSheetFor = book.id }
                                 )
@@ -1108,7 +1108,7 @@ fun VotacaoTab(
                 Text(
                     text = if (isAdmin) "Abra a votação pra o clube escolher entre elas."
                            else "Quando um admin abrir a votação, vocês votam entre elas.",
-                    style = MaterialTheme.typography.bodySmall.copy(color = Muted),
+                    style = MaterialTheme.typography.bodySmall.copy(color = RodapeTheme.colors.muted),
                     modifier = Modifier.padding(top = 4.dp)
                 )
             }
@@ -1125,14 +1125,14 @@ fun VotacaoTab(
                     Box(
                         modifier = Modifier
                             .size(6.dp)
-                            .background(Terracota, androidx.compose.foundation.shape.CircleShape)
+                            .background(RodapeTheme.colors.terracota, androidx.compose.foundation.shape.CircleShape)
                     )
                     Text(
                         text = "FILA DO CLUBE",
                         style = MaterialTheme.typography.labelSmall.copy(
                             fontWeight = FontWeight.Bold,
                             letterSpacing = 1.sp,
-                            color = Terracota
+                            color = RodapeTheme.colors.terracota
                         )
                     )
                 }
@@ -1148,7 +1148,7 @@ fun VotacaoTab(
                             Spacer(modifier = Modifier.height(6.dp))
                             Text(
                                 text = b.title,
-                                style = MaterialTheme.typography.labelSmall.copy(color = Ink),
+                                style = MaterialTheme.typography.labelSmall.copy(color = RodapeTheme.colors.ink),
                                 maxLines = 2,
                                 overflow = TextOverflow.Ellipsis,
                                 textAlign = TextAlign.Center
@@ -1208,7 +1208,7 @@ fun VotacaoTab(
                 Text(
                     text = "\"${sug?.justificativa ?: ""}\"",
                     style = MaterialTheme.typography.bodyMedium.copy(
-                        color = InkSoft,
+                        color = RodapeTheme.colors.inkSoft,
                         lineHeight = 20.sp
                     )
                 )
@@ -1239,12 +1239,12 @@ fun VotacaoTab(
                     viewModel.closeActiveVotingRound()
                     showCloseDialog = false
                 }) {
-                    Text("Encerrar", color = Terracota, fontWeight = FontWeight.SemiBold)
+                    Text("Encerrar", color = RodapeTheme.colors.terracota, fontWeight = FontWeight.SemiBold)
                 }
             },
             dismissButton = {
                 TextButton(onClick = { showCloseDialog = false }) {
-                    Text("Cancelar", color = Muted)
+                    Text("Cancelar", color = RodapeTheme.colors.muted)
                 }
             }
         )

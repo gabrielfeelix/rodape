@@ -9,6 +9,7 @@ import androidx.compose.foundation.layout.windowInsetsPadding
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.outlined.ArrowBack
@@ -72,7 +73,7 @@ fun BookDetailScreen(
                     Text(
                         text = "Livro não encontrado.",
                         style = MaterialTheme.typography.bodyLarge,
-                        color = Muted
+                        color = RodapeTheme.colors.muted
                     )
                 }
             }
@@ -97,14 +98,15 @@ fun BookDetailScreen(
     Column(
         modifier = Modifier
             .fillMaxSize()
-            .background(Brush.verticalGradient(listOf(OlivaSoft, Paper)))
+            .background(Brush.verticalGradient(listOf(RodapeTheme.colors.olivaSoft, RodapeTheme.colors.paper)))
             .windowInsetsPadding(WindowInsets.statusBars)
     ) {
         // ── HERO ────────────────────────────────────────────────────────────
+        // Gradiente vive só na Column externa; repetir aqui criava uma costura
+        // visível (o ramo reiniciava e batia em `paper` no fim do hero).
         Box(
             modifier = Modifier
                 .fillMaxWidth()
-                .background(Brush.verticalGradient(listOf(OlivaSoft, Paper)))
         ) {
             Column(
                 modifier = Modifier
@@ -142,7 +144,7 @@ fun BookDetailScreen(
                     text = book.author,
                     style = MaterialTheme.typography.bodyLarge.copy(
                         fontFamily = InterFontFamily,
-                        color = Muted
+                        color = RodapeTheme.colors.muted
                     ),
                     textAlign = TextAlign.Center
                 )
@@ -153,14 +155,14 @@ fun BookDetailScreen(
                     .padding(top = 8.dp, start = 12.dp)
                     .size(40.dp)
                     .clip(CircleShape)
-                    .background(CardSurface.copy(alpha = 0.85f))
+                    .background(RodapeTheme.colors.cardSurface.copy(alpha = 0.85f))
                     .clickable { onNavigateBack() },
                 contentAlignment = Alignment.Center
             ) {
                 Icon(
                     imageVector = Icons.AutoMirrored.Outlined.ArrowBack,
                     contentDescription = "Voltar",
-                    tint = Ink,
+                    tint = RodapeTheme.colors.ink,
                     modifier = Modifier.size(20.dp)
                 )
             }
@@ -172,14 +174,14 @@ fun BookDetailScreen(
                     .padding(top = 8.dp, end = 12.dp)
                     .size(40.dp)
                     .clip(CircleShape)
-                    .background(CardSurface.copy(alpha = 0.85f))
+                    .background(RodapeTheme.colors.cardSurface.copy(alpha = 0.85f))
                     .clickable { viewModel.toggleBookFavorite(bookId, !isFavorite) },
                 contentAlignment = Alignment.Center
             ) {
                 Icon(
                     imageVector = if (isFavorite) Icons.Filled.Favorite else Icons.Outlined.FavoriteBorder,
                     contentDescription = if (isFavorite) "Remover dos favoritos" else "Adicionar aos favoritos",
-                    tint = if (isFavorite) Terracota else Ink,
+                    tint = if (isFavorite) RodapeTheme.colors.terracota else RodapeTheme.colors.ink,
                     modifier = Modifier.size(20.dp)
                 )
             }
@@ -196,7 +198,7 @@ fun BookDetailScreen(
                 .fillMaxWidth()
                 .padding(horizontal = 24.dp)
                 .clip(RoundedCornerShape(16.dp))
-                .background(Oliva)
+                .background(RodapeTheme.colors.oliva)
                 .padding(horizontal = 20.dp, vertical = 14.dp),
             contentAlignment = Alignment.Center
         ) {
@@ -205,7 +207,7 @@ fun BookDetailScreen(
                 style = MaterialTheme.typography.bodyMedium.copy(
                     fontFamily = InterFontFamily,
                     fontWeight = FontWeight.Medium,
-                    color = Cream
+                    color = RodapeTheme.colors.cream
                 ),
                 textAlign = TextAlign.Center
             )
@@ -222,18 +224,23 @@ fun BookDetailScreen(
             "historico" to "Histórico"
         )
 
+        // C3: abas roláveis (padrão ScrollableTabRow) em vez de 5 slots weight(1f)
+        // com maxLines=1+ellipsis. Em fonte A++ (1.3×) + escala do sistema, os
+        // rótulos ("Avaliações") truncavam pra "Avaliaçõ…". Agora cada aba tem
+        // largura intrínseca (não corta) e a fileira rola na horizontal se não couber.
         Row(
             modifier = Modifier
                 .fillMaxWidth()
+                .horizontalScroll(rememberScrollState())
                 .padding(horizontal = 16.dp),
-            horizontalArrangement = Arrangement.spacedBy(0.dp)
+            horizontalArrangement = Arrangement.spacedBy(4.dp)
         ) {
             tabs.forEach { (key, label) ->
                 val isSelected = tab == key
                 Column(
                     modifier = Modifier
-                        .weight(1f)
-                        .clickable { tab = key },
+                        .clickable { tab = key }
+                        .padding(horizontal = 8.dp),
                     horizontalAlignment = Alignment.CenterHorizontally
                 ) {
                     Text(
@@ -241,13 +248,10 @@ fun BookDetailScreen(
                         style = MaterialTheme.typography.bodyMedium.copy(
                             fontFamily = LiterataFontFamily,
                             fontWeight = if (isSelected) FontWeight.SemiBold else FontWeight.Normal,
-                            color = if (isSelected) Ink else Muted,
-                            // 12.5sp cabe "Avaliações" nos 5 slots em telas estreitas
-                            // sem truncar (era bodyMedium 14sp e virava "Avaliaçõ…").
-                            fontSize = 12.5.sp
+                            color = if (isSelected) RodapeTheme.colors.ink else RodapeTheme.colors.muted,
                         ),
                         maxLines = 1,
-                        overflow = TextOverflow.Ellipsis,
+                        softWrap = false,
                         modifier = Modifier.padding(bottom = 8.dp)
                     )
                     Box(
@@ -255,7 +259,7 @@ fun BookDetailScreen(
                             .fillMaxWidth()
                             .height(2.dp)
                             .background(
-                                if (isSelected) Terracota else DividerSoft,
+                                if (isSelected) RodapeTheme.colors.terracota else RodapeTheme.colors.dividerSoft,
                                 RoundedCornerShape(1.dp)
                             )
                     )
@@ -335,7 +339,7 @@ fun BookDetailScreen(
                     },
                     enabled = quoteText.isNotBlank()
                 ) {
-                    Text(text = "Salvar", color = Oliva, fontWeight = FontWeight.SemiBold)
+                    Text(text = "Salvar", color = RodapeTheme.colors.oliva, fontWeight = FontWeight.SemiBold)
                 }
             },
             dismissButton = {
@@ -346,7 +350,7 @@ fun BookDetailScreen(
                         quoteRef = ""
                     }
                 ) {
-                    Text(text = "Cancelar", color = Muted)
+                    Text(text = "Cancelar", color = RodapeTheme.colors.muted)
                 }
             }
         )
@@ -372,7 +376,7 @@ private fun SummaryTab(viewModel: MainViewModel, bookId: String) {
                 text = "Ninguém escreveu o resumo ainda. Que tal começar?",
                 style = MaterialTheme.typography.bodyMedium.copy(
                     fontFamily = InterFontFamily,
-                    color = Muted
+                    color = RodapeTheme.colors.muted
                 )
             )
         }
@@ -389,7 +393,7 @@ private fun SummaryTab(viewModel: MainViewModel, bookId: String) {
                 text = summary!!.texto,
                 style = MaterialTheme.typography.bodyMedium.copy(
                     fontFamily = InterFontFamily,
-                    color = InkSoft,
+                    color = RodapeTheme.colors.inkSoft,
                     lineHeight = 22.sp
                 )
             )
@@ -398,7 +402,7 @@ private fun SummaryTab(viewModel: MainViewModel, bookId: String) {
         val editorName = membersById[summary!!.lastEditorId]?.nome ?: "alguém"
         Text(
             text = "Editado por $editorName · ${timeAgo(summary!!.updatedAt)}",
-            style = MaterialTheme.typography.labelSmall.copy(color = Muted),
+            style = MaterialTheme.typography.labelSmall.copy(color = RodapeTheme.colors.muted),
             modifier = Modifier.padding(horizontal = 4.dp)
         )
         Spacer(modifier = Modifier.height(12.dp))
@@ -438,12 +442,12 @@ private fun SummaryTab(viewModel: MainViewModel, bookId: String) {
                     }
                     showEditDialog = false
                 }) {
-                    Text("Salvar", color = Oliva, fontWeight = FontWeight.SemiBold)
+                    Text("Salvar", color = RodapeTheme.colors.oliva, fontWeight = FontWeight.SemiBold)
                 }
             },
             dismissButton = {
                 TextButton(onClick = { showEditDialog = false }) {
-                    Text("Cancelar", color = Muted)
+                    Text("Cancelar", color = RodapeTheme.colors.muted)
                 }
             }
         )
@@ -467,7 +471,7 @@ private fun FrasesTab(
             text = "Nenhuma frase guardada deste livro ainda.",
             style = MaterialTheme.typography.bodyMedium.copy(
                 fontFamily = InterFontFamily,
-                color = Muted
+                color = RodapeTheme.colors.muted
             ),
             modifier = Modifier.padding(vertical = 16.dp)
         )
@@ -510,7 +514,7 @@ private fun FrasesTab(
                     Avatar(name = authorName, avatarUrl = authorAvatar, size = 20.dp)
                     Text(
                         text = "Salva por $authorName",
-                        style = MaterialTheme.typography.labelSmall.copy(color = Muted)
+                        style = MaterialTheme.typography.labelSmall.copy(color = RodapeTheme.colors.muted)
                     )
                 }
             }
@@ -551,7 +555,7 @@ private fun ChatTab(viewModel: MainViewModel, bookId: String) {
             text = "Esse livro não rendeu conversa por aqui.",
             style = MaterialTheme.typography.bodyMedium.copy(
                 fontFamily = InterFontFamily,
-                color = Muted
+                color = RodapeTheme.colors.muted
             ),
             modifier = Modifier
                 .padding(vertical = 16.dp)
@@ -560,7 +564,7 @@ private fun ChatTab(viewModel: MainViewModel, bookId: String) {
         )
         Text(
             text = "(somente leitura — comente em \"Livro atual\")",
-            style = MaterialTheme.typography.labelSmall.copy(color = Muted),
+            style = MaterialTheme.typography.labelSmall.copy(color = RodapeTheme.colors.muted),
             modifier = Modifier.fillMaxWidth(),
             textAlign = TextAlign.Center
         )
@@ -576,15 +580,15 @@ private fun ChatTab(viewModel: MainViewModel, bookId: String) {
                     horizontalArrangement = Arrangement.spacedBy(8.dp),
                     modifier = Modifier.fillMaxWidth().padding(vertical = 8.dp)
                 ) {
-                    Box(modifier = Modifier.weight(1f).height(1.dp).background(DividerSoft))
+                    Box(modifier = Modifier.weight(1f).height(1.dp).background(RodapeTheme.colors.dividerSoft))
                     Text(
                         text = if (chapter != null) "CAP. ${chapter.numero} · ${chapter.titulo}" else "CAPÍTULO",
                         style = MaterialTheme.typography.labelSmall.copy(
-                            color = OlivaMid,
+                            color = RodapeTheme.colors.olivaMid,
                             fontWeight = FontWeight.SemiBold
                         )
                     )
-                    Box(modifier = Modifier.weight(1f).height(1.dp).background(DividerSoft))
+                    Box(modifier = Modifier.weight(1f).height(1.dp).background(RodapeTheme.colors.dividerSoft))
                 }
             }
 
@@ -606,19 +610,19 @@ private fun ChatTab(viewModel: MainViewModel, bookId: String) {
                             text = authorName,
                             style = MaterialTheme.typography.bodyMedium.copy(
                                 fontWeight = FontWeight.SemiBold,
-                                color = Ink
+                                color = RodapeTheme.colors.ink
                             )
                         )
                         Text(
                             text = timeAgo(c.criadoEm),
-                            style = MaterialTheme.typography.labelSmall.copy(color = Muted)
+                            style = MaterialTheme.typography.labelSmall.copy(color = RodapeTheme.colors.muted)
                         )
                     }
                     if (c.removido) {
                         Text(
                             text = "[mensagem removida pela moderação]",
                             style = MaterialTheme.typography.bodyMedium.copy(
-                                color = Muted,
+                                color = RodapeTheme.colors.muted,
                                 fontStyle = androidx.compose.ui.text.font.FontStyle.Italic,
                                 lineHeight = 20.sp
                             )
@@ -627,7 +631,7 @@ private fun ChatTab(viewModel: MainViewModel, bookId: String) {
                         Text(
                             text = c.texto,
                             style = MaterialTheme.typography.bodyMedium.copy(
-                                color = InkSoft,
+                                color = RodapeTheme.colors.inkSoft,
                                 lineHeight = 20.sp
                             )
                         )
@@ -639,7 +643,7 @@ private fun ChatTab(viewModel: MainViewModel, bookId: String) {
         Spacer(modifier = Modifier.height(12.dp))
         Text(
             text = "(somente leitura — comente em \"Livro atual\")",
-            style = MaterialTheme.typography.labelSmall.copy(color = Muted),
+            style = MaterialTheme.typography.labelSmall.copy(color = RodapeTheme.colors.muted),
             modifier = Modifier.fillMaxWidth(),
             textAlign = TextAlign.Center
         )
@@ -673,14 +677,14 @@ private fun RatingsTab(viewModel: MainViewModel, bookId: String) {
             Spacer(modifier = Modifier.height(8.dp))
             Text(
                 text = "Ninguém avaliou ainda — seja o primeiro.",
-                style = MaterialTheme.typography.bodyMedium.copy(color = Muted)
+                style = MaterialTheme.typography.bodyMedium.copy(color = RodapeTheme.colors.muted)
             )
         } else {
             RatingStars(rating = avg, size = 28.dp, spacing = 4.dp)
             Spacer(modifier = Modifier.height(8.dp))
             Text(
                 text = "${"%.1f".format(avg)} de 5 · ${ratings.size} ${if (ratings.size == 1) "avaliação" else "avaliações"}",
-                style = MaterialTheme.typography.bodyMedium.copy(color = Muted)
+                style = MaterialTheme.typography.bodyMedium.copy(color = RodapeTheme.colors.muted)
             )
         }
     }
@@ -721,7 +725,7 @@ private fun RatingsTab(viewModel: MainViewModel, bookId: String) {
                             text = authorName,
                             style = MaterialTheme.typography.bodyMedium.copy(
                                 fontWeight = FontWeight.SemiBold,
-                                color = Ink
+                                color = RodapeTheme.colors.ink
                             )
                         )
                         Row(
@@ -731,7 +735,7 @@ private fun RatingsTab(viewModel: MainViewModel, bookId: String) {
                             RatingStars(rating = r.stars.toFloat(), size = 12.dp)
                             Text(
                                 text = timeAgo(r.updatedAt),
-                                style = MaterialTheme.typography.labelSmall.copy(color = Muted)
+                                style = MaterialTheme.typography.labelSmall.copy(color = RodapeTheme.colors.muted)
                             )
                         }
                     }
@@ -741,7 +745,7 @@ private fun RatingsTab(viewModel: MainViewModel, bookId: String) {
                     Text(
                         text = r.comment,
                         style = MaterialTheme.typography.bodyMedium.copy(
-                            color = InkSoft,
+                            color = RodapeTheme.colors.inkSoft,
                             lineHeight = 20.sp
                         )
                     )
@@ -756,7 +760,7 @@ private fun RatingsTab(viewModel: MainViewModel, bookId: String) {
     if (totalMembers > ratedCount) {
         Text(
             text = "${totalMembers - ratedCount} ${if (totalMembers - ratedCount == 1) "membro ainda não avaliou" else "membros ainda não avaliaram"}",
-            style = MaterialTheme.typography.labelSmall.copy(color = Muted),
+            style = MaterialTheme.typography.labelSmall.copy(color = RodapeTheme.colors.muted),
             modifier = Modifier.fillMaxWidth().padding(top = 4.dp),
             textAlign = TextAlign.Center
         )
@@ -800,12 +804,12 @@ private fun RatingsTab(viewModel: MainViewModel, bookId: String) {
                     },
                     enabled = draftStars in 1..5
                 ) {
-                    Text("Salvar", color = Oliva, fontWeight = FontWeight.SemiBold)
+                    Text("Salvar", color = RodapeTheme.colors.oliva, fontWeight = FontWeight.SemiBold)
                 }
             },
             dismissButton = {
                 TextButton(onClick = { showRatingDialog = false }) {
-                    Text("Cancelar", color = Muted)
+                    Text("Cancelar", color = RodapeTheme.colors.muted)
                 }
             }
         )
@@ -843,9 +847,9 @@ private fun HistoryTab(viewModel: MainViewModel, bookId: String, dataEncontro: L
                     horizontalAlignment = Alignment.CenterHorizontally,
                     modifier = Modifier.width(24.dp)
                 ) {
-                    Box(modifier = Modifier.size(14.dp).background(Oliva, CircleShape))
+                    Box(modifier = Modifier.size(14.dp).background(RodapeTheme.colors.oliva, CircleShape))
                     if (index < milestones.size - 1) {
-                        Box(modifier = Modifier.width(2.dp).height(56.dp).background(OlivaSoft))
+                        Box(modifier = Modifier.width(2.dp).height(56.dp).background(RodapeTheme.colors.olivaSoft))
                     }
                 }
                 Column(modifier = Modifier.weight(1f)) {
@@ -854,7 +858,7 @@ private fun HistoryTab(viewModel: MainViewModel, bookId: String, dataEncontro: L
                         style = MaterialTheme.typography.bodyMedium.copy(
                             fontFamily = LiterataFontFamily,
                             fontWeight = FontWeight.SemiBold,
-                            color = Ink
+                            color = RodapeTheme.colors.ink
                         )
                     )
                     Spacer(modifier = Modifier.height(2.dp))
@@ -862,7 +866,7 @@ private fun HistoryTab(viewModel: MainViewModel, bookId: String, dataEncontro: L
                         text = desc,
                         style = MaterialTheme.typography.bodySmall.copy(
                             fontFamily = InterFontFamily,
-                            color = Muted
+                            color = RodapeTheme.colors.muted
                         )
                     )
                     Spacer(modifier = Modifier.height(if (index < milestones.size - 1) 44.dp else 0.dp))
@@ -873,13 +877,13 @@ private fun HistoryTab(viewModel: MainViewModel, bookId: String, dataEncontro: L
 
     if (isAdmin) {
         Spacer(modifier = Modifier.height(24.dp))
-        HorizontalDivider(thickness = 0.5.dp, color = Divider)
+        HorizontalDivider(thickness = 0.5.dp, color = RodapeTheme.colors.divider)
         Spacer(modifier = Modifier.height(12.dp))
         Text(
             text = "ADMIN",
             style = MaterialTheme.typography.labelSmall.copy(
                 fontWeight = FontWeight.Bold,
-                color = Terracota,
+                color = RodapeTheme.colors.terracota,
                 letterSpacing = 1.sp
             )
         )
@@ -890,12 +894,12 @@ private fun HistoryTab(viewModel: MainViewModel, bookId: String, dataEncontro: L
         ) {
             Text(
                 text = "Data do encontro:",
-                style = MaterialTheme.typography.bodyMedium.copy(color = Ink)
+                style = MaterialTheme.typography.bodyMedium.copy(color = RodapeTheme.colors.ink)
             )
             Text(
                 text = dataEncontro?.let { formatShortDate(it) } ?: "não definida",
                 style = MaterialTheme.typography.bodyMedium.copy(
-                    color = Terracota,
+                    color = RodapeTheme.colors.terracota,
                     fontWeight = FontWeight.SemiBold
                 )
             )

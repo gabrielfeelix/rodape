@@ -22,6 +22,7 @@ import androidx.compose.ui.semantics.stateDescription
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import com.example.ui.theme.DividerSoft
+import com.example.ui.theme.RodapeTheme
 import kotlin.math.roundToInt
 
 private val Gold = Color(0xFFE6BF6B)
@@ -48,7 +49,7 @@ fun RatingStars(
             Icon(
                 imageVector = Icons.Outlined.Star,
                 contentDescription = null,
-                tint = if (idx < rounded) Gold else DividerSoft,
+                tint = if (idx < rounded) Gold else RodapeTheme.colors.dividerSoft,
                 modifier = Modifier.size(size)
             )
         }
@@ -74,7 +75,7 @@ fun RatingStarsInput(
             Icon(
                 imageVector = Icons.Outlined.Star,
                 contentDescription = "Dar nota $i de 5",
-                tint = if (i <= selected) Gold else DividerSoft,
+                tint = if (i <= selected) Gold else RodapeTheme.colors.dividerSoft,
                 modifier = Modifier
                     // Alvo de toque de 48dp (a estrela visual continua com `size`).
                     .minimumInteractiveComponentSize()

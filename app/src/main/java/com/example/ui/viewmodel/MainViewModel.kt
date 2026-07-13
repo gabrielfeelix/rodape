@@ -4,6 +4,7 @@ import android.app.Application
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.data.DataStoreManager
+import com.example.data.ThemeMode
 import com.example.data.api.OpenLibraryApi
 import com.example.data.api.OpenLibraryDoc
 import com.example.data.model.*
@@ -94,6 +95,18 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
 
     fun setFontScale(scale: Float) {
         viewModelScope.launch { dataStoreManager.setFontScale(scale) }
+    }
+
+    val themeMode: StateFlow<ThemeMode> = dataStoreManager.themeModeFlow
+        .stateIn(viewModelScope, SharingStarted.Eagerly, ThemeMode.SYSTEM)
+
+    fun setThemeMode(mode: ThemeMode) {
+        viewModelScope.launch { dataStoreManager.setThemeMode(mode) }
+    }
+
+    /** Registra o token FCM do device pro usuário logado (push F1). Idempotente. */
+    fun syncPushToken() {
+        com.example.push.PushTokens.sync(viewModelScope)
     }
 
     /**
@@ -500,11 +513,11 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
         }
     }
 
-    fun updateUserProfile(nome: String, email: String, avatarUrl: String) {
+    fun updateUserProfile(nome: String, email: String, avatarUrl: String, pronome: String? = null) {
         viewModelScope.launch {
             val userId = currentUserId.value ?: return@launch
             // email do supabase auth.users e gerido pelo Supabase; aqui so atualiza profile.
-            val updatedUser = User(userId, nome, email, avatarUrl)
+            val updatedUser = User(userId, nome, email, avatarUrl, pronome?.trim()?.ifBlank { null })
             repository.insertUser(updatedUser)
         }
     }

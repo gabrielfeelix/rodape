@@ -96,7 +96,7 @@ fun MeetingDetailScreen(
                 if (com.example.ui.components.rememberShowLoading(hasData = meeting != null)) {
                     com.example.ui.components.CenteredLoading()
                 } else {
-                    Text("Encontro não encontrado.", style = MaterialTheme.typography.bodyLarge, color = Muted)
+                    Text("Encontro não encontrado.", style = MaterialTheme.typography.bodyLarge, color = RodapeTheme.colors.muted)
                 }
             }
             return@Scaffold
@@ -115,7 +115,7 @@ fun MeetingDetailScreen(
                     modifier = Modifier
                         .fillMaxWidth()
                         .clip(RoundedCornerShape(16.dp))
-                        .background(if (concluded) DividerSoft.copy(alpha = 0.3f) else Cream)
+                        .background(if (concluded) RodapeTheme.colors.dividerSoft.copy(alpha = 0.3f) else RodapeTheme.colors.cream)
                         .padding(16.dp),
                     verticalAlignment = Alignment.CenterVertically,
                     horizontalArrangement = Arrangement.spacedBy(14.dp)
@@ -125,8 +125,8 @@ fun MeetingDetailScreen(
                             .size(64.dp)
                             .clip(RoundedCornerShape(14.dp))
                             .background(
-                                if (concluded) Muted.copy(alpha = 0.15f)
-                                else Terracota.copy(alpha = 0.12f)
+                                if (concluded) RodapeTheme.colors.muted.copy(alpha = 0.15f)
+                                else RodapeTheme.colors.terracota.copy(alpha = 0.12f)
                             ),
                         contentAlignment = Alignment.Center
                     ) {
@@ -140,7 +140,7 @@ fun MeetingDetailScreen(
                             style = MaterialTheme.typography.displayMedium.copy(
                                 fontSize = 26.sp,
                                 fontWeight = FontWeight.Bold,
-                                color = if (concluded) Muted else Terracota,
+                                color = if (concluded) RodapeTheme.colors.muted else RodapeTheme.colors.terracota,
                                 fontFamily = LiterataFontFamily
                             )
                         )
@@ -152,7 +152,7 @@ fun MeetingDetailScreen(
                                 style = MaterialTheme.typography.titleMedium.copy(
                                     fontFamily = LiterataFontFamily,
                                     fontWeight = FontWeight.SemiBold,
-                                    color = if (concluded) Muted else Ink
+                                    color = if (concluded) RodapeTheme.colors.muted else RodapeTheme.colors.ink
                                 ),
                                 modifier = Modifier.weight(1f, fill = false)
                             )
@@ -160,17 +160,17 @@ fun MeetingDetailScreen(
                                 Pill(text = "Concluído", variant = PillVariant.Olive)
                             }
                         }
-                        Text(m.hora, style = MaterialTheme.typography.bodyMedium.copy(color = Muted))
+                        Text(m.hora, style = MaterialTheme.typography.bodyMedium.copy(color = RodapeTheme.colors.muted))
                         Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(4.dp)) {
-                            Icon(Icons.Outlined.Place, contentDescription = null, tint = Muted, modifier = Modifier.size(14.dp))
-                            Text(m.local, style = MaterialTheme.typography.bodySmall.copy(color = Muted))
+                            Icon(Icons.Outlined.Place, contentDescription = null, tint = RodapeTheme.colors.muted, modifier = Modifier.size(14.dp))
+                            Text(m.local, style = MaterialTheme.typography.bodySmall.copy(color = RodapeTheme.colors.muted))
                         }
                         if (m.chapterStart != null && m.chapterEnd != null) {
                             Spacer(modifier = Modifier.height(4.dp))
                             Text(
                                 text = "📖 Caps ${m.chapterStart}–${m.chapterEnd}",
                                 style = MaterialTheme.typography.labelSmall.copy(
-                                    color = Terracota,
+                                    color = RodapeTheme.colors.terracota,
                                     fontWeight = FontWeight.SemiBold
                                 )
                             )
@@ -189,7 +189,7 @@ fun MeetingDetailScreen(
                     RodapeCard(modifier = Modifier.fillMaxWidth()) {
                         Text(
                             text = m.agenda,
-                            style = MaterialTheme.typography.bodyMedium.copy(color = InkSoft, lineHeight = 20.sp)
+                            style = MaterialTheme.typography.bodyMedium.copy(color = RodapeTheme.colors.inkSoft, lineHeight = 20.sp)
                         )
                     }
                 }
@@ -214,7 +214,7 @@ fun MeetingDetailScreen(
                                         .weight(1f)
                                         .height(48.dp)
                                         .clip(RoundedCornerShape(20.dp))
-                                        .background(if (sel) Ink else androidx.compose.ui.graphics.Color.Transparent)
+                                        .background(if (sel) RodapeTheme.colors.ink else androidx.compose.ui.graphics.Color.Transparent)
                                         .selectable(
                                             selected = sel,
                                             role = Role.RadioButton,
@@ -225,7 +225,7 @@ fun MeetingDetailScreen(
                                     Text(
                                         text = opt,
                                         style = MaterialTheme.typography.bodyMedium.copy(
-                                            color = if (sel) Cream else Tertiary,
+                                            color = if (sel) RodapeTheme.colors.cream else RodapeTheme.colors.tertiary,
                                             fontWeight = FontWeight.Medium
                                         )
                                     )
@@ -258,7 +258,7 @@ fun MeetingDetailScreen(
                     RodapeCard(modifier = Modifier.fillMaxWidth()) {
                         Text(
                             text = "Ninguém escreveu a ata deste encontro ainda.",
-                            style = MaterialTheme.typography.bodyMedium.copy(color = Muted)
+                            style = MaterialTheme.typography.bodyMedium.copy(color = RodapeTheme.colors.muted)
                         )
                     }
                     if (isAdmin) {
@@ -279,13 +279,13 @@ fun MeetingDetailScreen(
                     RodapeCard(modifier = Modifier.fillMaxWidth()) {
                         Text(
                             text = minutes!!.texto,
-                            style = MaterialTheme.typography.bodyMedium.copy(color = InkSoft, lineHeight = 20.sp)
+                            style = MaterialTheme.typography.bodyMedium.copy(color = RodapeTheme.colors.inkSoft, lineHeight = 20.sp)
                         )
                     }
                     Spacer(modifier = Modifier.height(4.dp))
                     Text(
                         text = "Editado por ${editor?.nome ?: "—"} · ${timeAgo(minutes!!.updatedAt)}",
-                        style = MaterialTheme.typography.labelSmall.copy(color = Muted)
+                        style = MaterialTheme.typography.labelSmall.copy(color = RodapeTheme.colors.muted)
                     )
                     if (isAdmin) {
                         Spacer(modifier = Modifier.height(8.dp))
@@ -355,7 +355,7 @@ fun MeetingDetailScreen(
                             text = myNote?.texto?.takeIf { it.isNotBlank() }
                                 ?: "Você ainda não anotou nada para este encontro.",
                             style = MaterialTheme.typography.bodyMedium.copy(
-                                color = if (myNote?.texto.isNullOrBlank()) Muted else InkSoft,
+                                color = if (myNote?.texto.isNullOrBlank()) RodapeTheme.colors.muted else RodapeTheme.colors.inkSoft,
                                 lineHeight = 20.sp
                             )
                         )
@@ -385,7 +385,7 @@ fun MeetingDetailScreen(
                     )
                     Text(
                         text = "Se este for o último do livro atual, o livro vai pra Estante automaticamente.",
-                        style = MaterialTheme.typography.labelSmall.copy(color = Muted),
+                        style = MaterialTheme.typography.labelSmall.copy(color = RodapeTheme.colors.muted),
                         modifier = Modifier.padding(top = 4.dp).fillMaxWidth(),
                         textAlign = androidx.compose.ui.text.style.TextAlign.Center
                     )
@@ -398,11 +398,11 @@ fun MeetingDetailScreen(
                                 TextButton(onClick = {
                                     showConcludeConfirm = false
                                     viewModel.concludeMeeting(m.id)
-                                }) { Text("Concluir", color = Terracota, fontWeight = FontWeight.SemiBold) }
+                                }) { Text("Concluir", color = RodapeTheme.colors.terracota, fontWeight = FontWeight.SemiBold) }
                             },
                             dismissButton = {
                                 TextButton(onClick = { showConcludeConfirm = false }) {
-                                    Text("Voltar", color = Muted)
+                                    Text("Voltar", color = RodapeTheme.colors.muted)
                                 }
                             },
                         )
@@ -445,11 +445,11 @@ fun MeetingDetailScreen(
                         viewModel.saveMeetingMinutes(m.id, minutesDraft)
                     }
                     showMinutesEdit = false
-                }) { Text("Salvar", color = Oliva, fontWeight = FontWeight.SemiBold) }
+                }) { Text("Salvar", color = RodapeTheme.colors.oliva, fontWeight = FontWeight.SemiBold) }
             },
             dismissButton = {
                 TextButton(onClick = { showMinutesEdit = false }) {
-                    Text("Cancelar", color = Muted)
+                    Text("Cancelar", color = RodapeTheme.colors.muted)
                 }
             }
         )
@@ -466,11 +466,11 @@ fun MeetingDetailScreen(
                 TextButton(onClick = {
                     showMinutesDiscardConfirm = false
                     showMinutesEdit = false
-                }) { Text("Descartar", color = Terracota, fontWeight = FontWeight.SemiBold) }
+                }) { Text("Descartar", color = RodapeTheme.colors.terracota, fontWeight = FontWeight.SemiBold) }
             },
             dismissButton = {
                 TextButton(onClick = { showMinutesDiscardConfirm = false }) {
-                    Text("Continuar editando", color = Muted)
+                    Text("Continuar editando", color = RodapeTheme.colors.muted)
                 }
             }
         )

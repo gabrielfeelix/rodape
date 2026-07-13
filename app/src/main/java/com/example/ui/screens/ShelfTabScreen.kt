@@ -29,6 +29,7 @@ import com.example.ui.components.SkeletonText
 import com.example.ui.components.rememberShowLoading
 import com.example.ui.theme.Ink
 import com.example.ui.theme.Muted
+import com.example.ui.theme.RodapeTheme
 import com.example.ui.viewmodel.MainViewModel
 import com.example.util.formatShortDate
 import kotlinx.coroutines.flow.combine
@@ -114,7 +115,7 @@ fun ShelfTabScreen(
                     Text(
                         text = "Você ainda não favoritou nenhum livro. Toque no ♥ na página de um livro pra guardá-lo aqui.",
                         style = MaterialTheme.typography.bodyLarge,
-                        color = Muted,
+                        color = RodapeTheme.colors.muted,
                         textAlign = TextAlign.Center,
                         modifier = Modifier.padding(horizontal = 40.dp)
                     )
@@ -126,14 +127,14 @@ fun ShelfTabScreen(
                         Icon(
                             imageVector = Icons.Outlined.Book,
                             contentDescription = null,
-                            tint = Muted,
+                            tint = RodapeTheme.colors.muted,
                             modifier = Modifier.size(48.dp)
                         )
                         Spacer(modifier = Modifier.height(16.dp))
                         Text(
                             text = "Nenhum livro lido ainda pelo clube. Quando vocês terminarem um livro, ele aparece aqui.",
                             style = MaterialTheme.typography.bodyLarge,
-                            color = Muted,
+                            color = RodapeTheme.colors.muted,
                             textAlign = TextAlign.Center
                         )
                         Spacer(modifier = Modifier.height(20.dp))
@@ -213,7 +214,7 @@ private fun ShelfBookCard(
             Text(
                 text = book.title,
                 // C3: 2 linhas — em fonte grande (A++), o título cortava no ellipsis.
-                style = MaterialTheme.typography.headlineLarge.copy(fontSize = 14.sp, color = Ink),
+                style = MaterialTheme.typography.headlineLarge.copy(fontSize = 14.sp, color = RodapeTheme.colors.ink),
                 textAlign = TextAlign.Center,
                 maxLines = 2,
                 overflow = TextOverflow.Ellipsis,
@@ -221,7 +222,7 @@ private fun ShelfBookCard(
             )
             Text(
                 text = book.author,
-                style = MaterialTheme.typography.bodyLarge.copy(color = Muted, fontSize = 12.sp),
+                style = MaterialTheme.typography.bodyLarge.copy(color = RodapeTheme.colors.muted, fontSize = 12.sp),
                 textAlign = TextAlign.Center,
                 maxLines = 1,
                 overflow = TextOverflow.Ellipsis,
@@ -231,7 +232,7 @@ private fun ShelfBookCard(
                 Spacer(modifier = Modifier.height(4.dp))
                 Text(
                     text = "Encontro em $dataEncontroLabel",
-                    style = MaterialTheme.typography.labelSmall.copy(color = Muted, fontSize = 11.sp),
+                    style = MaterialTheme.typography.labelSmall.copy(color = RodapeTheme.colors.muted, fontSize = 11.sp),
                     textAlign = TextAlign.Center
                 )
             }

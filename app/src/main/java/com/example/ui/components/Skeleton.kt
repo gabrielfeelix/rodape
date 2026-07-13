@@ -26,6 +26,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import com.example.ui.theme.Divider
+import com.example.ui.theme.RodapeTheme
 
 /**
  * Skeleton/shimmer placeholder pra mostrar enquanto dados HTTP carregam.
@@ -61,7 +62,7 @@ fun SkeletonBox(
     Box(
         modifier = modifier
             .clip(RoundedCornerShape(cornerRadius))
-            .background(Divider.copy(alpha = alpha))
+            .background(RodapeTheme.colors.divider.copy(alpha = alpha))
     )
 }
 
@@ -83,7 +84,7 @@ fun SkeletonAvatar(size: Dp = 40.dp, modifier: Modifier = Modifier) {
         modifier = modifier
             .size(size)
             .clip(CircleShape)
-            .background(Divider.copy(alpha = alpha))
+            .background(RodapeTheme.colors.divider.copy(alpha = alpha))
     )
 }
 
@@ -132,7 +133,7 @@ fun SkeletonMeetingCard(modifier: Modifier = Modifier) {
             .fillMaxWidth()
             .height(160.dp)
             .clip(RoundedCornerShape(24.dp))
-            .background(Divider.copy(alpha = alpha))
+            .background(RodapeTheme.colors.divider.copy(alpha = alpha))
     )
 }
 

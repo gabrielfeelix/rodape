@@ -15,6 +15,9 @@ import kotlinx.coroutines.flow.map
 
 val Context.dataStore: DataStore<Preferences> by preferencesDataStore(name = "rodape_prefs")
 
+/** Preferência de tema. SYSTEM segue o Android; LIGHT/DARK forçam. */
+enum class ThemeMode { SYSTEM, LIGHT, DARK }
+
 /**
  * Preferencias locais do device — NUNCA sessao do usuario.
  *
@@ -51,6 +54,23 @@ class DataStoreManager(private val context: Context) {
         // neste device? E pre-login (nao depende de userId): explica o produto
         // antes de pedir conta.
         val INTRO_SEEN_KEY = booleanPreferencesKey("intro_seen")
+        // Preferência de tema deste device (super-pessoal, como a fonte — não
+        // sincroniza). Guardado como nome do enum ThemeMode; ausente = SYSTEM.
+        val THEME_MODE_KEY = stringPreferencesKey("theme_mode")
+    }
+
+    val themeModeFlow: Flow<ThemeMode> = context.dataStore.data.map { prefs ->
+        when (prefs[THEME_MODE_KEY]) {
+            ThemeMode.LIGHT.name -> ThemeMode.LIGHT
+            ThemeMode.DARK.name -> ThemeMode.DARK
+            else -> ThemeMode.SYSTEM
+        }
+    }
+
+    suspend fun setThemeMode(mode: ThemeMode) {
+        context.dataStore.edit { prefs ->
+            prefs[THEME_MODE_KEY] = mode.name
+        }
     }
 
     val ratedAppFlow: Flow<Boolean> = context.dataStore.data.map { prefs ->

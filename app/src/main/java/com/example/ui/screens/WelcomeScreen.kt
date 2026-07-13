@@ -67,6 +67,7 @@ import com.example.ui.theme.OlivaDeep
 import com.example.ui.theme.OlivaSoft
 import com.example.ui.theme.Paper
 import com.example.ui.theme.PaperDeep
+import com.example.ui.theme.RodapeTheme
 import com.example.ui.theme.Terracota
 import com.example.ui.theme.Tertiary
 import androidx.compose.ui.text.SpanStyle
@@ -92,7 +93,7 @@ fun WelcomeScreen(
     // "Rodapé" (design diz "tramabook") e voz "você". Os CTAs são de AUTH porque o
     // app exige login antes de criar/entrar em clube; "Criar um clube"/"Entrar num
     // clube" acontecem DEPOIS, no estado vazio dentro do app.
-    Scaffold(containerColor = Paper) { paddingValues ->
+    Scaffold(containerColor = RodapeTheme.colors.paper) { paddingValues ->
         Column(
             modifier = Modifier
                 .fillMaxSize()
@@ -117,7 +118,7 @@ fun WelcomeScreen(
                         fontFamily = LiterataFontFamily,
                         fontWeight = FontWeight.SemiBold,
                         fontSize = 20.sp,
-                        color = Ink
+                        color = RodapeTheme.colors.ink
                     )
                 )
             }
@@ -131,11 +132,14 @@ fun WelcomeScreen(
             ) {
                 Pill(text = "Clubes de leitura", variant = PillVariant.OliveDeep)
                 Spacer(modifier = Modifier.height(18.dp))
+                // Cores hoistadas: buildAnnotatedString é lambda não-composable.
+                val olivaColor = RodapeTheme.colors.oliva
+                val terracotaColor = RodapeTheme.colors.terracota
                 Text(
                     text = buildAnnotatedString {
                         append("Leituras\n")
-                        withStyle(SpanStyle(fontStyle = FontStyle.Italic, color = Oliva)) { append("juntas") }
-                        withStyle(SpanStyle(color = Terracota)) { append(".") }
+                        withStyle(SpanStyle(fontStyle = FontStyle.Italic, color = olivaColor)) { append("juntas") }
+                        withStyle(SpanStyle(color = terracotaColor)) { append(".") }
                     },
                     style = MaterialTheme.typography.displayLarge.copy(
                         fontFamily = LiterataFontFamily,
@@ -143,7 +147,7 @@ fun WelcomeScreen(
                         fontSize = 54.sp,
                         lineHeight = 54.sp,
                         letterSpacing = (-1.8).sp,
-                        color = Ink
+                        color = RodapeTheme.colors.ink
                     )
                 )
                 Spacer(modifier = Modifier.height(18.dp))
@@ -152,7 +156,7 @@ fun WelcomeScreen(
                     style = MaterialTheme.typography.bodyLarge.copy(
                         fontFamily = InterFontFamily,
                         fontSize = 16.sp,
-                        color = Muted
+                        color = RodapeTheme.colors.muted
                     ),
                     modifier = Modifier.widthIn(max = 290.dp)
                 )
@@ -162,7 +166,7 @@ fun WelcomeScreen(
             Box(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .background(OlivaDeep, RoundedCornerShape(topStart = 40.dp, topEnd = 40.dp))
+                    .background(RodapeTheme.colors.olivaDeep, RoundedCornerShape(topStart = 40.dp, topEnd = 40.dp))
             ) {
                 // Lombadas atravessando a curva (sobem acima da borda do painel).
                 Row(
@@ -173,9 +177,9 @@ fun WelcomeScreen(
                     horizontalArrangement = Arrangement.spacedBy(5.dp)
                 ) {
                     BookSpine(80.dp, Color(0xFFD9C9B0))
-                    BookSpine(110.dp, Terracota)
-                    BookSpine(92.dp, Cream, stroke = true)
-                    BookSpine(72.dp, Oliva)
+                    BookSpine(110.dp, RodapeTheme.colors.terracota)
+                    BookSpine(92.dp, RodapeTheme.colors.cream, stroke = true)
+                    BookSpine(72.dp, RodapeTheme.colors.oliva)
                 }
 
                 Column(
@@ -188,7 +192,7 @@ fun WelcomeScreen(
                         modifier = Modifier
                             .fillMaxWidth()
                             .height(1.dp)
-                            .background(Cream.copy(alpha = 0.10f))
+                            .background(RodapeTheme.colors.cream.copy(alpha = 0.10f))
                     )
                     Spacer(modifier = Modifier.height(26.dp))
 
@@ -198,7 +202,7 @@ fun WelcomeScreen(
                             .fillMaxWidth()
                             .height(54.dp)
                             .clip(RoundedCornerShape(999.dp))
-                            .background(Terracota)
+                            .background(RodapeTheme.colors.terracota)
                             .clickable { onNavigateToSignUp() }
                             // C4: TalkBack anuncia "botão" (era Box.clickable mudo).
                             .semantics { role = Role.Button },
@@ -214,13 +218,13 @@ fun WelcomeScreen(
                                     fontFamily = InterFontFamily,
                                     fontWeight = FontWeight.SemiBold,
                                     fontSize = 15.sp,
-                                    color = Cream
+                                    color = RodapeTheme.colors.cream
                                 )
                             )
                             Icon(
                                 imageVector = Icons.AutoMirrored.Filled.ArrowForward,
                                 contentDescription = null,
-                                tint = Cream,
+                                tint = RodapeTheme.colors.cream,
                                 modifier = Modifier.size(18.dp)
                             )
                         }
@@ -233,7 +237,7 @@ fun WelcomeScreen(
                             .fillMaxWidth()
                             .height(54.dp)
                             .clip(RoundedCornerShape(999.dp))
-                            .border(1.dp, Cream.copy(alpha = 0.25f), RoundedCornerShape(999.dp))
+                            .border(1.dp, RodapeTheme.colors.cream.copy(alpha = 0.25f), RoundedCornerShape(999.dp))
                             .clickable { onNavigateToLogin() }
                             .semantics { role = Role.Button },
                         contentAlignment = Alignment.Center
@@ -244,7 +248,7 @@ fun WelcomeScreen(
                                 fontFamily = InterFontFamily,
                                 fontWeight = FontWeight.SemiBold,
                                 fontSize = 15.sp,
-                                color = Cream
+                                color = RodapeTheme.colors.cream
                             )
                         )
                     }
@@ -257,7 +261,7 @@ fun WelcomeScreen(
                         style = MaterialTheme.typography.bodyMedium.copy(
                             fontFamily = InterFontFamily,
                             fontWeight = FontWeight.SemiBold,
-                            color = Cream.copy(alpha = 0.85f)
+                            color = RodapeTheme.colors.cream.copy(alpha = 0.85f)
                         ),
                         textAlign = TextAlign.Center,
                         modifier = Modifier
@@ -275,14 +279,14 @@ fun WelcomeScreen(
     if (showInviteDialog) {
         AlertDialog(
             onDismissRequest = { showInviteDialog = false },
-            containerColor = Cream,
+            containerColor = RodapeTheme.colors.cream,
             title = {
                 Text(
                     "Entrar com convite",
                     style = MaterialTheme.typography.titleLarge.copy(
                         fontFamily = LiterataFontFamily,
                         fontWeight = FontWeight.SemiBold,
-                        color = Ink
+                        color = RodapeTheme.colors.ink
                     )
                 )
             },
@@ -292,7 +296,7 @@ fun WelcomeScreen(
                         "Cole o código que o organizador te passou. No próximo passo você cria a conta e já entra no clube.",
                         style = MaterialTheme.typography.bodyMedium.copy(
                             fontFamily = InterFontFamily,
-                            color = Muted
+                            color = RodapeTheme.colors.muted
                         )
                     )
                     Spacer(modifier = Modifier.height(14.dp))
@@ -303,8 +307,8 @@ fun WelcomeScreen(
                         singleLine = true,
                         modifier = Modifier.fillMaxWidth(),
                         colors = OutlinedTextFieldDefaults.colors(
-                            focusedBorderColor = Terracota,
-                            focusedLabelColor = Terracota,
+                            focusedBorderColor = RodapeTheme.colors.terracota,
+                            focusedLabelColor = RodapeTheme.colors.terracota,
                         ),
                     )
                 }
@@ -317,12 +321,12 @@ fun WelcomeScreen(
                         onNavigateWithInvite(inviteCode.trim())
                     }
                 ) {
-                    Text("Continuar", color = Terracota, fontWeight = FontWeight.SemiBold)
+                    Text("Continuar", color = RodapeTheme.colors.terracota, fontWeight = FontWeight.SemiBold)
                 }
             },
             dismissButton = {
                 TextButton(onClick = { showInviteDialog = false }) {
-                    Text("Cancelar", color = Muted)
+                    Text("Cancelar", color = RodapeTheme.colors.muted)
                 }
             }
         )
@@ -402,11 +406,11 @@ fun LoginScreen(
                         Icon(
                             imageVector = Icons.AutoMirrored.Outlined.ArrowBack,
                             contentDescription = "Voltar",
-                            tint = Ink
+                            tint = RodapeTheme.colors.ink
                         )
                     }
                 },
-                colors = TopAppBarDefaults.topAppBarColors(containerColor = Paper)
+                colors = TopAppBarDefaults.topAppBarColors(containerColor = RodapeTheme.colors.paper)
             )
         },
         containerColor = MaterialTheme.colorScheme.background
@@ -430,7 +434,7 @@ fun LoginScreen(
                             fontWeight = FontWeight.SemiBold,
                             fontSize = 36.sp,
                             letterSpacing = (-0.8).sp,
-                            color = Ink
+                            color = RodapeTheme.colors.ink
                         ),
                         modifier = Modifier.fillMaxWidth()
                     )
@@ -440,7 +444,7 @@ fun LoginScreen(
                         style = MaterialTheme.typography.bodyLarge.copy(
                             fontFamily = InterFontFamily,
                             fontSize = 14.sp,
-                            color = Muted
+                            color = RodapeTheme.colors.muted
                         ),
                         modifier = Modifier.fillMaxWidth()
                     )
@@ -471,7 +475,7 @@ fun LoginScreen(
                                 Icon(
                                     imageVector = if (passwordVisible) Icons.Outlined.VisibilityOff else Icons.Outlined.Visibility,
                                     contentDescription = if (passwordVisible) "Ocultar senha" else "Mostrar senha",
-                                    tint = Muted,
+                                    tint = RodapeTheme.colors.muted,
                                 )
                             }
                         },
@@ -485,7 +489,7 @@ fun LoginScreen(
                         modifier = Modifier.align(Alignment.End),
                         enabled = !isLoading,
                     ) {
-                        Text("Esqueci minha senha", color = Terracota)
+                        Text("Esqueci minha senha", color = RodapeTheme.colors.terracota)
                     }
 
                     errorMsg?.let {
@@ -508,7 +512,7 @@ fun LoginScreen(
                         Spacer(modifier = Modifier.height(12.dp))
                         Text(
                             "Falta: " + faltamLogin.joinToString(", "),
-                            style = MaterialTheme.typography.bodySmall.copy(color = Muted),
+                            style = MaterialTheme.typography.bodySmall.copy(color = RodapeTheme.colors.muted),
                             modifier = Modifier.fillMaxWidth(),
                         )
                     }
@@ -521,7 +525,7 @@ fun LoginScreen(
                             .fillMaxWidth()
                             .height(52.dp),
                         shape = RoundedCornerShape(26.dp),
-                        colors = ButtonDefaults.buttonColors(containerColor = Terracota),
+                        colors = ButtonDefaults.buttonColors(containerColor = RodapeTheme.colors.terracota),
                     ) {
                         if (isLoading) {
                             CircularProgressIndicator(
@@ -547,7 +551,7 @@ fun LoginScreen(
                     // que clicar num checkbox "lembrar de mim" decorativo.
                     Text(
                         text = "Você continuará conectado nesse dispositivo.",
-                        style = MaterialTheme.typography.bodySmall.copy(color = Muted),
+                        style = MaterialTheme.typography.bodySmall.copy(color = RodapeTheme.colors.muted),
                         textAlign = TextAlign.Center,
                         modifier = Modifier.fillMaxWidth(),
                     )
@@ -597,7 +601,7 @@ fun LoginScreen(
 
                     Spacer(modifier = Modifier.height(16.dp))
                     TextButton(onClick = onNavigateToSignUp, enabled = !isLoading) {
-                        Text("Ainda não tem conta? Cadastre-se", color = OlivaDark)
+                        Text("Ainda não tem conta? Cadastre-se", color = RodapeTheme.colors.olivaDark)
                     }
                 }
                 Spacer(modifier = Modifier.height(48.dp))
@@ -639,7 +643,7 @@ fun CreateClubScreen(
                         Icon(
                             imageVector = Icons.AutoMirrored.Outlined.ArrowBack,
                             contentDescription = "Voltar",
-                            tint = Terracota
+                            tint = RodapeTheme.colors.terracota
                         )
                     }
                 },
@@ -662,8 +666,8 @@ fun CreateClubScreen(
                 Surface(
                     modifier = Modifier.fillMaxWidth(),
                     shape = RoundedCornerShape(24.dp),
-                    color = CardSurface,
-                    border = BorderStroke(1.dp, Divider),
+                    color = RodapeTheme.colors.cardSurface,
+                    border = BorderStroke(1.dp, RodapeTheme.colors.divider),
                     shadowElevation = 1.dp
                 ) {
                     Column(
@@ -679,12 +683,12 @@ fun CreateClubScreen(
                                 text = "Como vocês querem chamar?",
                                 style = MaterialTheme.typography.titleMedium.copy(
                                     fontWeight = FontWeight.SemiBold,
-                                    color = Ink
+                                    color = RodapeTheme.colors.ink
                                 )
                             )
                             Text(
                                 text = "${name.length}/40",
-                                style = MaterialTheme.typography.labelSmall.copy(color = Muted)
+                                style = MaterialTheme.typography.labelSmall.copy(color = RodapeTheme.colors.muted)
                             )
                         }
                         OutlinedTextField(
@@ -694,7 +698,7 @@ fun CreateClubScreen(
                                 Text(
                                     "Nome do clube (máx. 40)",
                                     style = MaterialTheme.typography.bodyLarge.copy(
-                                        color = Muted
+                                        color = RodapeTheme.colors.muted
                                     )
                                 )
                             },
@@ -702,10 +706,10 @@ fun CreateClubScreen(
                             shape = RoundedCornerShape(14.dp),
                             singleLine = true,
                             colors = OutlinedTextFieldDefaults.colors(
-                                focusedBorderColor = Terracota,
-                                unfocusedBorderColor = Divider,
-                                focusedContainerColor = Cream,
-                                unfocusedContainerColor = Cream
+                                focusedBorderColor = RodapeTheme.colors.terracota,
+                                unfocusedBorderColor = RodapeTheme.colors.divider,
+                                focusedContainerColor = RodapeTheme.colors.cream,
+                                unfocusedContainerColor = RodapeTheme.colors.cream
                             )
                         )
 
@@ -720,12 +724,12 @@ fun CreateClubScreen(
                                 text = "Conte um pouco",
                                 style = MaterialTheme.typography.titleMedium.copy(
                                     fontWeight = FontWeight.SemiBold,
-                                    color = Ink
+                                    color = RodapeTheme.colors.ink
                                 )
                             )
                             Text(
                                 text = "${description.length}/140",
-                                style = MaterialTheme.typography.labelSmall.copy(color = Muted)
+                                style = MaterialTheme.typography.labelSmall.copy(color = RodapeTheme.colors.muted)
                             )
                         }
                         OutlinedTextField(
@@ -735,7 +739,7 @@ fun CreateClubScreen(
                                 Text(
                                     "Descrição curta",
                                     style = MaterialTheme.typography.bodyLarge.copy(
-                                        color = Muted
+                                        color = RodapeTheme.colors.muted
                                     )
                                 )
                             },
@@ -744,10 +748,10 @@ fun CreateClubScreen(
                                 .height(110.dp),
                             shape = RoundedCornerShape(14.dp),
                             colors = OutlinedTextFieldDefaults.colors(
-                                focusedBorderColor = Terracota,
-                                unfocusedBorderColor = Divider,
-                                focusedContainerColor = Cream,
-                                unfocusedContainerColor = Cream
+                                focusedBorderColor = RodapeTheme.colors.terracota,
+                                unfocusedBorderColor = RodapeTheme.colors.divider,
+                                focusedContainerColor = RodapeTheme.colors.cream,
+                                unfocusedContainerColor = RodapeTheme.colors.cream
                             )
                         )
                     }
@@ -776,7 +780,7 @@ fun CreateClubScreen(
                                 .size(44.dp)
                                 .border(
                                     width = if (isSelected) 2.dp else 0.dp,
-                                    color = if (isSelected) Ink else Color.Transparent,
+                                    color = if (isSelected) RodapeTheme.colors.ink else Color.Transparent,
                                     shape = CircleShape
                                 )
                                 .padding(4.dp)
@@ -813,10 +817,10 @@ fun CreateClubScreen(
                             .fillMaxWidth()
                             .clickable { privacy = "convidados" },
                         shape = RoundedCornerShape(16.dp),
-                        color = if (isOption1) Terracota.copy(alpha = 0.04f) else CardSurface,
+                        color = if (isOption1) RodapeTheme.colors.terracota.copy(alpha = 0.04f) else RodapeTheme.colors.cardSurface,
                         border = BorderStroke(
                             width = if (isOption1) 1.5.dp else 1.dp,
-                            color = if (isOption1) Terracota else Divider
+                            color = if (isOption1) RodapeTheme.colors.terracota else RodapeTheme.colors.divider
                         )
                     ) {
                         Row(
@@ -829,7 +833,7 @@ fun CreateClubScreen(
                                 modifier = Modifier
                                     .size(44.dp)
                                     .background(
-                                        if (isOption1) Terracota.copy(alpha = 0.12f) else MaterialTheme.colorScheme.onSurface.copy(alpha = 0.05f),
+                                        if (isOption1) RodapeTheme.colors.terracota.copy(alpha = 0.12f) else MaterialTheme.colorScheme.onSurface.copy(alpha = 0.05f),
                                         CircleShape
                                     ),
                                 contentAlignment = Alignment.Center
@@ -837,7 +841,7 @@ fun CreateClubScreen(
                                 Icon(
                                     imageVector = Icons.Outlined.Lock,
                                     contentDescription = null,
-                                    tint = if (isOption1) Terracota else MaterialTheme.colorScheme.onSurfaceVariant
+                                    tint = if (isOption1) RodapeTheme.colors.terracota else MaterialTheme.colorScheme.onSurfaceVariant
                                 )
                             }
                             Spacer(modifier = Modifier.width(16.dp))
@@ -853,7 +857,7 @@ fun CreateClubScreen(
                                 Box(
                                     modifier = Modifier
                                         .size(24.dp)
-                                        .background(Terracota, CircleShape),
+                                        .background(RodapeTheme.colors.terracota, CircleShape),
                                     contentAlignment = Alignment.Center
                                 ) {
                                     Icon(
@@ -874,10 +878,10 @@ fun CreateClubScreen(
                             .fillMaxWidth()
                             .clickable { privacy = "publico" },
                         shape = RoundedCornerShape(16.dp),
-                        color = if (isOption2) Terracota.copy(alpha = 0.04f) else CardSurface,
+                        color = if (isOption2) RodapeTheme.colors.terracota.copy(alpha = 0.04f) else RodapeTheme.colors.cardSurface,
                         border = BorderStroke(
                             width = if (isOption2) 1.5.dp else 1.dp,
-                            color = if (isOption2) Terracota else Divider
+                            color = if (isOption2) RodapeTheme.colors.terracota else RodapeTheme.colors.divider
                         )
                     ) {
                         Row(
@@ -890,7 +894,7 @@ fun CreateClubScreen(
                                 modifier = Modifier
                                     .size(44.dp)
                                     .background(
-                                        if (isOption2) Terracota.copy(alpha = 0.12f) else MaterialTheme.colorScheme.onSurface.copy(alpha = 0.05f),
+                                        if (isOption2) RodapeTheme.colors.terracota.copy(alpha = 0.12f) else MaterialTheme.colorScheme.onSurface.copy(alpha = 0.05f),
                                         CircleShape
                                     ),
                                 contentAlignment = Alignment.Center
@@ -898,7 +902,7 @@ fun CreateClubScreen(
                                 Icon(
                                     imageVector = Icons.Outlined.Share,
                                     contentDescription = null,
-                                    tint = if (isOption2) Terracota else MaterialTheme.colorScheme.onSurfaceVariant
+                                    tint = if (isOption2) RodapeTheme.colors.terracota else MaterialTheme.colorScheme.onSurfaceVariant
                                 )
                             }
                             Spacer(modifier = Modifier.width(16.dp))
@@ -914,7 +918,7 @@ fun CreateClubScreen(
                                 Box(
                                     modifier = Modifier
                                         .size(24.dp)
-                                        .background(Terracota, CircleShape),
+                                        .background(RodapeTheme.colors.terracota, CircleShape),
                                     contentAlignment = Alignment.Center
                                 ) {
                                     Icon(
@@ -946,7 +950,7 @@ fun CreateClubScreen(
                 if (!isNameValid && name.isNotEmpty()) {
                     Text(
                         text = "O nome do clube precisa de pelo menos 3 letras.",
-                        style = MaterialTheme.typography.bodySmall.copy(color = Muted),
+                        style = MaterialTheme.typography.bodySmall.copy(color = RodapeTheme.colors.muted),
                         modifier = Modifier
                             .fillMaxWidth()
                             .padding(bottom = 8.dp),
@@ -983,12 +987,9 @@ fun JoinClubScreen(
     onNavigateBack: () -> Unit,
     onJoinWithCodeSubmit: (String, (Boolean, String?) -> Unit) -> Unit
 ) {
-    var activeTabIsCode by remember { mutableStateOf(true) }
-    var linkInput by remember { mutableStateOf("") }
     var codeErrorMsg by remember { mutableStateOf<String?>(null) }
     // Trava o submit durante o request — sem isso, toque duplo = dois joins.
     var isJoining by remember { mutableStateOf(false) }
-    var linkErrorMsg by remember { mutableStateOf<String?>(null) }
 
     // Code entries: 6 characters
     val otpValues = remember { mutableStateListOf("", "", "", "", "", "") }
@@ -1013,7 +1014,7 @@ fun JoinClubScreen(
                         Icon(
                             imageVector = Icons.AutoMirrored.Outlined.ArrowBack,
                             contentDescription = "Voltar",
-                            tint = Terracota
+                            tint = RodapeTheme.colors.terracota
                         )
                     }
                 },
@@ -1038,7 +1039,7 @@ fun JoinClubScreen(
                 // botão/aba (o visual de pill anterior sugeria um toque que não existia).
                 Text(
                     "Com código",
-                    color = Ink,
+                    color = RodapeTheme.colors.ink,
                     style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.SemiBold),
                     textAlign = TextAlign.Center,
                     modifier = Modifier.fillMaxWidth()
@@ -1049,8 +1050,8 @@ fun JoinClubScreen(
                 Surface(
                     modifier = Modifier.fillMaxWidth(),
                     shape = RoundedCornerShape(24.dp),
-                    color = CardSurface,
-                    border = BorderStroke(1.dp, Divider),
+                    color = RodapeTheme.colors.cardSurface,
+                    border = BorderStroke(1.dp, RodapeTheme.colors.divider),
                     shadowElevation = 1.dp
                 ) {
                     Column(
@@ -1058,8 +1059,7 @@ fun JoinClubScreen(
                         horizontalAlignment = Alignment.CenterHorizontally,
                         verticalArrangement = Arrangement.spacedBy(16.dp)
                     ) {
-                        if (activeTabIsCode) {
-                            Text(
+                        Text(
                                 text = "Peça o código pro organizador",
                                 style = MaterialTheme.typography.bodyLarge.copy(
                                     fontWeight = FontWeight.Medium,
@@ -1124,10 +1124,10 @@ fun JoinClubScreen(
                                         singleLine = true,
                                         keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Text),
                                         colors = OutlinedTextFieldDefaults.colors(
-                                            focusedBorderColor = Terracota,
-                                            unfocusedBorderColor = Divider,
-                                            focusedContainerColor = Cream,
-                                            unfocusedContainerColor = Cream
+                                            focusedBorderColor = RodapeTheme.colors.terracota,
+                                            unfocusedBorderColor = RodapeTheme.colors.divider,
+                                            focusedContainerColor = RodapeTheme.colors.cream,
+                                            unfocusedContainerColor = RodapeTheme.colors.cream
                                         )
                                     )
                                     if (i == 2) {
@@ -1144,93 +1144,26 @@ fun JoinClubScreen(
                                     textAlign = TextAlign.Center
                                 )
                             }
-                        } else {
-                            Text(
-                                text = "Cole o link do clube abaixo",
-                                style = MaterialTheme.typography.bodyLarge.copy(
-                                    fontWeight = FontWeight.Medium,
-                                    color = MaterialTheme.colorScheme.onSurface
-                                ),
-                                textAlign = TextAlign.Center
-                            )
-
-                            Spacer(modifier = Modifier.height(8.dp))
-
-                            OutlinedTextField(
-                                value = linkInput,
-                                onValueChange = { linkInput = it },
-                                placeholder = {
-                                    Text(
-                                        "https://rodape.com/c/...",
-                                        style = MaterialTheme.typography.bodyMedium.copy(
-                                            color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.5f)
-                                        )
-                                    )
-                                },
-                                modifier = Modifier.fillMaxWidth(),
-                                shape = RoundedCornerShape(12.dp),
-                                singleLine = true,
-                                colors = OutlinedTextFieldDefaults.colors(
-                                    focusedBorderColor = Terracota,
-                                    unfocusedBorderColor = Divider,
-                                    focusedContainerColor = Cream,
-                                    unfocusedContainerColor = Cream
-                                )
-                            )
-
-                            if (linkErrorMsg != null) {
-                                Text(
-                                    text = linkErrorMsg!!,
-                                    color = MaterialTheme.colorScheme.error,
-                                    style = MaterialTheme.typography.bodyMedium,
-                                    textAlign = TextAlign.Center
-                                )
-                            }
-                        }
 
                         Spacer(modifier = Modifier.height(16.dp))
 
                         TbButton(
                             text = if (isJoining) "Entrando…" else "Confirmar",
                             onClick = {
-                                if (activeTabIsCode) {
-                                    if (isCodeComplete) {
-                                        isJoining = true
-                                        codeErrorMsg = null
-                                        onJoinWithCodeSubmit(fullOtpCode) { success, errorMsg ->
-                                            isJoining = false
-                                            if (!success) {
-                                                codeErrorMsg = errorMsg
-                                            }
+                                if (isCodeComplete) {
+                                    isJoining = true
+                                    codeErrorMsg = null
+                                    onJoinWithCodeSubmit(fullOtpCode) { success, errorMsg ->
+                                        isJoining = false
+                                        if (!success) {
+                                            codeErrorMsg = errorMsg
                                         }
-                                    }
-                                } else {
-                                    val token = linkInput.trim()
-                                    val cleanedCode = if (token.contains("/c/")) {
-                                        token.substringAfter("/c/").substringBefore("/").trim().uppercase().take(6)
-                                    } else if (token.contains("/club/")) {
-                                        token.substringAfter("/club/").substringBefore("/").trim().uppercase().take(6)
-                                    } else {
-                                        token.substringAfterLast("/").trim().uppercase().take(6)
-                                    }
-
-                                    if (cleanedCode.isNotEmpty()) {
-                                        isJoining = true
-                                        linkErrorMsg = null
-                                        onJoinWithCodeSubmit(cleanedCode) { success, errorMsg ->
-                                            isJoining = false
-                                            if (!success) {
-                                                linkErrorMsg = errorMsg
-                                            }
-                                        }
-                                    } else {
-                                        linkErrorMsg = "Link inválido. Insira um link válido do Rodapé."
                                     }
                                 }
                             },
                             variant = TbButtonVariant.Terra,
                             size = TbButtonSize.Lg,
-                            enabled = !isJoining && (if (activeTabIsCode) isCodeComplete else linkInput.trim().isNotEmpty()),
+                            enabled = !isJoining && isCodeComplete,
                             modifier = Modifier.fillMaxWidth()
                         )
 
@@ -1239,7 +1172,7 @@ fun JoinClubScreen(
                         Text(
                             text = "Não tenho código",
                             style = MaterialTheme.typography.bodyLarge.copy(
-                                color = Terracota,
+                                color = RodapeTheme.colors.terracota,
                                 fontWeight = FontWeight.Medium
                             ),
                             modifier = Modifier

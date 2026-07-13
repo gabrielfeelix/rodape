@@ -115,7 +115,7 @@ fun AddBookManualScreen(
 
     if (showCamera) {
         // Tela cheia de câmera
-        Box(modifier = Modifier.fillMaxSize().background(Ink)) {
+        Box(modifier = Modifier.fillMaxSize().background(RodapeTheme.colors.ink)) {
             CameraCaptureBox(
                 modifier = Modifier.fillMaxSize().padding(16.dp),
                 onCaptured = { file ->
@@ -138,7 +138,7 @@ fun AddBookManualScreen(
                 onClick = { showCamera = false },
                 modifier = Modifier.align(Alignment.TopEnd).padding(16.dp)
             ) {
-                Icon(Icons.Outlined.Clear, contentDescription = "Fechar", tint = Cream)
+                Icon(Icons.Outlined.Clear, contentDescription = "Fechar", tint = RodapeTheme.colors.cream)
             }
         }
         return
@@ -167,7 +167,7 @@ fun AddBookManualScreen(
                     text = "Não achou o livro nas buscas? Cadastre aqui.",
                     style = MaterialTheme.typography.bodyMedium.copy(
                         fontFamily = LiterataFontFamily,
-                        color = Muted
+                        color = RodapeTheme.colors.muted
                     )
                 )
             }
@@ -178,7 +178,7 @@ fun AddBookManualScreen(
                     text = "CAPA",
                     style = MaterialTheme.typography.labelSmall.copy(
                         fontWeight = FontWeight.Bold,
-                        color = Muted,
+                        color = RodapeTheme.colors.muted,
                         letterSpacing = 1.sp
                     )
                 )
@@ -194,7 +194,7 @@ fun AddBookManualScreen(
                         modifier = Modifier
                             .size(width = 96.dp, height = 144.dp)
                             .clip(RoundedCornerShape(10.dp))
-                            .background(DividerSoft)
+                            .background(RodapeTheme.colors.dividerSoft)
                     ) {
                         Cover(
                             title = titulo.ifBlank { "—" },
@@ -251,7 +251,7 @@ fun AddBookManualScreen(
                 if (cameraPermission.status.shouldShowRationale) {
                     Text(
                         text = "Pra tirar foto da capa, o app precisa de permissão de câmera.",
-                        style = MaterialTheme.typography.labelSmall.copy(color = Muted),
+                        style = MaterialTheme.typography.labelSmall.copy(color = RodapeTheme.colors.muted),
                         modifier = Modifier.padding(top = 6.dp)
                     )
                 } else if (permissionRequested && !cameraPermission.status.isGranted) {
@@ -259,7 +259,7 @@ fun AddBookManualScreen(
                     // mais diálogo. Único caminho é as configurações do sistema.
                     Text(
                         text = "Permissão de câmera negada. Abra as configurações do app pra liberar.",
-                        style = MaterialTheme.typography.labelSmall.copy(color = Muted),
+                        style = MaterialTheme.typography.labelSmall.copy(color = RodapeTheme.colors.muted),
                         modifier = Modifier.padding(top = 6.dp)
                     )
                     Spacer(modifier = Modifier.height(6.dp))
@@ -302,7 +302,7 @@ fun AddBookManualScreen(
                                         ).show()
                                     }
                                 }
-                            ) { Text("Usar", color = Terracota) }
+                            ) { Text("Usar", color = RodapeTheme.colors.terracota) }
                         }
                     )
                 }
@@ -315,7 +315,7 @@ fun AddBookManualScreen(
                     text = "DADOS DO LIVRO",
                     style = MaterialTheme.typography.labelSmall.copy(
                         fontWeight = FontWeight.Bold,
-                        color = Muted,
+                        color = RodapeTheme.colors.muted,
                         letterSpacing = 1.sp
                     )
                 )
@@ -350,7 +350,7 @@ fun AddBookManualScreen(
                     text = "OPCIONAIS",
                     style = MaterialTheme.typography.labelSmall.copy(
                         fontWeight = FontWeight.Bold,
-                        color = Muted,
+                        color = RodapeTheme.colors.muted,
                         letterSpacing = 1.sp
                     )
                 )
@@ -364,7 +364,7 @@ fun AddBookManualScreen(
                     singleLine = true,
                     isError = !isbnValid,
                     supportingText = if (!isbnValid) {
-                        { Text("ISBN deve ter 10 ou 13 dígitos", color = Terracota) }
+                        { Text("ISBN deve ter 10 ou 13 dígitos", color = RodapeTheme.colors.terracota) }
                     } else null,
                     keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
                     modifier = Modifier.fillMaxWidth()
@@ -478,7 +478,7 @@ fun AddBookManualScreen(
                 if (!formValid && (titulo.isNotEmpty() || autor.isNotEmpty())) {
                     Text(
                         text = "Preencha pelo menos título e autor.",
-                        style = MaterialTheme.typography.labelSmall.copy(color = Terracota),
+                        style = MaterialTheme.typography.labelSmall.copy(color = RodapeTheme.colors.terracota),
                         modifier = Modifier.padding(top = 8.dp).fillMaxWidth()
                     )
                 }

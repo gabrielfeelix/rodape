@@ -22,6 +22,7 @@ import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import com.example.ui.components.RodapeCard
+import com.example.ui.theme.RodapeTheme
 import com.example.ui.theme.Terracota
 import kotlinx.coroutines.launch
 
@@ -55,10 +56,10 @@ fun ForgotPasswordScreen(
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { Text("Recuperar senha", style = MaterialTheme.typography.headlineLarge.copy(color = Terracota)) },
+                title = { Text("Recuperar senha", style = MaterialTheme.typography.headlineLarge.copy(color = RodapeTheme.colors.terracota)) },
                 navigationIcon = {
                     IconButton(onClick = onNavigateBack) {
-                        Icon(Icons.AutoMirrored.Outlined.ArrowBack, "Voltar", tint = Terracota)
+                        Icon(Icons.AutoMirrored.Outlined.ArrowBack, "Voltar", tint = RodapeTheme.colors.terracota)
                     }
                 },
                 colors = TopAppBarDefaults.topAppBarColors(containerColor = MaterialTheme.colorScheme.background),
@@ -112,7 +113,7 @@ fun ForgotPasswordScreen(
                             enabled = emailValid && !isLoading,
                             modifier = Modifier.fillMaxWidth().height(52.dp),
                             shape = RoundedCornerShape(26.dp),
-                            colors = ButtonDefaults.buttonColors(containerColor = Terracota),
+                            colors = ButtonDefaults.buttonColors(containerColor = RodapeTheme.colors.terracota),
                         ) {
                             if (isLoading) {
                                 CircularProgressIndicator(color = Color.White, strokeWidth = 2.dp, modifier = Modifier.size(20.dp))

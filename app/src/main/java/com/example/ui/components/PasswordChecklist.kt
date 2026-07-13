@@ -14,6 +14,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import com.example.ui.theme.Muted
 import com.example.ui.theme.Oliva
+import com.example.ui.theme.RodapeTheme
 
 /** Regra única de senha forte, compartilhada por cadastro e redefinição. */
 fun isStrongPassword(pw: String): Boolean =
@@ -47,13 +48,13 @@ private fun PwReq(label: String, met: Boolean) {
     ) {
         Text(
             if (met) "✓" else "○",
-            color = if (met) Oliva else Muted,
+            color = if (met) RodapeTheme.colors.oliva else RodapeTheme.colors.muted,
             style = MaterialTheme.typography.bodySmall,
         )
         Spacer(Modifier.width(8.dp))
         Text(
             label,
-            color = if (met) Oliva else Muted,
+            color = if (met) RodapeTheme.colors.oliva else RodapeTheme.colors.muted,
             style = MaterialTheme.typography.bodySmall,
         )
     }

@@ -24,3 +24,9 @@ debug.keystore
 *.jks
 *.keystore
 *:Zone.Identifier
+
+# Firebase / FCM — credenciais (NUNCA commitar)
+google-services.json
+app/google-services.json
+*firebase-adminsdk*.json
+*-firebase-adminsdk-*.json

@@ -185,14 +185,15 @@ private fun PresetAvatarView(
     ring: Color?,
     name: String
 ) {
-    // Bounding box uniforme pra todos os avatares ilustrados — garante
-    // proporcionalidade visual no grid. Ilustração se ajusta dentro via Fit.
+    // Footprint MEDIDO = size×size (igual ao avatar de iniciais), pra listas que
+    // misturam preset + iniciais não desalinharem. A ilustração continua maior e
+    // simplesmente TRANSBORDA pro topo (sem clip), mantendo o efeito "saindo do
+    // círculo" sem reservar 48×60 de layout.
     val containerWidth = size * DEFAULT_WIDTH_FACTOR
     val containerHeight = size * DEFAULT_HEIGHT_FACTOR
     Box(
         modifier = modifier
-            .width(containerWidth)
-            .height(containerHeight)
+            .size(size)
             .semantics { contentDescription = "Avatar de $name" },
         contentAlignment = Alignment.BottomCenter
     ) {

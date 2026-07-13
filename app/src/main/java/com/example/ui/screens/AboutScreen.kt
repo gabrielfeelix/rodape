@@ -59,7 +59,7 @@ fun AboutScreen(
                         modifier = Modifier
                             .size(72.dp)
                             .clip(CircleShape)
-                            .background(Terracota),
+                            .background(RodapeTheme.colors.terracota),
                         contentAlignment = Alignment.Center
                     ) {
                         Text(
@@ -67,7 +67,7 @@ fun AboutScreen(
                             style = MaterialTheme.typography.displayLarge.copy(
                                 fontFamily = LiterataFontFamily,
                                 fontWeight = FontWeight.Bold,
-                                color = Cream,
+                                color = RodapeTheme.colors.cream,
                                 fontSize = 36.sp
                             )
                         )
@@ -81,7 +81,7 @@ fun AboutScreen(
                     )
                     Text(
                         text = "Versão ${BuildConfig.VERSION_NAME} (build ${BuildConfig.VERSION_CODE})",
-                        style = MaterialTheme.typography.bodySmall.copy(color = Muted)
+                        style = MaterialTheme.typography.bodySmall.copy(color = RodapeTheme.colors.muted)
                     )
                 }
             }
@@ -96,7 +96,7 @@ fun AboutScreen(
                             "guarda frases marcantes e segue o ritmo de cada um — sem pressão.",
                         style = MaterialTheme.typography.bodyMedium.copy(
                             fontFamily = InterFontFamily,
-                            color = InkSoft,
+                            color = RodapeTheme.colors.inkSoft,
                             lineHeight = 22.sp
                         )
                     )
@@ -114,14 +114,14 @@ fun AboutScreen(
                             "tem o direito de acessá-las.",
                         style = MaterialTheme.typography.bodyMedium.copy(
                             fontFamily = InterFontFamily,
-                            color = InkSoft,
+                            color = RodapeTheme.colors.inkSoft,
                             lineHeight = 22.sp
                         )
                     )
                     Spacer(modifier = Modifier.height(8.dp))
                     Text(
                         text = "Pra denunciar conteúdo inadequado ou pedir remoção, use o botão de feedback.",
-                        style = MaterialTheme.typography.bodySmall.copy(color = Muted)
+                        style = MaterialTheme.typography.bodySmall.copy(color = RodapeTheme.colors.muted)
                     )
                 }
             }
@@ -137,7 +137,7 @@ fun AboutScreen(
                             "acontecer.",
                         style = MaterialTheme.typography.bodyMedium.copy(
                             fontFamily = InterFontFamily,
-                            color = InkSoft,
+                            color = RodapeTheme.colors.inkSoft,
                             lineHeight = 22.sp
                         )
                     )
@@ -157,7 +157,7 @@ fun AboutScreen(
                             "de privacidade completa.",
                         style = MaterialTheme.typography.bodyMedium.copy(
                             fontFamily = InterFontFamily,
-                            color = InkSoft,
+                            color = RodapeTheme.colors.inkSoft,
                             lineHeight = 22.sp
                         )
                     )
@@ -185,11 +185,11 @@ fun AboutScreen(
                             ) {
                                 Text(
                                     text = lib,
-                                    style = MaterialTheme.typography.bodySmall.copy(color = InkSoft)
+                                    style = MaterialTheme.typography.bodySmall.copy(color = RodapeTheme.colors.inkSoft)
                                 )
                                 Text(
                                     text = license,
-                                    style = MaterialTheme.typography.labelSmall.copy(color = Muted)
+                                    style = MaterialTheme.typography.labelSmall.copy(color = RodapeTheme.colors.muted)
                                 )
                             }
                         }
@@ -212,7 +212,7 @@ fun AboutScreen(
             item {
                 Text(
                     text = "Feito com 💚 pra clubes de leitura.",
-                    style = MaterialTheme.typography.labelSmall.copy(color = Muted),
+                    style = MaterialTheme.typography.labelSmall.copy(color = RodapeTheme.colors.muted),
                     modifier = Modifier.fillMaxWidth(),
                     textAlign = androidx.compose.ui.text.style.TextAlign.Center
                 )
@@ -228,7 +228,7 @@ private fun SectionTitle(text: String) {
         style = MaterialTheme.typography.labelSmall.copy(
             fontFamily = InterFontFamily,
             fontWeight = FontWeight.Bold,
-            color = Muted,
+            color = RodapeTheme.colors.muted,
             letterSpacing = 1.sp
         ),
         modifier = Modifier.padding(start = 4.dp, bottom = 4.dp)

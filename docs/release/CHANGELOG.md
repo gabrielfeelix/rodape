@@ -1,5 +1,37 @@
 # Changelog — Rodapé
 
+## v1.1.4 — 2026-07-13 (build 18) · Dark mode + pronome + quick wins
+
+### 🌙 Modo escuro (J1) — agora de verdade, não "meia-boca"
+- O app passou de **cores fixas** (Ink/Cream/Paper…) pra um **sistema de tema**
+  (`RodapeColors` via `CompositionLocal` + `RodapeTheme.colors.*`). ~800 usos de cor
+  em 32 arquivos migrados pra serem **theme-aware** — nada de "buraco branco".
+- Paleta escura **própria**, quente e oliva-tingida (carvão morno, não azul-preto),
+  pra manter a alma literária da marca à noite. `Ink`/`Cream` invertem de papel,
+  acentos (oliva/terracota) ajustados pra contraste AA.
+- **Toggle em Perfil › APARÊNCIA**: Sistema / Claro / Escuro, persistido no DataStore
+  (`theme_mode`). "Sistema" segue o Android.
+- **Nota:** os tons finos de contraste pedem 1 passe de verificação visual em emulador
+  (claro↔escuro), mas a arquitetura está completa e sem regressão no tema claro.
+
+### 🙋 Pronome opcional no perfil (C6, parte 1)
+- Campo **PRONOME (OPCIONAL)** em Editar perfil — chips rápidos (ela/dela · ele/dele ·
+  elu/delu) + texto livre. Escolha, nunca imposição (nullable, sem default de gênero).
+- Ponta a ponta: coluna `profiles.pronome` (migration `0008`), Room v5 (`users.pronome`
+  + `MIGRATION_4_5`), DTO/fila offline. *(O avatar neutro do C6 espera o asset de
+  ilustração — pronome já entrega a parte de identidade.)*
+
+### 🧹 Quick wins
+- **C3 · Abas do livro não truncam** — a fileira de abas (Resumo/Frases/Chat/Avaliações/
+  Histórico) virou **rolável na horizontal** (padrão `ScrollableTabRow`) em vez de 5 slots
+  `weight(1f)` com ellipsis. Em fonte A++ (1.3×) "Avaliações" não vira mais "Avaliaçõ…".
+- **B6 · Código morto removido** — o `JoinClubScreen` tinha um branch de "colar link"
+  **inalcançável** (`activeTabIsCode` nascia `true` e nunca mudava). Removido: estado,
+  UI e ramos do submit. Entrar por código ficou mais enxuto.
+- **I2 · Nome de exibição unificado** — um único `displayName()`/`displayFirstName()`
+  (util) com fallback consistente. Antes divergia: saudação caía em "Leitor(a)" e o
+  header/avatar em "Você" pro mesmo usuário anônimo. Agora é um ponto só.
+
 ## v1.1.3 — 2026-07-12 (em progresso) · Onda 1 do plano de pendências
 
 Correções priorizadas a partir do estudo de 15 personas (`docs/PERSONAS-2026-07-12.md`)
@@ -90,16 +122,15 @@ e do plano em `docs/PLANO-PENDENCIAS-2026-07-12.md`. Onda 1 = "destrava quem imp
 
 ### Adiado com critério (decisão de produto)
 
-- **J1 · Dark mode** — aprovado como **opção em Configurações**, mas o app hoje usa
-  **constantes de cor fixas** (Ink/Cream/Paper…) em vez de tokens de tema, então é um
-  **rework** (reescrever as referências de cor pra serem theme-aware), não um toggle.
-  Shipar meia-boca deixaria "buracos brancos". Fica pra um passe dedicado com
-  verificação visual em emulador.
-- **C6 · Avatar neutro + pronome** — exige um **asset de ilustração** novo e uma
-  **coluna de pronome** no banco; escopo de design + migração, adiado.
-- **C3 (abas do livro em `ScrollableTabRow`)**, **B6 (código morto do JoinClub)** e
-  **I2 (unificar fallback de nome)** — mudanças visuais/cosméticas que ficam melhor com
-  checagem visual; anotadas em `docs/PLANO-PENDENCIAS-2026-07-12.md`.
+> **Atualização (1.1.4):** J1, C3, B6, I2 e a **parte de pronome do C6** foram
+> entregues. Resta só o **asset de avatar neutro** (C6) e o **push F1** (credenciais
+> Firebase do dono).
+
+- **J1 · Dark mode** — ✅ feito na 1.1.4 (rework theme-aware completo + toggle).
+- **C6 · Avatar neutro + pronome** — pronome ✅ feito (1.1.4); avatar neutro aguarda
+  o **asset de ilustração**.
+- **C3 (abas roláveis)**, **B6 (código morto do JoinClub)**, **I2 (fallback de nome)**
+  — ✅ feitos na 1.1.4.
 
 ## v1.0.12 — 2026-07-12 (build 13)
 

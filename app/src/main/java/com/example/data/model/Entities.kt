@@ -20,6 +20,9 @@ data class User(
     val nome: String,
     val email: String,
     val avatarUrl: String,
+    // Pronome opcional (ele/ela/elu/…). null = não informado. Campo por último
+    // com default pra não quebrar os construtores posicionais existentes.
+    val pronome: String? = null,
 )
 
 @Entity(tableName = "clubs")

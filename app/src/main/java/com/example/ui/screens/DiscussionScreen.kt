@@ -42,20 +42,10 @@ import com.example.ui.components.TbButtonVariant
 import com.example.ui.components.RodapeCard
 import com.example.ui.components.SkeletonRowList
 import com.example.ui.components.rememberShowLoading
-import com.example.ui.theme.CardSoft
-import com.example.ui.theme.Cream
-import com.example.ui.theme.Divider
 import com.example.ui.theme.InterFontFamily
 import com.example.ui.theme.LiterataFontFamily
-import com.example.ui.theme.Muted
-import com.example.ui.theme.Oliva
-import com.example.ui.theme.OlivaDark
-import com.example.ui.theme.OlivaSoft
-import com.example.ui.theme.Paper
+import com.example.ui.theme.RodapeTheme
 import com.example.ui.theme.Terracota
-import com.example.ui.theme.TerracotaDark
-import com.example.ui.theme.TerracotaSoft
-import com.example.ui.theme.Tertiary
 import com.example.ui.viewmodel.MainViewModel
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -100,7 +90,7 @@ fun DiscussionScreen(
                         Text(
                             text = "CAPÍTULO $chapterNum",
                             style = MaterialTheme.typography.labelMedium.copy(
-                                color = Tertiary,
+                                color = RodapeTheme.colors.tertiary,
                                 letterSpacing = 0.6.sp
                             )
                         )
@@ -117,16 +107,16 @@ fun DiscussionScreen(
                         Icon(
                             imageVector = Icons.AutoMirrored.Outlined.ArrowBack,
                             contentDescription = "Voltar",
-                            tint = Terracota
+                            tint = RodapeTheme.colors.terracota
                         )
                     }
                 },
                 // (botão "⋮" removido: era um placeholder sem ação — controle
                 // morto confunde mais do que ajuda)
-                colors = TopAppBarDefaults.topAppBarColors(containerColor = Paper)
+                colors = TopAppBarDefaults.topAppBarColors(containerColor = RodapeTheme.colors.paper)
             )
         },
-        containerColor = Paper
+        containerColor = RodapeTheme.colors.paper
     ) { padding ->
         // Loading = o CAPÍTULO ainda não resolveu (grace de 2.5s no cold start,
         // como o resto do app). `progress == null` NÃO é loading: é "ainda não
@@ -156,7 +146,7 @@ fun DiscussionScreen(
                 Text(
                     text = "Capítulo não encontrado.",
                     style = MaterialTheme.typography.bodyLarge,
-                    color = Tertiary
+                    color = RodapeTheme.colors.tertiary
                 )
             }
         } else if (isAheadOfProgress && !forceRevealDebate) {
@@ -178,7 +168,7 @@ fun DiscussionScreen(
                             // I1: dá a dica do que "spoiler" quer dizer, pra quem não conhece.
                             text = "Atenção: pode contar o que vem (spoiler)",
                             style = MaterialTheme.typography.headlineLarge.copy(
-                                color = Terracota,
+                                color = RodapeTheme.colors.terracota,
                                 textAlign = TextAlign.Center
                             )
                         )
@@ -228,7 +218,7 @@ fun DiscussionScreen(
                         Row(
                             modifier = Modifier
                                 .fillMaxWidth()
-                                .background(OlivaSoft, RoundedCornerShape(14.dp))
+                                .background(RodapeTheme.colors.olivaSoft, RoundedCornerShape(14.dp))
                                 .padding(horizontal = 16.dp, vertical = 12.dp),
                             verticalAlignment = Alignment.CenterVertically,
                             horizontalArrangement = Arrangement.spacedBy(10.dp)
@@ -236,13 +226,13 @@ fun DiscussionScreen(
                             Box(
                                 modifier = Modifier
                                     .size(28.dp)
-                                    .background(Oliva, CircleShape),
+                                    .background(RodapeTheme.colors.oliva, CircleShape),
                                 contentAlignment = Alignment.Center
                             ) {
                                 Icon(
                                     imageVector = Icons.Outlined.CheckCircle,
                                     contentDescription = null,
-                                    tint = Cream,
+                                    tint = RodapeTheme.colors.cream,
                                     modifier = Modifier.size(18.dp)
                                 )
                             }
@@ -252,14 +242,14 @@ fun DiscussionScreen(
                                     style = MaterialTheme.typography.bodyMedium.copy(
                                         fontFamily = LiterataFontFamily,
                                         fontWeight = FontWeight.SemiBold,
-                                        color = OlivaDark
+                                        color = RodapeTheme.colors.olivaDark
                                     )
                                 )
                                 Text(
                                     text = "Está liberado.",
                                     style = MaterialTheme.typography.bodySmall.copy(
                                         fontFamily = InterFontFamily,
-                                        color = OlivaDark
+                                        color = RodapeTheme.colors.olivaDark
                                     )
                                 )
                             }
@@ -268,7 +258,7 @@ fun DiscussionScreen(
                         Column(
                             modifier = Modifier
                                 .fillMaxWidth()
-                                .background(TerracotaSoft, RoundedCornerShape(14.dp))
+                                .background(RodapeTheme.colors.terracotaSoft, RoundedCornerShape(14.dp))
                                 .padding(horizontal = 16.dp, vertical = 12.dp),
                             verticalArrangement = Arrangement.spacedBy(10.dp)
                         ) {
@@ -279,7 +269,7 @@ fun DiscussionScreen(
                                 Icon(
                                     imageVector = Icons.Outlined.Warning,
                                     contentDescription = null,
-                                    tint = Terracota,
+                                    tint = RodapeTheme.colors.terracota,
                                     modifier = Modifier.size(20.dp)
                                 )
                                 Text(
@@ -287,7 +277,7 @@ fun DiscussionScreen(
                                     style = MaterialTheme.typography.bodyMedium.copy(
                                         fontFamily = InterFontFamily,
                                         fontWeight = FontWeight.Medium,
-                                        color = TerracotaDark
+                                        color = RodapeTheme.colors.terracotaDark
                                     )
                                 )
                             }
@@ -299,7 +289,7 @@ fun DiscussionScreen(
                                 style = MaterialTheme.typography.bodyMedium.copy(
                                     fontFamily = InterFontFamily,
                                     fontWeight = FontWeight.SemiBold,
-                                    color = TerracotaDark
+                                    color = RodapeTheme.colors.terracotaDark
                                 ),
                                 modifier = Modifier
                                     .fillMaxWidth()
@@ -391,13 +381,13 @@ fun DiscussionScreen(
                                         modifier = Modifier
                                             .fillMaxWidth()
                                             .background(
-                                                color = if (isOwn) TerracotaSoft else Cream,
+                                                color = if (isOwn) RodapeTheme.colors.terracotaSoft else RodapeTheme.colors.cream,
                                                 shape = RoundedCornerShape(14.dp)
                                             )
                                             .then(
                                                 if (!isOwn) Modifier.border(
                                                     width = 0.5.dp,
-                                                    color = Divider,
+                                                    color = RodapeTheme.colors.divider,
                                                     shape = RoundedCornerShape(14.dp)
                                                 ) else Modifier
                                             )
@@ -421,7 +411,7 @@ fun DiscussionScreen(
                                                     style = MaterialTheme.typography.bodyMedium.copy(
                                                         fontFamily = InterFontFamily,
                                                         fontWeight = FontWeight.SemiBold,
-                                                        color = if (isOwn) TerracotaDark else MaterialTheme.colorScheme.onSurface
+                                                        color = if (isOwn) RodapeTheme.colors.terracotaDark else MaterialTheme.colorScheme.onSurface
                                                     ),
                                                     modifier = Modifier.weight(1f)
                                                 )
@@ -442,7 +432,7 @@ fun DiscussionScreen(
                                                     Icon(
                                                         imageVector = Icons.Outlined.AddReaction,
                                                         contentDescription = null,
-                                                        tint = Muted,
+                                                        tint = RodapeTheme.colors.muted,
                                                         modifier = Modifier.size(18.dp)
                                                     )
                                                 }
@@ -454,7 +444,7 @@ fun DiscussionScreen(
                                                         fontFamily = LiterataFontFamily,
                                                         fontSize = 14.5.sp,
                                                         lineHeight = 21.sp,
-                                                        color = Muted,
+                                                        color = RodapeTheme.colors.muted,
                                                         fontStyle = androidx.compose.ui.text.font.FontStyle.Italic
                                                     )
                                                 )
@@ -484,11 +474,11 @@ fun DiscussionScreen(
                                                 val count = list.size
                                                 val hasUserReacted = list.any { it.userId == currentUid }
 
-                                                val chipBg = if (hasUserReacted) TerracotaSoft else CardSoft
+                                                val chipBg = if (hasUserReacted) RodapeTheme.colors.terracotaSoft else RodapeTheme.colors.cardSoft
                                                 val chipBorder = if (hasUserReacted) {
-                                                    BorderStroke(1.dp, Terracota)
+                                                    BorderStroke(1.dp, RodapeTheme.colors.terracota)
                                                 } else {
-                                                    BorderStroke(1.dp, Divider)
+                                                    BorderStroke(1.dp, RodapeTheme.colors.divider)
                                                 }
 
                                                 Box(
@@ -518,7 +508,7 @@ fun DiscussionScreen(
                                                             style = MaterialTheme.typography.bodySmall.copy(
                                                                 fontFamily = InterFontFamily,
                                                                 fontWeight = FontWeight.SemiBold,
-                                                                color = if (hasUserReacted) TerracotaDark else Tertiary
+                                                                color = if (hasUserReacted) RodapeTheme.colors.terracotaDark else RodapeTheme.colors.tertiary
                                                             )
                                                         )
                                                     }
@@ -537,7 +527,7 @@ fun DiscussionScreen(
                                             Icon(
                                                 imageVector = Icons.Outlined.MoreVert,
                                                 contentDescription = "Moderação",
-                                                tint = Muted,
+                                                tint = RodapeTheme.colors.muted,
                                                 modifier = Modifier.size(18.dp)
                                             )
                                         }
@@ -566,7 +556,7 @@ fun DiscussionScreen(
                                             Icon(
                                                 imageVector = Icons.Outlined.MoreVert,
                                                 contentDescription = "Opções do comentário",
-                                                tint = Muted,
+                                                tint = RodapeTheme.colors.muted,
                                                 modifier = Modifier.size(18.dp)
                                             )
                                         }
@@ -614,11 +604,11 @@ fun DiscussionScreen(
                                                 showEditDialog = false
                                             },
                                             enabled = editText.trim().isNotEmpty()
-                                        ) { Text("Salvar", color = Terracota, fontWeight = FontWeight.SemiBold) }
+                                        ) { Text("Salvar", color = RodapeTheme.colors.terracota, fontWeight = FontWeight.SemiBold) }
                                     },
                                     dismissButton = {
                                         TextButton(onClick = { showEditDialog = false }) {
-                                            Text("Cancelar", color = Muted)
+                                            Text("Cancelar", color = RodapeTheme.colors.muted)
                                         }
                                     }
                                 )
@@ -634,11 +624,11 @@ fun DiscussionScreen(
                                         TextButton(onClick = {
                                             viewModel.deleteOwnComment(comment.id)
                                             showDeleteDialog = false
-                                        }) { Text("Apagar", color = Terracota, fontWeight = FontWeight.SemiBold) }
+                                        }) { Text("Apagar", color = RodapeTheme.colors.terracota, fontWeight = FontWeight.SemiBold) }
                                     },
                                     dismissButton = {
                                         TextButton(onClick = { showDeleteDialog = false }) {
-                                            Text("Cancelar", color = Muted)
+                                            Text("Cancelar", color = RodapeTheme.colors.muted)
                                         }
                                     }
                                 )
@@ -666,11 +656,11 @@ fun DiscussionScreen(
                                         TextButton(onClick = {
                                             viewModel.removeComment(comment.id, modMotivo)
                                             showRemoveDialog = false
-                                        }) { Text("Remover", color = Terracota, fontWeight = FontWeight.SemiBold) }
+                                        }) { Text("Remover", color = RodapeTheme.colors.terracota, fontWeight = FontWeight.SemiBold) }
                                     },
                                     dismissButton = {
                                         TextButton(onClick = { showRemoveDialog = false }) {
-                                            Text("Cancelar", color = Muted)
+                                            Text("Cancelar", color = RodapeTheme.colors.muted)
                                         }
                                     }
                                 )
@@ -682,8 +672,8 @@ fun DiscussionScreen(
                 // Comment input footer
                 Surface(
                     modifier = Modifier.fillMaxWidth(),
-                    color = Cream,
-                    border = BorderStroke(0.5.dp, Divider)
+                    color = RodapeTheme.colors.cream,
+                    border = BorderStroke(0.5.dp, RodapeTheme.colors.divider)
                 ) {
                     Row(
                         modifier = Modifier
@@ -692,13 +682,11 @@ fun DiscussionScreen(
                         verticalAlignment = Alignment.CenterVertically,
                         horizontalArrangement = Arrangement.spacedBy(8.dp)
                     ) {
-                        // Rounded text field with Cream background and Divider border
+                        // Pílula única: o próprio OutlinedTextField é dono da borda
+                        // (foco → oliva) e do fill. O Box só carrega o weight —
+                        // antes ele desenhava uma 2ª borda concêntrica (muddy no foco).
                         Box(
-                            modifier = Modifier
-                                .weight(1f)
-                                .background(Paper, RoundedCornerShape(999.dp))
-                                .border(1.dp, Divider, RoundedCornerShape(999.dp))
-                                .clip(RoundedCornerShape(999.dp))
+                            modifier = Modifier.weight(1f)
                         ) {
                             OutlinedTextField(
                                 value = commentText,
@@ -716,10 +704,10 @@ fun DiscussionScreen(
                                 shape = RoundedCornerShape(999.dp),
                                 maxLines = 4,
                                 colors = OutlinedTextFieldDefaults.colors(
-                                    focusedBorderColor = Oliva,
-                                    unfocusedBorderColor = Divider,
-                                    focusedContainerColor = Paper,
-                                    unfocusedContainerColor = Paper
+                                    focusedBorderColor = RodapeTheme.colors.oliva,
+                                    unfocusedBorderColor = RodapeTheme.colors.divider,
+                                    focusedContainerColor = RodapeTheme.colors.paper,
+                                    unfocusedContainerColor = RodapeTheme.colors.paper
                                 )
                             )
                         }
@@ -734,7 +722,7 @@ fun DiscussionScreen(
                                 .minimumInteractiveComponentSize()
                                 .size(44.dp)
                                 .background(
-                                    color = if (commentText.trim().isNotEmpty()) Terracota else CardSoft,
+                                    color = if (commentText.trim().isNotEmpty()) RodapeTheme.colors.terracota else RodapeTheme.colors.cardSoft,
                                     shape = CircleShape
                                 )
                                 .clip(CircleShape)
@@ -751,7 +739,7 @@ fun DiscussionScreen(
                             Icon(
                                 imageVector = Icons.Outlined.Send,
                                 contentDescription = "Enviar",
-                                tint = if (commentText.trim().isNotEmpty()) Cream else MaterialTheme.colorScheme.onSurfaceVariant,
+                                tint = if (commentText.trim().isNotEmpty()) RodapeTheme.colors.cream else MaterialTheme.colorScheme.onSurfaceVariant,
                                 modifier = Modifier.size(20.dp)
                             )
                         }

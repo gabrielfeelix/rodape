@@ -75,7 +75,7 @@ fun EditClubInfoDialog(
                                 .size(36.dp)
                                 .border(
                                     width = if (corIndex == idx) 2.dp else 0.dp,
-                                    color = if (corIndex == idx) Ink else Color.Transparent,
+                                    color = if (corIndex == idx) RodapeTheme.colors.ink else Color.Transparent,
                                     shape = CircleShape
                                 )
                                 .padding(3.dp)
@@ -107,10 +107,10 @@ fun EditClubInfoDialog(
             TextButton(
                 onClick = { onSave(nome, descricao, corIndex.toString(), privacidade) },
                 enabled = nome.trim().length >= 3
-            ) { Text("Salvar", color = Oliva, fontWeight = FontWeight.SemiBold) }
+            ) { Text("Salvar", color = RodapeTheme.colors.oliva, fontWeight = FontWeight.SemiBold) }
         },
         dismissButton = {
-            TextButton(onClick = onDismiss) { Text("Cancelar", color = Muted) }
+            TextButton(onClick = onDismiss) { Text("Cancelar", color = RodapeTheme.colors.muted) }
         }
     )
 }
@@ -130,7 +130,7 @@ fun RemoveMemberDialog(
             Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
                 Text(
                     "A pessoa recebe uma notificação. Comentários e frases dela ficam no histórico.",
-                    style = MaterialTheme.typography.bodyMedium.copy(color = Muted)
+                    style = MaterialTheme.typography.bodyMedium.copy(color = RodapeTheme.colors.muted)
                 )
                 OutlinedTextField(
                     value = motivo,
@@ -143,11 +143,11 @@ fun RemoveMemberDialog(
         },
         confirmButton = {
             TextButton(onClick = { onConfirm(motivo) }) {
-                Text("Remover", color = Terracota, fontWeight = FontWeight.SemiBold)
+                Text("Remover", color = RodapeTheme.colors.terracota, fontWeight = FontWeight.SemiBold)
             }
         },
         dismissButton = {
-            TextButton(onClick = onDismiss) { Text("Cancelar", color = Muted) }
+            TextButton(onClick = onDismiss) { Text("Cancelar", color = RodapeTheme.colors.muted) }
         }
     )
 }
@@ -169,11 +169,11 @@ fun RegenerateCodeDialog(
         },
         confirmButton = {
             TextButton(onClick = onConfirm) {
-                Text("Gerar novo", color = Terracota, fontWeight = FontWeight.SemiBold)
+                Text("Gerar novo", color = RodapeTheme.colors.terracota, fontWeight = FontWeight.SemiBold)
             }
         },
         dismissButton = {
-            TextButton(onClick = onDismiss) { Text("Cancelar", color = Muted) }
+            TextButton(onClick = onDismiss) { Text("Cancelar", color = RodapeTheme.colors.muted) }
         }
     )
 }
@@ -280,12 +280,12 @@ fun EditMeetingPatternDialog(
                                         .weight(1f)
                                         .clickable { diaSemana = key }
                                         .background(
-                                            if (selected) Oliva else Color.Transparent,
+                                            if (selected) RodapeTheme.colors.oliva else Color.Transparent,
                                             androidx.compose.foundation.shape.RoundedCornerShape(8.dp)
                                         )
                                         .border(
                                             1.dp,
-                                            if (selected) Oliva else Muted.copy(alpha = 0.3f),
+                                            if (selected) RodapeTheme.colors.oliva else RodapeTheme.colors.muted.copy(alpha = 0.3f),
                                             androidx.compose.foundation.shape.RoundedCornerShape(8.dp)
                                         )
                                         .padding(vertical = 8.dp),
@@ -294,7 +294,7 @@ fun EditMeetingPatternDialog(
                                     Text(
                                         label,
                                         style = MaterialTheme.typography.labelSmall.copy(
-                                            color = if (selected) MaterialTheme.colorScheme.surface else Muted,
+                                            color = if (selected) MaterialTheme.colorScheme.surface else RodapeTheme.colors.muted,
                                             fontWeight = if (selected) FontWeight.Bold else FontWeight.Normal
                                         )
                                     )
@@ -318,12 +318,12 @@ fun EditMeetingPatternDialog(
                                         .weight(1f)
                                         .clickable { valor = n }
                                         .background(
-                                            if (selected) Oliva else Color.Transparent,
+                                            if (selected) RodapeTheme.colors.oliva else Color.Transparent,
                                             androidx.compose.foundation.shape.RoundedCornerShape(8.dp)
                                         )
                                         .border(
                                             1.dp,
-                                            if (selected) Oliva else Muted.copy(alpha = 0.3f),
+                                            if (selected) RodapeTheme.colors.oliva else RodapeTheme.colors.muted.copy(alpha = 0.3f),
                                             androidx.compose.foundation.shape.RoundedCornerShape(8.dp)
                                         )
                                         .padding(vertical = 8.dp),
@@ -332,7 +332,7 @@ fun EditMeetingPatternDialog(
                                     Text(
                                         label,
                                         style = MaterialTheme.typography.labelSmall.copy(
-                                            color = if (selected) MaterialTheme.colorScheme.surface else Muted,
+                                            color = if (selected) MaterialTheme.colorScheme.surface else RodapeTheme.colors.muted,
                                             fontWeight = if (selected) FontWeight.Bold else FontWeight.Normal
                                         )
                                     )
@@ -409,11 +409,11 @@ fun EditMeetingPatternDialog(
         },
         confirmButton = {
             TextButton(onClick = { onSave(diaSemana, hora, local, agenda, tipo, valor) }) {
-                Text("Salvar", color = Oliva, fontWeight = FontWeight.SemiBold)
+                Text("Salvar", color = RodapeTheme.colors.oliva, fontWeight = FontWeight.SemiBold)
             }
         },
         dismissButton = {
-            TextButton(onClick = onDismiss) { Text("Cancelar", color = Muted) }
+            TextButton(onClick = onDismiss) { Text("Cancelar", color = RodapeTheme.colors.muted) }
         }
     )
 }
@@ -486,7 +486,7 @@ fun EditSingleMeetingDialog(
                         label = { Text("Data do encontro") },
                         placeholder = { Text("Toque para escolher") },
                         trailingIcon = {
-                            Icon(Icons.Outlined.DateRange, contentDescription = null, tint = Muted)
+                            Icon(Icons.Outlined.DateRange, contentDescription = null, tint = RodapeTheme.colors.muted)
                         },
                         singleLine = true,
                         modifier = Modifier
@@ -515,7 +515,7 @@ fun EditSingleMeetingDialog(
                         label = { Text("Hora (24h)") },
                         placeholder = { Text("Toque para escolher") },
                         trailingIcon = {
-                            Icon(Icons.Outlined.Schedule, contentDescription = null, tint = Muted)
+                            Icon(Icons.Outlined.Schedule, contentDescription = null, tint = RodapeTheme.colors.muted)
                         },
                         singleLine = true,
                         modifier = Modifier
@@ -568,7 +568,7 @@ fun EditSingleMeetingDialog(
                                 )
                                 Text(
                                     "📖 ${currentBookTitle ?: "—"}",
-                                    style = MaterialTheme.typography.bodySmall.copy(color = Muted)
+                                    style = MaterialTheme.typography.bodySmall.copy(color = RodapeTheme.colors.muted)
                                 )
                             }
                         }
@@ -608,7 +608,7 @@ fun EditSingleMeetingDialog(
                             }
                             Text(
                                 "Total de capítulos no livro: $totalChapters",
-                                style = MaterialTheme.typography.labelSmall.copy(color = Muted)
+                                style = MaterialTheme.typography.labelSmall.copy(color = RodapeTheme.colors.muted)
                             )
                         }
                     }
@@ -630,10 +630,10 @@ fun EditSingleMeetingDialog(
                     onSave(dataOut, sanitizeHora(hora), local, agenda, effectiveBookId, effectiveStart, effectiveEnd)
                 },
                 enabled = dateMillis != null && isValidHora(hora)
-            ) { Text("Salvar", color = Oliva, fontWeight = FontWeight.SemiBold) }
+            ) { Text("Salvar", color = RodapeTheme.colors.oliva, fontWeight = FontWeight.SemiBold) }
         },
         dismissButton = {
-            TextButton(onClick = onDismiss) { Text("Cancelar", color = Muted) }
+            TextButton(onClick = onDismiss) { Text("Cancelar", color = RodapeTheme.colors.muted) }
         }
     )
 
@@ -655,10 +655,10 @@ fun EditSingleMeetingDialog(
                 TextButton(onClick = {
                     pickerState.selectedDateMillis?.let { dateMillis = it }
                     showDatePicker = false
-                }) { Text("OK", color = Oliva, fontWeight = FontWeight.SemiBold) }
+                }) { Text("OK", color = RodapeTheme.colors.oliva, fontWeight = FontWeight.SemiBold) }
             },
             dismissButton = {
-                TextButton(onClick = { showDatePicker = false }) { Text("Cancelar", color = Muted) }
+                TextButton(onClick = { showDatePicker = false }) { Text("Cancelar", color = RodapeTheme.colors.muted) }
             },
         ) {
             DatePicker(state = pickerState)
@@ -685,10 +685,10 @@ fun EditSingleMeetingDialog(
                 TextButton(onClick = {
                     hora = "%02d:%02d".format(timeState.hour, timeState.minute)
                     showTimePicker = false
-                }) { Text("OK", color = Oliva, fontWeight = FontWeight.SemiBold) }
+                }) { Text("OK", color = RodapeTheme.colors.oliva, fontWeight = FontWeight.SemiBold) }
             },
             dismissButton = {
-                TextButton(onClick = { showTimePicker = false }) { Text("Cancelar", color = Muted) }
+                TextButton(onClick = { showTimePicker = false }) { Text("Cancelar", color = RodapeTheme.colors.muted) }
             },
         )
     }
@@ -765,11 +765,11 @@ fun CancelMeetingDialog(
         text = { Text("Os RSVPs serão descartados. Sem volta.") },
         confirmButton = {
             TextButton(onClick = onConfirm) {
-                Text("Cancelar encontro", color = Terracota, fontWeight = FontWeight.SemiBold)
+                Text("Cancelar encontro", color = RodapeTheme.colors.terracota, fontWeight = FontWeight.SemiBold)
             }
         },
         dismissButton = {
-            TextButton(onClick = onDismiss) { Text("Voltar", color = Muted) }
+            TextButton(onClick = onDismiss) { Text("Voltar", color = RodapeTheme.colors.muted) }
         }
     )
 }

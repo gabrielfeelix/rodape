@@ -14,6 +14,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import com.example.ui.theme.Oliva
+import com.example.ui.theme.RodapeTheme
 import kotlinx.coroutines.delay
 
 /**
@@ -42,7 +43,7 @@ fun rememberShowLoading(hasData: Boolean, graceMs: Long = 2_500): Boolean {
 fun CenteredLoading(modifier: Modifier = Modifier) {
     Box(modifier = modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
         CircularProgressIndicator(
-            color = Oliva,
+            color = RodapeTheme.colors.oliva,
             strokeWidth = 3.dp,
             modifier = Modifier.size(32.dp),
         )

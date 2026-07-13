@@ -22,6 +22,7 @@ import com.example.ui.components.TbButton
 import com.example.ui.components.TbButtonSize
 import com.example.ui.components.TbButtonVariant
 import com.example.ui.theme.Oliva
+import com.example.ui.theme.RodapeTheme
 import com.example.ui.theme.Terracota
 
 /**
@@ -63,16 +64,18 @@ fun NoClubsEmptyState(
 
                 Spacer(modifier = Modifier.height(24.dp))
 
+                val olivaColor = RodapeTheme.colors.oliva
+                val terracotaColor = RodapeTheme.colors.terracota
                 Text(
                     text = buildAnnotatedString {
                         append("Oi")
                         userFirstName?.takeIf { it.isNotBlank() }?.let { name ->
                             append(", ")
-                            withStyle(SpanStyle(fontStyle = FontStyle.Italic, color = Oliva)) {
+                            withStyle(SpanStyle(fontStyle = FontStyle.Italic, color = olivaColor)) {
                                 append(name)
                             }
                         }
-                        withStyle(SpanStyle(color = Terracota)) { append(".") }
+                        withStyle(SpanStyle(color = terracotaColor)) { append(".") }
                     },
                     style = MaterialTheme.typography.displaySmall,
                     textAlign = TextAlign.Center,

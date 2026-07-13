@@ -21,11 +21,8 @@ import androidx.compose.ui.unit.dp
 import com.example.ui.components.CenteredLoading
 import com.example.ui.components.QuoteCard
 import com.example.ui.components.rememberShowLoading
-import com.example.ui.theme.Cream
-import com.example.ui.theme.Divider
 import com.example.ui.theme.LiterataFontFamily
-import com.example.ui.theme.Muted
-import com.example.ui.theme.Terracota
+import com.example.ui.theme.RodapeTheme
 import com.example.ui.viewmodel.MainViewModel
 import com.example.util.formatShortDate
 import com.example.util.shareTextContent
@@ -92,7 +89,7 @@ fun FrasesScreen(
                             Icon(
                                 imageVector = Icons.Outlined.Share,
                                 contentDescription = "Exportar/Compartilhar frases",
-                                tint = Terracota
+                                tint = RodapeTheme.colors.terracota
                             )
                         }
                     }
@@ -115,27 +112,27 @@ fun FrasesScreen(
                         Text(
                             "Buscar por frase, livro ou capítulo…",
                             style = MaterialTheme.typography.bodyMedium,
-                            color = Muted,
+                            color = RodapeTheme.colors.muted,
                         )
                     },
                     leadingIcon = {
-                        Icon(Icons.Outlined.Search, contentDescription = null, tint = Muted)
+                        Icon(Icons.Outlined.Search, contentDescription = null, tint = RodapeTheme.colors.muted)
                     },
                     trailingIcon = {
                         if (query.isNotBlank()) {
                             IconButton(onClick = { query = "" }) {
-                                Icon(Icons.Outlined.Clear, contentDescription = "Limpar", tint = Muted)
+                                Icon(Icons.Outlined.Clear, contentDescription = "Limpar", tint = RodapeTheme.colors.muted)
                             }
                         }
                     },
                     singleLine = true,
                     shape = RoundedCornerShape(14.dp),
                     colors = OutlinedTextFieldDefaults.colors(
-                        unfocusedContainerColor = Cream,
-                        focusedContainerColor = Cream,
-                        unfocusedBorderColor = Divider,
-                        focusedBorderColor = Terracota,
-                        cursorColor = Terracota,
+                        unfocusedContainerColor = RodapeTheme.colors.cream,
+                        focusedContainerColor = RodapeTheme.colors.cream,
+                        unfocusedBorderColor = RodapeTheme.colors.divider,
+                        focusedBorderColor = RodapeTheme.colors.terracota,
+                        cursorColor = RodapeTheme.colors.terracota,
                     ),
                     modifier = Modifier
                         .fillMaxWidth()
@@ -155,19 +152,19 @@ fun FrasesScreen(
                         Icon(
                             Icons.Outlined.FormatQuote,
                             contentDescription = null,
-                            tint = Muted,
+                            tint = RodapeTheme.colors.muted,
                             modifier = Modifier.size(48.dp),
                         )
                         Text(
                             text = "Você ainda não guardou nenhuma frase.",
                             style = MaterialTheme.typography.titleMedium,
-                            color = Muted,
+                            color = RodapeTheme.colors.muted,
                             textAlign = androidx.compose.ui.text.style.TextAlign.Center,
                         )
                         Text(
                             text = "As frases que você marcar durante a leitura aparecem aqui. Abra um livro e toque em marcar frase enquanto lê.",
                             style = MaterialTheme.typography.bodyMedium,
-                            color = Muted,
+                            color = RodapeTheme.colors.muted,
                             textAlign = androidx.compose.ui.text.style.TextAlign.Center,
                         )
                         Spacer(Modifier.height(4.dp))
@@ -184,7 +181,7 @@ fun FrasesScreen(
                     Text(
                         text = "Nada encontrado pra \"$query\".",
                         style = MaterialTheme.typography.bodyMedium,
-                        color = Muted,
+                        color = RodapeTheme.colors.muted,
                     )
                 }
             } else {
@@ -202,7 +199,7 @@ fun FrasesScreen(
                         Text(
                             text = label,
                             style = MaterialTheme.typography.bodySmall,
-                            color = Muted,
+                            color = RodapeTheme.colors.muted,
                             modifier = Modifier.padding(bottom = 4.dp),
                         )
                     }
@@ -219,7 +216,7 @@ fun FrasesScreen(
                                 style = MaterialTheme.typography.bodySmall,
                                 fontFamily = LiterataFontFamily,
                                 fontStyle = FontStyle.Italic,
-                                color = Muted,
+                                color = RodapeTheme.colors.muted,
                                 modifier = Modifier.padding(start = 4.dp),
                             )
                             QuoteCard(

@@ -27,6 +27,7 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import com.example.ui.components.RodapeCard
 import com.example.ui.theme.Muted
+import com.example.ui.theme.RodapeTheme
 import com.example.ui.theme.Terracota
 import kotlinx.coroutines.launch
 
@@ -68,13 +69,13 @@ fun ResetPasswordScreen(
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { Text("Nova senha", style = MaterialTheme.typography.headlineLarge.copy(color = Terracota)) },
+                title = { Text("Nova senha", style = MaterialTheme.typography.headlineLarge.copy(color = RodapeTheme.colors.terracota)) },
                 navigationIcon = {
                     IconButton(onClick = onCancel) {
                         Icon(
                             imageVector = Icons.AutoMirrored.Outlined.ArrowBack,
                             contentDescription = "Cancelar",
-                            tint = Terracota,
+                            tint = RodapeTheme.colors.terracota,
                         )
                     }
                 },
@@ -105,7 +106,7 @@ fun ResetPasswordScreen(
                             Text(
                                 "Mínimo 8 caracteres, com maiúscula, minúscula, número e símbolo.",
                                 style = MaterialTheme.typography.bodySmall,
-                                color = Muted,
+                                color = RodapeTheme.colors.muted,
                             )
                         },
                         singleLine = true,
@@ -117,7 +118,7 @@ fun ResetPasswordScreen(
                                 Icon(
                                     imageVector = if (passwordVisible) Icons.Outlined.VisibilityOff else Icons.Outlined.Visibility,
                                     contentDescription = if (passwordVisible) "Ocultar senha" else "Mostrar senha",
-                                    tint = Muted,
+                                    tint = RodapeTheme.colors.muted,
                                 )
                             }
                         },
@@ -144,7 +145,7 @@ fun ResetPasswordScreen(
                         enabled = valid && !isLoading,
                         modifier = Modifier.fillMaxWidth().height(52.dp),
                         shape = RoundedCornerShape(26.dp),
-                        colors = ButtonDefaults.buttonColors(containerColor = Terracota),
+                        colors = ButtonDefaults.buttonColors(containerColor = RodapeTheme.colors.terracota),
                     ) {
                         if (isLoading) {
                             CircularProgressIndicator(color = Color.White, strokeWidth = 2.dp, modifier = Modifier.size(20.dp))

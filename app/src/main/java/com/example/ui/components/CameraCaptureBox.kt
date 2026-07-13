@@ -33,6 +33,7 @@ import androidx.compose.ui.platform.LocalLifecycleOwner
 import androidx.compose.ui.unit.dp
 import androidx.core.content.ContextCompat
 import com.example.ui.theme.Cream
+import com.example.ui.theme.RodapeTheme
 import com.example.ui.theme.Terracota
 import java.io.File
 import java.util.concurrent.Executor
@@ -120,10 +121,10 @@ fun CameraCaptureBox(
                 .padding(bottom = 32.dp)
                 .size(72.dp)
                 .clip(CircleShape)
-                .background(Cream)
+                .background(RodapeTheme.colors.cream)
                 .padding(6.dp)
                 .clip(CircleShape)
-                .background(Terracota)
+                .background(RodapeTheme.colors.terracota)
                 // A11y: o botão era um emoji dentro de um Box clicável sem rótulo.
                 .semantics { contentDescription = "Tirar foto"; role = Role.Button }
                 .clickable {
@@ -148,7 +149,7 @@ fun CameraCaptureBox(
         ) {
             Text(
                 text = "📷",
-                style = MaterialTheme.typography.titleLarge.copy(color = Cream)
+                style = MaterialTheme.typography.titleLarge.copy(color = RodapeTheme.colors.cream)
             )
         }
 
@@ -159,12 +160,12 @@ fun CameraCaptureBox(
                     .align(Alignment.TopCenter)
                     .padding(top = 16.dp)
                     .clip(RoundedCornerShape(10.dp))
-                    .background(Terracota)
+                    .background(RodapeTheme.colors.terracota)
                     .padding(horizontal = 14.dp, vertical = 8.dp)
             ) {
                 Text(
                     text = msg,
-                    style = MaterialTheme.typography.bodyMedium.copy(color = Cream)
+                    style = MaterialTheme.typography.bodyMedium.copy(color = RodapeTheme.colors.cream)
                 )
             }
         }
@@ -177,17 +178,17 @@ private fun CornerOverlay(modifier: Modifier = Modifier) {
         val cornerLength = 28.dp
         val cornerThickness = 3.dp
         // top-left
-        Box(modifier = Modifier.align(Alignment.TopStart).size(cornerLength, cornerThickness).background(Cream))
-        Box(modifier = Modifier.align(Alignment.TopStart).size(cornerThickness, cornerLength).background(Cream))
+        Box(modifier = Modifier.align(Alignment.TopStart).size(cornerLength, cornerThickness).background(RodapeTheme.colors.cream))
+        Box(modifier = Modifier.align(Alignment.TopStart).size(cornerThickness, cornerLength).background(RodapeTheme.colors.cream))
         // top-right
-        Box(modifier = Modifier.align(Alignment.TopEnd).size(cornerLength, cornerThickness).background(Cream))
-        Box(modifier = Modifier.align(Alignment.TopEnd).size(cornerThickness, cornerLength).background(Cream))
+        Box(modifier = Modifier.align(Alignment.TopEnd).size(cornerLength, cornerThickness).background(RodapeTheme.colors.cream))
+        Box(modifier = Modifier.align(Alignment.TopEnd).size(cornerThickness, cornerLength).background(RodapeTheme.colors.cream))
         // bottom-left
-        Box(modifier = Modifier.align(Alignment.BottomStart).size(cornerLength, cornerThickness).background(Cream))
-        Box(modifier = Modifier.align(Alignment.BottomStart).size(cornerThickness, cornerLength).background(Cream))
+        Box(modifier = Modifier.align(Alignment.BottomStart).size(cornerLength, cornerThickness).background(RodapeTheme.colors.cream))
+        Box(modifier = Modifier.align(Alignment.BottomStart).size(cornerThickness, cornerLength).background(RodapeTheme.colors.cream))
         // bottom-right
-        Box(modifier = Modifier.align(Alignment.BottomEnd).size(cornerLength, cornerThickness).background(Cream))
-        Box(modifier = Modifier.align(Alignment.BottomEnd).size(cornerThickness, cornerLength).background(Cream))
+        Box(modifier = Modifier.align(Alignment.BottomEnd).size(cornerLength, cornerThickness).background(RodapeTheme.colors.cream))
+        Box(modifier = Modifier.align(Alignment.BottomEnd).size(cornerThickness, cornerLength).background(RodapeTheme.colors.cream))
     }
 }
 

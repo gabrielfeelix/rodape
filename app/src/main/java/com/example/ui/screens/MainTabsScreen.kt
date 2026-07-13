@@ -50,6 +50,10 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.data.model.*
+import com.example.data.ThemeMode
+import com.example.ui.theme.RodapeTheme
+import com.example.util.displayName
+import com.example.util.displayFirstName
 import com.example.ui.components.*
 import com.example.ui.theme.Terracota
 import com.example.ui.theme.TerracotaSoft
@@ -211,7 +215,7 @@ fun MainTabsScreen(
         topBar = {
             // Header do design (shell.jsx GlobalHeader): avatar · pill de clube · sino.
             GlobalHeader(
-                userName = currentUser?.nome ?: "Você",
+                userName = displayName(currentUser?.nome),
                 avatarUrl = currentUser?.avatarUrl ?: "",
                 clubName = activeClub?.nome ?: "Rodapé",
                 clubColor = clubColorFor(activeClub?.cor ?: "0").bg,
@@ -295,14 +299,14 @@ fun MainTabsScreen(
                         .align(Alignment.BottomCenter)
                         .padding(bottom = 10.dp)
                         .clip(RoundedCornerShape(999.dp))
-                        .background(Ink.copy(alpha = 0.88f))
+                        .background(RodapeTheme.colors.ink.copy(alpha = 0.88f))
                         .padding(horizontal = 12.dp, vertical = 6.dp)
                         .semantics { liveRegion = LiveRegionMode.Polite },
                     verticalAlignment = Alignment.CenterVertically,
                     horizontalArrangement = Arrangement.spacedBy(6.dp),
                 ) {
                     CircularProgressIndicator(
-                        color = Cream,
+                        color = RodapeTheme.colors.cream,
                         strokeWidth = 1.5.dp,
                         modifier = Modifier.size(12.dp),
                     )
@@ -312,7 +316,7 @@ fun MainTabsScreen(
                         fontFamily = InterFontFamily,
                         fontSize = 11.sp,
                         fontWeight = FontWeight.Medium,
-                        color = Cream,
+                        color = RodapeTheme.colors.cream,
                     )
                 }
             } else if (showSavedPill) {
@@ -321,7 +325,7 @@ fun MainTabsScreen(
                         .align(Alignment.BottomCenter)
                         .padding(bottom = 10.dp)
                         .clip(RoundedCornerShape(999.dp))
-                        .background(Oliva)
+                        .background(RodapeTheme.colors.oliva)
                         .padding(horizontal = 12.dp, vertical = 6.dp)
                         .semantics { liveRegion = LiveRegionMode.Polite },
                     verticalAlignment = Alignment.CenterVertically,
@@ -332,7 +336,7 @@ fun MainTabsScreen(
                         fontFamily = InterFontFamily,
                         fontSize = 11.sp,
                         fontWeight = FontWeight.SemiBold,
-                        color = Cream,
+                        color = RodapeTheme.colors.cream,
                     )
                 }
             }
@@ -360,7 +364,7 @@ fun MainTabsScreen(
                     "Se o app tá ajudando vocês a ler juntos, uma avaliação na Play Store nos ajuda demais a chegar em outros clubes. Leva 30 segundos 💚",
                     style = MaterialTheme.typography.bodyMedium.copy(
                         fontFamily = InterFontFamily,
-                        color = Ink,
+                        color = RodapeTheme.colors.ink,
                         lineHeight = 20.sp
                     )
                 )
@@ -371,7 +375,7 @@ fun MainTabsScreen(
                     viewModel.markAppRated()
                     ratePromptShown = true
                 }) {
-                    Text("Avaliar agora", color = Terracota, fontWeight = FontWeight.SemiBold)
+                    Text("Avaliar agora", color = RodapeTheme.colors.terracota, fontWeight = FontWeight.SemiBold)
                 }
             },
             dismissButton = {
@@ -379,7 +383,7 @@ fun MainTabsScreen(
                     viewModel.dismissRatePromptForever()
                     ratePromptShown = true
                 }) {
-                    Text("Não, obrigado", color = Muted)
+                    Text("Não, obrigado", color = RodapeTheme.colors.muted)
                 }
             }
         )
@@ -403,7 +407,7 @@ fun MainTabsScreen(
                         .align(Alignment.CenterHorizontally)
                         .padding(bottom = 16.dp)
                         .size(width = 32.dp, height = 4.dp)
-                        .background(TertiarySoft)
+                        .background(RodapeTheme.colors.tertiarySoft)
                         .clip(CircleShape)
                 )
 
@@ -435,10 +439,10 @@ fun MainTabsScreen(
                             modifier = Modifier
                                 .fillMaxWidth()
                                 .clip(RoundedCornerShape(16.dp))
-                                .background(if (isActive) OlivaSoft.copy(alpha = 0.35f) else Color.Transparent)
+                                .background(if (isActive) RodapeTheme.colors.olivaSoft.copy(alpha = 0.35f) else Color.Transparent)
                                 .border(
                                     width = 1.dp,
-                                    color = if (isActive) Terracota else MaterialTheme.colorScheme.outline.copy(alpha = 0.5f),
+                                    color = if (isActive) RodapeTheme.colors.terracota else MaterialTheme.colorScheme.outline.copy(alpha = 0.5f),
                                     shape = RoundedCornerShape(16.dp)
                                 )
                                 .clickable {
@@ -486,13 +490,13 @@ fun MainTabsScreen(
                             if (isActive) {
                                 Surface(
                                     shape = RoundedCornerShape(8.dp),
-                                    color = OlivaSoft,
+                                    color = RodapeTheme.colors.olivaSoft,
                                     modifier = Modifier.padding(start = 8.dp)
                                 ) {
                                     Text(
                                         text = "atual",
                                         style = MaterialTheme.typography.labelSmall.copy(
-                                            color = Oliva,
+                                            color = RodapeTheme.colors.oliva,
                                             fontFamily = InterFontFamily,
                                             fontSize = 11.sp,
                                             fontWeight = FontWeight.Bold
@@ -576,8 +580,8 @@ private fun GlobalHeader(
             modifier = Modifier
                 .weight(1f)
                 .clip(RoundedCornerShape(999.dp))
-                .background(CardSurface)
-                .border(1.dp, Divider, RoundedCornerShape(999.dp))
+                .background(RodapeTheme.colors.cardSurface)
+                .border(1.dp, RodapeTheme.colors.divider, RoundedCornerShape(999.dp))
                 .clickable(onClick = onClubTap)
                 .padding(start = 8.dp, end = 14.dp, top = 7.dp, bottom = 7.dp),
             verticalAlignment = Alignment.CenterVertically,
@@ -591,7 +595,7 @@ private fun GlobalHeader(
             ) {
                 Text(
                     text = clubName.take(1).uppercase(),
-                    color = Cream,
+                    color = RodapeTheme.colors.cream,
                     fontFamily = LiterataFontFamily,
                     fontSize = 13.sp,
                     fontWeight = FontWeight.SemiBold,
@@ -603,7 +607,7 @@ private fun GlobalHeader(
                     fontFamily = InterFontFamily,
                     fontSize = 10.sp,
                     fontWeight = FontWeight.SemiBold,
-                    color = Muted,
+                    color = RodapeTheme.colors.muted,
                     letterSpacing = 0.6.sp,
                     lineHeight = 10.sp,
                 )
@@ -612,7 +616,7 @@ private fun GlobalHeader(
                     fontFamily = LiterataFontFamily,
                     fontSize = 14.sp,
                     fontWeight = FontWeight.SemiBold,
-                    color = Ink,
+                    color = RodapeTheme.colors.ink,
                     letterSpacing = (-0.2).sp,
                     lineHeight = 17.sp,
                     maxLines = 1,
@@ -622,7 +626,7 @@ private fun GlobalHeader(
             Icon(
                 imageVector = RodapeIcons.ChevD,
                 contentDescription = "Trocar de clube",
-                tint = com.example.ui.theme.Tertiary,
+                tint = RodapeTheme.colors.tertiary,
                 modifier = Modifier.size(14.dp),
             )
         }
@@ -632,7 +636,7 @@ private fun GlobalHeader(
                 Icon(
                     imageVector = Icons.Outlined.Settings,
                     contentDescription = null,
-                    tint = Ink,
+                    tint = RodapeTheme.colors.ink,
                     modifier = Modifier.size(18.dp),
                 )
             }
@@ -647,7 +651,7 @@ private fun GlobalHeader(
                 Icon(
                     imageVector = RodapeIcons.Bell,
                     contentDescription = null,
-                    tint = Ink,
+                    tint = RodapeTheme.colors.ink,
                     modifier = Modifier.size(18.dp),
                 )
             }
@@ -656,16 +660,16 @@ private fun GlobalHeader(
                     modifier = Modifier
                         .align(Alignment.TopEnd)
                         .offset(x = 3.dp, y = (-3).dp)
-                        .border(2.dp, com.example.ui.theme.Paper, CircleShape)
+                        .border(2.dp, RodapeTheme.colors.paper, CircleShape)
                         .padding(2.dp)
                         .defaultMinSize(minWidth = 16.dp, minHeight = 16.dp)
-                        .background(Terracota, CircleShape)
+                        .background(RodapeTheme.colors.terracota, CircleShape)
                         .padding(horizontal = 4.dp),
                     contentAlignment = Alignment.Center,
                 ) {
                     Text(
                         text = if (unreadCount > 9) "9+" else unreadCount.toString(),
-                        color = Cream,
+                        color = RodapeTheme.colors.cream,
                         fontFamily = InterFontFamily,
                         fontSize = 10.sp,
                         fontWeight = FontWeight.Bold,
@@ -689,8 +693,8 @@ private fun HeaderCircleButton(
             .minimumInteractiveComponentSize()
             .size(40.dp)
             .clip(CircleShape)
-            .background(CardSurface)
-            .border(1.dp, Divider, CircleShape)
+            .background(RodapeTheme.colors.cardSurface)
+            .border(1.dp, RodapeTheme.colors.divider, CircleShape)
             .clickable(onClick = onClick, role = Role.Button)
             .semantics { this.contentDescription = contentDescription },
         contentAlignment = Alignment.Center,
@@ -711,8 +715,8 @@ fun CustomBottomBar(
             // Fade do design: conteúdo some suavemente sob a barra (shell.jsx:108).
             .background(
                 androidx.compose.ui.graphics.Brush.verticalGradient(
-                    0f to com.example.ui.theme.Paper.copy(alpha = 0f),
-                    0.5f to com.example.ui.theme.Paper,
+                    0f to RodapeTheme.colors.paper.copy(alpha = 0f),
+                    0.5f to RodapeTheme.colors.paper,
                 )
             )
             .windowInsetsPadding(WindowInsets.navigationBars)
@@ -724,7 +728,7 @@ fun CustomBottomBar(
                 .fillMaxWidth()
                 .navShadow(cornerRadius = 32.dp),
             shape = RoundedCornerShape(999.dp),
-            color = OlivaDeep,
+            color = RodapeTheme.colors.olivaDeep,
             shadowElevation = 0.dp
         ) {
             Row(
@@ -788,12 +792,17 @@ private fun TabIconWithBadge(
             modifier = Modifier.size(20.dp),
         )
         if (badge) {
+            // Anel olivaDeep (cor da barra) separa o dot do fundo — sem ele, na
+            // aba "Clube" selecionada (pílula terracota) o dot terracota sumia.
             Box(
                 modifier = Modifier
                     .align(Alignment.TopEnd)
-                    .size(8.dp)
+                    .size(10.dp)
                     .clip(CircleShape)
-                    .background(Terracota),
+                    .background(RodapeTheme.colors.olivaDeep)
+                    .padding(1.5.dp)
+                    .clip(CircleShape)
+                    .background(RodapeTheme.colors.terracota),
             )
         }
     }
@@ -813,7 +822,7 @@ fun BottomBarItem(
                 // Alvo de toque de 48dp + anuncia como aba selecionada (Role.Tab)
                 .minimumInteractiveComponentSize()
                 .clip(RoundedCornerShape(999.dp))
-                .background(Terracota)
+                .background(RodapeTheme.colors.terracota)
                 .clickable(
                     interactionSource = remember { MutableInteractionSource() },
                     indication = ripple(bounded = true),
@@ -824,11 +833,11 @@ fun BottomBarItem(
             verticalAlignment = Alignment.CenterVertically,
             horizontalArrangement = Arrangement.spacedBy(6.dp)
         ) {
-            TabIconWithBadge(icon = icon, tint = Cream, badge = badge)
+            TabIconWithBadge(icon = icon, tint = RodapeTheme.colors.cream, badge = badge)
             Text(
                 text = label,
                 style = MaterialTheme.typography.labelLarge.copy(
-                    color = Cream,
+                    color = RodapeTheme.colors.cream,
                     fontFamily = InterFontFamily,
                     fontWeight = FontWeight.SemiBold
                 )
@@ -850,13 +859,13 @@ fun BottomBarItem(
             horizontalAlignment = Alignment.CenterHorizontally,
             verticalArrangement = Arrangement.spacedBy(2.dp)
         ) {
-            TabIconWithBadge(icon = icon, tint = Cream.copy(alpha = 0.7f), badge = badge)
+            TabIconWithBadge(icon = icon, tint = RodapeTheme.colors.cream.copy(alpha = 0.7f), badge = badge)
             // Rótulo sempre visível: sem ele, 4 das 5 abas viram só ícone e o
             // usuário precisa decorar o que cada uma faz.
             Text(
                 text = label,
                 style = MaterialTheme.typography.labelSmall.copy(
-                    color = Cream.copy(alpha = 0.7f),
+                    color = RodapeTheme.colors.cream.copy(alpha = 0.7f),
                     fontFamily = InterFontFamily,
                     fontSize = 10.sp
                 ),
@@ -943,7 +952,7 @@ private fun ClubSetupChecklist(
                         style = MaterialTheme.typography.titleLarge.copy(
                             fontFamily = LiterataFontFamily,
                             fontWeight = FontWeight.SemiBold,
-                            color = Ink
+                            color = RodapeTheme.colors.ink
                         )
                     )
                     Spacer(modifier = Modifier.height(2.dp))
@@ -951,14 +960,14 @@ private fun ClubSetupChecklist(
                         text = "Pra primeira leitura do clube rolar",
                         style = MaterialTheme.typography.bodySmall.copy(
                             fontFamily = InterFontFamily,
-                            color = Muted
+                            color = RodapeTheme.colors.muted
                         )
                     )
                 }
                 Box(
                     modifier = Modifier
                         .size(46.dp)
-                        .background(OlivaSoft, CircleShape),
+                        .background(RodapeTheme.colors.olivaSoft, CircleShape),
                     contentAlignment = Alignment.Center
                 ) {
                     Text(
@@ -966,7 +975,7 @@ private fun ClubSetupChecklist(
                         style = MaterialTheme.typography.labelLarge.copy(
                             fontFamily = InterFontFamily,
                             fontWeight = FontWeight.Bold,
-                            color = OlivaDark
+                            color = RodapeTheme.colors.olivaDark
                         )
                     )
                 }
@@ -988,14 +997,14 @@ private fun ClubSetupChecklist(
                                     .size(32.dp)
                                     .background(
                                         color = when {
-                                            step.done -> Oliva
-                                            isNext -> Terracota
-                                            else -> Cream
+                                            step.done -> RodapeTheme.colors.oliva
+                                            isNext -> RodapeTheme.colors.terracota
+                                            else -> RodapeTheme.colors.cream
                                         },
                                         shape = CircleShape
                                     )
                                     .then(
-                                        if (!step.done && !isNext) Modifier.border(1.5.dp, Divider, CircleShape)
+                                        if (!step.done && !isNext) Modifier.border(1.5.dp, RodapeTheme.colors.divider, CircleShape)
                                         else Modifier
                                     ),
                                 contentAlignment = Alignment.Center
@@ -1003,7 +1012,7 @@ private fun ClubSetupChecklist(
                                 if (step.done) {
                                     Text(
                                         text = "✓",
-                                        color = Cream,
+                                        color = RodapeTheme.colors.cream,
                                         style = MaterialTheme.typography.labelLarge.copy(fontWeight = FontWeight.Bold)
                                     )
                                 } else {
@@ -1011,7 +1020,7 @@ private fun ClubSetupChecklist(
                                         text = "${i + 1}",
                                         style = MaterialTheme.typography.labelLarge.copy(
                                             fontWeight = FontWeight.Bold,
-                                            color = if (isNext) Cream else Muted
+                                            color = if (isNext) RodapeTheme.colors.cream else RodapeTheme.colors.muted
                                         )
                                     )
                                 }
@@ -1021,7 +1030,7 @@ private fun ClubSetupChecklist(
                                     modifier = Modifier
                                         .width(2.dp)
                                         .height(26.dp)
-                                        .background(if (step.done) Oliva else Divider)
+                                        .background(if (step.done) RodapeTheme.colors.oliva else RodapeTheme.colors.divider)
                                 )
                             }
                         }
@@ -1038,7 +1047,7 @@ private fun ClubSetupChecklist(
                                 style = MaterialTheme.typography.bodyLarge.copy(
                                     fontFamily = InterFontFamily,
                                     fontWeight = if (isNext) FontWeight.SemiBold else FontWeight.Medium,
-                                    color = if (step.done) Muted else Ink
+                                    color = if (step.done) RodapeTheme.colors.muted else RodapeTheme.colors.ink
                                 )
                             )
                             if (isNext) {
@@ -1047,7 +1056,7 @@ private fun ClubSetupChecklist(
                                     text = step.hint,
                                     style = MaterialTheme.typography.bodySmall.copy(
                                         fontFamily = InterFontFamily,
-                                        color = Muted
+                                        color = RodapeTheme.colors.muted
                                     )
                                 )
                             }
@@ -1057,7 +1066,7 @@ private fun ClubSetupChecklist(
                             Icon(
                                 imageVector = Icons.AutoMirrored.Outlined.KeyboardArrowRight,
                                 contentDescription = null,
-                                tint = Terracota,
+                                tint = RodapeTheme.colors.terracota,
                                 modifier = Modifier.padding(top = 6.dp)
                             )
                         }
@@ -1145,13 +1154,16 @@ fun HomeScreenTab(
                 currentBook == null -> "A galera tá " to "esperando."
                 else -> "Lendo " to "juntos."
             }
+            // Cores hoistadas: buildAnnotatedString é lambda não-composable.
+            val inkColor = RodapeTheme.colors.ink
+            val olivaColor = RodapeTheme.colors.oliva
             Text(
                 text = buildAnnotatedString {
-                    withStyle(SpanStyle(color = Ink)) { append(lead) }
+                    withStyle(SpanStyle(color = inkColor)) { append(lead) }
                     withStyle(SpanStyle(
                         fontStyle = FontStyle.Italic,
                         fontFamily = LiterataFontFamily,
-                        color = Oliva
+                        color = olivaColor
                     )) { append(accent) }
                 },
                 // Design: 28px serif SemiBold (screens-main.jsx headline)
@@ -1268,13 +1280,13 @@ fun HomeScreenTab(
                                 modifier = Modifier
                                     .size(48.dp)
                                     .clip(RoundedCornerShape(12.dp))
-                                    .background(Terracota.copy(alpha = 0.18f)),
+                                    .background(RodapeTheme.colors.terracota.copy(alpha = 0.18f)),
                                 contentAlignment = Alignment.Center,
                             ) {
                                 Icon(
                                     imageVector = Icons.Outlined.MenuBook,
                                     contentDescription = null,
-                                    tint = Terracota,
+                                    tint = RodapeTheme.colors.terracota,
                                     modifier = Modifier.size(26.dp)
                                 )
                             }
@@ -1284,7 +1296,7 @@ fun HomeScreenTab(
                                     style = MaterialTheme.typography.titleMedium.copy(
                                         fontFamily = LiterataFontFamily,
                                         fontWeight = FontWeight.SemiBold,
-                                        color = Ink
+                                        color = RodapeTheme.colors.ink
                                     )
                                 )
                                 Text(
@@ -1292,13 +1304,13 @@ fun HomeScreenTab(
                                     // comum um poder de admin (abrir rodada) que ele não tem.
                                     // Sugerir, sim, todos podem — e é onde o card leva.
                                     text = "O clube ainda não tem leitura — sugira um título",
-                                    style = MaterialTheme.typography.bodySmall.copy(color = Muted)
+                                    style = MaterialTheme.typography.bodySmall.copy(color = RodapeTheme.colors.muted)
                                 )
                             }
                             Icon(
                                 imageVector = Icons.AutoMirrored.Outlined.KeyboardArrowRight,
                                 contentDescription = null,
-                                tint = Terracota,
+                                tint = RodapeTheme.colors.terracota,
                             )
                         }
                     }
@@ -1329,13 +1341,13 @@ fun HomeScreenTab(
                                     modifier = Modifier
                                         .size(48.dp)
                                         .clip(RoundedCornerShape(12.dp))
-                                        .background(Oliva.copy(alpha = 0.18f)),
+                                        .background(RodapeTheme.colors.oliva.copy(alpha = 0.18f)),
                                     contentAlignment = Alignment.Center,
                                 ) {
                                     Icon(
                                         imageVector = Icons.Outlined.PersonAdd,
                                         contentDescription = null,
-                                        tint = OlivaDeep,
+                                        tint = RodapeTheme.colors.olivaDeep,
                                         modifier = Modifier.size(26.dp)
                                     )
                                 }
@@ -1345,18 +1357,18 @@ fun HomeScreenTab(
                                         style = MaterialTheme.typography.titleMedium.copy(
                                             fontFamily = LiterataFontFamily,
                                             fontWeight = FontWeight.SemiBold,
-                                            color = Ink
+                                            color = RodapeTheme.colors.ink
                                         )
                                     )
                                     Text(
                                         text = "Código: $codigo · toque pra compartilhar",
-                                        style = MaterialTheme.typography.bodySmall.copy(color = Muted)
+                                        style = MaterialTheme.typography.bodySmall.copy(color = RodapeTheme.colors.muted)
                                     )
                                 }
                                 Icon(
                                     imageVector = Icons.Outlined.Share,
                                     contentDescription = null,
-                                    tint = OlivaDeep,
+                                    tint = RodapeTheme.colors.olivaDeep,
                                 )
                             }
                         }
@@ -1398,7 +1410,7 @@ fun HomeScreenTab(
                             style = MaterialTheme.typography.labelSmall.copy(
                                 fontFamily = InterFontFamily,
                                 fontWeight = FontWeight.Bold,
-                                color = Terracota,
+                                color = RodapeTheme.colors.terracota,
                                 fontSize = 11.sp,
                                 letterSpacing = 0.5.sp
                             )
@@ -1425,14 +1437,14 @@ fun HomeScreenTab(
                         ) {
                             ProgressBar(
                                 value = visualPct,
-                                color = Terracota,
+                                color = RodapeTheme.colors.terracota,
                                 modifier = Modifier.weight(1f)
                             )
                             Text(
                                 text = "${(visualPct * 100).toInt()}%",
                                 style = MaterialTheme.typography.labelSmall.copy(
                                     fontWeight = FontWeight.Medium,
-                                    color = Muted
+                                    color = RodapeTheme.colors.muted
                                 )
                             )
                         }
@@ -1441,7 +1453,7 @@ fun HomeScreenTab(
                     Icon(
                         imageVector = Icons.AutoMirrored.Outlined.KeyboardArrowRight,
                         contentDescription = "Ver livro",
-                        tint = Muted.copy(alpha = 0.5f),
+                        tint = RodapeTheme.colors.muted.copy(alpha = 0.5f),
                         modifier = Modifier.size(20.dp)
                     )
                 }
@@ -1545,10 +1557,10 @@ fun HomeScreenTab(
                             modifier = Modifier.padding(bottom = 10.dp)
                         ) {
                             val ringColor = when {
-                                finished -> Oliva
-                                noSeuRitmo -> Muted
-                                ahead -> Ink
-                                isCurrentUser -> Terracota
+                                finished -> RodapeTheme.colors.oliva
+                                noSeuRitmo -> RodapeTheme.colors.muted
+                                ahead -> RodapeTheme.colors.ink
+                                isCurrentUser -> RodapeTheme.colors.terracota
                                 else -> Color.Transparent
                             }
                             Box(
@@ -1602,7 +1614,7 @@ fun HomeScreenTab(
                             style = MaterialTheme.typography.bodySmall.copy(
                                 fontSize = 12.5.sp,
                                 fontWeight = FontWeight.Medium,
-                                color = com.example.ui.theme.InkSoft
+                                color = RodapeTheme.colors.inkSoft
                             ),
                             maxLines = 1,
                             overflow = TextOverflow.Ellipsis
@@ -1642,7 +1654,7 @@ fun HomeScreenTab(
                     Text(
                         text = descricao,
                         style = MaterialTheme.typography.bodyMedium,
-                        color = Muted
+                        color = RodapeTheme.colors.muted
                     )
                 }
             }
@@ -1663,8 +1675,7 @@ private fun currentUserFirst(viewModel: MainViewModel): String {
     // fallback enquanto o Room ainda nao carregou. "Leitor(a)" e ultimo recurso.
     val supaName by viewModel.supabaseDisplayName.collectAsState()
     val currentUser by viewModel.currentUser.collectAsState()
-    val name = currentUser?.nome ?: supaName ?: "Leitor(a)"
-    return name.substringBefore(" ")
+    return displayFirstName(currentUser?.nome, supaName)
 }
 
 // --- BOOK DETAIL SCREEN TAB ---
@@ -1709,13 +1720,13 @@ fun BookDetailScreenTab(
                 Icon(
                     Icons.Outlined.MenuBook,
                     contentDescription = null,
-                    tint = Muted,
+                    tint = RodapeTheme.colors.muted,
                     modifier = Modifier.size(52.dp),
                 )
                 Text(
                     text = "Nenhuma leitura em andamento",
                     style = MaterialTheme.typography.titleLarge,
-                    color = Ink,
+                    color = RodapeTheme.colors.ink,
                     textAlign = TextAlign.Center,
                 )
                 Text(
@@ -1725,7 +1736,7 @@ fun BookDetailScreenTab(
                         "O clube ainda não escolheu um livro. Sugira um título ou acompanhe a votação."
                     },
                     style = MaterialTheme.typography.bodyMedium,
-                    color = Muted,
+                    color = RodapeTheme.colors.muted,
                     textAlign = TextAlign.Center,
                 )
                 Spacer(Modifier.height(4.dp))
@@ -1802,13 +1813,13 @@ fun BookDetailScreenTab(
                                     text = "${ch.numero}",
                                     style = MaterialTheme.typography.bodyMedium.copy(
                                         fontWeight = FontWeight.Bold,
-                                        color = if (isCurrent) Oliva else Terracota,
+                                        color = if (isCurrent) RodapeTheme.colors.oliva else RodapeTheme.colors.terracota,
                                     ),
                                     modifier = Modifier.width(28.dp),
                                 )
                                 Text(
                                     text = ch.titulo.ifBlank { "Capítulo ${ch.numero}" },
-                                    style = MaterialTheme.typography.bodyMedium.copy(color = Ink),
+                                    style = MaterialTheme.typography.bodyMedium.copy(color = RodapeTheme.colors.ink),
                                     maxLines = 2,
                                     modifier = Modifier.weight(1f),
                                 )
@@ -1816,7 +1827,7 @@ fun BookDetailScreenTab(
                                     Text(
                                         text = "atual",
                                         style = MaterialTheme.typography.labelSmall.copy(
-                                            color = Oliva,
+                                            color = RodapeTheme.colors.oliva,
                                             fontWeight = FontWeight.SemiBold,
                                         ),
                                     )
@@ -1827,7 +1838,7 @@ fun BookDetailScreenTab(
                 },
                 confirmButton = {
                     TextButton(onClick = { showJumpDialog = false }) {
-                        Text("Fechar", color = Muted)
+                        Text("Fechar", color = RodapeTheme.colors.muted)
                     }
                 },
             )
@@ -1840,22 +1851,23 @@ fun BookDetailScreenTab(
         ) {
             // ── OLIVE HERO ──────────────────────────────────────────────────
             item {
+                val heroCircleColor = RodapeTheme.colors.cream
                 Box(
                     modifier = Modifier
                         .fillMaxWidth()
                         .clip(RoundedCornerShape(bottomStart = 36.dp, bottomEnd = 36.dp))
-                        .background(OlivaDeep)
+                        .background(RodapeTheme.colors.olivaDeep)
                         // Círculos decorativos do design (screens-main.jsx:362-367)
                         .drawBehind {
                             val stroke = androidx.compose.ui.graphics.drawscope.Stroke(width = 1.dp.toPx())
                             drawCircle(
-                                color = Cream.copy(alpha = 0.08f),
+                                color = heroCircleColor.copy(alpha = 0.08f),
                                 radius = 130.dp.toPx(),
                                 center = Offset(size.width * 0.92f, -30.dp.toPx()),
                                 style = stroke,
                             )
                             drawCircle(
-                                color = Cream.copy(alpha = 0.08f),
+                                color = heroCircleColor.copy(alpha = 0.08f),
                                 radius = 90.dp.toPx(),
                                 center = Offset(-10.dp.toPx(), size.height * 0.85f),
                                 style = stroke,
@@ -1869,7 +1881,7 @@ fun BookDetailScreenTab(
                         style = MaterialTheme.typography.labelSmall.copy(
                             fontWeight = FontWeight.Bold,
                             letterSpacing = 1.2.sp,
-                            color = Cream.copy(alpha = 0.70f)
+                            color = RodapeTheme.colors.cream.copy(alpha = 0.70f)
                         ),
                         modifier = Modifier.padding(bottom = 14.dp)
                     )
@@ -1904,7 +1916,7 @@ fun BookDetailScreenTab(
                                 style = MaterialTheme.typography.headlineLarge.copy(
                                     fontSize = 26.sp,
                                     fontWeight = FontWeight.SemiBold,
-                                    color = Cream,
+                                    color = RodapeTheme.colors.cream,
                                     lineHeight = 31.sp
                                 ),
                                 maxLines = 4,
@@ -1913,7 +1925,7 @@ fun BookDetailScreenTab(
                             Text(
                                 text = currentBook!!.author,
                                 style = MaterialTheme.typography.bodyMedium.copy(
-                                    color = Cream.copy(alpha = 0.70f)
+                                    color = RodapeTheme.colors.cream.copy(alpha = 0.70f)
                                 )
                             )
                             Spacer(modifier = Modifier.height(4.dp))
@@ -1924,13 +1936,13 @@ fun BookDetailScreenTab(
                                 Icon(
                                     imageVector = RodapeIcons.StarFill,
                                     contentDescription = null,
-                                    tint = Dourado,
+                                    tint = RodapeTheme.colors.dourado,
                                     modifier = Modifier.size(13.dp)
                                 )
                                 Text(
                                     text = if (totalChapters > 0) "$totalChapters capítulos" else "Capítulos a definir",
                                     style = MaterialTheme.typography.bodySmall.copy(
-                                        color = Cream.copy(alpha = 0.80f)
+                                        color = RodapeTheme.colors.cream.copy(alpha = 0.80f)
                                     )
                                 )
                             }
@@ -1963,16 +1975,19 @@ fun BookDetailScreenTab(
                                     style = MaterialTheme.typography.labelSmall.copy(
                                         fontWeight = FontWeight.Bold,
                                         letterSpacing = 0.6.sp,
-                                        color = Muted
+                                        color = RodapeTheme.colors.muted
                                     )
                                 )
                                 Spacer(modifier = Modifier.height(2.dp))
+                                // Cores hoistadas: buildAnnotatedString é lambda não-composable.
+                                val chapInkColor = RodapeTheme.colors.ink
+                                val chapMutedColor = RodapeTheme.colors.muted
                                 Text(
                                     text = buildAnnotatedString {
-                                        withStyle(SpanStyle(fontWeight = FontWeight.SemiBold, color = Ink)) {
+                                        withStyle(SpanStyle(fontWeight = FontWeight.SemiBold, color = chapInkColor)) {
                                             append("Cap. $currentChapIndex")
                                         }
-                                        withStyle(SpanStyle(color = Muted, fontWeight = FontWeight.Normal)) {
+                                        withStyle(SpanStyle(color = chapMutedColor, fontWeight = FontWeight.Normal)) {
                                             append(" de $totalChapters")
                                         }
                                     },
@@ -1981,6 +1996,8 @@ fun BookDetailScreenTab(
                             }
 
                             // Circular ring progress indicator
+                            val ringTrackColor = RodapeTheme.colors.dividerSoft
+                            val ringProgressColor = RodapeTheme.colors.terracota
                             Box(
                                 modifier = Modifier
                                     .size(56.dp)
@@ -1991,7 +2008,7 @@ fun BookDetailScreenTab(
                                         val cy = size.height / 2f
                                         // track arc
                                         drawArc(
-                                            color = DividerSoft,
+                                            color = ringTrackColor,
                                             startAngle = -90f,
                                             sweepAngle = 360f,
                                             useCenter = false,
@@ -2001,7 +2018,7 @@ fun BookDetailScreenTab(
                                         )
                                         // progress arc
                                         drawArc(
-                                            color = Terracota,
+                                            color = ringProgressColor,
                                             startAngle = -90f,
                                             sweepAngle = 360f * pct,
                                             useCenter = false,
@@ -2016,7 +2033,7 @@ fun BookDetailScreenTab(
                                     text = "$pctInt%",
                                     style = MaterialTheme.typography.labelSmall.copy(
                                         fontWeight = FontWeight.SemiBold,
-                                        color = Ink
+                                        color = RodapeTheme.colors.ink
                                     )
                                 )
                             }
@@ -2054,7 +2071,7 @@ fun BookDetailScreenTab(
                             Text(
                                 text = "Li vários — escolher o capítulo",
                                 style = MaterialTheme.typography.bodySmall.copy(
-                                    color = Terracota,
+                                    color = RodapeTheme.colors.terracota,
                                     fontWeight = FontWeight.SemiBold
                                 ),
                                 textAlign = TextAlign.Center,
@@ -2072,7 +2089,7 @@ fun BookDetailScreenTab(
                             Text(
                                 text = "Marquei sem querer — voltar um capítulo",
                                 style = MaterialTheme.typography.bodySmall.copy(
-                                    color = Muted,
+                                    color = RodapeTheme.colors.muted,
                                     fontWeight = FontWeight.Medium
                                 ),
                                 textAlign = TextAlign.Center,
@@ -2112,7 +2129,7 @@ fun BookDetailScreenTab(
                             text = "Capítulos",
                             style = MaterialTheme.typography.titleLarge.copy(
                                 fontWeight = FontWeight.SemiBold,
-                                color = Ink
+                                color = RodapeTheme.colors.ink
                             )
                         )
                         Row(
@@ -2122,7 +2139,7 @@ fun BookDetailScreenTab(
                             val readCount = chapters.count { it.numero < currentChapIndex }
                             Text(
                                 text = "$readCount lidos",
-                                style = MaterialTheme.typography.bodySmall.copy(color = Muted)
+                                style = MaterialTheme.typography.bodySmall.copy(color = RodapeTheme.colors.muted)
                             )
                             // Admin edita o índice direto daqui (sem ir em Gerenciar clube).
                             if (isAdmin && chapters.isNotEmpty()) {
@@ -2130,7 +2147,7 @@ fun BookDetailScreenTab(
                                     text = "Editar",
                                     style = MaterialTheme.typography.bodySmall.copy(
                                         fontWeight = FontWeight.SemiBold,
-                                        color = Terracota
+                                        color = RodapeTheme.colors.terracota
                                     ),
                                     modifier = Modifier.clickable { onNavigateToManageChapters() }
                                 )
@@ -2142,7 +2159,7 @@ fun BookDetailScreenTab(
                         Surface(
                             modifier = Modifier.fillMaxWidth(),
                             shape = RoundedCornerShape(16.dp),
-                            color = DividerSoft.copy(alpha = 0.3f)
+                            color = RodapeTheme.colors.dividerSoft.copy(alpha = 0.3f)
                         ) {
                             Column(
                                 modifier = Modifier.fillMaxWidth().padding(24.dp),
@@ -2158,7 +2175,7 @@ fun BookDetailScreenTab(
                                     style = MaterialTheme.typography.bodyMedium.copy(
                                         fontFamily = LiterataFontFamily,
                                         fontWeight = FontWeight.SemiBold,
-                                        color = Ink
+                                        color = RodapeTheme.colors.ink
                                     )
                                 )
                                 Text(
@@ -2167,7 +2184,7 @@ fun BookDetailScreenTab(
                                     } else {
                                         "Peça pro admin abrir Gerenciar clube → Capítulos."
                                     },
-                                    style = MaterialTheme.typography.bodySmall.copy(color = Muted),
+                                    style = MaterialTheme.typography.bodySmall.copy(color = RodapeTheme.colors.muted),
                                     textAlign = TextAlign.Center
                                 )
                                 if (isAdmin) {
@@ -2213,10 +2230,10 @@ fun BookDetailScreenTab(
                                         onNavigateToDiscussion(chapter.id, chapter.titulo)
                                     },
                                 shape = RoundedCornerShape(16.dp),
-                                color = if (isCurrent) Cream else CardSurface,
+                                color = if (isCurrent) RodapeTheme.colors.cream else RodapeTheme.colors.cardSurface,
                                 border = BorderStroke(
                                     width = if (isCurrent) 1.5.dp else 0.5.dp,
-                                    color = if (isCurrent) Terracota else Divider
+                                    color = if (isCurrent) RodapeTheme.colors.terracota else RodapeTheme.colors.divider
                                 )
                             ) {
                                 Row(
@@ -2232,9 +2249,9 @@ fun BookDetailScreenTab(
                                             .size(36.dp)
                                             .background(
                                                 color = when {
-                                                    isLocked -> DividerSoft
-                                                    isCurrent -> Terracota
-                                                    else -> OlivaSoft
+                                                    isLocked -> RodapeTheme.colors.dividerSoft
+                                                    isCurrent -> RodapeTheme.colors.terracota
+                                                    else -> RodapeTheme.colors.olivaSoft
                                                 },
                                                 shape = CircleShape
                                             ),
@@ -2244,19 +2261,19 @@ fun BookDetailScreenTab(
                                             isLocked -> Icon(
                                                 imageVector = RodapeIcons.Lock,
                                                 contentDescription = "Bloqueado",
-                                                tint = Muted,
+                                                tint = RodapeTheme.colors.muted,
                                                 modifier = Modifier.size(16.dp)
                                             )
                                             isCurrent -> Icon(
                                                 imageVector = RodapeIcons.Book,
                                                 contentDescription = "Capítulo atual",
-                                                tint = Cream,
+                                                tint = RodapeTheme.colors.cream,
                                                 modifier = Modifier.size(18.dp)
                                             )
                                             else -> Icon(
                                                 imageVector = RodapeIcons.Check,
                                                 contentDescription = "Concluído",
-                                                tint = OlivaDeep,
+                                                tint = RodapeTheme.colors.olivaDeep,
                                                 modifier = Modifier.size(18.dp)
                                             )
                                         }
@@ -2273,7 +2290,7 @@ fun BookDetailScreenTab(
                                                 style = MaterialTheme.typography.labelSmall.copy(
                                                     fontWeight = FontWeight.SemiBold,
                                                     letterSpacing = 0.4.sp,
-                                                    color = Muted
+                                                    color = RodapeTheme.colors.muted
                                                 )
                                             )
                                             if (isCurrent) {
@@ -2290,7 +2307,7 @@ fun BookDetailScreenTab(
                                                 fontFamily = LiterataFontFamily,
                                                 fontSize = 15.sp,
                                                 fontWeight = FontWeight.Medium,
-                                                color = if (isLocked) Muted else Ink
+                                                color = if (isLocked) RodapeTheme.colors.muted else RodapeTheme.colors.ink
                                             ),
                                             maxLines = 1,
                                             overflow = TextOverflow.Ellipsis
@@ -2304,7 +2321,7 @@ fun BookDetailScreenTab(
                                                    else if (commentsCount > 1) "$commentsCount comentários"
                                                    else "—",
                                             style = MaterialTheme.typography.bodySmall.copy(
-                                                color = Muted,
+                                                color = RodapeTheme.colors.muted,
                                                 fontWeight = FontWeight.Medium
                                             ),
                                             textAlign = TextAlign.End
@@ -2374,8 +2391,9 @@ fun ProfileScreenTab(
             initialName = name ?: "",
             initialEmail = email ?: "",
             initialAvatarUrl = currentUser?.avatarUrl ?: "",
-            onSave = { newName, newEmail, newAvatar ->
-                viewModel.updateUserProfile(newName, newEmail, newAvatar)
+            initialPronome = currentUser?.pronome ?: "",
+            onSave = { newName, newEmail, newAvatar, newPronome ->
+                viewModel.updateUserProfile(newName, newEmail, newAvatar, newPronome)
                 isEditingProfile = false
             },
             onCancel = {
@@ -2403,7 +2421,7 @@ fun ProfileScreenTab(
                         modifier = Modifier.weight(1f)
                     ) {
                         Avatar(
-                            name = name ?: "Você",
+                            name = displayName(name),
                             avatarUrl = currentUser?.avatarUrl ?: "",
                             size = 72.dp
                         )
@@ -2413,13 +2431,13 @@ fun ProfileScreenTab(
                                 style = MaterialTheme.typography.displaySmall.copy(
                                     fontFamily = LiterataFontFamily,
                                     fontWeight = FontWeight.SemiBold,
-                                    color = Ink
+                                    color = RodapeTheme.colors.ink
                                 )
                             )
                             if (!email.isNullOrBlank()) {
                                 Text(
                                     text = email,
-                                    style = MaterialTheme.typography.bodyLarge.copy(color = Muted)
+                                    style = MaterialTheme.typography.bodyLarge.copy(color = RodapeTheme.colors.muted)
                                 )
                             }
                         }
@@ -2428,7 +2446,7 @@ fun ProfileScreenTab(
                         Icon(
                             imageVector = Icons.Outlined.Edit,
                             contentDescription = "Editar Perfil",
-                            tint = Terracota
+                            tint = RodapeTheme.colors.terracota
                         )
                     }
                 }
@@ -2452,7 +2470,7 @@ fun ProfileScreenTab(
                                 fontFamily = LiterataFontFamily,
                                 fontSize = 28.sp,
                                 fontWeight = FontWeight.SemiBold,
-                                color = Ink
+                                color = RodapeTheme.colors.ink
                             )
                         )
                         Spacer(modifier = Modifier.height(4.dp))
@@ -2460,7 +2478,7 @@ fun ProfileScreenTab(
                             text = "lidos\nno clube",
                             style = MaterialTheme.typography.bodySmall.copy(
                                 fontFamily = InterFontFamily,
-                                color = Muted
+                                color = RodapeTheme.colors.muted
                             )
                         )
                     }
@@ -2476,7 +2494,7 @@ fun ProfileScreenTab(
                                 fontFamily = LiterataFontFamily,
                                 fontSize = 28.sp,
                                 fontWeight = FontWeight.SemiBold,
-                                color = Ink
+                                color = RodapeTheme.colors.ink
                             )
                         )
                         Spacer(modifier = Modifier.height(4.dp))
@@ -2484,7 +2502,7 @@ fun ProfileScreenTab(
                             text = "clubes\nativos",
                             style = MaterialTheme.typography.bodySmall.copy(
                                 fontFamily = InterFontFamily,
-                                color = Muted
+                                color = RodapeTheme.colors.muted
                             )
                         )
                     }
@@ -2495,7 +2513,7 @@ fun ProfileScreenTab(
                             .weight(1f)
                             .clickable { onNavigateToFrases() },
                         shape = RoundedCornerShape(20.dp),
-                        colors = CardDefaults.cardColors(containerColor = Oliva, contentColor = Cream),
+                        colors = CardDefaults.cardColors(containerColor = RodapeTheme.colors.oliva, contentColor = RodapeTheme.colors.cream),
                         elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
                     ) {
                         Box(
@@ -2510,7 +2528,7 @@ fun ProfileScreenTab(
                                         fontFamily = LiterataFontFamily,
                                         fontSize = 28.sp,
                                         fontWeight = FontWeight.SemiBold,
-                                        color = Cream
+                                        color = RodapeTheme.colors.cream
                                     )
                                 )
                                 Spacer(modifier = Modifier.height(4.dp))
@@ -2518,7 +2536,7 @@ fun ProfileScreenTab(
                                     text = "frases\nguardadas",
                                     style = MaterialTheme.typography.bodySmall.copy(
                                         fontFamily = InterFontFamily,
-                                        color = Cream.copy(alpha = 0.85f)
+                                        color = RodapeTheme.colors.cream.copy(alpha = 0.85f)
                                     )
                                 )
                             }
@@ -2527,7 +2545,7 @@ fun ProfileScreenTab(
                             Icon(
                                 imageVector = Icons.AutoMirrored.Outlined.KeyboardArrowRight,
                                 contentDescription = null,
-                                tint = Cream.copy(alpha = 0.8f),
+                                tint = RodapeTheme.colors.cream.copy(alpha = 0.8f),
                                 modifier = Modifier
                                     .align(Alignment.TopEnd)
                                     .size(18.dp)
@@ -2546,7 +2564,7 @@ fun ProfileScreenTab(
                         text = "Toque no ♥ na página de um livro pra guardá-lo aqui.",
                         style = MaterialTheme.typography.bodyMedium.copy(
                             fontFamily = InterFontFamily,
-                            color = Muted
+                            color = RodapeTheme.colors.muted
                         )
                     )
                 } else {
@@ -2571,7 +2589,7 @@ fun ProfileScreenTab(
                                 Spacer(modifier = Modifier.height(6.dp))
                                 Text(
                                     text = fav.title,
-                                    style = MaterialTheme.typography.labelSmall.copy(color = Ink, fontSize = 11.sp),
+                                    style = MaterialTheme.typography.labelSmall.copy(color = RodapeTheme.colors.ink, fontSize = 11.sp),
                                     textAlign = TextAlign.Center,
                                     maxLines = 1,
                                     overflow = TextOverflow.Ellipsis,
@@ -2606,10 +2624,10 @@ fun ProfileScreenTab(
                                 onNavigateToTab("home")
                             },
                             shape = RoundedCornerShape(16.dp),
-                            colors = CardDefaults.cardColors(containerColor = Cream, contentColor = Ink),
+                            colors = CardDefaults.cardColors(containerColor = RodapeTheme.colors.cream, contentColor = RodapeTheme.colors.ink),
                             border = BorderStroke(
                                 1.dp,
-                                if (isActive) Oliva else Divider
+                                if (isActive) RodapeTheme.colors.oliva else RodapeTheme.colors.divider
                             ),
                             elevation = CardDefaults.cardElevation(defaultElevation = 0.dp)
                         ) {
@@ -2652,7 +2670,7 @@ fun ProfileScreenTab(
                                                     fontFamily = LiterataFontFamily,
                                                     fontWeight = FontWeight.SemiBold,
                                                     fontSize = 15.sp,
-                                                    color = Ink
+                                                    color = RodapeTheme.colors.ink
                                                 )
                                             )
                                             if (isActive) {
@@ -2663,7 +2681,7 @@ fun ProfileScreenTab(
                                             text = clubReadingText,
                                             style = MaterialTheme.typography.bodySmall.copy(
                                                 fontFamily = InterFontFamily,
-                                                color = Muted
+                                                color = RodapeTheme.colors.muted
                                             )
                                         )
                                     }
@@ -2671,7 +2689,7 @@ fun ProfileScreenTab(
                                 Icon(
                                     imageVector = Icons.Outlined.KeyboardArrowRight,
                                     contentDescription = "Selecionar",
-                                    tint = Muted,
+                                    tint = RodapeTheme.colors.muted,
                                     modifier = Modifier.size(18.dp)
                                 )
                             }
@@ -2683,7 +2701,7 @@ fun ProfileScreenTab(
                         modifier = Modifier
                             .fillMaxWidth()
                             .clip(RoundedCornerShape(16.dp))
-                            .background(Terracota)
+                            .background(RodapeTheme.colors.terracota)
                             .clickable { onNavigateToCreateClub() }
                             .padding(vertical = 14.dp),
                         contentAlignment = Alignment.Center
@@ -2695,7 +2713,7 @@ fun ProfileScreenTab(
                             Icon(
                                 imageVector = Icons.Outlined.Add,
                                 contentDescription = null,
-                                tint = Cream,
+                                tint = RodapeTheme.colors.cream,
                                 modifier = Modifier.size(16.dp)
                             )
                             Text(
@@ -2703,7 +2721,7 @@ fun ProfileScreenTab(
                                 style = MaterialTheme.typography.bodyMedium.copy(
                                     fontFamily = InterFontFamily,
                                     fontWeight = FontWeight.SemiBold,
-                                    color = Cream
+                                    color = RodapeTheme.colors.cream
                                 )
                             )
                         }
@@ -2717,7 +2735,7 @@ fun ProfileScreenTab(
                             .fillMaxWidth()
                             .clip(RoundedCornerShape(16.dp))
                             .border(
-                                BorderStroke(1.5.dp, Divider),
+                                BorderStroke(1.5.dp, RodapeTheme.colors.divider),
                                 shape = RoundedCornerShape(16.dp)
                             )
                             .clickable { onNavigateToJoinClub() }
@@ -2731,7 +2749,7 @@ fun ProfileScreenTab(
                             Icon(
                                 imageVector = Icons.Outlined.Add,
                                 contentDescription = null,
-                                tint = Muted,
+                                tint = RodapeTheme.colors.muted,
                                 modifier = Modifier.size(16.dp)
                             )
                             Text(
@@ -2739,7 +2757,7 @@ fun ProfileScreenTab(
                                 style = MaterialTheme.typography.bodyMedium.copy(
                                     fontFamily = InterFontFamily,
                                     fontWeight = FontWeight.SemiBold,
-                                    color = Muted
+                                    color = RodapeTheme.colors.muted
                                 )
                             )
                         }
@@ -2756,7 +2774,7 @@ fun ProfileScreenTab(
                         style = MaterialTheme.typography.labelSmall.copy(
                             fontFamily = InterFontFamily,
                             fontWeight = FontWeight.Bold,
-                            color = Muted,
+                            color = RodapeTheme.colors.muted,
                             letterSpacing = 1.sp
                         ),
                         modifier = Modifier.padding(start = 4.dp, bottom = 8.dp)
@@ -2768,7 +2786,7 @@ fun ProfileScreenTab(
                                 modifier = Modifier
                                     .fillMaxWidth()
                                     .clip(RoundedCornerShape(16.dp))
-                                    .border(0.5.dp, Divider, RoundedCornerShape(16.dp))
+                                    .border(0.5.dp, RodapeTheme.colors.divider, RoundedCornerShape(16.dp))
                                     .clickable { viewModel.unarchiveClub(club.id) }
                                     .padding(12.dp),
                                 verticalAlignment = Alignment.CenterVertically,
@@ -2794,18 +2812,18 @@ fun ProfileScreenTab(
                                         style = MaterialTheme.typography.bodyMedium.copy(
                                             fontFamily = LiterataFontFamily,
                                             fontWeight = FontWeight.Medium,
-                                            color = Ink
+                                            color = RodapeTheme.colors.ink
                                         )
                                     )
                                     Text(
                                         text = "Arquivado · toque para reativar",
-                                        style = MaterialTheme.typography.labelSmall.copy(color = Muted)
+                                        style = MaterialTheme.typography.labelSmall.copy(color = RodapeTheme.colors.muted)
                                     )
                                 }
                                 Icon(
                                     imageVector = Icons.Outlined.KeyboardArrowRight,
                                     contentDescription = "Reativar",
-                                    tint = Muted,
+                                    tint = RodapeTheme.colors.muted,
                                     modifier = Modifier.size(18.dp)
                                 )
                             }
@@ -2822,7 +2840,7 @@ fun ProfileScreenTab(
                     style = MaterialTheme.typography.labelSmall.copy(
                         fontFamily = InterFontFamily,
                         fontWeight = FontWeight.Bold,
-                        color = Muted,
+                        color = RodapeTheme.colors.muted,
                         letterSpacing = 1.sp
                     ),
                     modifier = Modifier.padding(start = 4.dp, bottom = 8.dp)
@@ -2834,13 +2852,13 @@ fun ProfileScreenTab(
                         style = MaterialTheme.typography.bodyMedium.copy(
                             fontFamily = LiterataFontFamily,
                             fontWeight = FontWeight.SemiBold,
-                            color = Ink
+                            color = RodapeTheme.colors.ink
                         )
                     )
                     Spacer(modifier = Modifier.height(4.dp))
                     Text(
                         text = "Ajuste pra ler melhor. Vale pro app todo.",
-                        style = MaterialTheme.typography.bodySmall.copy(color = Muted)
+                        style = MaterialTheme.typography.bodySmall.copy(color = RodapeTheme.colors.muted)
                     )
                     Spacer(modifier = Modifier.height(12.dp))
                     Row(
@@ -2859,10 +2877,10 @@ fun ProfileScreenTab(
                                 modifier = Modifier
                                     .weight(1f)
                                     .clip(RoundedCornerShape(12.dp))
-                                    .background(if (selected) Terracota else Cream)
+                                    .background(if (selected) RodapeTheme.colors.terracota else RodapeTheme.colors.cream)
                                     .border(
                                         1.dp,
-                                        if (selected) Terracota else Divider,
+                                        if (selected) RodapeTheme.colors.terracota else RodapeTheme.colors.divider,
                                         RoundedCornerShape(12.dp)
                                     )
                                     .selectable(
@@ -2879,7 +2897,70 @@ fun ProfileScreenTab(
                                     style = MaterialTheme.typography.bodyMedium.copy(
                                         fontFamily = LiterataFontFamily,
                                         fontWeight = if (selected) FontWeight.Bold else FontWeight.Normal,
-                                        color = if (selected) Cream else Ink
+                                        color = if (selected) RodapeTheme.colors.cream else RodapeTheme.colors.ink
+                                    )
+                                )
+                            }
+                        }
+                    }
+                }
+            }
+
+            // ── Aparência (tema claro/escuro) ────────────────────────────
+            item {
+                Spacer(modifier = Modifier.height(12.dp))
+                val themeMode by viewModel.themeMode.collectAsState()
+                RodapeCard(modifier = Modifier.fillMaxWidth()) {
+                    Text(
+                        text = "Tema",
+                        style = MaterialTheme.typography.bodyMedium.copy(
+                            fontFamily = LiterataFontFamily,
+                            fontWeight = FontWeight.SemiBold,
+                            color = RodapeTheme.colors.ink
+                        )
+                    )
+                    Spacer(modifier = Modifier.height(4.dp))
+                    Text(
+                        text = "Claro, escuro ou seguindo o sistema.",
+                        style = MaterialTheme.typography.bodySmall.copy(color = RodapeTheme.colors.muted)
+                    )
+                    Spacer(modifier = Modifier.height(12.dp))
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.spacedBy(8.dp)
+                    ) {
+                        val options = listOf(
+                            ThemeMode.SYSTEM to "Sistema",
+                            ThemeMode.LIGHT to "Claro",
+                            ThemeMode.DARK to "Escuro"
+                        )
+                        options.forEach { (mode, label) ->
+                            val selected = themeMode == mode
+                            Box(
+                                modifier = Modifier
+                                    .weight(1f)
+                                    .clip(RoundedCornerShape(12.dp))
+                                    .background(if (selected) RodapeTheme.colors.terracota else RodapeTheme.colors.cream)
+                                    .border(
+                                        1.dp,
+                                        if (selected) RodapeTheme.colors.terracota else RodapeTheme.colors.divider,
+                                        RoundedCornerShape(12.dp)
+                                    )
+                                    .selectable(
+                                        selected = selected,
+                                        role = Role.RadioButton,
+                                        onClick = { viewModel.setThemeMode(mode) },
+                                    )
+                                    .semantics { contentDescription = "Tema $label" }
+                                    .padding(vertical = 12.dp),
+                                contentAlignment = Alignment.Center
+                            ) {
+                                Text(
+                                    text = label,
+                                    style = MaterialTheme.typography.bodyMedium.copy(
+                                        fontFamily = LiterataFontFamily,
+                                        fontWeight = if (selected) FontWeight.Bold else FontWeight.Normal,
+                                        color = if (selected) RodapeTheme.colors.cream else RodapeTheme.colors.ink
                                     )
                                 )
                             }
@@ -2895,7 +2976,7 @@ fun ProfileScreenTab(
                     modifier = Modifier
                         .fillMaxWidth()
                         .clip(RoundedCornerShape(14.dp))
-                        .border(0.5.dp, Divider, RoundedCornerShape(14.dp))
+                        .border(0.5.dp, RodapeTheme.colors.divider, RoundedCornerShape(14.dp))
                         .clickable { onNavigateToAbout() }
                         .padding(horizontal = 16.dp, vertical = 14.dp),
                     verticalAlignment = Alignment.CenterVertically
@@ -2911,18 +2992,18 @@ fun ProfileScreenTab(
                             style = MaterialTheme.typography.bodyMedium.copy(
                                 fontFamily = LiterataFontFamily,
                                 fontWeight = FontWeight.SemiBold,
-                                color = Ink
+                                color = RodapeTheme.colors.ink
                             )
                         )
                         Text(
                             text = "Versão, direitos autorais, privacidade",
-                            style = MaterialTheme.typography.labelSmall.copy(color = Muted)
+                            style = MaterialTheme.typography.labelSmall.copy(color = RodapeTheme.colors.muted)
                         )
                     }
                     Icon(
                         imageVector = Icons.AutoMirrored.Outlined.KeyboardArrowRight,
                         contentDescription = null,
-                        tint = Muted,
+                        tint = RodapeTheme.colors.muted,
                         modifier = Modifier.size(18.dp)
                     )
                 }
@@ -2936,7 +3017,7 @@ fun ProfileScreenTab(
                     style = MaterialTheme.typography.labelSmall.copy(
                         fontFamily = InterFontFamily,
                         fontWeight = FontWeight.Bold,
-                        color = Muted,
+                        color = RodapeTheme.colors.muted,
                         letterSpacing = 1.sp
                     ),
                     modifier = Modifier.padding(start = 4.dp, bottom = 8.dp)
@@ -2944,8 +3025,8 @@ fun ProfileScreenTab(
                 Card(
                     modifier = Modifier.fillMaxWidth(),
                     shape = RoundedCornerShape(20.dp),
-                    colors = CardDefaults.cardColors(containerColor = OlivaSoft.copy(alpha = 0.4f)),
-                    border = BorderStroke(1.dp, Oliva.copy(alpha = 0.3f))
+                    colors = CardDefaults.cardColors(containerColor = RodapeTheme.colors.olivaSoft.copy(alpha = 0.4f)),
+                    border = BorderStroke(1.dp, RodapeTheme.colors.oliva.copy(alpha = 0.3f))
                 ) {
                     Column(modifier = Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
                         Text(
@@ -2953,14 +3034,14 @@ fun ProfileScreenTab(
                             style = MaterialTheme.typography.titleMedium.copy(
                                 fontFamily = LiterataFontFamily,
                                 fontWeight = FontWeight.SemiBold,
-                                color = OlivaDark
+                                color = RodapeTheme.colors.olivaDark
                             )
                         )
                         Text(
                             text = "A gente lê todo feedback nas primeiras horas. Conta o que você acha, o que falta, o que poderia ser melhor — é assim que o Rodapé vai virar o que vocês precisam.",
                             style = MaterialTheme.typography.bodyMedium.copy(
                                 fontFamily = InterFontFamily,
-                                color = Ink,
+                                color = RodapeTheme.colors.ink,
                                 lineHeight = 20.sp
                             )
                         )
@@ -2991,7 +3072,7 @@ fun ProfileScreenTab(
                                 Text(
                                     text = "⭐ Obrigado por avaliar!",
                                     style = MaterialTheme.typography.bodySmall.copy(
-                                        color = OlivaDark,
+                                        color = RodapeTheme.colors.olivaDark,
                                         fontWeight = FontWeight.Medium
                                     )
                                 )
@@ -3012,7 +3093,7 @@ fun ProfileScreenTab(
                         text = "Sair do clube \"${activeClub!!.nome}\"",
                         style = MaterialTheme.typography.bodyMedium.copy(
                             fontFamily = InterFontFamily,
-                            color = Muted
+                            color = RodapeTheme.colors.muted
                         ),
                         textAlign = TextAlign.Center,
                         modifier = Modifier
@@ -3073,7 +3154,7 @@ fun ProfileScreenTab(
                 Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
                     Text(
                         "Você deixa de ver a estante, discussões e encontros deste clube. Dá pra voltar depois com o código de convite.",
-                        style = MaterialTheme.typography.bodyMedium.copy(color = Muted)
+                        style = MaterialTheme.typography.bodyMedium.copy(color = RodapeTheme.colors.muted)
                     )
                     leaveClubError?.let {
                         Text(it, color = MaterialTheme.colorScheme.error, style = MaterialTheme.typography.bodySmall)
@@ -3089,7 +3170,7 @@ fun ProfileScreenTab(
                 }) { Text("Sair do clube", color = MaterialTheme.colorScheme.error, fontWeight = FontWeight.SemiBold) }
             },
             dismissButton = {
-                TextButton(onClick = { showLeaveClubDialog = false }) { Text("Voltar", color = Muted) }
+                TextButton(onClick = { showLeaveClubDialog = false }) { Text("Voltar", color = RodapeTheme.colors.muted) }
             },
         )
     }
@@ -3109,7 +3190,7 @@ fun ProfileScreenTab(
                 Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
                     Text(
                         "Essa ação é permanente. Sua conta, perfil e dados pessoais são removidos. Conteúdo já compartilhado nos clubes pode permanecer anônimo.",
-                        style = MaterialTheme.typography.bodyMedium.copy(color = Muted)
+                        style = MaterialTheme.typography.bodyMedium.copy(color = RodapeTheme.colors.muted)
                     )
                     OutlinedTextField(
                         value = confirmText,
@@ -3156,8 +3237,8 @@ fun ProfileScreenTab(
                             context = context,
                             body = "Quero excluir minha conta do Rodapé (email: ${email ?: "-"})."
                         )
-                    }) { Text("Pedir por email", color = Muted) }
-                    TextButton(enabled = !deleting, onClick = { showDeleteAccountDialog = false }) { Text("Cancelar", color = Muted) }
+                    }) { Text("Pedir por email", color = RodapeTheme.colors.muted) }
+                    TextButton(enabled = !deleting, onClick = { showDeleteAccountDialog = false }) { Text("Cancelar", color = RodapeTheme.colors.muted) }
                 }
             },
         )
@@ -3182,7 +3263,7 @@ fun ProfileScreenTab(
                 Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
                     Text(
                         "Pode escrever sem cerimônia: o que rolou bem, o que travou, o que poderia melhorar. A gente lê tudo.",
-                        style = MaterialTheme.typography.bodyMedium.copy(color = Muted)
+                        style = MaterialTheme.typography.bodyMedium.copy(color = RodapeTheme.colors.muted)
                     )
                     OutlinedTextField(
                         value = feedbackText,
@@ -3193,7 +3274,7 @@ fun ProfileScreenTab(
                     )
                     Text(
                         "Vai abrir seu app de email pra você revisar antes de enviar.",
-                        style = MaterialTheme.typography.labelSmall.copy(color = Muted)
+                        style = MaterialTheme.typography.labelSmall.copy(color = RodapeTheme.colors.muted)
                     )
                 }
             },
@@ -3205,12 +3286,12 @@ fun ProfileScreenTab(
                     )
                     showFeedbackDialog = false
                 }) {
-                    Text("Abrir email", color = Terracota, fontWeight = FontWeight.SemiBold)
+                    Text("Abrir email", color = RodapeTheme.colors.terracota, fontWeight = FontWeight.SemiBold)
                 }
             },
             dismissButton = {
                 TextButton(onClick = { showFeedbackDialog = false }) {
-                    Text("Cancelar", color = Muted)
+                    Text("Cancelar", color = RodapeTheme.colors.muted)
                 }
             }
         )
@@ -3219,7 +3300,7 @@ fun ProfileScreenTab(
     if (showLogoutDialog) {
         AlertDialog(
             onDismissRequest = { showLogoutDialog = false },
-            containerColor = Cream,
+            containerColor = RodapeTheme.colors.cream,
             title = {
                 Text(
                     "Deseja sair?",
@@ -3227,14 +3308,14 @@ fun ProfileScreenTab(
                         fontFamily = LiterataFontFamily,
                         fontSize = 18.sp,
                         fontWeight = FontWeight.Bold,
-                        color = Ink
+                        color = RodapeTheme.colors.ink
                     )
                 )
             },
             text = {
                 Text(
                     "Tem certeza que deseja desconectar da sua conta?",
-                    style = MaterialTheme.typography.bodyMedium.copy(color = Muted)
+                    style = MaterialTheme.typography.bodyMedium.copy(color = RodapeTheme.colors.muted)
                 )
             },
             confirmButton = {
@@ -3263,12 +3344,14 @@ fun EditProfileView(
     initialName: String,
     initialEmail: String,
     initialAvatarUrl: String,
-    onSave: (String, String, String) -> Unit,
+    initialPronome: String = "",
+    onSave: (String, String, String, String?) -> Unit,
     onCancel: () -> Unit
 ) {
     var name by remember { mutableStateOf(initialName) }
     var email by remember { mutableStateOf(initialEmail) }
     var avatarUrl by remember { mutableStateOf(initialAvatarUrl) }
+    var pronome by remember { mutableStateOf(initialPronome) }
 
     // Avatares disponíveis — fonte única em Avatar.kt (só domínio público).
     val presetNames = com.example.ui.components.presetAvatarKeys
@@ -3276,7 +3359,7 @@ fun EditProfileView(
     LazyColumn(
         modifier = Modifier
             .fillMaxSize()
-            .background(CardSoft)
+            .background(RodapeTheme.colors.cardSoft)
             .padding(horizontal = 28.dp),
         verticalArrangement = Arrangement.spacedBy(20.dp),
         horizontalAlignment = Alignment.CenterHorizontally
@@ -3293,7 +3376,7 @@ fun EditProfileView(
                     Icon(
                         imageVector = Icons.AutoMirrored.Outlined.ArrowBack,
                         contentDescription = "Voltar",
-                        tint = Ink
+                        tint = RodapeTheme.colors.ink
                     )
                 }
                 Text(
@@ -3302,7 +3385,7 @@ fun EditProfileView(
                         fontFamily = LiterataFontFamily,
                         fontWeight = FontWeight.SemiBold,
                         fontSize = 22.sp,
-                        color = Ink
+                        color = RodapeTheme.colors.ink
                     ),
                     textAlign = TextAlign.Center,
                     modifier = Modifier
@@ -3328,7 +3411,7 @@ fun EditProfileView(
                 style = MaterialTheme.typography.labelMedium.copy(
                     fontFamily = InterFontFamily,
                     fontWeight = FontWeight.SemiBold,
-                    color = Muted
+                    color = RodapeTheme.colors.muted
                 ),
                 modifier = Modifier.fillMaxWidth()
             )
@@ -3370,7 +3453,7 @@ fun EditProfileView(
                                     name = displayLabel,
                                     avatarUrl = if (isIllustrated) preset else "",
                                     size = 44.dp,
-                                    ring = if (isSelected) Ink else null
+                                    ring = if (isSelected) RodapeTheme.colors.ink else null
                                 )
                             }
                         }
@@ -3396,32 +3479,100 @@ fun EditProfileView(
                     style = MaterialTheme.typography.labelMedium.copy(
                         fontFamily = InterFontFamily,
                         fontWeight = FontWeight.SemiBold,
-                        color = Muted
+                        color = RodapeTheme.colors.muted
                     )
                 )
                 OutlinedTextField(
                     value = name,
                     onValueChange = { name = it },
-                    placeholder = { Text("Como você quer ser chamado", color = Muted) },
+                    placeholder = { Text("Como você quer ser chamado", color = RodapeTheme.colors.muted) },
                     modifier = Modifier.fillMaxWidth(),
                     shape = RoundedCornerShape(14.dp),
                     singleLine = true,
                     isError = nameError,
                     colors = OutlinedTextFieldDefaults.colors(
-                        focusedBorderColor = Terracota,
-                        unfocusedBorderColor = Divider,
-                        focusedContainerColor = Cream,
-                        unfocusedContainerColor = Cream,
-                        focusedTextColor = Ink,
-                        unfocusedTextColor = Ink
+                        focusedBorderColor = RodapeTheme.colors.terracota,
+                        unfocusedBorderColor = RodapeTheme.colors.divider,
+                        focusedContainerColor = RodapeTheme.colors.cream,
+                        unfocusedContainerColor = RodapeTheme.colors.cream,
+                        focusedTextColor = RodapeTheme.colors.ink,
+                        unfocusedTextColor = RodapeTheme.colors.ink
                     )
                 )
                 if (nameError) {
                     Text(
                         text = "Digite pelo menos 2 letras.",
-                        style = MaterialTheme.typography.labelSmall.copy(color = Terracota)
+                        style = MaterialTheme.typography.labelSmall.copy(color = RodapeTheme.colors.terracota)
                     )
                 }
+            }
+        }
+
+        // ── Pronome (opcional) — C6: escolha, nunca imposição ──
+        item {
+            Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
+                Text(
+                    text = "PRONOME (OPCIONAL)",
+                    style = MaterialTheme.typography.labelMedium.copy(
+                        fontFamily = InterFontFamily,
+                        fontWeight = FontWeight.SemiBold,
+                        color = RodapeTheme.colors.muted
+                    )
+                )
+                // Sugestões rápidas — tocar preenche; tocar de novo limpa. Também
+                // dá pra digitar livre no campo abaixo (elu, ile, ela/dele, etc.).
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.spacedBy(8.dp)
+                ) {
+                    listOf("ela/dela", "ele/dele", "elu/delu").forEach { opt ->
+                        val selected = pronome.trim().equals(opt, ignoreCase = true)
+                        Box(
+                            modifier = Modifier
+                                .weight(1f)
+                                .clip(RoundedCornerShape(12.dp))
+                                .background(if (selected) RodapeTheme.colors.terracota else RodapeTheme.colors.cream)
+                                .border(
+                                    1.dp,
+                                    if (selected) RodapeTheme.colors.terracota else RodapeTheme.colors.divider,
+                                    RoundedCornerShape(12.dp)
+                                )
+                                .selectable(
+                                    selected = selected,
+                                    role = Role.RadioButton,
+                                    onClick = { pronome = if (selected) "" else opt },
+                                )
+                                .semantics { contentDescription = "Pronome $opt" }
+                                .padding(vertical = 10.dp),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            Text(
+                                text = opt,
+                                style = MaterialTheme.typography.bodySmall.copy(
+                                    fontFamily = InterFontFamily,
+                                    fontWeight = if (selected) FontWeight.Bold else FontWeight.Normal,
+                                    color = if (selected) RodapeTheme.colors.cream else RodapeTheme.colors.ink
+                                )
+                            )
+                        }
+                    }
+                }
+                OutlinedTextField(
+                    value = pronome,
+                    onValueChange = { if (it.length <= 40) pronome = it },
+                    placeholder = { Text("Como prefere ser tratado(a)", color = RodapeTheme.colors.muted) },
+                    modifier = Modifier.fillMaxWidth(),
+                    shape = RoundedCornerShape(14.dp),
+                    singleLine = true,
+                    colors = OutlinedTextFieldDefaults.colors(
+                        focusedBorderColor = RodapeTheme.colors.terracota,
+                        unfocusedBorderColor = RodapeTheme.colors.divider,
+                        focusedContainerColor = RodapeTheme.colors.cream,
+                        unfocusedContainerColor = RodapeTheme.colors.cream,
+                        focusedTextColor = RodapeTheme.colors.ink,
+                        unfocusedTextColor = RodapeTheme.colors.ink
+                    )
+                )
             }
         }
 
@@ -3433,7 +3584,7 @@ fun EditProfileView(
                     style = MaterialTheme.typography.labelMedium.copy(
                         fontFamily = InterFontFamily,
                         fontWeight = FontWeight.SemiBold,
-                        color = Muted
+                        color = RodapeTheme.colors.muted
                     )
                 )
                 // Email é gerenciado pelo Supabase Auth (auth.users) e NÃO é
@@ -3444,20 +3595,20 @@ fun EditProfileView(
                     onValueChange = {},
                     readOnly = true,
                     enabled = false,
-                    placeholder = { Text("exemplo@email.com", color = Muted) },
+                    placeholder = { Text("exemplo@email.com", color = RodapeTheme.colors.muted) },
                     modifier = Modifier.fillMaxWidth(),
                     shape = RoundedCornerShape(14.dp),
                     singleLine = true,
                     colors = OutlinedTextFieldDefaults.colors(
-                        disabledTextColor = Ink,
-                        disabledBorderColor = Divider,
-                        disabledContainerColor = Cream,
-                        disabledPlaceholderColor = Muted,
+                        disabledTextColor = RodapeTheme.colors.ink,
+                        disabledBorderColor = RodapeTheme.colors.divider,
+                        disabledContainerColor = RodapeTheme.colors.cream,
+                        disabledPlaceholderColor = RodapeTheme.colors.muted,
                     )
                 )
                 Text(
                     text = "O email é usado pra login e não pode ser alterado por aqui.",
-                    style = MaterialTheme.typography.labelSmall.copy(color = Muted),
+                    style = MaterialTheme.typography.labelSmall.copy(color = RodapeTheme.colors.muted),
                 )
             }
         }
@@ -3481,14 +3632,15 @@ fun EditProfileView(
                 val nameValid = name.trim().length >= 2
                 val nameChanged = name != initialName
                 val avatarChanged = avatarUrl != initialAvatarUrl
-                // A4: trocar só o avatar não depende do nome — só exige nome válido
-                // quando o nome está sendo de fato alterado.
-                val canSave = (nameChanged || avatarChanged) && (!nameChanged || nameValid)
+                val pronomeChanged = pronome.trim() != initialPronome.trim()
+                // A4: trocar só o avatar (ou só o pronome) não depende do nome — só
+                // exige nome válido quando o nome está sendo de fato alterado.
+                val canSave = (nameChanged || avatarChanged || pronomeChanged) && (!nameChanged || nameValid)
                 TbButton(
                     text = "Salvar",
                     onClick = {
                         if (canSave) {
-                            onSave(name.trim(), email.trim(), avatarUrl)
+                            onSave(name.trim(), email.trim(), avatarUrl, pronome.trim().ifBlank { null })
                         }
                     },
                     variant = TbButtonVariant.Terra,
@@ -3522,13 +3674,14 @@ private fun MeetingTicket(
     val dayNumber = rest.takeWhile { it.isDigit() }.ifEmpty { "–" }
     val monthName = rest.dropWhile { it.isDigit() }.trim().lowercase().removePrefix("de ").trim()
     val daysUntil = remember(meeting.data) { com.example.util.daysUntilMeetingLabel(meeting.data) }
+    val ticketLineColor = RodapeTheme.colors.cream
 
     Box(modifier = Modifier.fillMaxWidth().ticketShadow(cornerRadius = 24.dp)) {
         Column(
             modifier = Modifier
                 .fillMaxWidth()
                 .clip(RoundedCornerShape(24.dp))
-                .background(OlivaDeep)
+                .background(RodapeTheme.colors.olivaDeep)
         ) {
             // Cabeçalho — overline + countdown, separado por linha tracejada
             Row(
@@ -3536,7 +3689,7 @@ private fun MeetingTicket(
                     .fillMaxWidth()
                     .drawBehind {
                         drawLine(
-                            color = Cream.copy(alpha = 0.25f),
+                            color = ticketLineColor.copy(alpha = 0.25f),
                             start = Offset(0f, size.height),
                             end = Offset(size.width, size.height),
                             strokeWidth = 1.dp.toPx(),
@@ -3555,18 +3708,18 @@ private fun MeetingTicket(
                     fontSize = 10.5.sp,
                     fontWeight = FontWeight.Bold,
                     letterSpacing = 1.6.sp,
-                    color = Cream.copy(alpha = 0.7f),
+                    color = RodapeTheme.colors.cream.copy(alpha = 0.7f),
                 )
                 if (daysUntil != null && daysUntil >= 0) {
                     Row(
                         modifier = Modifier
                             .clip(RoundedCornerShape(999.dp))
-                            .background(Cream.copy(alpha = 0.12f))
+                            .background(RodapeTheme.colors.cream.copy(alpha = 0.12f))
                             .padding(horizontal = 9.dp, vertical = 3.dp),
                         verticalAlignment = Alignment.CenterVertically,
                         horizontalArrangement = Arrangement.spacedBy(6.dp),
                     ) {
-                        Box(Modifier.size(6.dp).background(Dourado, CircleShape))
+                        Box(Modifier.size(6.dp).background(RodapeTheme.colors.dourado, CircleShape))
                         Text(
                             text = when (daysUntil) {
                                 0 -> "é hoje!"
@@ -3577,7 +3730,7 @@ private fun MeetingTicket(
                             fontSize = 11.sp,
                             fontWeight = FontWeight.SemiBold,
                             letterSpacing = 0.2.sp,
-                            color = Cream,
+                            color = RodapeTheme.colors.cream,
                         )
                     }
                 }
@@ -3602,7 +3755,7 @@ private fun MeetingTicket(
                         fontSize = 10.sp,
                         fontWeight = FontWeight.Bold,
                         letterSpacing = 2.sp,
-                        color = Cream.copy(alpha = 0.65f),
+                        color = RodapeTheme.colors.cream.copy(alpha = 0.65f),
                         maxLines = 1,
                     )
                     Text(
@@ -3613,7 +3766,7 @@ private fun MeetingTicket(
                         fontSize = 64.sp,
                         lineHeight = 64.sp,
                         letterSpacing = (-2).sp,
-                        color = Cream,
+                        color = RodapeTheme.colors.cream,
                         modifier = Modifier.padding(top = 4.dp, bottom = 2.dp),
                     )
                     Text(
@@ -3621,7 +3774,7 @@ private fun MeetingTicket(
                         fontFamily = LiterataFontFamily,
                         fontStyle = FontStyle.Italic,
                         fontSize = 14.sp,
-                        color = Cream.copy(alpha = 0.85f),
+                        color = RodapeTheme.colors.cream.copy(alpha = 0.85f),
                         maxLines = 1,
                         overflow = TextOverflow.Ellipsis,
                     )
@@ -3634,7 +3787,7 @@ private fun MeetingTicket(
                         .fillMaxHeight()
                         .drawBehind {
                             drawLine(
-                                color = Cream.copy(alpha = 0.3f),
+                                color = ticketLineColor.copy(alpha = 0.3f),
                                 start = Offset(0.5f, 0f),
                                 end = Offset(0.5f, size.height),
                                 strokeWidth = 1.dp.toPx(),
@@ -3657,7 +3810,7 @@ private fun MeetingTicket(
                         fontWeight = FontWeight.SemiBold,
                         lineHeight = 20.sp,
                         letterSpacing = (-0.3).sp,
-                        color = Cream,
+                        color = RodapeTheme.colors.cream,
                         maxLines = 2,
                         overflow = TextOverflow.Ellipsis,
                         modifier = Modifier.padding(bottom = 12.dp),
@@ -3669,14 +3822,14 @@ private fun MeetingTicket(
                         Icon(
                             imageVector = RodapeIcons.Clock,
                             contentDescription = null,
-                            tint = Cream.copy(alpha = 0.85f),
+                            tint = RodapeTheme.colors.cream.copy(alpha = 0.85f),
                             modifier = Modifier.size(13.dp),
                         )
                         Text(
                             text = meeting.hora,
                             fontFamily = InterFontFamily,
                             fontSize = 12.sp,
-                            color = Cream.copy(alpha = 0.85f),
+                            color = RodapeTheme.colors.cream.copy(alpha = 0.85f),
                         )
                     }
                     if (meeting.local.isNotBlank()) {
@@ -3688,7 +3841,7 @@ private fun MeetingTicket(
                             Icon(
                                 imageVector = RodapeIcons.Pin,
                                 contentDescription = null,
-                                tint = Cream.copy(alpha = 0.85f),
+                                tint = RodapeTheme.colors.cream.copy(alpha = 0.85f),
                                 modifier = Modifier.size(13.dp).padding(top = 1.dp),
                             )
                             Text(
@@ -3696,7 +3849,7 @@ private fun MeetingTicket(
                                 fontFamily = InterFontFamily,
                                 fontSize = 12.sp,
                                 lineHeight = 16.sp,
-                                color = Cream.copy(alpha = 0.85f),
+                                color = RodapeTheme.colors.cream.copy(alpha = 0.85f),
                                 maxLines = 2,
                                 overflow = TextOverflow.Ellipsis,
                             )
@@ -3721,7 +3874,7 @@ private fun MeetingTicket(
                                 name = u.nome,
                                 avatarUrl = u.avatarUrl ?: "",
                                 size = 26.dp,
-                                ring = OlivaDeep,
+                                ring = RodapeTheme.colors.olivaDeep,
                             )
                         }
                     }
@@ -3735,7 +3888,7 @@ private fun MeetingTicket(
                         fontFamily = InterFontFamily,
                         fontSize = 12.sp,
                         fontWeight = FontWeight.Medium,
-                        color = Cream.copy(alpha = 0.8f),
+                        color = RodapeTheme.colors.cream.copy(alpha = 0.8f),
                     )
                 }
 
@@ -3743,7 +3896,7 @@ private fun MeetingTicket(
                     modifier = Modifier
                         .minimumInteractiveComponentSize()
                         .clip(RoundedCornerShape(999.dp))
-                        .background(if (isParticipating) Oliva else Cream)
+                        .background(if (isParticipating) RodapeTheme.colors.oliva else RodapeTheme.colors.cream)
                         .clickable(onClick = onRsvp, role = Role.Button)
                         .semantics {
                             selected = isParticipating
@@ -3759,12 +3912,12 @@ private fun MeetingTicket(
                         fontSize = 12.sp,
                         fontWeight = FontWeight.Bold,
                         letterSpacing = (-0.1).sp,
-                        color = if (isParticipating) Cream else OlivaDeep,
+                        color = if (isParticipating) RodapeTheme.colors.cream else RodapeTheme.colors.olivaDeep,
                     )
                     Icon(
                         imageVector = if (isParticipating) RodapeIcons.Check else RodapeIcons.ChevR,
                         contentDescription = null,
-                        tint = if (isParticipating) Cream else OlivaDeep,
+                        tint = if (isParticipating) RodapeTheme.colors.cream else RodapeTheme.colors.olivaDeep,
                         modifier = Modifier.size(12.dp),
                     )
                 }
@@ -3777,14 +3930,14 @@ private fun MeetingTicket(
                 .align(Alignment.TopStart)
                 .offset(x = (-8).dp, y = 70.dp)
                 .size(16.dp)
-                .background(Paper, CircleShape)
+                .background(RodapeTheme.colors.paper, CircleShape)
         )
         Box(
             modifier = Modifier
                 .align(Alignment.TopEnd)
                 .offset(x = 8.dp, y = 70.dp)
                 .size(16.dp)
-                .background(Paper, CircleShape)
+                .background(RodapeTheme.colors.paper, CircleShape)
         )
     }
 }

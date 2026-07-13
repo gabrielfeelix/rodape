@@ -105,7 +105,7 @@ fun OnboardingScreen(
                 style = MaterialTheme.typography.headlineSmall.copy(
                     fontFamily = LiterataFontFamily,
                     fontWeight = FontWeight.SemiBold,
-                    color = Ink,
+                    color = RodapeTheme.colors.ink,
                 ),
                 textAlign = TextAlign.Center,
             )
@@ -116,7 +116,7 @@ fun OnboardingScreen(
                     1 -> "Pode ser o seu primeiro nome ou um apelido"
                     else -> "Vale pro app todo. Dá pra mudar depois no seu perfil"
                 },
-                style = MaterialTheme.typography.bodyMedium.copy(color = Muted),
+                style = MaterialTheme.typography.bodyMedium.copy(color = RodapeTheme.colors.muted),
                 textAlign = TextAlign.Center,
             )
         }
@@ -163,7 +163,7 @@ fun OnboardingScreen(
                                         name = label,
                                         avatarUrl = preset,
                                         size = 52.dp,
-                                        ring = if (isSelected) Terracota else null,
+                                        ring = if (isSelected) RodapeTheme.colors.terracota else null,
                                     )
                                 }
                             }
@@ -186,13 +186,13 @@ fun OnboardingScreen(
                     singleLine = true,
                     modifier = Modifier.fillMaxWidth(),
                     colors = OutlinedTextFieldDefaults.colors(
-                        focusedBorderColor = Terracota,
-                        focusedLabelColor = Terracota,
+                        focusedBorderColor = RodapeTheme.colors.terracota,
+                        focusedLabelColor = RodapeTheme.colors.terracota,
                     ),
                 )
                 Text(
                     text = "${apelido.length}/40",
-                    style = MaterialTheme.typography.labelSmall.copy(color = Muted),
+                    style = MaterialTheme.typography.labelSmall.copy(color = RodapeTheme.colors.muted),
                     modifier = Modifier.fillMaxWidth(),
                     textAlign = TextAlign.End,
                 )
@@ -202,15 +202,15 @@ fun OnboardingScreen(
                 Surface(
                     modifier = Modifier.fillMaxWidth(),
                     shape = RoundedCornerShape(20.dp),
-                    color = CardSoft,
-                    border = BorderStroke(1.dp, Divider),
+                    color = RodapeTheme.colors.cardSoft,
+                    border = BorderStroke(1.dp, RodapeTheme.colors.divider),
                 ) {
                     Column(modifier = Modifier.padding(20.dp)) {
                         Text(
                             text = "Como você lê melhor?",
                             style = MaterialTheme.typography.titleMedium.copy(
                                 fontFamily = LiterataFontFamily,
-                                color = Ink,
+                                color = RodapeTheme.colors.ink,
                                 fontWeight = FontWeight.SemiBold,
                             ),
                         )
@@ -231,10 +231,10 @@ fun OnboardingScreen(
                                     modifier = Modifier
                                         .weight(1f)
                                         .clip(RoundedCornerShape(12.dp))
-                                        .background(if (selected) Terracota else Cream)
+                                        .background(if (selected) RodapeTheme.colors.terracota else RodapeTheme.colors.cream)
                                         .border(
                                             1.dp,
-                                            if (selected) Terracota else Divider,
+                                            if (selected) RodapeTheme.colors.terracota else RodapeTheme.colors.divider,
                                             RoundedCornerShape(12.dp),
                                         )
                                         .selectable(
@@ -257,7 +257,7 @@ fun OnboardingScreen(
                                             fontFamily = LiterataFontFamily,
                                             fontSize = (18 * scale).sp,
                                             fontWeight = if (selected) FontWeight.Bold else FontWeight.Normal,
-                                            color = if (selected) Cream else Ink,
+                                            color = if (selected) RodapeTheme.colors.cream else RodapeTheme.colors.ink,
                                         ),
                                     )
                                 }
@@ -266,7 +266,7 @@ fun OnboardingScreen(
                         Spacer(modifier = Modifier.height(16.dp))
                         Text(
                             text = "Texto de exemplo no tamanho selecionado:",
-                            style = MaterialTheme.typography.labelSmall.copy(color = Muted),
+                            style = MaterialTheme.typography.labelSmall.copy(color = RodapeTheme.colors.muted),
                         )
                         Spacer(modifier = Modifier.height(8.dp))
                         Text(
@@ -274,7 +274,7 @@ fun OnboardingScreen(
                             style = MaterialTheme.typography.bodyLarge.copy(
                                 fontFamily = LiterataFontFamily,
                                 fontSize = (16 * fontScale).sp,
-                                color = Ink,
+                                color = RodapeTheme.colors.ink,
                             ),
                         )
                     }
@@ -324,7 +324,7 @@ fun OnboardingScreen(
                     )
                     if (submitting) {
                         CircularProgressIndicator(
-                            color = Terracota,
+                            color = RodapeTheme.colors.terracota,
                             strokeWidth = 2.dp,
                             modifier = Modifier.size(22.dp),
                         )
@@ -365,7 +365,7 @@ fun OnboardingScreen(
             ) {
                 Text(
                     text = "Pular por agora",
-                    style = MaterialTheme.typography.bodyMedium.copy(color = Muted),
+                    style = MaterialTheme.typography.bodyMedium.copy(color = RodapeTheme.colors.muted),
                 )
             }
             Spacer(modifier = Modifier.height(36.dp))
@@ -383,7 +383,7 @@ fun OnboardingScreen(
                             .padding(horizontal = 4.dp)
                             .size(if (i == step) 10.dp else 8.dp)
                             .clip(RoundedCornerShape(50))
-                            .background(if (i == step) Terracota else Divider),
+                            .background(if (i == step) RodapeTheme.colors.terracota else RodapeTheme.colors.divider),
                     )
                 }
             }

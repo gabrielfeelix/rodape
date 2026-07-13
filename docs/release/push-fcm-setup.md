@@ -139,13 +139,14 @@ encontro, não no onboarding): `POST_NOTIFICATIONS` via `rememberLauncherForActi
      FCM_CLIENT_EMAIL="<client_email>" \
      FCM_PRIVATE_KEY="<private_key com \n>"
    ```
-4. **GUCs pro trigger achar a função** (SQL Editor, uma vez):
+4. **Service role no Vault** (migration `0009` — em Supabase HOSPEDADO as GUCs
+   `alter database ... set app.x` dão `permission denied`; por isso a URL é inline na
+   função e a service_role vem do Vault). Uma vez, no SQL Editor:
    ```sql
-   alter database postgres set app.edge_send_push_url =
-     'https://<REF>.supabase.co/functions/v1/send-push';
-   alter database postgres set app.service_role_key = '<SERVICE_ROLE_KEY>';
+   select vault.create_secret('<SERVICE_ROLE_KEY>', 'push_service_role_key');
    ```
-   (recarregue a conexão / `select pg_reload_conf();` se necessário.)
+   Sem esse secret, o trigger é no-op seguro. Para trocar depois:
+   `select vault.update_secret((select id from vault.secrets where name='push_service_role_key'), '<NOVA_KEY>');`
 
 ## 4. Testar
 
@@ -155,11 +156,15 @@ encontro, não no onboarding): `POST_NOTIFICATIONS` via `rememberLauncherForActi
 
 ## Checklist
 
-- [ ] `google-services.json` em `app/` (não commitado)
-- [ ] plugin + dep firebase-messaging
-- [ ] `RodapeMessagingService` + serviço no Manifest + permissão
-- [ ] registro de token no login + pedido de permissão
-- [ ] migration 0007 aplicada
-- [ ] função `send-push` deployada + segredos FCM
-- [ ] GUCs `app.edge_send_push_url` / `app.service_role_key`
+- [x] `google-services.json` em `app/` (não commitado) — projeto `aplicativos-497303`
+- [ ] **`app.rodape.debug` registrado no Firebase** + `google-services.json` re-baixado
+      (o build DEBUG usa `applicationIdSuffix=".debug"` → sem esse client o plugin
+      google-services falha com "No matching client found")
+- [x] plugin google-services + dep firebase-messaging (via BoM)
+- [x] `RodapeMessagingService` + serviço no Manifest + permissão POST_NOTIFICATIONS
+- [x] registro de token no login (`MainViewModel.syncPushToken` / `PushTokens`) + pedido de permissão
+- [x] migration 0007 aplicada (prod)
+- [x] função `send-push` deployada (ACTIVE) + segredos FCM setados
+- [x] migration 0009 (dispatch via Vault, substitui as GUCs que não funcionam no hospedado)
+- [ ] **`vault.create_secret('<SERVICE_ROLE>', 'push_service_role_key')`** (você roda)
 - [ ] teste ponta-a-ponta ok

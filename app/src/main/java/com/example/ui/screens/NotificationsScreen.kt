@@ -31,13 +31,7 @@ import androidx.compose.ui.unit.dp
 import com.example.ui.components.Avatar
 import com.example.ui.components.SkeletonRowList
 import com.example.ui.components.rememberShowLoading
-import com.example.ui.theme.Cream
-import com.example.ui.theme.Ink
-import com.example.ui.theme.Muted
-import com.example.ui.theme.OlivaSoft
-import com.example.ui.theme.OlivaDark
-import com.example.ui.theme.Terracota
-import com.example.ui.theme.TerracotaSoft
+import com.example.ui.theme.RodapeTheme
 import com.example.ui.viewmodel.MainViewModel
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.JsonArray
@@ -72,7 +66,7 @@ fun NotificationsScreen(
                         Icon(
                             imageVector = Icons.AutoMirrored.Outlined.ArrowBack,
                             contentDescription = "Voltar",
-                            tint = Terracota
+                            tint = RodapeTheme.colors.terracota
                         )
                     }
                 },
@@ -81,7 +75,7 @@ fun NotificationsScreen(
                         TextButton(onClick = { viewModel.markAllNotificationsAsRead() }) {
                             Text(
                                 "Ler todas",
-                                color = Terracota,
+                                color = RodapeTheme.colors.terracota,
                                 style = MaterialTheme.typography.labelLarge.copy(
                                     fontWeight = FontWeight.SemiBold
                                 )
@@ -118,13 +112,13 @@ fun NotificationsScreen(
                     Icon(
                         imageVector = Icons.Outlined.Notifications,
                         contentDescription = "Sino",
-                        tint = Muted,
+                        tint = RodapeTheme.colors.muted,
                         modifier = Modifier.size(64.dp)
                     )
                     Text(
                         text = "Você não tem nenhuma notificação.",
                         style = MaterialTheme.typography.bodyLarge,
-                        color = Muted
+                        color = RodapeTheme.colors.muted
                     )
                 }
             }
@@ -160,7 +154,7 @@ fun NotificationsScreen(
                             style = MaterialTheme.typography.labelMedium.copy(
                                 fontWeight = FontWeight.Bold
                             ),
-                            color = Muted,
+                            color = RodapeTheme.colors.muted,
                             modifier = Modifier.padding(
                                 start = 4.dp,
                                 top = 16.dp,
@@ -269,21 +263,21 @@ private fun NotificationItem(
 
     // Icon type
     val iconInfo: Pair<ImageVector, Pair<androidx.compose.ui.graphics.Color, androidx.compose.ui.graphics.Color>> = when (tipo) {
-        "comment_on_chapter" -> Pair(Icons.Outlined.FavoriteBorder, Pair(OlivaSoft, OlivaDark))
-        "voting_open", "next_book_decided", "voting_closed" -> Pair(Icons.Outlined.ThumbUp, Pair(TerracotaSoft, Terracota))
-        "meeting_reminder" -> Pair(Icons.Outlined.DateRange, Pair(OlivaSoft, OlivaDark))
-        "member_finished" -> Pair(Icons.Outlined.CheckCircle, Pair(Ink, Cream))
-        "book_finished" -> Pair(Icons.Outlined.CheckCircle, Pair(OlivaSoft, OlivaDark))
-        "member_removed" -> Pair(Icons.Outlined.Info, Pair(TerracotaSoft, Terracota))
-        "promoted_to_admin", "super_admin_transferred" -> Pair(Icons.Outlined.Star, Pair(TerracotaSoft, Terracota))
-        else -> Pair(Icons.Outlined.Notifications, Pair(OlivaSoft, OlivaDark))
+        "comment_on_chapter" -> Pair(Icons.Outlined.FavoriteBorder, Pair(RodapeTheme.colors.olivaSoft, RodapeTheme.colors.olivaDark))
+        "voting_open", "next_book_decided", "voting_closed" -> Pair(Icons.Outlined.ThumbUp, Pair(RodapeTheme.colors.terracotaSoft, RodapeTheme.colors.terracota))
+        "meeting_reminder" -> Pair(Icons.Outlined.DateRange, Pair(RodapeTheme.colors.olivaSoft, RodapeTheme.colors.olivaDark))
+        "member_finished" -> Pair(Icons.Outlined.CheckCircle, Pair(RodapeTheme.colors.ink, RodapeTheme.colors.cream))
+        "book_finished" -> Pair(Icons.Outlined.CheckCircle, Pair(RodapeTheme.colors.olivaSoft, RodapeTheme.colors.olivaDark))
+        "member_removed" -> Pair(Icons.Outlined.Info, Pair(RodapeTheme.colors.terracotaSoft, RodapeTheme.colors.terracota))
+        "promoted_to_admin", "super_admin_transferred" -> Pair(Icons.Outlined.Star, Pair(RodapeTheme.colors.terracotaSoft, RodapeTheme.colors.terracota))
+        else -> Pair(Icons.Outlined.Notifications, Pair(RodapeTheme.colors.olivaSoft, RodapeTheme.colors.olivaDark))
     }
 
     Row(
         modifier = Modifier
             .fillMaxWidth()
             .clip(MaterialTheme.shapes.medium)
-            .background(if (!lida) Cream else androidx.compose.ui.graphics.Color.Transparent)
+            .background(if (!lida) RodapeTheme.colors.cream else androidx.compose.ui.graphics.Color.Transparent)
             .clickable(onClick = onClick)
             .semantics { stateDescription = if (lida) "lida" else "não lida" }
             .padding(horizontal = 12.dp, vertical = 12.dp),
@@ -323,12 +317,12 @@ private fun NotificationItem(
                 style = MaterialTheme.typography.bodyMedium.copy(
                     fontWeight = FontWeight.SemiBold
                 ),
-                color = Ink
+                color = RodapeTheme.colors.ink
             )
             Text(
                 text = desc,
                 style = MaterialTheme.typography.bodySmall,
-                color = Muted
+                color = RodapeTheme.colors.muted
             )
         }
 
@@ -339,7 +333,7 @@ private fun NotificationItem(
                     .padding(top = 6.dp)
                     .size(8.dp)
                     .clip(CircleShape)
-                    .background(Terracota)
+                    .background(RodapeTheme.colors.terracota)
             )
         }
     }

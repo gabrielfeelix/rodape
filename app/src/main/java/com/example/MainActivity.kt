@@ -1,14 +1,21 @@
 package com.example
 
+import android.Manifest
 import android.content.Intent
+import android.content.pm.PackageManager
+import android.os.Build
 import android.os.Bundle
 import androidx.activity.ComponentActivity
+import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.compose.setContent
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.activity.enableEdgeToEdge
 import androidx.activity.viewModels
+import com.example.data.ThemeMode
 import com.example.data.remote.AuthRepository
 import com.example.data.remote.Supabase
 import com.example.ui.auth.GoogleSignInHelper
+import androidx.compose.foundation.isSystemInDarkTheme
 import io.github.jan.supabase.auth.handleDeeplinks
 import io.github.jan.supabase.auth.status.SessionStatus
 import androidx.compose.foundation.layout.fillMaxSize
@@ -54,14 +61,30 @@ class MainActivity : ComponentActivity() {
                 density = baseDensity.density,
                 fontScale = baseDensity.fontScale * fontScale
             )
+            val themeMode by viewModel.themeMode.collectAsState()
+            val darkTheme = when (themeMode) {
+                ThemeMode.LIGHT -> false
+                ThemeMode.DARK -> true
+                ThemeMode.SYSTEM -> isSystemInDarkTheme()
+            }
             CompositionLocalProvider(LocalDensity provides scaledDensity) {
-            MyApplicationTheme {
+            MyApplicationTheme(darkTheme = darkTheme) {
                 Surface(
                     modifier = Modifier.fillMaxSize(),
                     color = MaterialTheme.colorScheme.background
                 ) {
                     val navController = rememberNavController()
                     val sessionStatus by viewModel.sessionStatus.collectAsState()
+
+                    // Push (F1): pedido de permissão de notificação (Android 13+).
+                    // Resultado não importa aqui — se negar, o app só não vibra.
+                    val context = LocalContext.current
+                    val notifPermissionLauncher = rememberLauncherForActivityResult(
+                        ActivityResultContracts.RequestPermission()
+                    ) { }
+                    // Guard: só pede/registra uma vez por processo (evita re-prompt a
+                    // cada re-emissão do sessionStatus).
+                    var pushSetupDone by rememberSaveable { mutableStateOf(false) }
 
                     // Guarda one-shot do deep link de recovery. Sem isso, cada
                     // re-emissao do StateFlow (re-subscribe / cold start) re-arrancava
@@ -96,6 +119,17 @@ class MainActivity : ComponentActivity() {
                                 if (current == "welcome" || current == null) {
                                     navController.navigate("main_tabs") {
                                         popUpTo(0) { inclusive = true }
+                                    }
+                                }
+                                // Push F1: registra o token FCM e pede permissão (1x).
+                                if (!pushSetupDone) {
+                                    pushSetupDone = true
+                                    viewModel.syncPushToken()
+                                    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU &&
+                                        context.checkSelfPermission(Manifest.permission.POST_NOTIFICATIONS)
+                                        != PackageManager.PERMISSION_GRANTED
+                                    ) {
+                                        notifPermissionLauncher.launch(Manifest.permission.POST_NOTIFICATIONS)
                                     }
                                 }
                             }

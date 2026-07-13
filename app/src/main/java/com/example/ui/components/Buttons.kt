@@ -28,6 +28,7 @@ import com.example.ui.theme.Ink
 import com.example.ui.theme.Oliva
 import com.example.ui.theme.OlivaDark
 import com.example.ui.theme.OlivaSoft
+import com.example.ui.theme.RodapeTheme
 import com.example.ui.theme.Terracota
 import com.example.ui.theme.TerracotaDark
 import com.example.ui.theme.TerracotaSoft
@@ -47,12 +48,12 @@ fun TbButton(
     enabled: Boolean = true,
 ) {
     val style = when (variant) {
-        TbButtonVariant.Primary -> ButtonStyle(Oliva, Cream, null)
-        TbButtonVariant.Terra -> ButtonStyle(Terracota, Cream, null)
-        TbButtonVariant.TerraSoft -> ButtonStyle(TerracotaSoft, TerracotaDark, null)
-        TbButtonVariant.Outline -> ButtonStyle(Color.White, Ink, BorderStroke(1.dp, Divider))
-        TbButtonVariant.Dark -> ButtonStyle(Ink, Cream, null)
-        TbButtonVariant.OlivaSoft -> ButtonStyle(OlivaSoft, OlivaDark, null)
+        TbButtonVariant.Primary -> ButtonStyle(RodapeTheme.colors.oliva, RodapeTheme.colors.cream, null)
+        TbButtonVariant.Terra -> ButtonStyle(RodapeTheme.colors.terracota, RodapeTheme.colors.cream, null)
+        TbButtonVariant.TerraSoft -> ButtonStyle(RodapeTheme.colors.terracotaSoft, RodapeTheme.colors.terracotaDark, null)
+        TbButtonVariant.Outline -> ButtonStyle(RodapeTheme.colors.cardSurface, RodapeTheme.colors.ink, BorderStroke(1.dp, RodapeTheme.colors.divider))
+        TbButtonVariant.Dark -> ButtonStyle(RodapeTheme.colors.ink, RodapeTheme.colors.cream, null)
+        TbButtonVariant.OlivaSoft -> ButtonStyle(RodapeTheme.colors.olivaSoft, RodapeTheme.colors.olivaDark, null)
     }
     val height = when (size) {
         TbButtonSize.Sm -> 32.dp
@@ -95,8 +96,8 @@ fun TbButton(
         colors = ButtonDefaults.buttonColors(
             containerColor = style.bg,
             contentColor = style.fg,
-            disabledContainerColor = DisabledSurface,
-            disabledContentColor = Ink.copy(alpha = 0.38f),
+            disabledContainerColor = RodapeTheme.colors.disabledSurface,
+            disabledContentColor = RodapeTheme.colors.ink.copy(alpha = 0.38f),
         ),
     ) {
         Text(

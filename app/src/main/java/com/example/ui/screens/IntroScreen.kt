@@ -51,33 +51,37 @@ private data class IntroPage(
 
 @Composable
 fun IntroScreen(onFinished: () -> Unit) {
+    val terracotaColor = RodapeTheme.colors.terracota
+    val terracotaSoftColor = RodapeTheme.colors.terracotaSoft
+    val olivaColor = RodapeTheme.colors.oliva
+    val olivaSoftColor = RodapeTheme.colors.olivaSoft
     val pages = remember {
         listOf(
             IntroPage(
                 emoji = "📖",
-                accent = Terracota,
-                accentSoft = TerracotaSoft,
+                accent = terracotaColor,
+                accentSoft = terracotaSoftColor,
                 title = "Um clube de leitura só de vocês",
                 body = "Reúna a galera num clube privado. Sugiram livros e votem juntos no próximo — só entra quem vocês convidam.",
             ),
             IntroPage(
                 emoji = "📚",
-                accent = Oliva,
-                accentSoft = OlivaSoft,
+                accent = olivaColor,
+                accentSoft = olivaSoftColor,
                 title = "Leiam no ritmo do grupo",
                 body = "Marque seu progresso capítulo a capítulo e veja onde todo mundo está. Sem cobrança — no ritmo de vocês.",
             ),
             IntroPage(
                 emoji = "💬",
-                accent = Terracota,
-                accentSoft = TerracotaSoft,
+                accent = terracotaColor,
+                accentSoft = terracotaSoftColor,
                 title = "Conversem sem estragar a surpresa",
                 body = "Comente cada capítulo com barreira de spoiler: quem ainda não chegou lá não vê o que vem pela frente.",
             ),
             IntroPage(
                 emoji = "📅",
-                accent = Oliva,
-                accentSoft = OlivaSoft,
+                accent = olivaColor,
+                accentSoft = olivaSoftColor,
                 title = "Encontros de verdade",
                 body = "Marquem a data, confirmem presença e guardem as frases que marcaram vocês. O clube acontece no mundo real.",
             ),
@@ -96,7 +100,7 @@ fun IntroScreen(onFinished: () -> Unit) {
     Column(
         modifier = Modifier
             .fillMaxSize()
-            .background(Paper)
+            .background(RodapeTheme.colors.paper)
             .windowInsetsPadding(WindowInsets.systemBars)
             .padding(horizontal = 24.dp),
     ) {
@@ -113,7 +117,7 @@ fun IntroScreen(onFinished: () -> Unit) {
                 style = MaterialTheme.typography.titleMedium.copy(
                     fontFamily = LiterataFontFamily,
                     fontWeight = FontWeight.SemiBold,
-                    color = Ink,
+                    color = RodapeTheme.colors.ink,
                 ),
             )
             TextButton(onClick = onFinished) {
@@ -122,7 +126,7 @@ fun IntroScreen(onFinished: () -> Unit) {
                     style = MaterialTheme.typography.bodyMedium.copy(
                         fontFamily = InterFontFamily,
                         fontWeight = FontWeight.Medium,
-                        color = Muted,
+                        color = RodapeTheme.colors.muted,
                     ),
                 )
             }
@@ -150,7 +154,7 @@ fun IntroScreen(onFinished: () -> Unit) {
                     style = MaterialTheme.typography.headlineSmall.copy(
                         fontFamily = LiterataFontFamily,
                         fontWeight = FontWeight.SemiBold,
-                        color = Ink,
+                        color = RodapeTheme.colors.ink,
                         lineHeight = 34.sp,
                     ),
                     textAlign = TextAlign.Center,
@@ -161,7 +165,7 @@ fun IntroScreen(onFinished: () -> Unit) {
                     text = p.body,
                     style = MaterialTheme.typography.bodyLarge.copy(
                         fontFamily = InterFontFamily,
-                        color = Muted,
+                        color = RodapeTheme.colors.muted,
                         lineHeight = 24.sp,
                     ),
                     textAlign = TextAlign.Center,
@@ -180,7 +184,7 @@ fun IntroScreen(onFinished: () -> Unit) {
             repeat(pages.size) { i ->
                 val active = i == pagerState.currentPage
                 val width by animateDpAsState(if (active) 22.dp else 8.dp, label = "dotW")
-                val color by animateColorAsState(if (active) Terracota else Divider, label = "dotC")
+                val color by animateColorAsState(if (active) RodapeTheme.colors.terracota else RodapeTheme.colors.divider, label = "dotC")
                 Box(
                     modifier = Modifier
                         .padding(horizontal = 3.dp)
