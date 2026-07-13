@@ -3017,7 +3017,11 @@ fun ProfileScreenTab(
                         textAlign = TextAlign.Center,
                         modifier = Modifier
                             .fillMaxWidth()
+                            // C5: alvo de 48dp + anuncia como botão (era só texto clicável).
+                            .minimumInteractiveComponentSize()
+                            .clip(RoundedCornerShape(8.dp))
                             .clickable { leaveClubError = null; showLeaveClubDialog = true }
+                            .semantics { role = Role.Button }
                             .padding(vertical = 8.dp)
                     )
                 }

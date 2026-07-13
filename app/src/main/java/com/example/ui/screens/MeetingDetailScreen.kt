@@ -239,7 +239,8 @@ fun MeetingDetailScreen(
             // Ata (Minutes)
             item {
                 TbSectionHeader(
-                    title = "Ata do encontro",
+                    // I1: "ata" é jargão pra muita gente — a palavra simples vem primeiro.
+                    title = "Resumo do encontro (ata)",
                     modifier = Modifier.padding(bottom = 8.dp)
                 )
                 // Local-first: minutes vem null antes do 1º sync. Skeleton na janela

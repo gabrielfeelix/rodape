@@ -4,6 +4,8 @@ import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.gestures.detectTapGestures
+import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
@@ -173,7 +175,8 @@ fun DiscussionScreen(
                         modifier = Modifier.padding(8.dp)
                     ) {
                         Text(
-                            text = "Atenção: possível spoiler",
+                            // I1: dá a dica do que "spoiler" quer dizer, pra quem não conhece.
+                            text = "Atenção: pode contar o que vem (spoiler)",
                             style = MaterialTheme.typography.headlineLarge.copy(
                                 color = Terracota,
                                 textAlign = TextAlign.Center
@@ -399,10 +402,11 @@ fun DiscussionScreen(
                                                 ) else Modifier
                                             )
                                             .clip(RoundedCornerShape(14.dp))
-                                            .clickable { selectedCommentToReact = comment }
-                                            .semantics {
-                                                role = Role.Button
-                                                contentDescription = "Reagir a este comentário"
+                                            // C2: reagir virou long-press (ou o ícone ao
+                                            // lado do nome) — tocar a bolha pra reler não
+                                            // abre mais o seletor de emoji sem querer.
+                                            .pointerInput(comment.id) {
+                                                detectTapGestures(onLongPress = { selectedCommentToReact = comment })
                                             }
                                             .padding(horizontal = 14.dp, vertical = 10.dp)
                                     ) {
@@ -421,15 +425,27 @@ fun DiscussionScreen(
                                                     ),
                                                     modifier = Modifier.weight(1f)
                                                 )
-                                                // Affordance visível de "reagir" (P7): antes só
-                                                // existia o contentDescription (invisível). O ícone
-                                                // deixa claro que dá pra tocar e reagir.
-                                                Icon(
-                                                    imageVector = Icons.Outlined.AddReaction,
-                                                    contentDescription = null,
-                                                    tint = Muted,
-                                                    modifier = Modifier.size(16.dp)
-                                                )
+                                                // C2/C5: ícone de reagir agora é um alvo de
+                                                // toque real (48dp, rotulado) — o caminho
+                                                // acessível e discoverable pra reagir.
+                                                Box(
+                                                    modifier = Modifier
+                                                        .minimumInteractiveComponentSize()
+                                                        .clip(CircleShape)
+                                                        .clickable { selectedCommentToReact = comment }
+                                                        .semantics {
+                                                            role = Role.Button
+                                                            contentDescription = "Reagir a este comentário"
+                                                        },
+                                                    contentAlignment = Alignment.Center,
+                                                ) {
+                                                    Icon(
+                                                        imageVector = Icons.Outlined.AddReaction,
+                                                        contentDescription = null,
+                                                        tint = Muted,
+                                                        modifier = Modifier.size(18.dp)
+                                                    )
+                                                }
                                             }
                                             if (comment.removido) {
                                                 Text(
@@ -714,6 +730,8 @@ fun DiscussionScreen(
                         val sendView = androidx.compose.ui.platform.LocalView.current
                         Box(
                             modifier = Modifier
+                                // C5: alvo de toque de 48dp (mantém o círculo visual de 44).
+                                .minimumInteractiveComponentSize()
                                 .size(44.dp)
                                 .background(
                                     color = if (commentText.trim().isNotEmpty()) Terracota else CardSoft,

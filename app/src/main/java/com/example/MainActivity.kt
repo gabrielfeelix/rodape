@@ -131,6 +131,12 @@ class MainActivity : ComponentActivity() {
                             else -> WelcomeScreen(
                                 onNavigateToLogin = { navController.navigate("login") },
                                 onNavigateToSignUp = { navController.navigate("signup") },
+                                onNavigateWithInvite = { code ->
+                                    // B1: retém o código e manda criar conta; o join
+                                    // automático acontece ao chegar em main_tabs.
+                                    viewModel.setPendingInviteCode(code)
+                                    navController.navigate("signup")
+                                },
                             )
                         }
                     }
@@ -282,6 +288,15 @@ class MainActivity : ComponentActivity() {
                         val currentUser by viewModel.currentUser.collectAsState()
                         val supaName by viewModel.supabaseDisplayName.collectAsState()
                         val fontScale by viewModel.fontScale.collectAsState()
+                        // B1: chegou aqui com um convite pendente (fluxo do convidado)
+                        // → entra no clube automaticamente e limpa o código.
+                        val pendingInvite by viewModel.pendingInviteCode.collectAsState()
+                        LaunchedEffect(pendingInvite) {
+                            pendingInvite?.let { code ->
+                                viewModel.joinClubWithCode(code) { _, _ -> }
+                                viewModel.consumePendingInviteCode()
+                            }
+                        }
                         if (needsOnboarding) {
                             OnboardingScreen(
                                 initialName = currentUser?.nome ?: supaName ?: "",

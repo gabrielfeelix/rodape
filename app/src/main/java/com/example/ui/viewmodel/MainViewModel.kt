@@ -13,6 +13,7 @@ import com.example.util.MeetingTime
 import io.github.jan.supabase.auth.status.SessionStatus
 import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withTimeoutOrNull
 import org.json.JSONArray
 import java.util.UUID
 
@@ -107,6 +108,18 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
     fun markIntroSeen() {
         viewModelScope.launch { dataStoreManager.markIntroSeen() }
     }
+
+    /**
+     * B1: código de convite capturado no Welcome (antes de criar conta). Fica
+     * retido até a auth concluir; aí a UI faz o join automático. Em memória de
+     * propósito — se o app fechar no meio, o usuário usa o join de dentro do app.
+     */
+    private val _pendingInviteCode = MutableStateFlow<String?>(null)
+    val pendingInviteCode: StateFlow<String?> = _pendingInviteCode.asStateFlow()
+    fun setPendingInviteCode(code: String) {
+        _pendingInviteCode.value = code.trim().uppercase().ifBlank { null }
+    }
+    fun consumePendingInviteCode() { _pendingInviteCode.value = null }
 
     /** Conjunto de userIds que ja viram o onboarding pos-login neste device. */
     val onboardedUsers: StateFlow<Set<String>> = dataStoreManager.onboardedUsersFlow
@@ -508,7 +521,14 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
         viewModelScope.launch {
             try {
                 // RPC: cria clube + super_admin member + invite code unico, atomicamente.
-                val clubId = repository.createClubViaRpc(nome, descricao, cor, privacidade)
+                // B4: timeout pra não travar em "Criando…" se a rede morrer no meio.
+                val clubId = withTimeoutOrNull(15_000L) {
+                    repository.createClubViaRpc(nome, descricao, cor, privacidade)
+                }
+                if (clubId == null) {
+                    onError("Demorou demais. Verifique a conexão e tente de novo.")
+                    return@launch
+                }
                 _activeClubId.value = clubId
                 dataStoreManager.setLastActiveClubId(clubId)
                 onCompleted(clubId)
@@ -528,7 +548,16 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
     fun joinClubWithCode(code: String, onCompleted: (Boolean, String?) -> Unit) {
         viewModelScope.launch {
             try {
-                val clubId = repository.joinClubWithCodeViaRpc(code)
+                // B4: timeout pra não travar em "Entrando…". Sentinela "" separa
+                // "código errado" (RPC devolve null) de "estourou o tempo".
+                val raw = withTimeoutOrNull(15_000L) {
+                    repository.joinClubWithCodeViaRpc(code) ?: ""
+                }
+                if (raw == null) {
+                    onCompleted(false, "Demorou demais. Verifique a conexão e tente de novo.")
+                    return@launch
+                }
+                val clubId = raw.ifEmpty { null }
                 if (clubId != null) {
                     _activeClubId.value = clubId
                     dataStoreManager.setLastActiveClubId(clubId)

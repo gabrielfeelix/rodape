@@ -212,9 +212,10 @@ private fun ShelfBookCard(
             Spacer(modifier = Modifier.height(12.dp))
             Text(
                 text = book.title,
+                // C3: 2 linhas — em fonte grande (A++), o título cortava no ellipsis.
                 style = MaterialTheme.typography.headlineLarge.copy(fontSize = 14.sp, color = Ink),
                 textAlign = TextAlign.Center,
-                maxLines = 1,
+                maxLines = 2,
                 overflow = TextOverflow.Ellipsis,
                 modifier = Modifier.fillMaxWidth()
             )

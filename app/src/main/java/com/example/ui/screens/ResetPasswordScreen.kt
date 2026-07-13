@@ -124,6 +124,12 @@ fun ResetPasswordScreen(
                         modifier = Modifier.fillMaxWidth(),
                         enabled = !isLoading,
                     )
+                    // B2: mesmo checklist ao vivo do cadastro — o botão cinza deixava
+                    // o usuário sem saber qual regra faltava.
+                    if (password.isNotEmpty() && !valid) {
+                        Spacer(Modifier.height(8.dp))
+                        com.example.ui.components.PasswordChecklist(password)
+                    }
                     errorMsg?.let {
                         Spacer(Modifier.height(8.dp))
                         Text(

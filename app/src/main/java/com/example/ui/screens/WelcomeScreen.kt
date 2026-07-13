@@ -31,6 +31,7 @@ import androidx.compose.ui.semantics.LiveRegionMode
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.liveRegion
+import androidx.compose.ui.semantics.role
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -80,7 +81,12 @@ import kotlinx.coroutines.launch
 fun WelcomeScreen(
     onNavigateToLogin: () -> Unit,
     onNavigateToSignUp: () -> Unit,
+    // B1: convidado cola o código aqui (antes de criar conta); o código é retido
+    // e o join acontece automaticamente depois da auth.
+    onNavigateWithInvite: (String) -> Unit = {},
 ) {
+    var showInviteDialog by remember { mutableStateOf(false) }
+    var inviteCode by remember { mutableStateOf("") }
     // Design: claude-design/screens-onboarding.jsx (WelcomeScreen). Layout editorial
     // alinhado à esquerda + painel oliva curvado com lombadas de livro. Mantém
     // "Rodapé" (design diz "tramabook") e voz "você". Os CTAs são de AUTH porque o
@@ -193,7 +199,9 @@ fun WelcomeScreen(
                             .height(54.dp)
                             .clip(RoundedCornerShape(999.dp))
                             .background(Terracota)
-                            .clickable { onNavigateToSignUp() },
+                            .clickable { onNavigateToSignUp() }
+                            // C4: TalkBack anuncia "botão" (era Box.clickable mudo).
+                            .semantics { role = Role.Button },
                         contentAlignment = Alignment.Center
                     ) {
                         Row(
@@ -226,7 +234,8 @@ fun WelcomeScreen(
                             .height(54.dp)
                             .clip(RoundedCornerShape(999.dp))
                             .border(1.dp, Cream.copy(alpha = 0.25f), RoundedCornerShape(999.dp))
-                            .clickable { onNavigateToLogin() },
+                            .clickable { onNavigateToLogin() }
+                            .semantics { role = Role.Button },
                         contentAlignment = Alignment.Center
                     ) {
                         Text(
@@ -239,9 +248,84 @@ fun WelcomeScreen(
                             )
                         )
                     }
+                    Spacer(modifier = Modifier.height(14.dp))
+
+                    // B1: caminho do convidado — cola o código já aqui (o entrante
+                    // mais comum de um clube privado veio pra "entrar", não "criar").
+                    Text(
+                        text = "Tenho um convite",
+                        style = MaterialTheme.typography.bodyMedium.copy(
+                            fontFamily = InterFontFamily,
+                            fontWeight = FontWeight.SemiBold,
+                            color = Cream.copy(alpha = 0.85f)
+                        ),
+                        textAlign = TextAlign.Center,
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .clip(RoundedCornerShape(999.dp))
+                            .clickable { showInviteDialog = true }
+                            .semantics { role = Role.Button }
+                            .padding(vertical = 8.dp)
+                    )
                 }
             }
         }
+    }
+
+    if (showInviteDialog) {
+        AlertDialog(
+            onDismissRequest = { showInviteDialog = false },
+            containerColor = Cream,
+            title = {
+                Text(
+                    "Entrar com convite",
+                    style = MaterialTheme.typography.titleLarge.copy(
+                        fontFamily = LiterataFontFamily,
+                        fontWeight = FontWeight.SemiBold,
+                        color = Ink
+                    )
+                )
+            },
+            text = {
+                Column {
+                    Text(
+                        "Cole o código que o organizador te passou. No próximo passo você cria a conta e já entra no clube.",
+                        style = MaterialTheme.typography.bodyMedium.copy(
+                            fontFamily = InterFontFamily,
+                            color = Muted
+                        )
+                    )
+                    Spacer(modifier = Modifier.height(14.dp))
+                    OutlinedTextField(
+                        value = inviteCode,
+                        onValueChange = { inviteCode = it.take(12) },
+                        label = { Text("Código do convite") },
+                        singleLine = true,
+                        modifier = Modifier.fillMaxWidth(),
+                        colors = OutlinedTextFieldDefaults.colors(
+                            focusedBorderColor = Terracota,
+                            focusedLabelColor = Terracota,
+                        ),
+                    )
+                }
+            },
+            confirmButton = {
+                TextButton(
+                    enabled = inviteCode.trim().length >= 4,
+                    onClick = {
+                        showInviteDialog = false
+                        onNavigateWithInvite(inviteCode.trim())
+                    }
+                ) {
+                    Text("Continuar", color = Terracota, fontWeight = FontWeight.SemiBold)
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = { showInviteDialog = false }) {
+                    Text("Cancelar", color = Muted)
+                }
+            }
+        )
     }
 }
 

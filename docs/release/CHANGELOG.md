@@ -38,6 +38,31 @@ e do plano em `docs/PLANO-PENDENCIAS-2026-07-12.md`. Onda 1 = "destrava quem imp
 - Depois de sincronizar, mostra **"Tudo salvo ✓"** por 2s em vez de a rodinha só
   sumir (que parecia "travado" pra leigo).
 
+### Onda 2 — acessibilidade e entrada
+
+- **B1 · "Tenho um convite" no Welcome** — o convidado cola o código **antes** de
+  criar conta; o código é retido e o **ingresso no clube acontece automaticamente**
+  depois da auth. Fim do "tive que criar conta pra só então achar onde colar o código".
+- **B2 · Checklist de senha na redefinição** — a tela de nova senha agora mostra o
+  mesmo checklist ao vivo do cadastro (✓/○ por regra), em vez de um botão cinza mudo.
+  Regra de senha extraída pra um componente único (`PasswordChecklist`).
+- **B4 · Timeout em criar/entrar clube** — "Criando…"/"Entrando…" não travam mais pra
+  sempre em sinal ruim: 15s → mensagem "Demorou demais. Verifique a conexão".
+- **C2 · Reagir sem abrir sem querer** — reagir a um comentário virou **long-press**
+  (ou toque no ícone de reação, agora um alvo real de 48dp); tocar a bolha pra reler
+  não abre mais o seletor de emoji.
+- **C4 · Botões do Welcome anunciados** — "Criar conta"/"Entrar" agora anunciam
+  "botão" no TalkBack (eram `Box` clicáveis mudos).
+- **C5 · Alvos de toque ≥ 48dp** — botão de enviar comentário, ícone de reagir e link
+  "Sair do clube".
+- **C3 · Menos truncamento em fonte grande** — título do livro na Estante em 2 linhas.
+  *(As abas do detalhe do livro em `ScrollableTabRow` ficaram pra um passe com
+  verificação visual em emulador.)*
+- **I1 · Linguagem mais simples** — "Ata do encontro" → **"Resumo do encontro (ata)"**;
+  "possível spoiler" → **"pode contar o que vem (spoiler)"**.
+- **B3** — o "salvar perfil falha em silêncio" já estava, na prática, **coberto pela
+  camada de dados** (`insertUser` é local-first + fila offline); sem mudança de risco.
+
 ## v1.0.12 — 2026-07-12 (build 13)
 
 ### 📅 Agendar encontro ficou fácil de achar
