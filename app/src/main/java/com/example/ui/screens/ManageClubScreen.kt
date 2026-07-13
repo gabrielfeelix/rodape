@@ -236,7 +236,7 @@ fun ManageClubScreen(
                         Row(
                             modifier = Modifier
                                 .fillMaxWidth()
-                                .clip(RoundedCornerShape(14.dp))
+                                .clip(RoundedCornerShape(RodapeRadii.sm))
                                 .background(RodapeTheme.colors.olivaSoft.copy(alpha = 0.4f))
                                 .padding(12.dp),
                             verticalAlignment = Alignment.CenterVertically,
@@ -283,7 +283,7 @@ fun ManageClubScreen(
                         Row(
                             modifier = Modifier
                                 .fillMaxWidth()
-                                .clip(RoundedCornerShape(14.dp))
+                                .clip(RoundedCornerShape(RodapeRadii.sm))
                                 .background(RodapeTheme.colors.dividerSoft.copy(alpha = 0.3f))
                                 .padding(14.dp),
                             verticalAlignment = Alignment.CenterVertically,
@@ -343,7 +343,7 @@ fun ManageClubScreen(
                         Column(
                             modifier = Modifier
                                 .fillMaxWidth()
-                                .clip(RoundedCornerShape(14.dp))
+                                .clip(RoundedCornerShape(RodapeRadii.sm))
                                 .background(RodapeTheme.colors.dividerSoft.copy(alpha = 0.3f))
                                 .padding(20.dp),
                             horizontalAlignment = Alignment.CenterHorizontally,
@@ -391,7 +391,7 @@ fun ManageClubScreen(
                         Row(
                             modifier = Modifier
                                 .fillMaxWidth()
-                                .clip(RoundedCornerShape(14.dp))
+                                .clip(RoundedCornerShape(RodapeRadii.sm))
                                 .background(RodapeTheme.colors.olivaSoft.copy(alpha = 0.4f))
                                 .padding(12.dp),
                             verticalAlignment = Alignment.CenterVertically,
@@ -452,7 +452,7 @@ fun ManageClubScreen(
                         Column(
                             modifier = Modifier
                                 .fillMaxWidth()
-                                .clip(RoundedCornerShape(14.dp))
+                                .clip(RoundedCornerShape(RodapeRadii.sm))
                                 .background(RodapeTheme.colors.dividerSoft.copy(alpha = 0.3f))
                                 .padding(20.dp),
                             horizontalAlignment = Alignment.CenterHorizontally,
@@ -984,9 +984,9 @@ private fun MeetingRow(
     Column(
         modifier = Modifier
             .fillMaxWidth()
-            .clip(RoundedCornerShape(14.dp))
+            .clip(RoundedCornerShape(RodapeRadii.sm))
             .background(if (concluded) RodapeTheme.colors.dividerSoft.copy(alpha = 0.3f) else RodapeTheme.colors.cream)
-            .border(0.5.dp, RodapeTheme.colors.divider, RoundedCornerShape(14.dp))
+            .border(0.5.dp, RodapeTheme.colors.divider, RoundedCornerShape(RodapeRadii.sm))
             .padding(14.dp),
         verticalArrangement = Arrangement.spacedBy(8.dp)
     ) {

@@ -13,6 +13,7 @@ import androidx.compose.ui.text.font.FontStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.example.ui.theme.RodapeRadii
 import com.example.ui.theme.RodapeIcons
 import com.example.ui.theme.Divider
 import com.example.ui.theme.LiterataFontFamily
@@ -27,7 +28,7 @@ fun QuoteCard(
 ) {
     Card(
         modifier = modifier.fillMaxWidth(),
-        shape = RoundedCornerShape(16.dp),
+        shape = RoundedCornerShape(RodapeRadii.md),
         colors = CardDefaults.cardColors(containerColor = RodapeTheme.colors.cardSurface),
         border = BorderStroke(0.5.dp, RodapeTheme.colors.divider),
         elevation = CardDefaults.cardElevation(defaultElevation = 1.dp),

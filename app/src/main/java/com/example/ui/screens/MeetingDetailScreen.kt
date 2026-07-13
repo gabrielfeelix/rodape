@@ -114,7 +114,7 @@ fun MeetingDetailScreen(
                 Row(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .clip(RoundedCornerShape(16.dp))
+                        .clip(RoundedCornerShape(RodapeRadii.md))
                         .background(if (concluded) RodapeTheme.colors.dividerSoft.copy(alpha = 0.3f) else RodapeTheme.colors.cream)
                         .padding(16.dp),
                     verticalAlignment = Alignment.CenterVertically,
@@ -123,7 +123,7 @@ fun MeetingDetailScreen(
                     Box(
                         modifier = Modifier
                             .size(64.dp)
-                            .clip(RoundedCornerShape(14.dp))
+                            .clip(RoundedCornerShape(RodapeRadii.sm))
                             .background(
                                 if (concluded) RodapeTheme.colors.muted.copy(alpha = 0.15f)
                                 else RodapeTheme.colors.terracota.copy(alpha = 0.12f)

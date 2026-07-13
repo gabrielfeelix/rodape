@@ -63,7 +63,7 @@ private fun RowScope.Segment(
         modifier = Modifier
             .weight(1f)
             .height(40.dp)
-            .clip(RoundedCornerShape(10.dp))
+            .clip(RoundedCornerShape(RodapeRadii.sm))
             .background(if (selected) RodapeTheme.colors.oliva else androidx.compose.ui.graphics.Color.Transparent)
             .selectable(
                 selected = selected,

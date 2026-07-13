@@ -230,7 +230,7 @@ fun SuggestScreen(
                     )
                 },
                 modifier = Modifier.fillMaxWidth(),
-                shape = RoundedCornerShape(14.dp),
+                shape = RoundedCornerShape(RodapeRadii.sm),
                 leadingIcon = {
                     Icon(
                         imageVector = RodapeIcons.Search,
@@ -559,12 +559,12 @@ private fun BookResultRow(
     Row(
         modifier = Modifier
             .fillMaxWidth()
-            .clip(RoundedCornerShape(14.dp))
+            .clip(RoundedCornerShape(RodapeRadii.sm))
             .background(if (isSelected) RodapeTheme.colors.cream else Color.Transparent)
             .border(
                 width = if (isSelected) 1.5.dp else 0.5.dp,
                 color = if (isSelected) RodapeTheme.colors.terracota else RodapeTheme.colors.divider,
-                shape = RoundedCornerShape(14.dp)
+                shape = RoundedCornerShape(RodapeRadii.sm)
             )
             .clickable { onClick() }
             // A11y: TalkBack lê a linha como UMA opção única

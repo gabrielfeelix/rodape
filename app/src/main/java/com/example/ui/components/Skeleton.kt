@@ -25,6 +25,7 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
+import com.example.ui.theme.RodapeRadii
 import com.example.ui.theme.Divider
 import com.example.ui.theme.RodapeTheme
 
@@ -132,7 +133,7 @@ fun SkeletonMeetingCard(modifier: Modifier = Modifier) {
         modifier = modifier
             .fillMaxWidth()
             .height(160.dp)
-            .clip(RoundedCornerShape(24.dp))
+            .clip(RoundedCornerShape(RodapeRadii.md))
             .background(RodapeTheme.colors.divider.copy(alpha = alpha))
     )
 }

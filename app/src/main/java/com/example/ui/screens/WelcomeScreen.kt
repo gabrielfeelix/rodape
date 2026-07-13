@@ -526,7 +526,7 @@ fun LoginScreen(
                         modifier = Modifier
                             .fillMaxWidth()
                             .height(52.dp),
-                        shape = RoundedCornerShape(26.dp),
+                        shape = RoundedCornerShape(RodapeRadii.full),
                         colors = ButtonDefaults.buttonColors(containerColor = RodapeTheme.colors.terracota),
                     ) {
                         if (isLoading) {
@@ -579,7 +579,7 @@ fun LoginScreen(
                         modifier = Modifier
                             .fillMaxWidth()
                             .height(52.dp),
-                        shape = RoundedCornerShape(26.dp),
+                        shape = RoundedCornerShape(RodapeRadii.full),
                         border = BorderStroke(1.dp, Color(0xFFDADCE0)),
                         colors = ButtonDefaults.outlinedButtonColors(
                             containerColor = Color.White,
@@ -667,7 +667,7 @@ fun CreateClubScreen(
                 // Input card aligned to design system
                 Surface(
                     modifier = Modifier.fillMaxWidth(),
-                    shape = RoundedCornerShape(24.dp),
+                    shape = RoundedCornerShape(RodapeRadii.md),
                     color = RodapeTheme.colors.cardSurface,
                     border = BorderStroke(1.dp, RodapeTheme.colors.divider),
                     shadowElevation = 1.dp
@@ -705,7 +705,7 @@ fun CreateClubScreen(
                                 )
                             },
                             modifier = Modifier.fillMaxWidth(),
-                            shape = RoundedCornerShape(14.dp),
+                            shape = RoundedCornerShape(RodapeRadii.sm),
                             singleLine = true,
                             colors = OutlinedTextFieldDefaults.colors(
                                 focusedBorderColor = RodapeTheme.colors.terracota,
@@ -748,7 +748,7 @@ fun CreateClubScreen(
                             modifier = Modifier
                                 .fillMaxWidth()
                                 .height(110.dp),
-                            shape = RoundedCornerShape(14.dp),
+                            shape = RoundedCornerShape(RodapeRadii.sm),
                             colors = OutlinedTextFieldDefaults.colors(
                                 focusedBorderColor = RodapeTheme.colors.terracota,
                                 unfocusedBorderColor = RodapeTheme.colors.divider,
@@ -818,7 +818,7 @@ fun CreateClubScreen(
                         modifier = Modifier
                             .fillMaxWidth()
                             .clickable { privacy = "convidados" },
-                        shape = RoundedCornerShape(16.dp),
+                        shape = RoundedCornerShape(RodapeRadii.md),
                         color = if (isOption1) RodapeTheme.colors.terracota.copy(alpha = 0.04f) else RodapeTheme.colors.cardSurface,
                         border = BorderStroke(
                             width = if (isOption1) 1.5.dp else 1.dp,
@@ -879,7 +879,7 @@ fun CreateClubScreen(
                         modifier = Modifier
                             .fillMaxWidth()
                             .clickable { privacy = "publico" },
-                        shape = RoundedCornerShape(16.dp),
+                        shape = RoundedCornerShape(RodapeRadii.md),
                         color = if (isOption2) RodapeTheme.colors.terracota.copy(alpha = 0.04f) else RodapeTheme.colors.cardSurface,
                         border = BorderStroke(
                             width = if (isOption2) 1.5.dp else 1.dp,
@@ -1051,7 +1051,7 @@ fun JoinClubScreen(
             item {
                 Surface(
                     modifier = Modifier.fillMaxWidth(),
-                    shape = RoundedCornerShape(24.dp),
+                    shape = RoundedCornerShape(RodapeRadii.md),
                     color = RodapeTheme.colors.cardSurface,
                     border = BorderStroke(1.dp, RodapeTheme.colors.divider),
                     shadowElevation = 1.dp

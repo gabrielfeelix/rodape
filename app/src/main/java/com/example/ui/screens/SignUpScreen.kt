@@ -33,6 +33,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.R
 import com.example.ui.components.RodapeCard
+import com.example.ui.theme.RodapeRadii
 import com.example.ui.theme.RodapeIcons
 import com.example.ui.theme.InterFontFamily
 import com.example.ui.theme.Ink
@@ -191,7 +192,7 @@ fun SignUpScreen(
                             onClick = onSignedUp,
                             enabled = !isLoading,
                             modifier = Modifier.fillMaxWidth().height(52.dp),
-                            shape = RoundedCornerShape(26.dp),
+                            shape = RoundedCornerShape(RodapeRadii.full),
                             colors = ButtonDefaults.buttonColors(containerColor = RodapeTheme.colors.terracota),
                         ) {
                             Text("Voltar para login", color = Color.White)
@@ -202,7 +203,7 @@ fun SignUpScreen(
                             onClick = { resendConfirmation() },
                             enabled = !isLoading,
                             modifier = Modifier.fillMaxWidth().height(52.dp),
-                            shape = RoundedCornerShape(26.dp),
+                            shape = RoundedCornerShape(RodapeRadii.full),
                             border = BorderStroke(1.dp, RodapeTheme.colors.terracota),
                             colors = ButtonDefaults.outlinedButtonColors(contentColor = RodapeTheme.colors.terracota),
                         ) {
@@ -345,7 +346,7 @@ fun SignUpScreen(
                             onClick = { submitSignUp() },
                             enabled = formValid && !isLoading,
                             modifier = Modifier.fillMaxWidth().height(52.dp),
-                            shape = RoundedCornerShape(26.dp),
+                            shape = RoundedCornerShape(RodapeRadii.full),
                             colors = ButtonDefaults.buttonColors(containerColor = RodapeTheme.colors.terracota),
                         ) {
                             if (isLoading) {
@@ -378,7 +379,7 @@ fun SignUpScreen(
                             },
                             enabled = !isLoading,
                             modifier = Modifier.fillMaxWidth().height(52.dp),
-                            shape = RoundedCornerShape(26.dp),
+                            shape = RoundedCornerShape(RodapeRadii.full),
                             border = BorderStroke(1.dp, Color(0xFFDADCE0)),
                             colors = ButtonDefaults.outlinedButtonColors(
                                 containerColor = Color.White,

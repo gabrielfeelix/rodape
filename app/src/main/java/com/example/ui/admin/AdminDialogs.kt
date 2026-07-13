@@ -281,12 +281,12 @@ fun EditMeetingPatternDialog(
                                         .clickable { diaSemana = key }
                                         .background(
                                             if (selected) RodapeTheme.colors.oliva else Color.Transparent,
-                                            androidx.compose.foundation.shape.RoundedCornerShape(8.dp)
+                                            androidx.compose.foundation.shape.RoundedCornerShape(RodapeRadii.sm)
                                         )
                                         .border(
                                             1.dp,
                                             if (selected) RodapeTheme.colors.oliva else RodapeTheme.colors.muted.copy(alpha = 0.3f),
-                                            androidx.compose.foundation.shape.RoundedCornerShape(8.dp)
+                                            androidx.compose.foundation.shape.RoundedCornerShape(RodapeRadii.sm)
                                         )
                                         .padding(vertical = 8.dp),
                                     contentAlignment = Alignment.Center
@@ -319,12 +319,12 @@ fun EditMeetingPatternDialog(
                                         .clickable { valor = n }
                                         .background(
                                             if (selected) RodapeTheme.colors.oliva else Color.Transparent,
-                                            androidx.compose.foundation.shape.RoundedCornerShape(8.dp)
+                                            androidx.compose.foundation.shape.RoundedCornerShape(RodapeRadii.sm)
                                         )
                                         .border(
                                             1.dp,
                                             if (selected) RodapeTheme.colors.oliva else RodapeTheme.colors.muted.copy(alpha = 0.3f),
-                                            androidx.compose.foundation.shape.RoundedCornerShape(8.dp)
+                                            androidx.compose.foundation.shape.RoundedCornerShape(RodapeRadii.sm)
                                         )
                                         .padding(vertical = 8.dp),
                                     contentAlignment = Alignment.Center

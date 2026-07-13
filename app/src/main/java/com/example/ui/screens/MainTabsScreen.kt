@@ -440,12 +440,12 @@ fun MainTabsScreen(
                         Row(
                             modifier = Modifier
                                 .fillMaxWidth()
-                                .clip(RoundedCornerShape(16.dp))
+                                .clip(RoundedCornerShape(RodapeRadii.md))
                                 .background(if (isActive) RodapeTheme.colors.olivaSoft.copy(alpha = 0.35f) else Color.Transparent)
                                 .border(
                                     width = 1.dp,
                                     color = if (isActive) RodapeTheme.colors.terracota else MaterialTheme.colorScheme.outline.copy(alpha = 0.5f),
-                                    shape = RoundedCornerShape(16.dp)
+                                    shape = RoundedCornerShape(RodapeRadii.md)
                                 )
                                 .clickable {
                                     viewModel.selectActiveClub(club.id)
@@ -491,7 +491,7 @@ fun MainTabsScreen(
 
                             if (isActive) {
                                 Surface(
-                                    shape = RoundedCornerShape(8.dp),
+                                    shape = RoundedCornerShape(RodapeRadii.sm),
                                     color = RodapeTheme.colors.olivaSoft,
                                     modifier = Modifier.padding(start = 8.dp)
                                 ) {
@@ -990,7 +990,7 @@ private fun ClubSetupChecklist(
                     Row(
                         modifier = Modifier
                             .fillMaxWidth()
-                            .clip(RoundedCornerShape(10.dp))
+                            .clip(RoundedCornerShape(RodapeRadii.sm))
                             .then(if (isNext) Modifier.clickable { step.onClick() } else Modifier)
                     ) {
                         Column(horizontalAlignment = Alignment.CenterHorizontally) {
@@ -1216,7 +1216,7 @@ fun HomeScreenTab(
                     modifier = Modifier
                         .fillMaxWidth()
                         .padding(vertical = 16.dp)
-                        .border(1.dp, MaterialTheme.colorScheme.onSurface.copy(alpha = 0.05f), RoundedCornerShape(16.dp))
+                        .border(1.dp, MaterialTheme.colorScheme.onSurface.copy(alpha = 0.05f), RoundedCornerShape(RodapeRadii.md))
                         .padding(24.dp),
                     horizontalAlignment = Alignment.CenterHorizontally,
                     verticalArrangement = Arrangement.spacedBy(12.dp),
@@ -1798,7 +1798,7 @@ fun BookDetailScreenTab(
                             Row(
                                 modifier = Modifier
                                     .fillMaxWidth()
-                                    .clip(RoundedCornerShape(10.dp))
+                                    .clip(RoundedCornerShape(RodapeRadii.sm))
                                     .clickable {
                                         viewModel.updateBookProgress(currentBook!!.id, ch.numero)
                                         onShowMessage(
@@ -2080,7 +2080,7 @@ fun BookDetailScreenTab(
                                 modifier = Modifier
                                     .fillMaxWidth()
                                     .padding(top = 10.dp)
-                                    .clip(RoundedCornerShape(8.dp))
+                                    .clip(RoundedCornerShape(RodapeRadii.sm))
                                     .clickable { showJumpDialog = true }
                                     .padding(vertical = 4.dp)
                             )
@@ -2098,7 +2098,7 @@ fun BookDetailScreenTab(
                                 modifier = Modifier
                                     .fillMaxWidth()
                                     .padding(top = 10.dp)
-                                    .clip(RoundedCornerShape(8.dp))
+                                    .clip(RoundedCornerShape(RodapeRadii.sm))
                                     .clickable {
                                         val prev = currentChapIndex - 1
                                         viewModel.updateBookProgress(currentBook!!.id, prev)
@@ -2160,7 +2160,7 @@ fun BookDetailScreenTab(
                     if (chapters.isEmpty()) {
                         Surface(
                             modifier = Modifier.fillMaxWidth(),
-                            shape = RoundedCornerShape(16.dp),
+                            shape = RoundedCornerShape(RodapeRadii.md),
                             color = RodapeTheme.colors.dividerSoft.copy(alpha = 0.3f)
                         ) {
                             Column(
@@ -2231,7 +2231,7 @@ fun BookDetailScreenTab(
                                     .clickable {
                                         onNavigateToDiscussion(chapter.id, chapter.titulo)
                                     },
-                                shape = RoundedCornerShape(16.dp),
+                                shape = RoundedCornerShape(RodapeRadii.md),
                                 color = if (isCurrent) RodapeTheme.colors.cream else RodapeTheme.colors.cardSurface,
                                 border = BorderStroke(
                                     width = if (isCurrent) 1.5.dp else 0.5.dp,
@@ -2628,7 +2628,7 @@ fun ProfileScreenTab(
                                 viewModel.selectActiveClub(club.id)
                                 onNavigateToTab("home")
                             },
-                            shape = RoundedCornerShape(16.dp),
+                            shape = RoundedCornerShape(RodapeRadii.md),
                             colors = CardDefaults.cardColors(containerColor = RodapeTheme.colors.cream, contentColor = RodapeTheme.colors.ink),
                             border = BorderStroke(
                                 1.dp,
@@ -2705,7 +2705,7 @@ fun ProfileScreenTab(
                     Box(
                         modifier = Modifier
                             .fillMaxWidth()
-                            .clip(RoundedCornerShape(16.dp))
+                            .clip(RoundedCornerShape(RodapeRadii.md))
                             .background(RodapeTheme.colors.terracota)
                             .clickable { onNavigateToCreateClub() }
                             .padding(vertical = 14.dp),
@@ -2738,10 +2738,10 @@ fun ProfileScreenTab(
                     Box(
                         modifier = Modifier
                             .fillMaxWidth()
-                            .clip(RoundedCornerShape(16.dp))
+                            .clip(RoundedCornerShape(RodapeRadii.md))
                             .border(
                                 BorderStroke(1.5.dp, RodapeTheme.colors.divider),
-                                shape = RoundedCornerShape(16.dp)
+                                shape = RoundedCornerShape(RodapeRadii.md)
                             )
                             .clickable { onNavigateToJoinClub() }
                             .padding(vertical = 14.dp),
@@ -2790,8 +2790,8 @@ fun ProfileScreenTab(
                             Row(
                                 modifier = Modifier
                                     .fillMaxWidth()
-                                    .clip(RoundedCornerShape(16.dp))
-                                    .border(0.5.dp, RodapeTheme.colors.divider, RoundedCornerShape(16.dp))
+                                    .clip(RoundedCornerShape(RodapeRadii.md))
+                                    .border(0.5.dp, RodapeTheme.colors.divider, RoundedCornerShape(RodapeRadii.md))
                                     .clickable { viewModel.unarchiveClub(club.id) }
                                     .padding(12.dp),
                                 verticalAlignment = Alignment.CenterVertically,
@@ -2980,8 +2980,8 @@ fun ProfileScreenTab(
                 Row(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .clip(RoundedCornerShape(14.dp))
-                        .border(0.5.dp, RodapeTheme.colors.divider, RoundedCornerShape(14.dp))
+                        .clip(RoundedCornerShape(RodapeRadii.sm))
+                        .border(0.5.dp, RodapeTheme.colors.divider, RoundedCornerShape(RodapeRadii.sm))
                         .clickable { onNavigateToAbout() }
                         .padding(horizontal = 16.dp, vertical = 14.dp),
                     verticalAlignment = Alignment.CenterVertically
@@ -3107,7 +3107,7 @@ fun ProfileScreenTab(
                             .fillMaxWidth()
                             // C5: alvo de 48dp + anuncia como botão (era só texto clicável).
                             .minimumInteractiveComponentSize()
-                            .clip(RoundedCornerShape(8.dp))
+                            .clip(RoundedCornerShape(RodapeRadii.sm))
                             .clickable { leaveClubError = null; showLeaveClubDialog = true }
                             .semantics { role = Role.Button }
                             .padding(vertical = 8.dp)
@@ -3142,7 +3142,7 @@ fun ProfileScreenTab(
                         // Alvo de toque de 48dp + anuncia como botao (era um Text
                         // minusculo com clickable sem role).
                         .minimumInteractiveComponentSize()
-                        .clip(RoundedCornerShape(8.dp))
+                        .clip(RoundedCornerShape(RodapeRadii.sm))
                         .clickable(role = Role.Button) { showDeleteAccountDialog = true }
                         .padding(vertical = 8.dp)
                 )
@@ -3494,7 +3494,7 @@ fun EditProfileView(
                     onValueChange = { name = it },
                     placeholder = { Text("Como você quer ser chamado", color = RodapeTheme.colors.muted) },
                     modifier = Modifier.fillMaxWidth(),
-                    shape = RoundedCornerShape(14.dp),
+                    shape = RoundedCornerShape(RodapeRadii.sm),
                     singleLine = true,
                     isError = nameError,
                     colors = OutlinedTextFieldDefaults.colors(
@@ -3569,7 +3569,7 @@ fun EditProfileView(
                     onValueChange = { if (it.length <= 40) pronome = it },
                     placeholder = { Text("Como prefere ser tratado(a)", color = RodapeTheme.colors.muted) },
                     modifier = Modifier.fillMaxWidth(),
-                    shape = RoundedCornerShape(14.dp),
+                    shape = RoundedCornerShape(RodapeRadii.sm),
                     singleLine = true,
                     colors = OutlinedTextFieldDefaults.colors(
                         focusedBorderColor = RodapeTheme.colors.terracota,
@@ -3604,7 +3604,7 @@ fun EditProfileView(
                     enabled = false,
                     placeholder = { Text("exemplo@email.com", color = RodapeTheme.colors.muted) },
                     modifier = Modifier.fillMaxWidth(),
-                    shape = RoundedCornerShape(14.dp),
+                    shape = RoundedCornerShape(RodapeRadii.sm),
                     singleLine = true,
                     colors = OutlinedTextFieldDefaults.colors(
                         disabledTextColor = RodapeTheme.colors.ink,
@@ -3683,11 +3683,11 @@ private fun MeetingTicket(
     val daysUntil = remember(meeting.data) { com.example.util.daysUntilMeetingLabel(meeting.data) }
     val ticketLineColor = RodapeTheme.colors.cream
 
-    Box(modifier = Modifier.fillMaxWidth().ticketShadow(cornerRadius = 24.dp)) {
+    Box(modifier = Modifier.fillMaxWidth().ticketShadow(cornerRadius = RodapeRadii.md)) {
         Column(
             modifier = Modifier
                 .fillMaxWidth()
-                .clip(RoundedCornerShape(24.dp))
+                .clip(RoundedCornerShape(RodapeRadii.md))
                 .background(RodapeTheme.colors.olivaDeep)
         ) {
             // Cabeçalho — overline + countdown, separado por linha tracejada

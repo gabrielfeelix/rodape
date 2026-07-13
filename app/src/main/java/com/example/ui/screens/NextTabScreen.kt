@@ -67,12 +67,12 @@ fun NextTabScreen(
                 .height(48.dp)
                 .background(
                     RodapeTheme.colors.olivaSoft.copy(alpha = 0.5f),
-                    RoundedCornerShape(24.dp)
+                    RoundedCornerShape(RodapeRadii.full)
                 )
                 .border(
                     0.5.dp,
                     RodapeTheme.colors.divider,
-                    RoundedCornerShape(24.dp)
+                    RoundedCornerShape(RodapeRadii.full)
                 )
                 .padding(4.dp),
             verticalAlignment = Alignment.CenterVertically
@@ -117,7 +117,7 @@ fun NextTabScreen(
                         .height(2.dp)
                         .background(
                             if (subTab == tab) RodapeTheme.colors.terracota else Color.Transparent,
-                            RoundedCornerShape(1.dp)
+                            RoundedCornerShape(RodapeRadii.full)
                         )
                 )
             }
@@ -281,7 +281,7 @@ fun EncontroTab(
                         Box(
                             modifier = Modifier
                                 .size(40.dp)
-                                .clip(RoundedCornerShape(10.dp))
+                                .clip(RoundedCornerShape(RodapeRadii.sm))
                                 .background(
                                     if (concluded) RodapeTheme.colors.muted.copy(alpha = 0.2f)
                                     else RodapeTheme.colors.terracota.copy(alpha = 0.12f)
@@ -476,7 +476,7 @@ fun EncontroTab(
                                 modifier = Modifier
                                     .weight(1f)
                                     .height(48.dp)
-                                    .clip(RoundedCornerShape(22.dp))
+                                    .clip(RoundedCornerShape(RodapeRadii.full))
                                     .background(if (isSelected) RodapeTheme.colors.ink else Color.Transparent)
                                     // A11y: anuncia "selecionado" e papel de opção única.
                                     .selectable(
@@ -489,7 +489,7 @@ fun EncontroTab(
                                     .border(
                                         width = 1.dp,
                                         color = if (isSelected) Color.Transparent else RodapeTheme.colors.divider,
-                                        shape = RoundedCornerShape(22.dp)
+                                        shape = RoundedCornerShape(RodapeRadii.full)
                                     ),
                                 contentAlignment = Alignment.Center
                             ) {

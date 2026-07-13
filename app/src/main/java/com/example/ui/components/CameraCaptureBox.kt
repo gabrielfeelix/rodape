@@ -19,6 +19,7 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Icon
 import androidx.compose.material3.Text
 import androidx.compose.foundation.layout.size
+import com.example.ui.theme.RodapeRadii
 import com.example.ui.theme.RodapeIcons
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.Composable
@@ -103,7 +104,7 @@ fun CameraCaptureBox(
         // Preview
         androidx.compose.ui.viewinterop.AndroidView(
             factory = { previewView },
-            modifier = Modifier.fillMaxSize().clip(RoundedCornerShape(16.dp))
+            modifier = Modifier.fillMaxSize().clip(RoundedCornerShape(RodapeRadii.md))
         )
 
         // Frame de detecção (decorativo) — bordas cremes nos cantos
@@ -164,7 +165,7 @@ fun CameraCaptureBox(
                 modifier = Modifier
                     .align(Alignment.TopCenter)
                     .padding(top = 16.dp)
-                    .clip(RoundedCornerShape(10.dp))
+                    .clip(RoundedCornerShape(RodapeRadii.sm))
                     .background(RodapeTheme.colors.terracota)
                     .padding(horizontal = 14.dp, vertical = 8.dp)
             ) {

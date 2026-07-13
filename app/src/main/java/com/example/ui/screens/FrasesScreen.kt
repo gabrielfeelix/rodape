@@ -21,6 +21,7 @@ import androidx.compose.ui.unit.dp
 import com.example.ui.components.CenteredLoading
 import com.example.ui.components.QuoteCard
 import com.example.ui.components.rememberShowLoading
+import com.example.ui.theme.RodapeRadii
 import com.example.ui.theme.RodapeIcons
 import com.example.ui.theme.LiterataFontFamily
 import com.example.ui.theme.RodapeTheme
@@ -127,7 +128,7 @@ fun FrasesScreen(
                         }
                     },
                     singleLine = true,
-                    shape = RoundedCornerShape(14.dp),
+                    shape = RoundedCornerShape(RodapeRadii.sm),
                     colors = OutlinedTextFieldDefaults.colors(
                         unfocusedContainerColor = RodapeTheme.colors.cream,
                         focusedContainerColor = RodapeTheme.colors.cream,

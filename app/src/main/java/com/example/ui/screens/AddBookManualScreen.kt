@@ -193,7 +193,7 @@ fun AddBookManualScreen(
                     Box(
                         modifier = Modifier
                             .size(width = 96.dp, height = 144.dp)
-                            .clip(RoundedCornerShape(10.dp))
+                            .clip(RoundedCornerShape(RodapeRadii.xs))
                             .background(RodapeTheme.colors.dividerSoft)
                     ) {
                         Cover(

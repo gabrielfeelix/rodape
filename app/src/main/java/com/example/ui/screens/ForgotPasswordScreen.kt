@@ -22,6 +22,7 @@ import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import com.example.ui.components.RodapeCard
+import com.example.ui.theme.RodapeRadii
 import com.example.ui.theme.RodapeIcons
 import com.example.ui.theme.RodapeTheme
 import com.example.ui.theme.Terracota
@@ -113,7 +114,7 @@ fun ForgotPasswordScreen(
                             onClick = { submitReset() },
                             enabled = emailValid && !isLoading,
                             modifier = Modifier.fillMaxWidth().height(52.dp),
-                            shape = RoundedCornerShape(26.dp),
+                            shape = RoundedCornerShape(RodapeRadii.full),
                             colors = ButtonDefaults.buttonColors(containerColor = RodapeTheme.colors.terracota),
                         ) {
                             if (isLoading) {

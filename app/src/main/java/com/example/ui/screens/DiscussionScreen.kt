@@ -220,7 +220,7 @@ fun DiscussionScreen(
                         Row(
                             modifier = Modifier
                                 .fillMaxWidth()
-                                .background(RodapeTheme.colors.olivaSoft, RoundedCornerShape(14.dp))
+                                .background(RodapeTheme.colors.olivaSoft, RoundedCornerShape(RodapeRadii.sm))
                                 .padding(horizontal = 16.dp, vertical = 12.dp),
                             verticalAlignment = Alignment.CenterVertically,
                             horizontalArrangement = Arrangement.spacedBy(10.dp)
@@ -260,7 +260,7 @@ fun DiscussionScreen(
                         Column(
                             modifier = Modifier
                                 .fillMaxWidth()
-                                .background(RodapeTheme.colors.terracotaSoft, RoundedCornerShape(14.dp))
+                                .background(RodapeTheme.colors.terracotaSoft, RoundedCornerShape(RodapeRadii.sm))
                                 .padding(horizontal = 16.dp, vertical = 12.dp),
                             verticalArrangement = Arrangement.spacedBy(10.dp)
                         ) {
@@ -384,16 +384,16 @@ fun DiscussionScreen(
                                             .fillMaxWidth()
                                             .background(
                                                 color = if (isOwn) RodapeTheme.colors.terracotaSoft else RodapeTheme.colors.cream,
-                                                shape = RoundedCornerShape(14.dp)
+                                                shape = RoundedCornerShape(RodapeRadii.sm)
                                             )
                                             .then(
                                                 if (!isOwn) Modifier.border(
                                                     width = 0.5.dp,
                                                     color = RodapeTheme.colors.divider,
-                                                    shape = RoundedCornerShape(14.dp)
+                                                    shape = RoundedCornerShape(RodapeRadii.sm)
                                                 ) else Modifier
                                             )
-                                            .clip(RoundedCornerShape(14.dp))
+                                            .clip(RoundedCornerShape(RodapeRadii.sm))
                                             // C2: reagir virou long-press (ou o ícone ao
                                             // lado do nome) — tocar a bolha pra reler não
                                             // abre mais o seletor de emoji sem querer.

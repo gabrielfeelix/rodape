@@ -197,7 +197,7 @@ fun BookDetailScreen(
             modifier = Modifier
                 .fillMaxWidth()
                 .padding(horizontal = 24.dp)
-                .clip(RoundedCornerShape(16.dp))
+                .clip(RoundedCornerShape(RodapeRadii.md))
                 .background(RodapeTheme.colors.oliva)
                 .padding(horizontal = 20.dp, vertical = 14.dp),
             contentAlignment = Alignment.Center
@@ -260,7 +260,7 @@ fun BookDetailScreen(
                             .height(2.dp)
                             .background(
                                 if (isSelected) RodapeTheme.colors.terracota else RodapeTheme.colors.dividerSoft,
-                                RoundedCornerShape(1.dp)
+                                RoundedCornerShape(RodapeRadii.full)
                             )
                     )
                 }
