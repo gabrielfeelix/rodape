@@ -42,7 +42,9 @@ object BookSearchService {
             }
             val olResp = olDeferred.await()
             val olResults: List<UnifiedBookResult> = olResp?.docs.orEmpty()
-                .filter { it.coverI != null && !it.authorName.isNullOrEmpty() }
+                // H1: NÃO derrubar livro sem capa — o app já mostra capa-placeholder.
+                // Antes o filtro escondia da busca livros válidos só por não ter capa.
+                .filter { !it.authorName.isNullOrEmpty() }
                 .map { doc ->
                     UnifiedBookResult(
                         title = doc.title,

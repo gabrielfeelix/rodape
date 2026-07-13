@@ -373,7 +373,9 @@ fun LoginScreen(
     val passwordFocusRequester = remember { FocusRequester() }
 
     val isEmailValid = email.contains("@") && email.length >= 5
-    val isPasswordValid = password.length >= 6
+    // B5: o login só valida a conta no servidor — não deve impor uma regra de tamanho
+    // (o "mín. 6" divergia do cadastro "8 forte" e podia barrar senha legítima).
+    val isPasswordValid = password.isNotEmpty()
     val isFormValid = isEmailValid && isPasswordValid
 
     val submitLogin: () -> Unit = {
@@ -500,7 +502,7 @@ fun LoginScreen(
                     // cinza mudo.
                     val faltamLogin = buildList {
                         if (!isEmailValid) add("um email válido")
-                        if (!isPasswordValid) add("a senha (mín. 6 caracteres)")
+                        if (!isPasswordValid) add("a senha")
                     }
                     if (faltamLogin.isNotEmpty() && (email.isNotEmpty() || password.isNotEmpty())) {
                         Spacer(modifier = Modifier.height(12.dp))

@@ -353,17 +353,16 @@ private fun handleNotificationNavigation(
     onNavigateToTab: (String) -> Unit,
     onNavigateBack: () -> Unit
 ) {
+    // F2: lê o payload pelo JSON parseado (o slicing manual quebrava se o servidor
+    // reordenasse/espaçasse os campos).
+    val payload: JsonObject? = runCatching { Json.parseToJsonElement(payloadJson).jsonObject }.getOrNull()
+    fun field(name: String): String? = (payload?.get(name) as? JsonPrimitive)?.contentOrNull
     when (tipo) {
         "comment_on_chapter" -> {
-            val chapterId = if (payloadJson.contains("\"chapterId\"")) {
-                payloadJson.substringAfter("\"chapterId\":\"").substringBefore("\"")
-            } else ""
+            val chapterId = field("chapterId").orEmpty()
             if (chapterId.isNotBlank()) {
                 val chapter = chapters.find { it.id == chapterId }
-                val title = chapter?.titulo
-                    ?: if (payloadJson.contains("\"chapterTitle\"")) {
-                        payloadJson.substringAfter("\"chapterTitle\":\"").substringBefore("\"")
-                    } else "Capítulo"
+                val title = chapter?.titulo ?: field("chapterTitle") ?: "Capítulo"
                 onNavigateToDiscussion(chapterId, title)
             }
         }

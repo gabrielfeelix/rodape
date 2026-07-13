@@ -74,6 +74,33 @@ e do plano em `docs/PLANO-PENDENCIAS-2026-07-12.md`. Onda 1 = "destrava quem imp
   como código pronto pra colar no runbook, **fora do build** de propósito (sem
   `google-services.json` o build quebraria).
 
+### Onda 4 — polimento e regras de negócio
+
+- **H1 · Busca não esconde livro sem capa** — o Open Library deixou de derrubar
+  resultados válidos só por não terem capa (o app já mostra capa-placeholder).
+- **B5 · Regra de senha coerente** — o login parou de impor um "mín. 6" que divergia
+  do cadastro ("8 forte") e podia barrar senha legítima; agora só pede a senha.
+- **G2 · Excluir conta pede confirmação por digitação** — numa ação irreversível, o
+  botão só habilita quando você digita **"EXCLUIR"** (o "Pedir por email" continua).
+- **A4 · Salvar só o avatar** — trocar a foto não depende mais do nome estar "válido"
+  (só exige nome válido quando o nome está sendo de fato alterado).
+- **E2 · Mais reações** — a paleta foi de 5 pra 10 emojis (2 linhas de 5).
+- **F2 · Deep-link de notificação robusto** — passou a ler o payload pelo JSON
+  parseado em vez de recortar string (não quebra se o servidor reordenar campos).
+
+### Adiado com critério (decisão de produto)
+
+- **J1 · Dark mode** — aprovado como **opção em Configurações**, mas o app hoje usa
+  **constantes de cor fixas** (Ink/Cream/Paper…) em vez de tokens de tema, então é um
+  **rework** (reescrever as referências de cor pra serem theme-aware), não um toggle.
+  Shipar meia-boca deixaria "buracos brancos". Fica pra um passe dedicado com
+  verificação visual em emulador.
+- **C6 · Avatar neutro + pronome** — exige um **asset de ilustração** novo e uma
+  **coluna de pronome** no banco; escopo de design + migração, adiado.
+- **C3 (abas do livro em `ScrollableTabRow`)**, **B6 (código morto do JoinClub)** e
+  **I2 (unificar fallback de nome)** — mudanças visuais/cosméticas que ficam melhor com
+  checagem visual; anotadas em `docs/PLANO-PENDENCIAS-2026-07-12.md`.
+
 ## v1.0.12 — 2026-07-12 (build 13)
 
 ### 📅 Agendar encontro ficou fácil de achar

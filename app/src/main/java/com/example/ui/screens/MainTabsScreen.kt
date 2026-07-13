@@ -3098,6 +3098,9 @@ fun ProfileScreenTab(
     if (showDeleteAccountDialog) {
         var deleting by remember { mutableStateOf(false) }
         var deleteError by remember { mutableStateOf<String?>(null) }
+        // G2: confirmação por digitação numa ação IRREVERSÍVEL — atrito de propósito.
+        var confirmText by remember { mutableStateOf("") }
+        val confirmedToDelete = confirmText.trim().equals("EXCLUIR", ignoreCase = true)
         AlertDialog(
             onDismissRequest = { if (!deleting) showDeleteAccountDialog = false },
             containerColor = MaterialTheme.colorScheme.surface,
@@ -3108,6 +3111,18 @@ fun ProfileScreenTab(
                         "Essa ação é permanente. Sua conta, perfil e dados pessoais são removidos. Conteúdo já compartilhado nos clubes pode permanecer anônimo.",
                         style = MaterialTheme.typography.bodyMedium.copy(color = Muted)
                     )
+                    OutlinedTextField(
+                        value = confirmText,
+                        onValueChange = { confirmText = it },
+                        singleLine = true,
+                        enabled = !deleting,
+                        label = { Text("Digite EXCLUIR para confirmar") },
+                        modifier = Modifier.fillMaxWidth(),
+                        colors = OutlinedTextFieldDefaults.colors(
+                            focusedBorderColor = MaterialTheme.colorScheme.error,
+                            focusedLabelColor = MaterialTheme.colorScheme.error,
+                        ),
+                    )
                     deleteError?.let {
                         Text(it, color = MaterialTheme.colorScheme.error, style = MaterialTheme.typography.bodySmall)
                     }
@@ -3115,7 +3130,7 @@ fun ProfileScreenTab(
             },
             confirmButton = {
                 TextButton(
-                    enabled = !deleting,
+                    enabled = !deleting && confirmedToDelete,
                     onClick = {
                         deleting = true
                         deleteError = null
@@ -3464,8 +3479,11 @@ fun EditProfileView(
                 // Email não é editável (gerido pelo Auth), então só nome/avatar
                 // contam pra habilitar Salvar. Nome único é aceito (não trava a foto).
                 val nameValid = name.trim().length >= 2
-                val changedSomething = name != initialName || avatarUrl != initialAvatarUrl
-                val canSave = changedSomething && nameValid
+                val nameChanged = name != initialName
+                val avatarChanged = avatarUrl != initialAvatarUrl
+                // A4: trocar só o avatar não depende do nome — só exige nome válido
+                // quando o nome está sendo de fato alterado.
+                val canSave = (nameChanged || avatarChanged) && (!nameChanged || nameValid)
                 TbButton(
                     text = "Salvar",
                     onClick = {

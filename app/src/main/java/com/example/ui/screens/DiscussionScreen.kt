@@ -769,26 +769,32 @@ fun DiscussionScreen(
             onDismissRequest = { selectedCommentToReact = null },
             title = { Text("Adicionar reação", style = MaterialTheme.typography.headlineLarge) },
             text = {
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.SpaceAround
-                ) {
-                    val emojis = listOf("❤", "🤯", "💀", "🍷", "👍")
-                    emojis.forEach { emoji ->
-                        Text(
-                            text = emoji,
-                            fontSize = 32.sp,
-                            modifier = Modifier
-                                .clickable {
-                                    viewModel.toggleReaction(comment.id, emoji)
-                                    selectedCommentToReact = null
-                                }
-                                .semantics {
-                                    role = Role.Button
-                                    contentDescription = "Reagir com $emoji"
-                                }
-                                .padding(8.dp)
-                        )
+                // E2: paleta um pouco maior (era só 5). Duas linhas de 5 pra caber
+                // no diálogo sem espremer/estourar.
+                val emojis = listOf("❤", "😂", "😮", "😢", "🤯", "💀", "🍷", "👏", "🔥", "👍")
+                Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
+                    emojis.chunked(5).forEach { rowEmojis ->
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.SpaceAround
+                        ) {
+                            rowEmojis.forEach { emoji ->
+                                Text(
+                                    text = emoji,
+                                    fontSize = 30.sp,
+                                    modifier = Modifier
+                                        .clickable {
+                                            viewModel.toggleReaction(comment.id, emoji)
+                                            selectedCommentToReact = null
+                                        }
+                                        .semantics {
+                                            role = Role.Button
+                                            contentDescription = "Reagir com $emoji"
+                                        }
+                                        .padding(8.dp)
+                                )
+                            }
+                        }
                     }
                 }
             },
