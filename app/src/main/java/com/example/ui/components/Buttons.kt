@@ -5,11 +5,14 @@ import androidx.compose.animation.core.tween
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.interaction.collectIsPressedAsState
+import androidx.compose.animation.Crossfade
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
+import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -46,6 +49,9 @@ fun TbButton(
     variant: TbButtonVariant = TbButtonVariant.Primary,
     size: TbButtonSize = TbButtonSize.Md,
     enabled: Boolean = true,
+    // Estado ocupado: troca o rótulo por um spinner (contentColor) e bloqueia o
+    // clique. Antes todo fluxo async ou travava o label ou trocava a tela inteira.
+    loading: Boolean = false,
 ) {
     val style = when (variant) {
         TbButtonVariant.Primary -> ButtonStyle(RodapeTheme.colors.oliva, RodapeTheme.colors.cream, null)
@@ -82,7 +88,9 @@ fun TbButton(
 
     Button(
         onClick = onClick,
-        enabled = enabled,
+        // Enquanto carrega, o botão não dispara (mantém o fill de acento, não o
+        // cinza de disabled — parece "ocupado", não "bloqueado").
+        enabled = enabled && !loading,
         interactionSource = interactionSource,
         modifier = modifier
             .height(height)
@@ -96,17 +104,29 @@ fun TbButton(
         colors = ButtonDefaults.buttonColors(
             containerColor = style.bg,
             contentColor = style.fg,
-            disabledContainerColor = RodapeTheme.colors.disabledSurface,
-            disabledContentColor = RodapeTheme.colors.ink.copy(alpha = 0.38f),
+            // Loading não é disabled: preserva as cores de acento também no estado
+            // desabilitado-por-loading pra não piscar cinza.
+            disabledContainerColor = if (loading) style.bg else RodapeTheme.colors.disabledSurface,
+            disabledContentColor = if (loading) style.fg else RodapeTheme.colors.ink.copy(alpha = 0.38f),
         ),
     ) {
-        Text(
-            text = text,
-            style = MaterialTheme.typography.labelLarge.copy(
-                fontSize = fontSize.sp,
-            ),
-            maxLines = 1,
-            overflow = TextOverflow.Ellipsis,
-        )
+        Crossfade(targetState = loading, label = "tbButtonLoading") { isLoading ->
+            if (isLoading) {
+                CircularProgressIndicator(
+                    color = style.fg,
+                    strokeWidth = 2.dp,
+                    modifier = Modifier.size((fontSize + 3).dp),
+                )
+            } else {
+                Text(
+                    text = text,
+                    style = MaterialTheme.typography.labelLarge.copy(
+                        fontSize = fontSize.sp,
+                    ),
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis,
+                )
+            }
+        }
     }
 }

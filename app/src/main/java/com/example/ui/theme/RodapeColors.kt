@@ -46,6 +46,9 @@ data class RodapeColors(
     val divider: Color,
     val dividerSoft: Color,
     val disabledSurface: Color,
+    // Aviso / conflito (base dourada)
+    val warning: Color,
+    val warningSoft: Color,
     // Meta: útil pra ramos raros que precisam saber o tema (ex.: elevação/sombra).
     val isDark: Boolean,
 )
@@ -74,6 +77,8 @@ val LightRodapeColors = RodapeColors(
     divider = Divider,
     dividerSoft = DividerSoft,
     disabledSurface = DisabledSurface,
+    warning = Warning,
+    warningSoft = WarningSoft,
     isDark = false,
 )
 
@@ -101,6 +106,8 @@ val DarkRodapeColors = RodapeColors(
     divider = DividerD,
     dividerSoft = DividerSoftD,
     disabledSurface = DisabledSurfaceD,
+    warning = WarningD,
+    warningSoft = WarningSoftD,
     isDark = true,
 )
 

@@ -1,6 +1,20 @@
 package com.example.ui.theme
 
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.unit.Dp
+import androidx.compose.ui.unit.dp
+
+/**
+ * Escala ÚNICA de raio de canto (Onda 1 do PLANO-UI). Antes o app usava
+ * 3/4/6/10/12/14/16/20/22/24/28 sem sistema. Regra:
+ *  - [xs] capas de livro · [sm] chips, banners, campos · [md] cards · [full] pílulas.
+ */
+object RodapeRadii {
+    val xs: Dp = 3.dp
+    val sm: Dp = 12.dp
+    val md: Dp = 20.dp
+    val full: Dp = 999.dp
+}
 
 /**
  * Tokens que não cabem no ColorScheme do Material 3.

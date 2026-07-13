@@ -48,6 +48,10 @@ val Divider = Color(0xFFE9E7DD)
 val DividerSoft = Color(0xFFF1EFE6)
 val DisabledSurface = Color(0xFFD8C9B8)
 
+// Aviso / conflito (base dourada) — antes era hex cravado no banner da Suggest.
+val WarningSoft = Color(0xFFFFF4D6)
+val Warning = Color(0xFF8B6B00)
+
 // ════════════════════════════════════════════════════════════════════════════
 // PALETA ESCURA (dark mode)
 // ════════════════════════════════════════════════════════════════════════════
@@ -98,3 +102,7 @@ val CreamD = Color(0xFF23261B)          // "cream" no escuro = superfície escur
 val DividerD = Color(0xFF2E3226)
 val DividerSoftD = Color(0xFF23261B)
 val DisabledSurfaceD = Color(0xFF3B3C31)
+
+// Aviso — âmbar escuro de fundo + dourado claro de texto (legível no escuro).
+val WarningSoftD = Color(0xFF3A2F14)
+val WarningD = Color(0xFFE6C36B)
