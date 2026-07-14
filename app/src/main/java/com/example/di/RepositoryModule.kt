@@ -2,7 +2,11 @@ package com.example.di
 
 import com.example.data.remote.repo.NotificationRepository
 import com.example.data.remote.repo.OfflineFirstNotificationRepository
+import com.example.data.remote.repo.DiscussionRepository
+import com.example.data.remote.repo.MeetingRepository
 import com.example.data.remote.repo.ModerationRepository
+import com.example.data.remote.repo.OfflineFirstMeetingRepository
+import com.example.data.remote.repo.OfflineFirstDiscussionRepository
 import com.example.data.remote.repo.OfflineFirstModerationRepository
 import com.example.data.remote.repo.OfflineFirstUserRepository
 import com.example.data.remote.repo.OfflineFirstVotingRepository
@@ -64,4 +68,16 @@ internal abstract class RepositoryModule {
     abstract fun bindVotingRepository(
         impl: OfflineFirstVotingRepository,
     ): VotingRepository
+
+    @Binds
+    @Singleton
+    abstract fun bindDiscussionRepository(
+        impl: OfflineFirstDiscussionRepository,
+    ): DiscussionRepository
+
+    @Binds
+    @Singleton
+    abstract fun bindMeetingRepository(
+        impl: OfflineFirstMeetingRepository,
+    ): MeetingRepository
 }
