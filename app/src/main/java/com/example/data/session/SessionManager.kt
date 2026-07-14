@@ -3,41 +3,57 @@ package com.example.data.session
 import com.example.data.DataStoreManager
 import com.example.data.model.*
 import com.example.data.remote.AuthRepository
-import com.example.data.remote.RemoteRepository
+import com.example.data.remote.SyncEngine
+import com.example.data.remote.repo.BookRepository
+import com.example.data.remote.repo.ClubRepository
+import com.example.data.remote.repo.UserRepository
+import com.example.data.remote.repo.VotingRepository
 import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.launch
+import javax.inject.Inject
+import javax.inject.Singleton
 
 /**
- * Grafo de sessão compartilhado (F4b) — o "nó" que quase toda tela lê.
+ * Grafo de sessão compartilhado — o "nó" que quase toda tela lê.
  *
  * Segura o estado de sessão (currentUserId/activeClubId + derivados de clube/livro/papel),
- * os observers de sessão do antigo `MainViewModel.init` e os helpers cross-domain. Extraído
- * verbatim do MainViewModel: comportamento IDÊNTICO — mesmos flows, mesmo SharingStarted,
- * mesmo scope (recebe o `viewModelScope` do VM, então o ciclo de vida não muda).
+ * os observers de sessão do antigo `MainViewModel.init` e os helpers cross-domain.
  *
- * F5 (deferido): vira `@Singleton` com scope próprio (sobrevive recreation) e injeta as
- * interfaces de repo fatiadas (User/Club/Book/Voting) em vez da fachada RemoteRepository.
- * Já é Android-free de propósito (testável sem Robolectric).
+ * F5.1: virou `@Singleton` com scope próprio (sobrevive à recreation da Activity — melhor que
+ * o `by viewModels()` de antes) e injeta as interfaces de repo fatiadas do F3c (User/Club/Book/
+ * Voting) + o SyncEngine @Singleton, em vez da fachada RemoteRepository. Android-free (testável
+ * sem Robolectric). Comportamento dos flows é o mesmo — só a origem (repo injetado) e o scope
+ * (app em vez de VM) mudaram.
  */
-internal class SessionManager(
-    private val scope: CoroutineScope,
-    private val repository: RemoteRepository,
+@Singleton
+internal class SessionManager @Inject constructor(
+    private val userRepo: UserRepository,
+    private val clubRepo: ClubRepository,
+    private val bookRepo: BookRepository,
+    private val votingRepo: VotingRepository,
+    private val engine: SyncEngine,
     private val dataStoreManager: DataStoreManager,
     private val authRepository: AuthRepository,
 ) {
+    // Scope da sessão: vive pelo processo (Main.immediate, como era o viewModelScope). Não é
+    // cancelado por clear de VM — o SessionManager @Singleton persiste entre recreations.
+    private val scope = CoroutineScope(SupervisorJob() + Dispatchers.Main.immediate)
+
     // currentUserId derivado direto do Supabase Auth (sem DataStore). Eager: usado em quase
     // tudo, precisa de valor imediato.
     val currentUserId: StateFlow<String?> = authRepository.currentUserIdFlow
         .stateIn(scope, SharingStarted.Eagerly, null)
 
     val currentUser: StateFlow<User?> = currentUserId.flatMapLatest { userId ->
-        if (userId != null) repository.getUserFlow(userId) else flowOf(null)
+        if (userId != null) userRepo.getUserFlow(userId) else flowOf(null)
     }.stateIn(scope, SharingStarted.WhileSubscribed(60_000), null)
 
     // Clubs
     val allClubs: StateFlow<List<Club>> = currentUserId.flatMapLatest { userId ->
-        if (userId != null) repository.getClubsForUser(userId) else flowOf(emptyList())
+        if (userId != null) clubRepo.getClubsForUser(userId) else flowOf(emptyList())
     }.stateIn(scope, SharingStarted.WhileSubscribed(60_000), emptyList())
 
     // activeClubId vira state em memoria. Auto-inicializado com o primeiro clube ao logar;
@@ -46,19 +62,19 @@ internal class SessionManager(
     val activeClubId: StateFlow<String?> = _activeClubId.asStateFlow()
 
     val activeClub: StateFlow<Club?> = activeClubId.flatMapLatest { clubId ->
-        if (clubId != null) repository.getClubFlow(clubId) else flowOf(null)
+        if (clubId != null) clubRepo.getClubFlow(clubId) else flowOf(null)
     }.stateIn(scope, SharingStarted.WhileSubscribed(60_000), null)
 
     val currentBooksMap: StateFlow<Map<String, String>> = currentUserId.flatMapLatest { userId ->
         if (userId == null) {
             flowOf(emptyMap())
         } else {
-            repository.getClubsForUser(userId).flatMapLatest { clubs ->
+            clubRepo.getClubsForUser(userId).flatMapLatest { clubs ->
                 if (clubs.isEmpty()) {
                     flowOf(emptyMap())
                 } else {
                     val flowsList = clubs.map { club ->
-                        repository.getBookByStatusFlow(club.id, "current").map { books ->
+                        bookRepo.getBookByStatusFlow(club.id, "current").map { books ->
                             club.id to (books.firstOrNull()?.title ?: "Sem livro atual")
                         }
                     }
@@ -73,7 +89,7 @@ internal class SessionManager(
     // Current Lendo Agora Book
     val currentBook: StateFlow<Book?> = activeClubId.flatMapLatest { clubId ->
         if (clubId != null) {
-            repository.getBookByStatusFlow(clubId, "current").map { it.firstOrNull() }
+            bookRepo.getBookByStatusFlow(clubId, "current").map { it.firstOrNull() }
         } else {
             flowOf(null)
         }
@@ -81,12 +97,12 @@ internal class SessionManager(
 
     // Chapters for Current Book
     val currentChapters: StateFlow<List<Chapter>> = currentBook.flatMapLatest { book ->
-        if (book != null) repository.getChaptersForBookFlow(book.id) else flowOf(emptyList())
+        if (book != null) bookRepo.getChaptersForBookFlow(book.id) else flowOf(emptyList())
     }.stateIn(scope, SharingStarted.WhileSubscribed(60_000), emptyList())
 
     // Club Books
     val clubBooks: StateFlow<List<Book>> = activeClubId.flatMapLatest { clubId ->
-        if (clubId != null) repository.getClubBooksFlow(clubId) else flowOf(emptyList())
+        if (clubId != null) bookRepo.getClubBooksFlow(clubId) else flowOf(emptyList())
     }.stateIn(scope, SharingStarted.WhileSubscribed(60_000), emptyList())
 
     // Papel do usuário atual no clube ativo: "super_admin" | "admin" | "member" | null.
@@ -98,7 +114,7 @@ internal class SessionManager(
                 flow<String?> {
                     emit(null) // reset ao trocar de clube
                     emitAll(
-                        repository.getClubMembersRawFlow(cid).map { list ->
+                        clubRepo.getClubMembersRawFlow(cid).map { list ->
                             list.find { it.userId == uid }?.papel
                         }
                     )
@@ -117,7 +133,7 @@ internal class SessionManager(
 
     // Active voting round (session Tier 2) — o observer de auto-close abaixo depende dele.
     val activeVotingRound: StateFlow<VotingRound?> = activeClubId.flatMapLatest { clubId ->
-        if (clubId != null) repository.getActiveVotingRoundFlow(clubId) else flowOf(null)
+        if (clubId != null) votingRepo.getActiveVotingRoundFlow(clubId) else flowOf(null)
     }.stateIn(scope, SharingStarted.WhileSubscribed(60_000), null)
 
     init {
@@ -137,7 +153,7 @@ internal class SessionManager(
                     )
                     // SEM drenar: as mutations pendentes eram do usuario ANTERIOR e seriam
                     // reenviadas sob a sessao do novo (misattribution/RLS-reject).
-                    runCatching { repository.clearLocalCacheNoDrain() }
+                    runCatching { engine.clearLocalCacheNoDrain() }
                     runCatching { dataStoreManager.setLastActiveClubId(null) }
                     runCatching { dataStoreManager.setLastUserId(newUserId) }
                 }
@@ -217,19 +233,19 @@ internal class SessionManager(
     }
 
     suspend fun promoteNextQueuedBook(clubId: String): String? {
-        val next = repository.getBookByStatusFlow(clubId, "next").first()
+        val next = bookRepo.getBookByStatusFlow(clubId, "next").first()
         val head = next.firstOrNull() ?: return null
-        repository.updateClubBookStatus(clubId, head.id, "current")
+        bookRepo.updateClubBookStatus(clubId, head.id, "current")
         return head.id
     }
 
     /** Auto-close usado pelo observer de rodada expirada. Mesma ação do RPC server-side. */
     private suspend fun maybeAutoCloseExpiredRound() {
         val clubId = activeClubId.value ?: return
-        val round = repository.getActiveVotingRound(clubId) ?: return
+        val round = votingRepo.getActiveVotingRound(clubId) ?: return
         if (System.currentTimeMillis() >= round.fechaEm) {
             // RPC close_voting_round faz tudo no servidor (finished + promove + notifica + fecha).
-            repository.closeVotingRoundViaRpc(round.id)
+            votingRepo.closeVotingRoundViaRpc(round.id)
         }
     }
 }

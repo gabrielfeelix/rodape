@@ -3,6 +3,7 @@ package com.example.di
 import com.example.data.DataStoreManager
 import com.example.data.remote.AuthRepository
 import com.example.data.remote.RemoteRepository
+import com.example.data.session.SessionManager
 import dagger.hilt.EntryPoint
 import dagger.hilt.InstallIn
 import dagger.hilt.components.SingletonComponent
@@ -27,4 +28,5 @@ internal interface UiGraphEntryPoint {
     fun remoteRepository(): RemoteRepository
     fun dataStoreManager(): DataStoreManager
     fun authRepository(): AuthRepository
+    fun sessionManager(): SessionManager
 }

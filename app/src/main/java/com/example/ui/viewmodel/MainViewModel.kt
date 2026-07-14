@@ -33,10 +33,10 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
     private val dataStoreManager = entryPoint.dataStoreManager()
     private val authRepository = entryPoint.authRepository()
 
-    // F4b: grafo de sessão extraído p/ SessionManager. Recebe o viewModelScope — lifecycle
-    // IDÊNTICO ao antigo (flows/observers cancelam quando o VM é limpo). A VM re-expõe os
-    // flows via forwarders abaixo, então telas e ações internas seguem inalteradas.
-    private val session = SessionManager(viewModelScope, repository, dataStoreManager, authRepository)
+    // F5.1: SessionManager virou @Singleton (scope próprio, injeta repos fatiados). Vem do
+    // grafo Hilt via EntryPoint — mesma instância p/ toda a UI, sobrevive à recreation. A VM
+    // re-expõe os flows via forwarders abaixo, então telas e ações internas seguem inalteradas.
+    private val session = entryPoint.sessionManager()
 
     // Mostra um erro na tela quando uma ação de salvar FALHA de verdade. Antes o
     // app engolia a exceção e o usuário não sabia por que "não acontecia nada".
