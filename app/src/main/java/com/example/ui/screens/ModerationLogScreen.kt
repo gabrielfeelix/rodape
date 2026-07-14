@@ -1,8 +1,10 @@
 package com.example.ui.screens
 
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.ui.draw.drawBehind
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.outlined.ArrowBack
 import androidx.compose.material.icons.outlined.VerifiedUser
@@ -14,10 +16,12 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextDecoration
 import androidx.compose.ui.unit.dp
 import com.example.ui.components.Avatar
+import com.example.ui.components.Overline
+import com.example.ui.components.RodapeDialog
 import com.example.ui.components.SkeletonRowList
 import com.example.ui.components.TbButton
+import com.example.ui.components.TbButtonSize
 import com.example.ui.components.TbButtonVariant
-import com.example.ui.components.RodapeCard
 import com.example.ui.components.rememberShowLoading
 import com.example.ui.theme.*
 import com.example.ui.viewmodel.MainViewModel
@@ -81,56 +85,120 @@ fun ModerationLogScreen(
                 }
             }
         } else {
+            // 3.12: TIMELINE de verdade — rail vertical contínuo com nó terracota
+            // por evento, agrupado por data, e o comentário removido como bloco
+            // CITADO riscado pendurado no nó (era lista de cards idênticos).
+            val now = remember { System.currentTimeMillis() }
+            val umDia = 86_400_000L
+            val grouped = remember(removed) {
+                removed.sortedByDescending { it.criadoEm }.groupBy { c ->
+                    val idade = now - c.criadoEm
+                    when {
+                        idade < umDia -> "HOJE"
+                        idade < 7 * umDia -> "ESTA SEMANA"
+                        idade < 30 * umDia -> "ESTE MÊS"
+                        else -> "ANTES"
+                    }
+                }
+            }
             LazyColumn(
                 modifier = Modifier.fillMaxSize().padding(padding).padding(horizontal = 16.dp),
-                verticalArrangement = Arrangement.spacedBy(12.dp),
                 contentPadding = PaddingValues(vertical = 16.dp)
             ) {
-                items(removed, key = { it.id }) { c ->
-                    val author = members.find { it.id == c.userId }
-                    val remover = members.find { it.id == c.removidoPor }
-                    RodapeCard(modifier = Modifier.fillMaxWidth()) {
-                        Row(
-                            verticalAlignment = Alignment.CenterVertically,
-                            horizontalArrangement = Arrangement.spacedBy(10.dp)
-                        ) {
-                            Avatar(name = author?.nome ?: "Membro", avatarUrl = author?.avatarUrl ?: "", size = 28.dp)
-                            Column(modifier = Modifier.weight(1f)) {
-                                Text(
-                                    author?.nome ?: "Membro",
-                                    style = MaterialTheme.typography.bodyMedium.copy(
-                                        fontWeight = FontWeight.SemiBold,
-                                        color = RodapeTheme.colors.ink
-                                    )
+                grouped.forEach { (group, items) ->
+                    item(key = "header-$group") {
+                        Overline(
+                            text = group,
+                            color = RodapeTheme.colors.terracota,
+                            modifier = Modifier.padding(top = 8.dp, bottom = 10.dp),
+                        )
+                    }
+                    items(items, key = { it.id }) { c ->
+                        val author = members.find { it.id == c.userId }
+                        val remover = members.find { it.id == c.removidoPor }
+                        // Cor hoistada: drawBehind é lambda não-composable.
+                        val quoteBarColor = RodapeTheme.colors.divider
+                        Row(modifier = Modifier.fillMaxWidth().height(IntrinsicSize.Min)) {
+                            // Rail + nó
+                            Column(
+                                horizontalAlignment = Alignment.CenterHorizontally,
+                                modifier = Modifier.width(20.dp).fillMaxHeight()
+                            ) {
+                                Box(
+                                    Modifier
+                                        .size(10.dp)
+                                        .background(RodapeTheme.colors.terracota, androidx.compose.foundation.shape.CircleShape)
                                 )
-                                Text(
-                                    timeAgo(c.criadoEm),
-                                    style = MaterialTheme.typography.labelSmall.copy(color = RodapeTheme.colors.muted)
+                                Box(
+                                    Modifier
+                                        .width(2.dp)
+                                        .weight(1f)
+                                        .background(RodapeTheme.colors.dividerSoft)
                                 )
                             }
-                        }
-                        Spacer(modifier = Modifier.height(8.dp))
-                        Text(
-                            text = c.texto,
-                            style = MaterialTheme.typography.bodyMedium.copy(
-                                color = RodapeTheme.colors.muted,
-                                textDecoration = TextDecoration.LineThrough
-                            )
-                        )
-                        Spacer(modifier = Modifier.height(8.dp))
-                        Text(
-                            text = "Removido por ${remover?.nome ?: "admin"}" +
-                                (if (c.motivoRemocao?.isNotBlank() == true) " · Motivo: ${c.motivoRemocao}" else ""),
-                            style = MaterialTheme.typography.labelSmall.copy(color = RodapeTheme.colors.terracota)
-                        )
-                        if (isSuper) {
-                            Spacer(modifier = Modifier.height(8.dp))
-                            TbButton(
-                                text = "Restaurar",
-                                onClick = { restoreCommentId = c.id },
-                                variant = TbButtonVariant.Outline,
-                                modifier = Modifier.fillMaxWidth()
-                            )
+                            Spacer(modifier = Modifier.width(10.dp))
+                            Column(modifier = Modifier.weight(1f).padding(bottom = 20.dp)) {
+                                Row(
+                                    verticalAlignment = Alignment.CenterVertically,
+                                    horizontalArrangement = Arrangement.spacedBy(10.dp)
+                                ) {
+                                    // Avatar 32 (3.12) — alinhado com o resto do app.
+                                    Avatar(name = author?.nome ?: "Membro", avatarUrl = author?.avatarUrl ?: "", size = 32.dp)
+                                    Column(modifier = Modifier.weight(1f)) {
+                                        Text(
+                                            author?.nome ?: "Membro",
+                                            style = MaterialTheme.typography.bodyMedium.copy(
+                                                fontWeight = FontWeight.SemiBold,
+                                                color = RodapeTheme.colors.ink
+                                            )
+                                        )
+                                        Text(
+                                            timeAgo(c.criadoEm),
+                                            style = MaterialTheme.typography.labelSmall.copy(color = RodapeTheme.colors.muted)
+                                        )
+                                    }
+                                }
+                                Spacer(modifier = Modifier.height(8.dp))
+                                // Bloco CITADO: borda de citação + fundo cream, texto riscado.
+                                Box(
+                                    modifier = Modifier
+                                        .fillMaxWidth()
+                                        .background(
+                                            RodapeTheme.colors.cream,
+                                            androidx.compose.foundation.shape.RoundedCornerShape(RodapeRadii.xs)
+                                        )
+                                        .drawBehind {
+                                            drawRect(
+                                                color = quoteBarColor,
+                                                size = androidx.compose.ui.geometry.Size(3.dp.toPx(), size.height),
+                                            )
+                                        }
+                                        .padding(start = 12.dp, end = 12.dp, top = 8.dp, bottom = 8.dp)
+                                ) {
+                                    Text(
+                                        text = c.texto,
+                                        style = MaterialTheme.typography.bodyMedium.copy(
+                                            color = RodapeTheme.colors.muted,
+                                            textDecoration = TextDecoration.LineThrough
+                                        )
+                                    )
+                                }
+                                Spacer(modifier = Modifier.height(6.dp))
+                                Text(
+                                    text = "Removido por ${remover?.nome ?: "admin"}" +
+                                        (if (c.motivoRemocao?.isNotBlank() == true) " · Motivo: ${c.motivoRemocao}" else ""),
+                                    style = MaterialTheme.typography.labelSmall.copy(color = RodapeTheme.colors.terracota)
+                                )
+                                if (isSuper) {
+                                    Spacer(modifier = Modifier.height(8.dp))
+                                    TbButton(
+                                        text = "Restaurar",
+                                        onClick = { restoreCommentId = c.id },
+                                        variant = TbButtonVariant.Outline,
+                                        size = TbButtonSize.Sm,
+                                    )
+                                }
+                            }
                         }
                     }
                 }
@@ -139,10 +207,9 @@ fun ModerationLogScreen(
     }
 
     if (restoreCommentId != null) {
-        AlertDialog(
-            containerColor = MaterialTheme.colorScheme.surface,
+        RodapeDialog(
             onDismissRequest = { restoreCommentId = null },
-            title = { Text("Restaurar comentário?") },
+            title = "Restaurar comentário?",
             text = {
                 Text(
                     "O comentário volta a aparecer na conversa para todos os membros.",
