@@ -49,6 +49,64 @@ O `PLANO-UI-2026-07-13.md` é o **plano-mestre** (5 ondas). Este doc diz **onde 
 > Padrões pra manter: specs de `transitionSpec` são hoisteados (não é contexto
 > composable); punchs de mola usam guard de 1ª composição; animação de escala é
 > sempre `graphicsLayer` (draw-only). Próximo: **checkpoint visual → Onda 3**.
+>
+> **Atualização 2026-07-13 (sessão 2, parte 3): ONDAS 3 e 4 implementadas**
+> (`507e333`…`8899fc1`, 15 commits, tudo compilando limpo). **TUDO pendente de
+> checkpoint visual em device.** O que entrou:
+>
+> **ONDA 3 (momentos-assinatura), 13 batches:**
+> - 3.1 Ticket físico na NextTab (canhoto oliva + day-stamp serif + picote +
+>   notches ANCORADOS via onGloballyPositioned) + fix bug 8 no ticket do Home.
+> - 3.2 MeetingDetail header = canhoto EXPANDIDO do ticket (olivaDeep + day-stamp
+>   + picote + ticketShadow; concluído rebaixa pra neutro).
+> - 3.3 Votação AO VIVO: cards ordenados por votos reordenando com animateItem,
+>   líder com aro dourado + selo "Na frente" (Trophy, liveRegion), countdown com
+>   dot pulsando, manchete "N votos · M membros", justificativa unificada
+>   (texto-link), stepper com ícones (novo RodapeIcons.Minus), PillToggle real
+>   em duração/cadência, renames de desambiguação.
+> - 3.4/3.5 RSVP SEMÂNTICO nos 2 pickers: Vou=olivaSoft/olivaDark,
+>   Talvez=warningSoft/warning (dourado legível), Não vou=neutro; MeetingDetail
+>   ganhou liveRegion + raio pílula. "Quem vai?": barra empilhada + contadores
+>   casando + RsvpPeekAvatars nas linhas colapsadas.
+> - 3.6 Hero do livro: backdrop AMBIENTE (capa borrada, API 31+ guard), capa em
+>   fade+rise, anel de progresso enchendo; spoiler com CADEADO + debate
+>   dissolvendo; "Marcar que li" virou TbButton; timeline do histórico só com
+>   marcos data-driven.
+> - 3.7 Chapter list: linha colapsada "Cap.N · título · ⋮" (ações no menu),
+>   reorder anima (animateItem), terracota só no destrutivo.
+> - 3.8 QuoteCard KEEPSAKE (gradiente, aspas emoldurando, atribuição interna,
+>   acento variado por card, long-press) + **share como PNG** (GraphicsLayer→
+>   toImageBitmap→FileProvider NOVO no manifest + xml/file_paths.xml).
+> - 3.9 Estante cover-first: sem card branco, capa 128×192 com shelfCoverShadow
+>   (novo em Shadows.kt), gutter 12, sem estrelas vazias, filtro SegmentedControl
+>   "♥ Favoritos (N)", empty com prateleira geométrica.
+> - 3.10 Intro: emoji → spot illustrations GEOMÉTRICAS (livro/prateleira/
+>   conversa/calendário) + parallax por currentPageOffsetFraction; spines da
+>   Welcome com sombra tingida.
+> - 3.11 Notificações: trilho terracota 3dp no unread + peso condicional, swipe
+>   = marcar lida (SwipeToDismissBox; não há delete no backend), member_removed
+>   neutro / member_finished dourado, espaçamento 10dp, empty com personalidade.
+> - 3.12 Moderação como TIMELINE (rail + nós terracota + grupos por data +
+>   bloco citado riscado; RodapeDialog no restaurar).
+> - 3.13 Polish: Suggest sem CTA duplicado (barra inferior com loading), About
+>   app bar unificada + feedback OlivaSoft, ManageClub com HERO dashboard.
+> - 3.14 Branded loader: lombadas respirando (CenteredLoading).
+>
+> **ONDA 4 (fecho), batch 1:**
+> - Splash de marca (core-splashscreen; Theme.App.Starting no manifest).
+> - Predictive back opt-in; status bar icons acompanham o TEMA DO APP.
+> - Coil crossfade nas capas; pull-to-refresh terracota/cream; RodapeSnackbarHost
+>   único (ink/cream/dourado) nos 3 Scaffolds. Icon monochrome já existia.
+>
+> **DEFERIDO (exige device/olho — próxima sessão):** 4.2 dynamic type sweep,
+> landscape/tablet (WindowSizeClass), RTL; 4.4 contraste AA dark + TalkBack
+> sweep; drag-to-reorder real (3.7); shared-element ticket→detail (3.2, exige
+> SharedTransitionLayout no NavHost); ~20 AlertDialog Material restantes →
+> RodapeDialog; unificar indicador do first-run + animar preview de fonte
+> (3.10); estados de erro com retry padronizado (4.3); ChatTab reusar bolha do
+> Discussion (3.6); confete de marco de leitura; corpo do step do Onboarding.
+> Os pontos de dynamic type mais flagrados (ticket notches, navbar, chooser)
+> JÁ foram resolvidos estruturalmente nas Ondas 2-3.
 
 ---
 
@@ -182,4 +240,4 @@ Criar `RodapeDialog` (shell: título Literata sempre, raio `.md`, sombra tingida
 ---
 
 ## 7. RESUMO DE 1 LINHA
-Onda 0 ✅ · Onda 1 fundação ✅ · Onda 1 migrações: sombra ✅, RatingStars ✅, warning ✅, emoji-ícone ✅, chevrons ✅, swap Material→RodapeIcons ✅, raio ✅, tipografia (títulos + Overline) ✅, RodapeDialog ✅ · ADIADO pro checkpoint visual: `.copy(fontSize)` de headline (Shelf/NextTab) · FOLLOW-UP: ~24 AlertDialog Material app-wide → RodapeDialog · Próximo: **Onda 2 (movimento)**, 100% visual. Compile e commite a cada batch. Não vaze segredo.
+Onda 0 ✅ · Onda 1 ✅ · Onda 2 (movimento) ✅ · Onda 3 (13 momentos-assinatura) ✅ · Onda 4 (fecho batch 1: splash, predictive back, status bar, crossfade, pull-refresh, snackbar) ✅ — **TUDO pendente de checkpoint visual em device**; deferidos listados no bloco de atualização acima (dynamic type/RTL/tablet/AA/TalkBack + itens que exigem olho). Compile e commite a cada batch. Não vaze segredo.
