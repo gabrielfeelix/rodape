@@ -647,12 +647,17 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
     fun toggleReaction(commentId: String, emoji: String) {
         viewModelScope.launch {
             val userId = currentUserId.value ?: return@launch
-            val existing = repository.getReactionsForCommentFlow(commentId).first().find {
-                it.userId == userId && it.emoji == emoji
-            }
-            if (existing != null) {
-                repository.deleteReaction(existing)
+            // Reação ÚNICA por pessoa (estilo WhatsApp/Teams): cada um dá no máximo
+            // uma. Tocar na própria reação desfaz; escolher outra TROCA (remove a
+            // anterior antes de aplicar a nova) — antes o PK incluía emoji e deixava
+            // empilhar ❤+🔥+👍 da mesma pessoa.
+            val mine = repository.getReactionsForCommentFlow(commentId).first()
+                .filter { it.userId == userId }
+            val same = mine.find { it.emoji == emoji }
+            if (same != null) {
+                repository.deleteReaction(same)
             } else {
+                mine.forEach { repository.deleteReaction(it) }
                 repository.insertReaction(Reaction(commentId, userId, emoji))
             }
         }

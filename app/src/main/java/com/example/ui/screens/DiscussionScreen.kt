@@ -24,6 +24,7 @@ import androidx.compose.runtime.*
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.contentDescription
@@ -52,6 +53,12 @@ import com.example.ui.theme.LiterataFontFamily
 import com.example.ui.theme.RodapeTheme
 import com.example.ui.theme.Terracota
 import com.example.ui.viewmodel.MainViewModel
+
+// O coração cru "❤" (U+2764) renderiza PRETO como glifo de texto. Adicionar o
+// seletor de apresentação emoji (U+FE0F) força o vermelho. Normaliza tanto na
+// exibição quanto no agrupamento pra reações antigas (sem FE0F) e novas caírem
+// no mesmo balde.
+private fun displayEmoji(e: String): String = if (e == "❤") "❤️" else e
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -202,18 +209,35 @@ fun DiscussionScreen(
 
                         Spacer(modifier = Modifier.height(8.dp))
 
-                        // Ênfase invertida (P9): a ação segura (voltar) é a primária;
-                        // revelar o spoiler fica como opção secundária, discreta.
+                        // Ação PRINCIPAL: "já cheguei aqui" marca o progresso pro cap N
+                        // (todos os anteriores viram lidos de uma vez) e dissolve a
+                        // barreira na hora — o caso de uso real de quem tocou num
+                        // capítulo à frente é "avancei minha leitura", não "quero
+                        // spoiler". Reusa updateBookProgress (mesma lógica do +1).
                         TbButton(
-                            text = "Voltar para minha meta",
-                            onClick = onNavigateBack,
-                            variant = TbButtonVariant.Primary
+                            text = "Já cheguei nesse capítulo",
+                            onClick = {
+                                chapterObj?.let { ch ->
+                                    viewModel.updateBookProgress(ch.bookId, chapterNum)
+                                }
+                            },
+                            variant = TbButtonVariant.Primary,
+                            leadingIcon = RodapeIcons.CheckCircle
                         )
+
+                        // Secundárias: voltar pra meta (seguro) ou espiar o debate
+                        // assumindo o risco de spoiler.
+                        TextButton(onClick = onNavigateBack) {
+                            Text(
+                                "Voltar para minha meta",
+                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                            )
+                        }
 
                         TextButton(onClick = { forceRevealDebate = true }) {
                             Text(
-                                "Revelar debate mesmo assim",
-                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                                "Só quero ver o debate",
+                                color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.7f)
                             )
                         }
                     }
@@ -227,6 +251,10 @@ fun DiscussionScreen(
                 modifier = Modifier
                     .fillMaxSize()
                     .padding(padding)
+                    // WhatsApp-style: a barra de input sobe COM o teclado em vez de
+                    // ficar coberta. Sem isso, o teclado tampava o footer e a lista
+                    // reflow-ava perdendo o topo, dando a impressão de "não enviou".
+                    .imePadding()
                     .staggeredEntrance()
             ) {
                 // Spoiler clearance / warning banner
@@ -331,6 +359,17 @@ fun DiscussionScreen(
                 val reactionsByComment = remember(reactions) { reactions.groupBy { it.commentId } }
                 val membersById = remember(members) { members.associateBy { it.id } }
                 val listState = rememberLazyListState()
+
+                // Ao abrir o teclado, reancora na última mensagem (fica visível logo
+                // acima da barra de input). O LaunchedEffect(comments.size) só dispara
+                // em mensagem nova; abrir o teclado não muda a contagem, então sem isto
+                // a posição de scroll ficava "presa" atrás do teclado.
+                val imeBottom = WindowInsets.ime.getBottom(LocalDensity.current)
+                LaunchedEffect(imeBottom) {
+                    if (imeBottom > 0 && comments.isNotEmpty()) {
+                        listState.animateScrollToItem(comments.size - 1)
+                    }
+                }
 
                 // Skeleton no cold start (Room emite lista vazia antes do 1º sync):
                 // evita piscar o empty state e depois "pular" pro conteúdo real.
@@ -489,7 +528,7 @@ fun DiscussionScreen(
                                             horizontalArrangement = Arrangement.spacedBy(6.dp),
                                             verticalAlignment = Alignment.CenterVertically
                                         ) {
-                                            val emojiGroups = commentReactions.groupBy { it.emoji }
+                                            val emojiGroups = commentReactions.groupBy { displayEmoji(it.emoji) }
                                             emojiGroups.forEach { (emoji, list) ->
                                                 val count = list.size
                                                 val hasUserReacted = list.any { it.userId == currentUid }
@@ -775,7 +814,7 @@ fun DiscussionScreen(
             text = {
                 // E2: paleta um pouco maior (era só 5). Duas linhas de 5 pra caber
                 // no diálogo sem espremer/estourar.
-                val emojis = listOf("❤", "😂", "😮", "😢", "🤯", "💀", "🍷", "👏", "🔥", "👍")
+                val emojis = listOf("❤️", "😂", "😮", "😢", "🤯", "💀", "🍷", "👏", "🔥", "👍")
                 Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
                     emojis.chunked(5).forEach { rowEmojis ->
                         Row(

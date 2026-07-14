@@ -1233,6 +1233,8 @@ fun HomeScreenTab(
     val progress by viewModel.userProgress.collectAsState()
     val allProgress by viewModel.allProgressForClub.collectAsState()
     val members by viewModel.clubMembers.collectAsState()
+    val memberRoles by viewModel.activeClubMembersRaw.collectAsState()
+    var showMembersSheet by remember { mutableStateOf(false) }
     val context = androidx.compose.ui.platform.LocalContext.current
 
     val currentChapIndex = progress?.currentChapter ?: 0
@@ -1627,6 +1629,58 @@ fun HomeScreenTab(
             }
         }
 
+        // Acesso direto à lista de membros — SEMPRE visível (independe de ter livro).
+        // Resolve "entrei num clube, onde vejo quem são os membros?": a faixa "Onde a
+        // galera tá" mostra progresso e só aparece com livro; esta linha é a porta
+        // intuitiva pro roster (nomes + quem é admin), aberta num bottom sheet.
+        if (activeClub != null && members.isNotEmpty()) item {
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .clip(RoundedCornerShape(RodapeRadii.md))
+                    .clickable { showMembersSheet = true }
+                    .semantics { role = Role.Button }
+                    .padding(vertical = 6.dp),
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.SpaceBetween
+            ) {
+                Row(
+                    horizontalArrangement = Arrangement.spacedBy((-10).dp),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    members.take(4).forEach { m ->
+                        Box(
+                            modifier = Modifier
+                                .size(34.dp)
+                                .background(RodapeTheme.colors.paper, CircleShape)
+                                .padding(1.5.dp)
+                        ) {
+                            Avatar(name = m.nome, avatarUrl = m.avatarUrl ?: "", size = 31.dp)
+                        }
+                    }
+                }
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(4.dp)
+                ) {
+                    Text(
+                        text = "Ver membros (${members.size})",
+                        style = MaterialTheme.typography.bodyMedium.copy(
+                            fontFamily = InterFontFamily,
+                            fontWeight = FontWeight.Medium,
+                            color = RodapeTheme.colors.inkSoft
+                        )
+                    )
+                    Icon(
+                        imageVector = RodapeIcons.ChevR,
+                        contentDescription = null,
+                        tint = RodapeTheme.colors.muted.copy(alpha = 0.6f),
+                        modifier = Modifier.size(18.dp)
+                    )
+                }
+            }
+        }
+
         // Section: Onde a galera tá. So faz sentido com livro escolhido
         // (a posicao da galera e medida em capitulos do livro current).
         if (currentBook != null) item {
@@ -1831,6 +1885,99 @@ fun HomeScreenTab(
             Spacer(modifier = Modifier.height(32.dp))
         }
     }
+    }
+
+    if (showMembersSheet) {
+        val myId = viewModel.currentUserId.value
+        val roleByUser = remember(memberRoles) { memberRoles.associate { it.userId to it.papel } }
+        // Ordena: eu primeiro, depois criador/admins, depois membros — por nome.
+        val orderedMembers = remember(members, roleByUser, myId) {
+            members.sortedWith(
+                compareByDescending<User> { it.id == myId }
+                    .thenBy {
+                        when (roleByUser[it.id]) {
+                            "super_admin" -> 0
+                            "admin" -> 1
+                            else -> 2
+                        }
+                    }
+                    .thenBy { it.nome.lowercase() }
+            )
+        }
+        ModalBottomSheet(
+            onDismissRequest = { showMembersSheet = false },
+            dragHandle = null,
+            containerColor = MaterialTheme.colorScheme.surface,
+            shape = RoundedCornerShape(topStart = 24.dp, topEnd = 24.dp)
+        ) {
+            Column(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .windowInsetsPadding(WindowInsets.navigationBars)
+                    .padding(horizontal = 20.dp, vertical = 8.dp)
+            ) {
+                Box(
+                    modifier = Modifier
+                        .align(Alignment.CenterHorizontally)
+                        .padding(bottom = 16.dp)
+                        .size(width = 32.dp, height = 4.dp)
+                        .background(RodapeTheme.colors.tertiarySoft)
+                        .clip(CircleShape)
+                )
+                Text(
+                    text = "Membros do clube",
+                    style = MaterialTheme.typography.titleMedium.copy(
+                        fontFamily = LiterataFontFamily,
+                        fontSize = 18.sp,
+                        fontWeight = FontWeight.Medium
+                    )
+                )
+                Text(
+                    text = "${members.size} ${if (members.size == 1) "pessoa" else "pessoas"}",
+                    style = MaterialTheme.typography.bodySmall.copy(
+                        color = RodapeTheme.colors.muted
+                    ),
+                    modifier = Modifier.padding(top = 2.dp, bottom = 12.dp)
+                )
+                LazyColumn(
+                    modifier = Modifier.heightIn(max = 420.dp),
+                    verticalArrangement = Arrangement.spacedBy(4.dp)
+                ) {
+                    items(orderedMembers, key = { it.id }) { m ->
+                        val isMe = m.id == myId
+                        val roleLabel = when (roleByUser[m.id]) {
+                            "super_admin" -> "Criador"
+                            "admin" -> "Admin"
+                            else -> null
+                        }
+                        Row(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(vertical = 6.dp),
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.spacedBy(12.dp)
+                        ) {
+                            Avatar(name = m.nome, avatarUrl = m.avatarUrl ?: "", size = 40.dp)
+                            Text(
+                                text = if (isMe) "${m.nome} (você)" else m.nome,
+                                style = MaterialTheme.typography.bodyMedium.copy(
+                                    fontFamily = InterFontFamily,
+                                    fontWeight = FontWeight.Medium,
+                                    color = RodapeTheme.colors.ink
+                                ),
+                                maxLines = 1,
+                                overflow = TextOverflow.Ellipsis,
+                                modifier = Modifier.weight(1f)
+                            )
+                            if (roleLabel != null) {
+                                Pill(text = roleLabel, variant = PillVariant.Default)
+                            }
+                        }
+                    }
+                }
+                Spacer(modifier = Modifier.height(8.dp))
+            }
+        }
     }
 }
 
@@ -3281,35 +3428,11 @@ fun ProfileScreenTab(
                 }
             }
 
-            // ── Sair do clube (membro comum) — link discreto: sair do clube e
-            //    sair da conta têm consequências bem diferentes, então não podem
-            //    ter o mesmo peso visual (dois botões iguais colados convidavam
-            //    ao toque errado).
-            if (activeClub != null) {
-                item {
-                    Spacer(modifier = Modifier.height(20.dp))
-                    Text(
-                        text = "Sair do clube \"${activeClub!!.nome}\"",
-                        style = MaterialTheme.typography.bodyMedium.copy(
-                            fontFamily = InterFontFamily,
-                            color = RodapeTheme.colors.muted
-                        ),
-                        textAlign = TextAlign.Center,
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            // C5: alvo de 48dp + anuncia como botão (era só texto clicável).
-                            .minimumInteractiveComponentSize()
-                            .clip(RoundedCornerShape(RodapeRadii.sm))
-                            .clickable { leaveClubError = null; showLeaveClubDialog = true }
-                            .semantics { role = Role.Button }
-                            .padding(vertical = 8.dp)
-                    )
-                }
-            }
-
-            // ── Sair da conta ────────────────────────────────────────────
+            // ── Sair da conta (ação NEUTRA, reversível — só encerra a sessão) ──
+            //    Fica separada da zona de perigo: logar de novo é trivial, então não
+            //    merece o mesmo peso/alerta de sair do clube ou apagar a conta.
             item {
-                Spacer(modifier = Modifier.height(12.dp))
+                Spacer(modifier = Modifier.height(20.dp))
                 TbButton(
                     text = "Sair da conta",
                     onClick = { showLogoutDialog = true },
@@ -3319,26 +3442,67 @@ fun ProfileScreenTab(
                 )
             }
 
-            // ── Excluir conta (requisito Play Store) ─────────────────────
+            // ── Zona de perigo ────────────────────────────────────────────
+            //    Ações DESTRUTIVAS (sair do clube, excluir conta) agrupadas num
+            //    cartão de alerta — mesmo tratamento terracota do "Arquivar clube"
+            //    (ManageClubScreen). Antes o "Excluir conta" era só um texto vermelho
+            //    solto, com menos peso visual do que a gravidade da ação pede.
             item {
-                Spacer(modifier = Modifier.height(24.dp))
-                Text(
-                    text = "Excluir minha conta",
-                    style = MaterialTheme.typography.bodyMedium.copy(
-                        color = MaterialTheme.colorScheme.error,
-                        fontWeight = FontWeight.Medium
-                    ),
-                    textAlign = TextAlign.Center,
+                Spacer(modifier = Modifier.height(28.dp))
+                Column(
                     modifier = Modifier
                         .fillMaxWidth()
-                        // Alvo de toque de 48dp + anuncia como botao (era um Text
-                        // minusculo com clickable sem role).
-                        .minimumInteractiveComponentSize()
-                        .clip(RoundedCornerShape(RodapeRadii.sm))
-                        .clickable(role = Role.Button) { showDeleteAccountDialog = true }
-                        .padding(vertical = 8.dp)
-                )
+                        .background(
+                            RodapeTheme.colors.terracota.copy(alpha = 0.05f),
+                            RoundedCornerShape(RodapeRadii.md)
+                        )
+                        .border(
+                            BorderStroke(1.dp, RodapeTheme.colors.terracota.copy(alpha = 0.3f)),
+                            RoundedCornerShape(RodapeRadii.md)
+                        )
+                        .padding(16.dp),
+                    verticalArrangement = Arrangement.spacedBy(12.dp)
+                ) {
+                    Text(
+                        text = "ZONA DE PERIGO",
+                        style = MaterialTheme.typography.labelSmall.copy(
+                            fontFamily = InterFontFamily,
+                            fontWeight = FontWeight.SemiBold,
+                            letterSpacing = 1.sp,
+                            color = RodapeTheme.colors.terracota
+                        )
+                    )
+
+                    if (activeClub != null) {
+                        TbButton(
+                            text = "Sair do clube \"${activeClub!!.nome}\"",
+                            onClick = { leaveClubError = null; showLeaveClubDialog = true },
+                            variant = TbButtonVariant.Outline,
+                            size = TbButtonSize.Md,
+                            modifier = Modifier.fillMaxWidth()
+                        )
+                    }
+
+                    // Excluir conta: fill terracota + ícone de alerta = "CUIDADO".
+                    // O peso máximo da tela pra a ação mais irreversível de todas.
+                    TbButton(
+                        text = "Excluir minha conta",
+                        onClick = { showDeleteAccountDialog = true },
+                        variant = TbButtonVariant.Terra,
+                        size = TbButtonSize.Md,
+                        leadingIcon = RodapeIcons.Warning,
+                        modifier = Modifier.fillMaxWidth()
+                    )
+                    Text(
+                        text = "Apagar a conta é permanente e não pode ser desfeito.",
+                        style = MaterialTheme.typography.bodySmall.copy(
+                            fontFamily = InterFontFamily,
+                            color = RodapeTheme.colors.muted
+                        )
+                    )
+                }
                 Spacer(modifier = Modifier.height(40.dp))
+                Spacer(modifier = Modifier.windowInsetsBottomHeight(WindowInsets.navigationBars))
             }
         }
     }

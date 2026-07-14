@@ -278,6 +278,8 @@ fun BookDetailScreen(
             modifier = Modifier
                 .fillMaxSize()
                 .verticalScroll(rememberScrollState())
+                // Sobe o conteúdo acima do teclado quando um campo inline recebe foco.
+                .imePadding()
                 .padding(horizontal = 24.dp)
         ) {
             // Fade-through na troca de aba do livro (era troca seca). O SizeTransform
@@ -304,7 +306,12 @@ fun BookDetailScreen(
                     "historico" -> HistoryTab(viewModel = viewModel, bookId = bookId, dataEncontro = dataEncontro)
                 }
             }
+            // A raiz só reservava o statusBar (topo). Sem reservar a barra de
+            // navegação embaixo, a última seção de cada aba (botões do Resumo,
+            // timeline/admin do Histórico) ficava cortada sob a nav bar. Reserva
+            // 40dp + a altura real da nav bar no fim do scroll.
             Spacer(modifier = Modifier.height(40.dp))
+            Spacer(modifier = Modifier.windowInsetsBottomHeight(WindowInsets.navigationBars))
         }
     }
 
