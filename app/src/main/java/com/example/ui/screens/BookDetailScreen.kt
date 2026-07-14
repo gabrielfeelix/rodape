@@ -309,21 +309,13 @@ fun BookDetailScreen(
 
     // ── SAVE QUOTE DIALOG ────────────────────────────────────────────────────
     if (showQuoteDialog) {
-        AlertDialog(
+        RodapeDialog(
             onDismissRequest = {
                 showQuoteDialog = false
                 quoteText = ""
                 quoteRef = ""
             },
-            title = {
-                Text(
-                    text = "Salvar frase",
-                    style = MaterialTheme.typography.titleLarge.copy(
-                        fontFamily = LiterataFontFamily,
-                        fontWeight = FontWeight.SemiBold
-                    )
-                )
-            },
+            title = "Salvar frase",
             text = {
                 Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
                     OutlinedTextField(
@@ -432,17 +424,9 @@ private fun SummaryTab(viewModel: MainViewModel, bookId: String) {
     }
 
     if (showEditDialog) {
-        AlertDialog(
+        RodapeDialog(
             onDismissRequest = { showEditDialog = false },
-            title = {
-                Text(
-                    "Resumo do livro",
-                    style = MaterialTheme.typography.titleLarge.copy(
-                        fontFamily = LiterataFontFamily,
-                        fontWeight = FontWeight.SemiBold
-                    )
-                )
-            },
+            title = "Resumo do livro",
             text = {
                 OutlinedTextField(
                     value = draftText,
@@ -496,9 +480,9 @@ private fun FrasesTab(
         // Confirmação antes de excluir — antes apagava direto, sem volta.
         var quoteToDelete by remember { mutableStateOf<com.example.data.model.SavedQuote?>(null) }
         quoteToDelete?.let { pending ->
-            AlertDialog(
+            RodapeDialog(
                 onDismissRequest = { quoteToDelete = null },
-                title = { Text("Excluir frase?") },
+                title = "Excluir frase?",
                 text = { Text("A frase salva some pra todo o clube.") },
                 confirmButton = {
                     TextButton(onClick = {
@@ -786,17 +770,9 @@ private fun RatingsTab(viewModel: MainViewModel, bookId: String) {
     }
 
     if (showRatingDialog) {
-        AlertDialog(
+        RodapeDialog(
             onDismissRequest = { showRatingDialog = false },
-            title = {
-                Text(
-                    "Avaliar livro",
-                    style = MaterialTheme.typography.titleLarge.copy(
-                        fontFamily = LiterataFontFamily,
-                        fontWeight = FontWeight.SemiBold
-                    )
-                )
-            },
+            title = "Avaliar livro",
             text = {
                 Column(
                     verticalArrangement = Arrangement.spacedBy(12.dp),

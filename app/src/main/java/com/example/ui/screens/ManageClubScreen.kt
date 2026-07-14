@@ -35,6 +35,7 @@ import com.example.ui.components.TbButton
 import com.example.ui.components.TbButtonSize
 import com.example.ui.components.TbButtonVariant
 import com.example.ui.components.RodapeCard
+import com.example.ui.components.RodapeDialog
 import com.example.ui.theme.*
 import com.example.ui.viewmodel.MainViewModel
 import kotlinx.coroutines.launch
@@ -787,10 +788,9 @@ fun ManageClubScreen(
     // Concluir tem efeito colateral grande (pode mandar o livro pra Estante) —
     // merece a mesma confirmação que cancelar.
     if (concludeMeetingId != null) {
-        AlertDialog(
-            containerColor = MaterialTheme.colorScheme.surface,
+        RodapeDialog(
             onDismissRequest = { concludeMeetingId = null },
-            title = { Text("Concluir encontro?") },
+            title = "Concluir encontro?",
             text = { Text("Se este for o último encontro do livro atual, o livro vai pra Estante e a leitura é encerrada pra todo mundo.") },
             confirmButton = {
                 TextButton(onClick = {
@@ -805,10 +805,9 @@ fun ManageClubScreen(
     }
 
     if (showFinishBook) {
-        AlertDialog(
-            containerColor = MaterialTheme.colorScheme.surface,
+        RodapeDialog(
             onDismissRequest = { showFinishBook = false },
-            title = { Text("Marcar como finalizado?") },
+            title = "Marcar como finalizado?",
             text = { Text("O livro atual vai pra estante com data do encontro = hoje.") },
             confirmButton = {
                 TextButton(onClick = {
@@ -846,10 +845,9 @@ fun ManageClubScreen(
     }
 
     if (showArchiveClub) {
-        AlertDialog(
-            containerColor = MaterialTheme.colorScheme.surface,
+        RodapeDialog(
             onDismissRequest = { showArchiveClub = false },
-            title = { Text("Arquivar '${club?.nome}'?") },
+            title = "Arquivar '${club?.nome}'?",
             text = {
                 Text("Você e os membros não verão mais este clube na lista. Você pode reativar depois em Arquivados. Histórico é preservado.")
             },
@@ -898,10 +896,9 @@ private fun MemberActionSheet(
     // Confirmação pra transferir super admin — ação irreversível pelo próprio.
     var showTransferConfirm by remember { mutableStateOf(false) }
     if (showTransferConfirm) {
-        AlertDialog(
-            containerColor = MaterialTheme.colorScheme.surface,
+        RodapeDialog(
             onDismissRequest = { showTransferConfirm = false },
-            title = { Text("Transferir super admin?") },
+            title = "Transferir super admin?",
             text = {
                 Text("$memberName vira o super admin do clube e você deixa de ter esse poder. Não dá pra desfazer sozinho — só o novo super admin pode devolver.")
             },
@@ -963,10 +960,9 @@ private fun ChangeCurrentBookDialog(
         val q = query.trim()
         if (q.length >= 3) { kotlinx.coroutines.delay(400); onSearch(q) } else onSearch("")
     }
-    AlertDialog(
-        containerColor = MaterialTheme.colorScheme.surface,
+    RodapeDialog(
         onDismissRequest = onDismiss,
-        title = { Text("Trocar livro atual") },
+        title = "Trocar livro atual",
         text = {
             Column(
                 modifier = Modifier

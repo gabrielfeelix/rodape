@@ -23,6 +23,8 @@ import androidx.compose.ui.unit.dp
 import com.example.ui.components.TbButton
 import com.example.ui.components.TbButtonVariant
 import com.example.ui.components.RodapeCard
+import com.example.ui.components.RodapeDialog
+import com.example.ui.components.ThemedCheckbox
 import com.example.ui.components.SkeletonRowList
 import com.example.ui.components.rememberShowLoading
 import com.example.data.model.Chapter
@@ -416,9 +418,9 @@ fun ManageChaptersScreen(
 
             if (showSaveConfirm) {
                 val hasIsbn = currentBook?.isbn?.isNotBlank() == true
-                AlertDialog(
+                RodapeDialog(
                     onDismissRequest = { showSaveConfirm = false },
-                    title = { Text("Salvar capítulos?") },
+                    title = "Salvar capítulos?",
                     text = {
                         Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
                             Text(
@@ -435,7 +437,7 @@ fun ManageChaptersScreen(
                                         .fillMaxWidth()
                                         .clickable { shareToCommunity = !shareToCommunity }
                                 ) {
-                                    Checkbox(
+                                    ThemedCheckbox(
                                         checked = shareToCommunity,
                                         onCheckedChange = { shareToCommunity = it }
                                     )
@@ -477,9 +479,9 @@ fun ManageChaptersScreen(
             if (showFetchConfirm) {
                 // P0: buscar online sobrescreve a lista inteira. Confirma antes de
                 // descartar o que já existe (não há como desfazer depois).
-                AlertDialog(
+                RodapeDialog(
                     onDismissRequest = { showFetchConfirm = false },
-                    title = { Text("Substituir os capítulos atuais?") },
+                    title = "Substituir os capítulos atuais?",
                     text = {
                         Text(
                             "Isso substitui os capítulos atuais. Você ainda pode revisar e ajustar antes de salvar."
@@ -501,9 +503,9 @@ fun ManageChaptersScreen(
 
             if (showDiscardConfirm) {
                 // P1: sair (voltar/cancelar/back) descartava o rascunho sem aviso.
-                AlertDialog(
+                RodapeDialog(
                     onDismissRequest = { showDiscardConfirm = false },
-                    title = { Text("Descartar as alterações?") },
+                    title = "Descartar as alterações?",
                     text = {
                         Text(
                             "Você tem capítulos editados que ainda não foram salvos. Se sair agora, você perde essas alterações."

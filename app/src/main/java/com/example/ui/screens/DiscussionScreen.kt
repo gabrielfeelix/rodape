@@ -42,6 +42,7 @@ import com.example.ui.components.TbButtonSize
 import com.example.ui.components.TbButtonVariant
 import com.example.ui.components.staggeredEntrance
 import com.example.ui.components.RodapeCard
+import com.example.ui.components.RodapeDialog
 import com.example.ui.components.SkeletonRowList
 import com.example.ui.components.rememberShowLoading
 import com.example.ui.theme.RodapeRadii
@@ -604,10 +605,9 @@ fun DiscussionScreen(
                             }
 
                             if (showEditDialog) {
-                                AlertDialog(
-                                    containerColor = MaterialTheme.colorScheme.surface,
+                                RodapeDialog(
                                     onDismissRequest = { showEditDialog = false },
-                                    title = { Text("Editar comentário") },
+                                    title = "Editar comentário",
                                     text = {
                                         OutlinedTextField(
                                             value = editText,
@@ -634,10 +634,9 @@ fun DiscussionScreen(
                             }
 
                             if (showDeleteDialog) {
-                                AlertDialog(
-                                    containerColor = MaterialTheme.colorScheme.surface,
+                                RodapeDialog(
                                     onDismissRequest = { showDeleteDialog = false },
-                                    title = { Text("Apagar comentário?") },
+                                    title = "Apagar comentário?",
                                     text = { Text("Seu comentário será removido de vez. Não dá pra desfazer.") },
                                     confirmButton = {
                                         TextButton(onClick = {
@@ -654,10 +653,9 @@ fun DiscussionScreen(
                             }
 
                             if (showRemoveDialog) {
-                                AlertDialog(
-                                    containerColor = MaterialTheme.colorScheme.surface,
+                                RodapeDialog(
                                     onDismissRequest = { showRemoveDialog = false },
-                                    title = { Text("Remover comentário?") },
+                                    title = "Remover comentário?",
                                     text = {
                                         Column {
                                             Text("Vira um placeholder para todos e fica registrado no log.")
@@ -771,10 +769,9 @@ fun DiscussionScreen(
     // Reaction selector sheet block
     if (selectedCommentToReact != null) {
         val comment = selectedCommentToReact!!
-        AlertDialog(
-            containerColor = MaterialTheme.colorScheme.surface,
+        RodapeDialog(
             onDismissRequest = { selectedCommentToReact = null },
-            title = { Text("Adicionar reação", style = MaterialTheme.typography.titleLarge) },
+            title = "Adicionar reação",
             text = {
                 // E2: paleta um pouco maior (era só 5). Duas linhas de 5 pra caber
                 // no diálogo sem espremer/estourar.

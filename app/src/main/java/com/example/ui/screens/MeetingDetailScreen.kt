@@ -38,6 +38,7 @@ import com.example.ui.components.TbButtonSize
 import com.example.ui.components.TbButtonVariant
 import com.example.ui.components.TbSectionHeader
 import com.example.ui.components.RodapeCard
+import com.example.ui.components.RodapeDialog
 import com.example.ui.components.SkeletonText
 import com.example.ui.components.rememberShowLoading
 import com.example.ui.theme.*
@@ -445,9 +446,9 @@ fun MeetingDetailScreen(
                         textAlign = androidx.compose.ui.text.style.TextAlign.Center
                     )
                     if (showConcludeConfirm) {
-                        AlertDialog(
+                        RodapeDialog(
                             onDismissRequest = { showConcludeConfirm = false },
-                            title = { Text("Concluir encontro?") },
+                            title = "Concluir encontro?",
                             text = { Text("Se este for o último encontro do livro atual, o livro vai pra Estante e a leitura é encerrada pra todo mundo.") },
                             confirmButton = {
                                 TextButton(onClick = {
@@ -469,22 +470,13 @@ fun MeetingDetailScreen(
 
     // Dialog editar ata
     if (showMinutesEdit) {
-        AlertDialog(
+        RodapeDialog(
             // Tocar fora com texto no rascunho pede confirmação antes de descartar.
             onDismissRequest = {
                 if (minutesDraft.isNotBlank()) showMinutesDiscardConfirm = true
                 else showMinutesEdit = false
             },
-            containerColor = MaterialTheme.colorScheme.surface,
-            title = {
-                Text(
-                    "Ata do encontro",
-                    style = MaterialTheme.typography.titleLarge.copy(
-                        fontFamily = LiterataFontFamily,
-                        fontWeight = FontWeight.SemiBold
-                    )
-                )
-            },
+            title = "Ata do encontro",
             text = {
                 OutlinedTextField(
                     value = minutesDraft,
@@ -512,10 +504,9 @@ fun MeetingDetailScreen(
 
     // Confirmação de descarte da ata: evita perder o rascunho ao tocar fora do dialog.
     if (showMinutesDiscardConfirm) {
-        AlertDialog(
-            containerColor = MaterialTheme.colorScheme.surface,
+        RodapeDialog(
             onDismissRequest = { showMinutesDiscardConfirm = false },
-            title = { Text("Descartar a ata?") },
+            title = "Descartar a ata?",
             text = { Text("O texto que você digitou vai ser perdido.") },
             confirmButton = {
                 TextButton(onClick = {

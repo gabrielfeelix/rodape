@@ -1311,10 +1311,9 @@ fun VotacaoTab(
                                             }
                                         }
                                         if (showConfirm) {
-                                            AlertDialog(
-                                                containerColor = MaterialTheme.colorScheme.surface,
+                                            RodapeDialog(
                                                 onDismissRequest = { showConfirm = false },
-                                                title = { Text("Remover sugestão?") },
+                                                title = "Remover sugestão?",
                                                 text = { Text("Sugestão e votos serão apagados.") },
                                                 confirmButton = {
                                                     TextButton(onClick = {
@@ -1537,10 +1536,9 @@ fun VotacaoTab(
 
     // Dialog: encerrar votação
     if (showCloseDialog) {
-        AlertDialog(
-            containerColor = MaterialTheme.colorScheme.surface,
+        RodapeDialog(
             onDismissRequest = { showCloseDialog = false },
-            title = { Text("Encerrar votação?") },
+            title = "Encerrar votação?",
             text = {
                 Text(
                     "Encerrar agora vai escolher os ${activeRound?.nLivros ?: 1} livro(s) mais votado(s). O atual passa para a estante. Sem volta.",
