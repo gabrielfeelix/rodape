@@ -56,6 +56,15 @@ import kotlinx.serialization.json.put
 // interno ao kernel (fila/drain/realtime tracking).
 // ============================================================================
 
+/** Escapa caracteres especiais pra string JSON. Top-level internal pra os repos
+ *  fatiados (F3c) reusarem no build de payload da fila (quote, discussion). */
+internal fun String.escapeJson(): String = this
+    .replace("\\", "\\\\")
+    .replace("\"", "\\\"")
+    .replace("\n", "\\n")
+    .replace("\r", "\\r")
+    .replace("\t", "\\t")
+
 // TTLs canonicos: balanceiam frescor vs custo. Top-level pra os repos referenciarem
 // `Ttl.MED` sem acoplar na instancia da engine.
 internal object Ttl {

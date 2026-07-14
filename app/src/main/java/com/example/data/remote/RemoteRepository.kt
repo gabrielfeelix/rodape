@@ -112,6 +112,10 @@ class RemoteRepository(
     //     `engine` (não cria kernel novo). VMs migram pra injetar a interface no F5. ---
     private val progressRepo: com.example.data.remote.repo.ProgressRepository =
         com.example.data.remote.repo.OfflineFirstProgressRepository(engine, supabase, engine.dao)
+    private val notificationRepo: com.example.data.remote.repo.NotificationRepository =
+        com.example.data.remote.repo.OfflineFirstNotificationRepository(engine, supabase, engine.dao)
+    private val quoteRepo: com.example.data.remote.repo.QuoteRepository =
+        com.example.data.remote.repo.OfflineFirstQuoteRepository(engine, supabase, engine.dao)
 
     // ============================================================
     // USERS / PROFILES
@@ -868,14 +872,6 @@ class RemoteRepository(
             )
         }
     }
-
-    /** Escapa caracteres especiais pra string JSON. */
-    private fun String.escapeJson(): String = this
-        .replace("\\", "\\\\")
-        .replace("\"", "\\\"")
-        .replace("\n", "\\n")
-        .replace("\r", "\\r")
-        .replace("\t", "\\t")
 
     fun getCommentsForChapterFlow(chapterId: String, clubId: String): Flow<List<Comment>> {
         val key = "comments:ch:$chapterId"
@@ -1759,122 +1755,33 @@ class RemoteRepository(
     // NOTIFICATIONS
     // ============================================================
 
-    suspend fun insertNotification(notification: DbNotification) {
-        runCatching {
-            val payloadJson = runCatching { json.parseToJsonElement(notification.payloadJson) }
-                .getOrElse { JsonObject(emptyMap()) }
-            supabase.from("notifications").upsert(
-                NotificationInsertDto(
-                    id = notification.id,
-                    userId = notification.userId,
-                    clubId = notification.clubId.ifBlank { null },
-                    tipo = notification.tipo,
-                    payload = payloadJson,
-                    lida = notification.lida,
-                )
-            )
-            dao.upsertNotifications(listOf(notification))
-            notifyLocalMutation("notifications")
-        }
-    }
+    // F3c: delega pro NotificationRepository fatiado.
+    suspend fun insertNotification(notification: DbNotification) =
+        notificationRepo.insertNotification(notification)
 
-    suspend fun markAllNotificationsAsRead(userId: String) {
-        // Local-first: some o badge na hora mesmo offline. Antes era remoto-primeiro
-        // e a notificacao ficava "nao lida" ate um round-trip bem-sucedido.
-        dao.markAllNotificationsRead(userId)
-        notifyLocalMutation("notifications")
-        runCatching {
-            supabase.from("notifications").update({ set("lida", true) }) {
-                filter { eq("user_id", userId) }
-            }
-        }.onFailure { android.util.Log.w("Rodape/Repo", "markAll read remote falhou: ${it.message}") }
-    }
+    suspend fun markAllNotificationsAsRead(userId: String) =
+        notificationRepo.markAllNotificationsAsRead(userId)
 
-    suspend fun markNotificationAsRead(id: String) {
-        dao.markNotificationRead(id)
-        val payload = buildJsonObject { put("id", id) }.toString()
-        tryRemoteOrEnqueue("mark_notification_read", payload, notifyTable = "notifications") {
-            supabase.from("notifications").update({ set("lida", true) }) {
-                filter { eq("id", id) }
-            }
-        }
-    }
+    suspend fun markNotificationAsRead(id: String) =
+        notificationRepo.markNotificationAsRead(id)
 
-    fun getNotificationsFlow(userId: String): Flow<List<DbNotification>> {
-        val reload: suspend () -> Unit = {
-            runCatching {
-                val list = supabase.from("notifications").select {
-                    filter { eq("user_id", userId) }
-                    order("created_at", Order.DESCENDING)
-                }.decodeList<NotificationDto>().map { it.toDomain() }
-                dao.replaceNotificationsForUser(userId, list)
-            }
-        }
-        scope.launch { runCatching { reload() } }
-        ensureRealtime("notifications", filterColumn = "user_id", filterValue = userId, reload = reload)
-        return dao.notificationsForUserFlow(userId)
-    }
+    fun getNotificationsFlow(userId: String): Flow<List<DbNotification>> =
+        notificationRepo.getNotificationsFlow(userId)
 
     // ============================================================
     // SAVED QUOTES
     // ============================================================
 
-    suspend fun insertSavedQuote(quote: SavedQuote) {
-        dao.upsertSavedQuotes(listOf(quote))
-        val cap = quote.capituloRef.escapeJson()
-        val payload = """{"id":"${quote.id}","userId":"${quote.userId}","clubId":"${quote.clubId}","bookId":"${quote.bookId}","texto":"${quote.texto.escapeJson()}","capituloRef":"$cap"}"""
-        tryRemoteOrEnqueue("insert_saved_quote", payload, notifyTable = "saved_quotes") {
-            supabase.from("saved_quotes").upsert(
-                SavedQuoteInsertDto(
-                    id = quote.id,
-                    userId = quote.userId,
-                    clubId = quote.clubId,
-                    bookId = quote.bookId,
-                    texto = quote.texto,
-                    capituloRef = quote.capituloRef.ifBlank { null },
-                )
-            )
-        }
-    }
+    // F3c: delega pro QuoteRepository fatiado.
+    suspend fun insertSavedQuote(quote: SavedQuote) = quoteRepo.insertSavedQuote(quote)
 
-    suspend fun deleteSavedQuote(quote: SavedQuote) {
-        runCatching {
-            supabase.from("saved_quotes").delete { filter { eq("id", quote.id) } }
-            dao.deleteSavedQuote(quote.id)
-            notifyLocalMutation("saved_quotes")
-        }
-    }
+    suspend fun deleteSavedQuote(quote: SavedQuote) = quoteRepo.deleteSavedQuote(quote)
 
-    fun getSavedQuotesForUserFlow(userId: String): Flow<List<SavedQuote>> {
-        val reload: suspend () -> Unit = {
-            runCatching {
-                val list = supabase.from("saved_quotes").select {
-                    filter { eq("user_id", userId) }
-                    order("created_at", Order.DESCENDING)
-                }.decodeList<SavedQuoteDto>().map { it.toDomain() }
-                dao.replaceSavedQuotesForUser(userId, list)
-            }
-        }
-        scope.launch { runCatching { reload() } }
-        ensureRealtime("saved_quotes", filterColumn = "user_id", filterValue = userId, reload = reload)
-        return dao.savedQuotesForUserFlow(userId)
-    }
+    fun getSavedQuotesForUserFlow(userId: String): Flow<List<SavedQuote>> =
+        quoteRepo.getSavedQuotesForUserFlow(userId)
 
-    fun getSavedQuotesForBookFlow(userId: String, bookId: String): Flow<List<SavedQuote>> {
-        scope.launch {
-            runCatching {
-                val list = supabase.from("saved_quotes").select {
-                    filter {
-                        eq("user_id", userId)
-                        eq("book_id", bookId)
-                    }
-                    order("created_at", Order.DESCENDING)
-                }.decodeList<SavedQuoteDto>().map { it.toDomain() }
-                dao.upsertSavedQuotes(list)
-            }
-        }
-        return dao.savedQuotesForBookFlow(userId, bookId)
-    }
+    fun getSavedQuotesForBookFlow(userId: String, bookId: String): Flow<List<SavedQuote>> =
+        quoteRepo.getSavedQuotesForBookFlow(userId, bookId)
 
     // ============================================================
     // BOOK SUMMARIES / RATINGS
