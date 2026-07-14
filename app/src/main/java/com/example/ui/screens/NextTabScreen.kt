@@ -1258,7 +1258,7 @@ fun VotacaoTab(
                                     Column(modifier = Modifier.weight(1f)) {
                                         Text(
                                             text = book.title,
-                                            style = MaterialTheme.typography.headlineLarge.copy(fontSize = 16.sp, color = RodapeTheme.colors.ink),
+                                            style = MaterialTheme.typography.titleLarge.copy(color = RodapeTheme.colors.ink),
                                             maxLines = 2,
                                             overflow = TextOverflow.Ellipsis,
                                         )
@@ -1401,7 +1401,7 @@ fun VotacaoTab(
                         Column(modifier = Modifier.weight(1f)) {
                             Text(
                                 text = book.title,
-                                style = MaterialTheme.typography.headlineLarge.copy(fontSize = 16.sp, color = RodapeTheme.colors.ink),
+                                style = MaterialTheme.typography.titleLarge.copy(color = RodapeTheme.colors.ink),
                                 maxLines = 2, overflow = TextOverflow.Ellipsis
                             )
                             Text(
@@ -1593,7 +1593,7 @@ private fun OpenVotingSheet(
         ) {
             Text(
                 "Abrir votação do clube",
-                style = MaterialTheme.typography.headlineLarge.copy(fontSize = 20.sp)
+                style = MaterialTheme.typography.headlineMedium
             )
 
             Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
