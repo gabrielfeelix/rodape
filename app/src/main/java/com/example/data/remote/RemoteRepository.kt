@@ -89,6 +89,7 @@ class RemoteRepository(
     private val votingRepo = com.example.data.remote.repo.OfflineFirstVotingRepository(engine)
     private val meetingRepo = com.example.data.remote.repo.OfflineFirstMeetingRepository(engine)
     private val userRepo = com.example.data.remote.repo.OfflineFirstUserRepository(engine)
+    private val bookRepo = com.example.data.remote.repo.OfflineFirstBookRepository(engine)
 
     private val json = engine.json
     private val dao = engine.dao
@@ -508,283 +509,50 @@ class RemoteRepository(
     // BOOKS / CLUB_BOOKS
     // ============================================================
 
-    suspend fun insertBook(book: Book) {
-        // Optimistic local-first: escreve no Room ANTES de tentar Supabase pra
-        // UI nunca ficar "fantasma" (livro sumiu so porque rede falhou ou rate
-        // limit do Supabase respondeu 429). Se o remoto falhar, loga e segue —
-        // a proxima sync vai reconciliar.
-        // Room já emite pro Flow após o upsert local (UI otimista). O
-        // notifyLocalMutation (re-fetch remoto + prune) SÓ roda após o remoto
-        // confirmar — senão o re-fetch corre na frente da escrita e PODA a linha
-        // otimista ainda-não-sincronizada (item "pisca e some").
-        dao.upsertBook(book)
-        // Offline-first REAL: se o remoto falhar (offline/429/5xx), ENFILEIRA em vez
-        // de só logar. Antes a criação local-only era podada no próximo sync (a linha
-        // nunca chegava ao servidor) — perda silenciosa (P0-2).
-        val dto = book.toInsertDto()
-        tryRemoteOrEnqueue("insert_book", json.encodeToString(dto), notifyTable = "books") {
-            supabase.from("books").upsert(dto)
-        }
-    }
+    // F3c: movido pra repo/BookRepository.kt (books/club_books/chapters) — fachada delega.
+    suspend fun insertBook(book: Book) = bookRepo.insertBook(book)
 
-    /**
-     * Sobe bytes da capa pro bucket `book-covers` no path `<clubId>/<bookId>.jpg`.
-     * Retorna URL pra usar em `books.cover_url`.
-     *
-     * Bucket e privado — geramos signed URL com expiracao longa (1 ano) e a guardamos
-     * no banco. Quando expirar, regeneramos. Pra clubes ativos isso significa que
-     * a URL sempre esta valida na pratica.
-     *
-     * Path por clube garante isolamento via RLS: so members do clube podem
-     * ler/escrever ali (policy book_covers_*_members).
-     */
-    suspend fun uploadBookCover(clubId: String, bookId: String, bytes: ByteArray): String? = runCatching {
-        val path = "$clubId/$bookId.jpg"
-        val bucket = supabase.storage.from("book-covers")
-        // Upload sobreescreve se ja existir (caso usuario troque a capa).
-        bucket.upload(path, bytes) {
-            upsert = true
-            contentType = io.ktor.http.ContentType.Image.JPEG
-        }
-        // Signed URL valida por 1 ano (max permitido pelo Supabase Storage).
-        val signedUrl = bucket.createSignedUrl(path, kotlin.time.Duration.parse("365d"))
-        // signed URL ja vem com prefixo do servidor
-        "${BuildConfig.SUPABASE_URL}$signedUrl"
-    }.getOrNull()
+    suspend fun uploadBookCover(clubId: String, bookId: String, bytes: ByteArray): String? =
+        bookRepo.uploadBookCover(clubId, bookId, bytes)
 
-    suspend fun insertClubBook(clubBook: ClubBook) {
-        // Optimistic local-first + fila (P0-2): offline não perde mais a criação.
-        dao.upsertClubBook(clubBook)
-        val dto = clubBook.toDto()
-        tryRemoteOrEnqueue("insert_club_book", json.encodeToString(dto), notifyTable = "club_books") {
-            supabase.from("club_books").upsert(dto)
-        }
-    }
+    suspend fun insertClubBook(clubBook: ClubBook) = bookRepo.insertClubBook(clubBook)
 
-    fun getBookByStatusFlow(clubId: String, status: String): Flow<List<Book>> {
-        val key = "clubBooks:$clubId"
-        val reload: suspend () -> Unit = { syncClubBooks(clubId); markSynced(key) }
-        scope.launch { syncOnce(key, Ttl.MED) { syncClubBooks(clubId) } }
-        ensureRealtime("club_books", filterColumn = "club_id", filterValue = clubId, reload = reload)
-        return dao.booksByStatusFlow(clubId, status)
-    }
+    fun getBookByStatusFlow(clubId: String, status: String): Flow<List<Book>> =
+        bookRepo.getBookByStatusFlow(clubId, status)
 
-    private suspend fun syncClubBooks(clubId: String) {
-        runCatching {
-            val rows = supabase.from("club_books").select(Columns.raw("book_id, status, ordem, data_encontro, books!inner(*)")) {
-                filter { eq("club_id", clubId) }
-            }.decodeList<JoinClubBookFull>()
-            val books = rows.map { it.book.toDomain() }
-            val clubBooks = rows.map { row ->
-                ClubBook(
-                    clubId = clubId,
-                    bookId = row.bookId,
-                    status = row.status,
-                    ordem = row.ordem,
-                    dataEncontro = row.dataEncontro?.fromIso(),
-                )
-            }
-            dao.replaceClubBooksInClub(clubId, clubBooks, books)
-        }
-    }
+    fun getClubBooksFlow(clubId: String): Flow<List<Book>> = bookRepo.getClubBooksFlow(clubId)
 
-    @Serializable
-    private data class JoinClubBookFull(
-        @SerialName("book_id") val bookId: String,
-        val status: String,
-        val ordem: Int = 0,
-        @SerialName("data_encontro") val dataEncontro: String? = null,
-        @SerialName("books") val book: BookDto,
-    )
+    suspend fun getClubBookStatus(clubId: String, bookId: String): String? =
+        bookRepo.getClubBookStatus(clubId, bookId)
 
-    fun getClubBooksFlow(clubId: String): Flow<List<Book>> {
-        val key = "clubBooks:$clubId"
-        val reload: suspend () -> Unit = { syncClubBooks(clubId); markSynced(key) }
-        scope.launch { syncOnce(key, Ttl.MED) { syncClubBooks(clubId) } }
-        ensureRealtime("club_books", filterColumn = "club_id", filterValue = clubId, reload = reload)
-        return dao.clubBooksFlow(clubId)
-    }
+    suspend fun getBook(id: String): Book? = bookRepo.getBook(id)
 
-    suspend fun getClubBookStatus(clubId: String, bookId: String): String? = runCatching {
-        supabase.from("club_books").select(Columns.raw("status")) {
-            filter {
-                eq("club_id", clubId)
-                eq("book_id", bookId)
-            }
-            limit(1)
-        }.decodeSingleOrNull<StatusOnlyDto>()?.status
-    }.getOrNull()
+    suspend fun updateClubBookStatus(clubId: String, bookId: String, status: String) =
+        bookRepo.updateClubBookStatus(clubId, bookId, status)
 
-    @Serializable
-    private data class StatusOnlyDto(val status: String)
+    suspend fun updateClubBookMeetingDate(clubId: String, bookId: String, dataEncontro: Long?) =
+        bookRepo.updateClubBookMeetingDate(clubId, bookId, dataEncontro)
 
-    suspend fun getBook(id: String): Book? {
-        dao.book(id)?.let { return it }
-        return runCatching {
-            supabase.from("books").select {
-                filter { eq("id", id) }
-                limit(1)
-            }.decodeSingleOrNull<BookDto>()?.toDomain()
-                ?.also { dao.upsertBook(it) }
-        }.getOrNull()
-    }
+    fun getClubBooksByStatusFlow(clubId: String, status: String): Flow<List<ClubBook>> =
+        bookRepo.getClubBooksByStatusFlow(clubId, status)
 
-    suspend fun updateClubBookStatus(clubId: String, bookId: String, status: String) {
-        runCatching {
-            supabase.from("club_books").update({ set("status", status) }) {
-                filter {
-                    eq("club_id", clubId)
-                    eq("book_id", bookId)
-                }
-            }
-            // Cache local sera atualizado via notifyLocalMutation -> syncClubBooks.
-            notifyLocalMutation("club_books")
-        }
-    }
+    suspend fun deleteClubBook(clubId: String, bookId: String) = bookRepo.deleteClubBook(clubId, bookId)
 
-    suspend fun updateClubBookMeetingDate(clubId: String, bookId: String, dataEncontro: Long?) {
-        runCatching {
-            supabase.from("club_books").update({
-                set("data_encontro", dataEncontro?.toIso())
-            }) {
-                filter {
-                    eq("club_id", clubId)
-                    eq("book_id", bookId)
-                }
-            }
-            notifyLocalMutation("club_books")
-        }
-    }
+    suspend fun insertChapters(chapters: List<Chapter>) = bookRepo.insertChapters(chapters)
 
-    fun getClubBooksByStatusFlow(clubId: String, status: String): Flow<List<ClubBook>> {
-        val reload: suspend () -> Unit = { syncClubBooks(clubId) }
-        scope.launch { runCatching { reload() } }
-        ensureRealtime("club_books", filterColumn = "club_id", filterValue = clubId, reload = reload)
-        return dao.clubBooksByStatusFlow(clubId, status)
-    }
+    fun getChaptersForBookFlow(bookId: String): Flow<List<Chapter>> =
+        bookRepo.getChaptersForBookFlow(bookId)
 
-    // Helper antigo abaixo removido — `syncClubBooks` cuida de tudo via Room.
-    @Suppress("UNUSED")
-    private fun _oldClubBooksByStatusFlow(clubId: String, status: String): Flow<List<ClubBook>> {
-        val flow = stateOf<List<ClubBook>>(emptyList())
-        scope.launch {
-            flow.value = runCatching {
-                supabase.from("club_books").select {
-                    filter {
-                        eq("club_id", clubId)
-                        eq("status", status)
-                    }
-                }.decodeList<ClubBookDto>().map { it.toDomain() }
-            }.getOrDefault(emptyList())
-        }
-        return flow.asStateFlow()
-    }
+    suspend fun deleteChaptersForBook(bookId: String) = bookRepo.deleteChaptersForBook(bookId)
 
-    suspend fun deleteClubBook(clubId: String, bookId: String) {
-        runCatching {
-            supabase.from("club_books").delete {
-                filter {
-                    eq("club_id", clubId)
-                    eq("book_id", bookId)
-                }
-            }
-            dao.deleteClubBook(clubId, bookId)
-            notifyLocalMutation("club_books")
-        }
-    }
+    suspend fun saveChapters(bookId: String, chapters: List<Chapter>) =
+        bookRepo.saveChapters(bookId, chapters)
 
-    // ============================================================
-    // CHAPTERS
-    // ============================================================
+    suspend fun getChapterTemplate(isbn: String): List<Pair<Int, String>>? =
+        bookRepo.getChapterTemplate(isbn)
 
-    suspend fun insertChapters(chapters: List<Chapter>) {
-        if (chapters.isEmpty()) return
-        runCatching {
-            supabase.from("chapters").upsert(chapters.map { it.toDto() })
-            dao.upsertChapters(chapters)
-        }
-    }
-
-    fun getChaptersForBookFlow(bookId: String): Flow<List<Chapter>> {
-        scope.launch {
-            runCatching {
-                val list = supabase.from("chapters").select {
-                    filter { eq("book_id", bookId) }
-                    order("numero", Order.ASCENDING)
-                }.decodeList<ChapterDto>().map { it.toDomain() }
-                dao.upsertChapters(list)
-            }
-        }
-        return dao.chaptersForBookFlow(bookId)
-    }
-
-    suspend fun deleteChaptersForBook(bookId: String) {
-        runCatching {
-            supabase.from("chapters").delete {
-                filter { eq("book_id", bookId) }
-            }
-            dao.deleteChaptersForBook(bookId)
-        }
-    }
-
-    /**
-     * Salva a lista de capítulos por DIFF por ID ESTÁVEL (uuid). A identidade do
-     * capítulo é o `id` (uuid), NÃO o numero:
-     *  - P0-1: antes o id era `ch_<bookId>_<numero>` (texto) enviado pra coluna
-     *    `uuid` do servidor -> Postgres rejeitava (22P02), o erro era engolido e
-     *    o capítulo NUNCA sincronizava (comentários iam pra dead-letter). Agora o
-     *    id é uuid de verdade (gerado na tela), aceito pelo servidor.
-     *  - B2: como o vínculo comentário→capítulo é o id (uuid) e não o numero,
-     *    reordenar/renumerar capítulos NÃO remaneja mais os comentários.
-     * Capítulos que ficam são atualizados in-place (upsert); só os removidos
-     * (id fora da lista) são apagados — a discussão dos mantidos é preservada.
-     */
-    suspend fun saveChapters(bookId: String, chapters: List<Chapter>) {
-        val keepIds = chapters.map { it.id }
-        // Local-first: upsert (in-place) + deleta só os removidos, por id.
-        dao.upsertChapters(chapters)
-        if (keepIds.isNotEmpty()) dao.deleteChaptersNotInIds(bookId, keepIds) else dao.deleteChaptersForBook(bookId)
-        notifyLocalMutation("chapters")
-        // Remoto: upsert todos (id uuid), depois deleta só os capítulos cujo id saiu.
-        runCatching {
-            if (chapters.isNotEmpty()) supabase.from("chapters").upsert(chapters.map { it.toDto() })
-            val existing = supabase.from("chapters").select(Columns.raw("id")) {
-                filter { eq("book_id", bookId) }
-            }.decodeList<IdOnlyDto>().map { it.id }
-            val removed = existing.filter { it !in keepIds }
-            if (removed.isNotEmpty()) {
-                supabase.from("chapters").delete {
-                    filter { eq("book_id", bookId); isIn("id", removed) }
-                }
-            }
-        }.onFailure { android.util.Log.w("Rodape/Repo", "saveChapters remoto falhou: ${it.message}") }
-    }
-
-    // ---- Índice compartilhado por ISBN (crowdsourcing entre TODOS os clubes) ----
-
-    /** Busca o índice de capítulos que ALGUÉM já cadastrou pra este ISBN. Um
-     *  cadastro serve o app inteiro. Retorna null se ninguém compartilhou ainda. */
-    suspend fun getChapterTemplate(isbn: String): List<Pair<Int, String>>? = runCatching {
-        val row = supabase.from("chapter_templates").select {
-            filter { eq("isbn", isbn) }
-            limit(1)
-        }.decodeSingleOrNull<ChapterTemplateDto>()
-        row?.chapters?.map { it.numero to it.titulo }?.sortedBy { it.first }
-    }.getOrNull()?.takeIf { it.isNotEmpty() }
-
-    /** Compartilha (ou atualiza) o índice deste ISBN com a comunidade. */
-    suspend fun shareChapterTemplate(isbn: String, tituloLivro: String, chapters: List<Pair<Int, String>>, userId: String) {
-        runCatching {
-            supabase.from("chapter_templates").upsert(
-                ChapterTemplateDto(
-                    isbn = isbn,
-                    tituloLivro = tituloLivro,
-                    chapters = chapters.map { ChapterTemplateEntryDto(it.first, it.second) },
-                    contributedBy = userId,
-                )
-            ) { onConflict = "isbn" }
-        }.onFailure { android.util.Log.w("Rodape/Repo", "shareChapterTemplate falhou: ${it.message}") }
-    }
+    suspend fun shareChapterTemplate(isbn: String, tituloLivro: String, chapters: List<Pair<Int, String>>, userId: String) =
+        bookRepo.shareChapterTemplate(isbn, tituloLivro, chapters, userId)
 
     // ============================================================
     // USER PROGRESS
@@ -1032,144 +800,30 @@ class RemoteRepository(
     // BOOK SUMMARIES / RATINGS
     // ============================================================
 
-    suspend fun insertBookSummary(summary: BookSummary) {
-        runCatching {
-            supabase.from("book_summaries").upsert(
-                BookSummaryInsertDto(
-                    bookId = summary.bookId,
-                    clubId = summary.clubId,
-                    texto = summary.texto,
-                    lastEditorId = summary.lastEditorId.ifBlank { null },
-                )
-            )
-            dao.upsertBookSummary(summary)
-            notifyLocalMutation("book_summaries")
-        }
-    }
+    // F3c: movido pra repo/BookRepository.kt (summaries/ratings/favorites) — fachada delega.
+    suspend fun insertBookSummary(summary: BookSummary) = bookRepo.insertBookSummary(summary)
 
-    fun getBookSummaryFlow(bookId: String, clubId: String): Flow<BookSummary?> {
-        val reload: suspend () -> Unit = {
-            runCatching {
-                val s = supabase.from("book_summaries").select {
-                    filter {
-                        eq("book_id", bookId)
-                        eq("club_id", clubId)
-                    }
-                    limit(1)
-                }.decodeSingleOrNull<BookSummaryDto>()?.toDomain()
-                if (s != null) dao.upsertBookSummary(s)
-            }
-        }
-        scope.launch { runCatching { reload() } }
-        ensureRealtime("book_summaries", filterColumn = "club_id", filterValue = clubId, reload = reload)
-        return dao.bookSummaryFlow(bookId, clubId)
-    }
+    fun getBookSummaryFlow(bookId: String, clubId: String): Flow<BookSummary?> =
+        bookRepo.getBookSummaryFlow(bookId, clubId)
 
-    suspend fun insertBookRating(rating: BookRating) {
-        // Local-first + fila: grava no Room antes do remoto e enfileira se
-        // offline. Antes era remoto-primeiro dentro de runCatching — avaliar um
-        // livro sem internet sumia sem aviso (o dao.upsert nem rodava).
-        dao.upsertBookRatings(listOf(rating))
-        val payload = buildJsonObject {
-            put("bookId", rating.bookId)
-            put("clubId", rating.clubId)
-            put("userId", rating.userId)
-            put("stars", rating.stars.toString())
-            put("comment", rating.comment)
-        }.toString()
-        tryRemoteOrEnqueue("upsert_book_rating", payload, notifyTable = "book_ratings") {
-            supabase.from("book_ratings").upsert(
-                BookRatingInsertDto(
-                    bookId = rating.bookId,
-                    clubId = rating.clubId,
-                    userId = rating.userId,
-                    stars = rating.stars,
-                    comment = rating.comment,
-                )
-            )
-        }
-    }
+    suspend fun insertBookRating(rating: BookRating) = bookRepo.insertBookRating(rating)
 
-    fun getBookRatingsFlow(bookId: String, clubId: String): Flow<List<BookRating>> {
-        val reload: suspend () -> Unit = {
-            runCatching {
-                val list = supabase.from("book_ratings").select {
-                    filter {
-                        eq("book_id", bookId)
-                        eq("club_id", clubId)
-                    }
-                }.decodeList<BookRatingDto>().map { it.toDomain() }
-                dao.upsertBookRatings(list)
-                dao.pruneBookRatingsExcept(bookId, clubId, list.map { it.userId })
-            }
-        }
-        scope.launch { runCatching { reload() } }
-        ensureRealtime("book_ratings", filterColumn = "club_id", filterValue = clubId, reload = reload)
-        return dao.bookRatingsFlow(bookId, clubId)
-    }
+    fun getBookRatingsFlow(bookId: String, clubId: String): Flow<List<BookRating>> =
+        bookRepo.getBookRatingsFlow(bookId, clubId)
 
-    fun getBookRatingOfUserFlow(bookId: String, clubId: String, userId: String): Flow<BookRating?> {
-        scope.launch {
-            runCatching {
-                val r = supabase.from("book_ratings").select {
-                    filter {
-                        eq("book_id", bookId)
-                        eq("club_id", clubId)
-                        eq("user_id", userId)
-                    }
-                    limit(1)
-                }.decodeSingleOrNull<BookRatingDto>()?.toDomain()
-                if (r != null) dao.upsertBookRatings(listOf(r))
-            }
-        }
-        return dao.bookRatingOfUserFlow(bookId, clubId, userId)
-    }
+    fun getBookRatingOfUserFlow(bookId: String, clubId: String, userId: String): Flow<BookRating?> =
+        bookRepo.getBookRatingOfUserFlow(bookId, clubId, userId)
 
-    // ---- book_favorites ----
-    // Favorito PESSOAL de livro (cross-clube). Local-first + fila offline, igual
-    // book_ratings: grava no Room na hora e enfileira se offline (idempotente).
-    suspend fun setBookFavorite(userId: String, bookId: String, favorite: Boolean) {
-        val payload = buildJsonObject {
-            put("userId", userId)
-            put("bookId", bookId)
-        }.toString()
-        if (favorite) {
-            dao.upsertBookFavorites(listOf(BookFavorite(userId, bookId, System.currentTimeMillis())))
-            tryRemoteOrEnqueue("insert_book_favorite", payload, notifyTable = "book_favorites") {
-                supabase.from("book_favorites").upsert(BookFavoriteInsertDto(userId = userId, bookId = bookId))
-            }
-        } else {
-            dao.deleteBookFavorite(userId, bookId)
-            tryRemoteOrEnqueue("delete_book_favorite", payload, notifyTable = "book_favorites") {
-                supabase.from("book_favorites").delete {
-                    filter {
-                        eq("user_id", userId)
-                        eq("book_id", bookId)
-                    }
-                }
-            }
-        }
-    }
+    suspend fun setBookFavorite(userId: String, bookId: String, favorite: Boolean) =
+        bookRepo.setBookFavorite(userId, bookId, favorite)
 
     fun isBookFavoriteFlow(userId: String, bookId: String): Flow<Boolean> =
-        dao.isBookFavoriteFlow(userId, bookId)
+        bookRepo.isBookFavoriteFlow(userId, bookId)
 
-    suspend fun anyClubIdForBook(bookId: String): String? = dao.anyClubIdForBook(bookId)
+    suspend fun anyClubIdForBook(bookId: String): String? = bookRepo.anyClubIdForBook(bookId)
 
-    fun getFavoriteBooksForUserFlow(userId: String): Flow<List<Book>> {
-        val reload: suspend () -> Unit = {
-            runCatching {
-                val list = supabase.from("book_favorites").select {
-                    filter { eq("user_id", userId) }
-                }.decodeList<BookFavoriteDto>()
-                dao.upsertBookFavorites(list.map { BookFavorite(it.userId, it.bookId, it.createdAt.fromIso()) })
-                dao.pruneBookFavoritesExcept(userId, list.map { it.bookId })
-            }
-        }
-        scope.launch { runCatching { reload() } }
-        ensureRealtime("book_favorites", filterColumn = "user_id", filterValue = userId, reload = reload)
-        return dao.favoriteBooksFlow(userId)
-    }
+    fun getFavoriteBooksForUserFlow(userId: String): Flow<List<Book>> =
+        bookRepo.getFavoriteBooksForUserFlow(userId)
 
     // ============================================================
     // SEED — no-op (app nasce vazio em producao)
