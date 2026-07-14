@@ -36,6 +36,9 @@ import com.example.ui.components.TbButtonSize
 import com.example.ui.components.TbButtonVariant
 import com.example.ui.theme.*
 import androidx.compose.animation.AnimatedContent
+import androidx.compose.animation.animateColorAsState
+import androidx.compose.animation.core.animateDpAsState
+import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.animation.togetherWith
@@ -90,10 +93,19 @@ fun OnboardingScreen(
         it to com.example.ui.components.presetDisplayName(it)
     }
 
-    LazyColumn(
+    // Largura de leitura no tablet: sem o teto, o formulário esticava a largura
+    // inteira de uma tela de 10". widthIn só morde acima de 560dp, então no celular
+    // (< 560dp) é no-op — zero regressão lá, centralizado e legível no tablet.
+    Box(
         modifier = Modifier
             .fillMaxSize()
-            .background(MaterialTheme.colorScheme.background)
+            .background(MaterialTheme.colorScheme.background),
+        contentAlignment = Alignment.TopCenter,
+    ) {
+    LazyColumn(
+        modifier = Modifier
+            .fillMaxHeight()
+            .widthIn(max = 560.dp)
             .padding(horizontal = 24.dp),
         verticalArrangement = Arrangement.spacedBy(20.dp),
         horizontalAlignment = Alignment.CenterHorizontally,
@@ -289,11 +301,18 @@ fun OnboardingScreen(
                             style = MaterialTheme.typography.labelSmall.copy(color = RodapeTheme.colors.muted),
                         )
                         Spacer(modifier = Modifier.height(8.dp))
+                        // Preview cresce/encolhe SUAVE ao tocar o chip (era troca seca).
+                        // Dá o feedback tátil de "a letra mudou" que o número sozinho não dá.
+                        val previewSize by animateFloatAsState(
+                            targetValue = 16f * fontScale,
+                            animationSpec = rodapeTween<Float>(RodapeMotion.Dur.standard),
+                            label = "previewSize",
+                        )
                         Text(
                             text = "Era uma vez uma rosa em outro planeta…",
                             style = MaterialTheme.typography.bodyLarge.copy(
                                 fontFamily = LiterataFontFamily,
-                                fontSize = (16 * fontScale).sp,
+                                fontSize = previewSize.sp,
                                 color = RodapeTheme.colors.ink,
                             ),
                         )
@@ -391,23 +410,33 @@ fun OnboardingScreen(
             Spacer(modifier = Modifier.height(36.dp))
         }
 
-        // Indicador de progresso (3 bolinhas)
+        // Indicador de progresso — barrinha que estica na etapa atual, igual à Intro
+        // (antes: bolinhas). Mesma linguagem visual nos dois onboardings.
         item {
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.Center,
+                verticalAlignment = Alignment.CenterVertically,
             ) {
                 repeat(3) { i ->
+                    val active = i == step
+                    val barWidth by animateDpAsState(if (active) 22.dp else 8.dp, label = "stepW")
+                    val barColor by animateColorAsState(
+                        if (active) RodapeTheme.colors.terracota else RodapeTheme.colors.divider,
+                        label = "stepC",
+                    )
                     Box(
                         modifier = Modifier
-                            .padding(horizontal = 4.dp)
-                            .size(if (i == step) 10.dp else 8.dp)
+                            .padding(horizontal = 3.dp)
+                            .height(8.dp)
+                            .width(barWidth)
                             .clip(RoundedCornerShape(50))
-                            .background(if (i == step) RodapeTheme.colors.terracota else RodapeTheme.colors.divider),
+                            .background(barColor),
                     )
                 }
             }
             Spacer(modifier = Modifier.height(24.dp))
         }
+    }
     }
 }

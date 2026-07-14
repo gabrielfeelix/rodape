@@ -32,7 +32,6 @@ import androidx.compose.material.icons.filled.Star
 import androidx.compose.material.icons.filled.Person
 import androidx.compose.material.icons.outlined.List
 import androidx.compose.material.icons.outlined.*
-import androidx.compose.material.icons.outlined.Settings
 import androidx.compose.material3.*
 import androidx.compose.material3.pulltorefresh.PullToRefreshBox
 import androidx.compose.runtime.*
@@ -680,7 +679,7 @@ private fun GlobalHeader(
         if (isAdmin) {
             HeaderCircleButton(onClick = onManageClub, contentDescription = "Gerenciar clube") {
                 Icon(
-                    imageVector = Icons.Outlined.Settings,
+                    imageVector = RodapeIcons.Settings,
                     contentDescription = null,
                     tint = RodapeTheme.colors.ink,
                     modifier = Modifier.size(18.dp),

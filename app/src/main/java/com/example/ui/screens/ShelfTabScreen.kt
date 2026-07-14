@@ -167,7 +167,10 @@ fun ShelfTabScreen(
             }
         } else {
             LazyVerticalGrid(
-                columns = GridCells.Fixed(2),
+                // Adaptativo: 2 colunas no celular, 5-6 no tablet automaticamente
+                // (era Fixed(2) → 2 capas gigantes esticadas na largura do tablet).
+                // minSize alinhado à largura de capa no phone pra não regredir lá.
+                columns = GridCells.Adaptive(minSize = 150.dp),
                 modifier = Modifier.fillMaxSize().padding(horizontal = 16.dp),
                 contentPadding = PaddingValues(bottom = 32.dp),
                 // Gutter 12dp (3.9): capas maiores e mais juntas = estante, não catálogo.

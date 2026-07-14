@@ -19,6 +19,10 @@ private val Black = Color(0xFF000000)
 
 private inline fun icon(
     name: String,
+    // Ícones direcionais (voltar, chevron ←/→) devem espelhar em layouts RTL.
+    // autoMirror deixa o próprio vetor virar; sem isso a seta apontava pro lado
+    // errado em árabe/hebraico.
+    autoMirror: Boolean = false,
     block: ImageVector.Builder.() -> Unit,
 ): ImageVector = ImageVector.Builder(
     name = name,
@@ -26,6 +30,7 @@ private inline fun icon(
     defaultHeight = 24.dp,
     viewportWidth = 24f,
     viewportHeight = 24f,
+    autoMirror = autoMirror,
 ).apply(block).build()
 
 /** Path de contorno (stroke), padrão do design: 1.6px, pontas e junções arredondadas. */
@@ -59,6 +64,63 @@ private fun PathBuilder.circle(cx: Float, cy: Float, r: Float) {
 }
 
 object RodapeIcons {
+
+    // settings (engrenagem) — substitui o Icons.Outlined.Settings do Material, que
+    // vinha com peso de traço diferente do set. Path canônico (Feather) no mesmo
+    // stroke 1.6 round do resto.
+    val Settings: ImageVector by lazy {
+        icon("Settings") {
+            strokePath {
+                moveTo(19.4f, 15f)
+                arcToRelative(1.65f, 1.65f, 0f, false, false, 0.33f, 1.82f)
+                lineToRelative(0.06f, 0.06f)
+                arcToRelative(2f, 2f, 0f, true, true, -2.83f, 2.83f)
+                lineToRelative(-0.06f, -0.06f)
+                arcToRelative(1.65f, 1.65f, 0f, false, false, -1.82f, -0.33f)
+                arcToRelative(1.65f, 1.65f, 0f, false, false, -1f, 1.51f)
+                verticalLineTo(21f)
+                arcToRelative(2f, 2f, 0f, false, true, -4f, 0f)
+                verticalLineToRelative(-0.09f)
+                arcTo(1.65f, 1.65f, 0f, false, false, 9f, 19.4f)
+                arcToRelative(1.65f, 1.65f, 0f, false, false, -1.82f, 0.33f)
+                lineToRelative(-0.06f, 0.06f)
+                arcToRelative(2f, 2f, 0f, true, true, -2.83f, -2.83f)
+                lineToRelative(0.06f, -0.06f)
+                arcToRelative(1.65f, 1.65f, 0f, false, false, 0.33f, -1.82f)
+                arcToRelative(1.65f, 1.65f, 0f, false, false, -1.51f, -1f)
+                horizontalLineTo(3f)
+                arcToRelative(2f, 2f, 0f, false, true, 0f, -4f)
+                horizontalLineToRelative(0.09f)
+                arcTo(1.65f, 1.65f, 0f, false, false, 4.6f, 9f)
+                arcToRelative(1.65f, 1.65f, 0f, false, false, -0.33f, -1.82f)
+                lineToRelative(-0.06f, -0.06f)
+                arcToRelative(2f, 2f, 0f, true, true, 2.83f, -2.83f)
+                lineToRelative(0.06f, 0.06f)
+                arcToRelative(1.65f, 1.65f, 0f, false, false, 1.82f, 0.33f)
+                horizontalLineTo(9f)
+                arcToRelative(1.65f, 1.65f, 0f, false, false, 1f, -1.51f)
+                verticalLineTo(3f)
+                arcToRelative(2f, 2f, 0f, false, true, 4f, 0f)
+                verticalLineToRelative(0.09f)
+                arcToRelative(1.65f, 1.65f, 0f, false, false, 1f, 1.51f)
+                arcToRelative(1.65f, 1.65f, 0f, false, false, 1.82f, -0.33f)
+                lineToRelative(0.06f, -0.06f)
+                arcToRelative(2f, 2f, 0f, true, true, 2.83f, 2.83f)
+                lineToRelative(-0.06f, 0.06f)
+                arcToRelative(1.65f, 1.65f, 0f, false, false, -0.33f, 1.82f)
+                verticalLineTo(9f)
+                arcToRelative(1.65f, 1.65f, 0f, false, false, 1.51f, 1f)
+                horizontalLineTo(21f)
+                arcToRelative(2f, 2f, 0f, false, true, 0f, 4f)
+                horizontalLineToRelative(-0.09f)
+                arcToRelative(1.65f, 1.65f, 0f, false, false, -1.51f, 1f)
+                close()
+            }
+            strokePath {
+                circle(12f, 12f, 3f)
+            }
+        }
+    }
 
     // home: M3 11l9-8 9 8M5 10v10h14V10
     val Home: ImageVector by lazy {
@@ -158,7 +220,7 @@ object RodapeIcons {
 
     // chevR: M9 6l6 6-6 6
     val ChevR: ImageVector by lazy {
-        icon("ChevR") {
+        icon("ChevR", autoMirror = true) {
             strokePath {
                 moveTo(9f, 6f)
                 lineToRelative(6f, 6f)
@@ -169,7 +231,7 @@ object RodapeIcons {
 
     // chevL: M15 6l-6 6 6 6
     val ChevL: ImageVector by lazy {
-        icon("ChevL") {
+        icon("ChevL", autoMirror = true) {
             strokePath {
                 moveTo(15f, 6f)
                 lineToRelative(-6f, 6f)
@@ -618,7 +680,7 @@ object RodapeIcons {
 
     // back: seta pra esquerda — M20 12H4 M10 6l-6 6 6 6
     val Back: ImageVector by lazy {
-        icon("Back") {
+        icon("Back", autoMirror = true) {
             strokePath {
                 moveTo(20f, 12f); horizontalLineTo(4f)
                 moveTo(10f, 6f); lineToRelative(-6f, 6f); lineToRelative(6f, 6f)
