@@ -33,6 +33,7 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import com.example.data.api.OpenLibraryDoc
 import com.example.ui.components.Cover
+import com.example.ui.components.ErrorState
 import com.example.ui.components.RodapeDialog
 import com.example.ui.components.ThemedRadio
 import com.example.ui.components.SkeletonRowList
@@ -305,36 +306,33 @@ fun SuggestScreen(
                     verticalArrangement = Arrangement.Center,
                     horizontalAlignment = Alignment.CenterHorizontally
                 ) {
-                    Text(
-                        text = if (query.trim().length < 3)
-                            "Comece a digitar pra encontrar livros."
-                        else
-                        // A busca vazia pode ser "nada encontrado" OU erro de
-                        // rede — a copy aponta pros dois casos e há botão de
-                        // tentar de novo logo abaixo.
-                            "Não achamos nada — verifique a conexão e tente de novo.",
-                        style = MaterialTheme.typography.bodyLarge,
-                        color = RodapeTheme.colors.muted,
-                        textAlign = androidx.compose.ui.text.style.TextAlign.Center
-                    )
-                    if (query.trim().length >= 3) {
-                        Spacer(modifier = Modifier.height(20.dp))
-                        TbButton(
-                            text = "Tentar de novo",
-                            onClick = {
+                    if (query.trim().length < 3) {
+                        Text(
+                            text = "Comece a digitar pra encontrar livros.",
+                            style = MaterialTheme.typography.bodyLarge,
+                            color = RodapeTheme.colors.muted,
+                            textAlign = androidx.compose.ui.text.style.TextAlign.Center
+                        )
+                    } else {
+                        // Busca vazia pode ser "nada encontrado" OU erro de rede: o
+                        // ErrorState padroniza copy + retry; "Cadastrar manualmente"
+                        // fica como ação secundária.
+                        ErrorState(
+                            title = "Não achamos esse livro",
+                            description = "Verifique a conexão e tente de novo, ou cadastre manualmente.",
+                            onRetry = {
                                 keyboardController?.hide()
                                 viewModel.searchOpenLibrary(query)
                             },
-                            variant = TbButtonVariant.Outline,
-                            modifier = Modifier.fillMaxWidth(0.8f)
-                        )
-                        Spacer(modifier = Modifier.height(10.dp))
-                        TbButton(
-                            text = "Cadastrar manualmente",
-                            leadingIcon = RodapeIcons.Book,
-                            onClick = onNavigateToAddManual,
-                            variant = TbButtonVariant.Terra,
-                            modifier = Modifier.fillMaxWidth(0.8f)
+                            action = {
+                                TbButton(
+                                    text = "Cadastrar manualmente",
+                                    leadingIcon = RodapeIcons.Book,
+                                    onClick = onNavigateToAddManual,
+                                    variant = TbButtonVariant.Terra,
+                                    modifier = Modifier.fillMaxWidth(0.8f)
+                                )
+                            }
                         )
                     }
                 }
