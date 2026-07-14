@@ -151,13 +151,17 @@ incremental e de baixo risco em cima da engine estável.
 
 - [x] F1 lifecycle · [x] F2 nav type-safe · [x] F3a DTOs (`9f0a35f`)
 - [x] F3b SyncEngine (`e29ae6d`, compila; **device-test PENDENTE**) · [x] F4a Hilt (`eac9ff7`)
-- [~] F3c repos (1/~10: **ProgressRepository** `d7607d5` — molde provado; grafo Hilt
-  validado de verdade via @Binds) · [ ] F4b/F5 VMs+UiState · [ ] F6 previews · [ ] F7 testes
+- [x] **F3c repos COMPLETO (10/10)**: Progress `d7607d5`, Notif+Quote `59deb89`,
+  User+Moder `54e0622`, Voting `93bb4e5`, Discussion+Meeting `ed5de8c`, Book `2871b29`,
+  Club `b011cec`. God-repo RemoteRepository: **2654→574 linhas (fachada pura)**.
+- [ ] F4b/F5 VMs+UiState · [ ] F6 previews · [ ] F7 testes · [ ] @HiltWorker + @HiltViewModel (deferidos)
 
-**F3c molde:** interface em `data/remote/repo/`, `OfflineFirst*Repository @Inject(SyncEngine,
-SupabaseClient, RodapeDao)` (bodies verbatim, infra via `engine.*`), `@Binds` em
-`di/RepositoryModule`, fachada delega reusando o `engine` existente. Restam ~9:
-notif/quote (fáceis, folha) → moderação/voting/meeting/book/club (cross-domain, cuidado).
+**F3c molde (aplicado nos 10):** interface em `data/remote/repo/`, `OfflineFirst*Repository
+@Inject(SyncEngine, SupabaseClient, RodapeDao)` (bodies verbatim, infra via `engine.*`),
+`@Binds` em `di/RepositoryModule`, fachada delega reusando o `engine`. DTOs nested-private
+(IdOnly/ProfileUpdate/Join*/StatusOnly) → internal em RemoteDtos. escapeJson → top-level em
+SyncEngine. gradle heap 3g (2g dava OOM com Hilt). Compiles: `--no-daemon` (daemon separado
+crashava). **Device-test ainda pendente** (F3b+F4a no vc20 do dia 16; F3c em vc21+).
 
 **F4a nota:** grafo Hilt aditivo/inerte. Deferidos: @HiltWorker (DrainQueueWorker,
 toca drain) e @HiltViewModel (F5). RemoteRepository não é provido (estrangulado).
