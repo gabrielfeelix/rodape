@@ -40,8 +40,13 @@ import androidx.compose.animation.AnimatedContent
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.animateColorAsState
 import androidx.compose.animation.core.Animatable
+import androidx.compose.animation.core.RepeatMode
 import androidx.compose.animation.core.Spring
+import androidx.compose.animation.core.animateFloat
+import androidx.compose.animation.core.infiniteRepeatable
+import androidx.compose.animation.core.rememberInfiniteTransition
 import androidx.compose.animation.core.spring
+import androidx.compose.animation.core.tween
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.animation.scaleIn
@@ -52,6 +57,8 @@ import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.draw.drawBehind
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.PathEffect
+import androidx.compose.ui.text.font.FontStyle
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.ui.layout.boundsInParent
 import androidx.compose.ui.layout.onGloballyPositioned
 import androidx.compose.ui.platform.LocalDensity
@@ -982,6 +989,21 @@ fun VotacaoTab(
         roundVotes.firstOrNull { it.userId == currentUserId }?.clubBookId
     }
 
+    // Apuração AO VIVO (3.3): lista ordenada por votos; o líder (sem empate)
+    // ganha aro dourado + selo. Computado AQUI (contexto composable) — dentro
+    // da LazyColumn DSL `remember` não compila.
+    val sortedBooks = remember(suggestedBooks, votesByBook) {
+        suggestedBooks.sortedByDescending { votesByBook[it.id]?.size ?: 0 }
+    }
+    val leaderId = remember(sortedBooks, votesByBook, totalVotes) {
+        if (totalVotes == 0) null
+        else {
+            val top = sortedBooks.firstOrNull()?.let { votesByBook[it.id]?.size ?: 0 } ?: 0
+            val tied = sortedBooks.count { (votesByBook[it.id]?.size ?: 0) == top }
+            if (top > 0 && tied == 1) sortedBooks.first().id else null
+        }
+    }
+
     // Gate de loading: hasData = já há livros sugeridos. Enquanto carrega, mostra
     // skeleton; passada a janela sem dado, cai no empty state real.
     val showBooksLoading = com.example.ui.components.rememberShowLoading(hasData = suggestedBooks.isNotEmpty())
@@ -1011,8 +1033,47 @@ fun VotacaoTab(
                     val r = activeRound!!
                     val dataLabel = com.example.util.formatShortDate(r.fechaEm)
                     val nLabel = if (r.nLivros == 1) "Escolham o próximo livro" else "Escolham os próximos ${r.nLivros} livros"
+                    // Chip de contagem regressiva com dot terracota PULSANDO —
+                    // votação aberta é coisa VIVA (reduced-motion → dot parado).
+                    val votingReduce = reduceMotion()
+                    val dotAlpha = if (votingReduce) 1f else {
+                        val pulse = rememberInfiniteTransition(label = "votingDot")
+                        pulse.animateFloat(
+                            initialValue = 0.35f,
+                            targetValue = 1f,
+                            animationSpec = infiniteRepeatable(
+                                animation = tween(700),
+                                repeatMode = RepeatMode.Reverse,
+                            ),
+                            label = "votingDotAlpha",
+                        ).value
+                    }
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(6.dp),
+                        modifier = Modifier
+                            .clip(RoundedCornerShape(RodapeRadii.full))
+                            .background(RodapeTheme.colors.terracotaSoft.copy(alpha = 0.5f))
+                            .padding(horizontal = 10.dp, vertical = 4.dp),
+                    ) {
+                        Box(
+                            Modifier
+                                .size(6.dp)
+                                .graphicsLayer { alpha = dotAlpha }
+                                .background(RodapeTheme.colors.terracota, CircleShape)
+                        )
+                        Text(
+                            text = "Aberta até $dataLabel",
+                            style = MaterialTheme.typography.labelLarge.copy(
+                                color = RodapeTheme.colors.terracota,
+                                fontWeight = FontWeight.SemiBold,
+                            ),
+                        )
+                    }
+                    Spacer(modifier = Modifier.height(6.dp))
+                    // Manchete da apuração: quantos já votaram do total de membros.
                     Text(
-                        text = "Aberta até $dataLabel · $nLabel",
+                        text = "$totalVotes ${if (totalVotes == 1) "voto" else "votos"} · ${members.size} ${if (members.size == 1) "membro" else "membros"} · $nLabel",
                         style = MaterialTheme.typography.bodyLarge,
                         color = RodapeTheme.colors.tertiary
                     )
@@ -1065,16 +1126,55 @@ fun VotacaoTab(
                     }
                 }
             } else {
-                items(suggestedBooks, key = { it.id }) { book ->
+                // Cards REORDENAM com animação (animateItem) conforme a apuração
+                // muda; sortedBooks/leaderId computados acima (fora da DSL).
+                items(sortedBooks, key = { it.id }) { book ->
                     val bookVotes = votesByBook[book.id] ?: emptyList()
                     val hasUserVoted = userVotedBookId == book.id
                     val pct = if (totalVotes > 0) bookVotes.size.toFloat() / totalVotes.toFloat() else 0f
                     val hasJustification = suggestionsByBookId[book.id]?.justificativa?.isNotBlank() == true
+                    val isLeader = book.id == leaderId
 
                     // Card não é mais clicável pra votar (tocar pra "ver melhor"
                     // registrava/desfazia voto sem querer, ignorando o limite).
                     // O voto acontece só no botão "Votar nesse", que respeita o limite.
-                    RodapeCard {
+                    RodapeCard(
+                        modifier = Modifier
+                            .animateItem()
+                            .then(
+                                if (isLeader) Modifier.border(
+                                    1.5.dp,
+                                    RodapeTheme.colors.dourado,
+                                    RoundedCornerShape(RodapeRadii.md)
+                                ) else Modifier
+                            )
+                    ) {
+                        if (isLeader) {
+                            Row(
+                                verticalAlignment = Alignment.CenterVertically,
+                                horizontalArrangement = Arrangement.spacedBy(4.dp),
+                                modifier = Modifier
+                                    .padding(bottom = 8.dp)
+                                    .clip(RoundedCornerShape(RodapeRadii.full))
+                                    .background(RodapeTheme.colors.dourado.copy(alpha = 0.15f))
+                                    .padding(horizontal = 8.dp, vertical = 3.dp)
+                                    .semantics { liveRegion = LiveRegionMode.Polite },
+                            ) {
+                                Icon(
+                                    imageVector = RodapeIcons.Trophy,
+                                    contentDescription = null,
+                                    tint = RodapeTheme.colors.dourado,
+                                    modifier = Modifier.size(12.dp),
+                                )
+                                Text(
+                                    text = "Na frente",
+                                    style = MaterialTheme.typography.labelSmall.copy(
+                                        color = RodapeTheme.colors.dourado,
+                                        fontWeight = FontWeight.Bold,
+                                    ),
+                                )
+                            }
+                        }
                         Row(
                             modifier = Modifier.fillMaxWidth(),
                             horizontalArrangement = Arrangement.spacedBy(16.dp)
@@ -1090,29 +1190,28 @@ fun VotacaoTab(
                                     verticalAlignment = Alignment.Top
                                 ) {
                                     Column(modifier = Modifier.weight(1f)) {
-                                        Row(
-                                            verticalAlignment = Alignment.CenterVertically,
-                                            horizontalArrangement = Arrangement.spacedBy(6.dp)
-                                        ) {
-                                            Text(
-                                                text = book.title,
-                                                style = MaterialTheme.typography.headlineLarge.copy(fontSize = 16.sp, color = RodapeTheme.colors.ink),
-                                                maxLines = 2,
-                                                overflow = TextOverflow.Ellipsis,
-                                                modifier = Modifier.weight(1f, fill = false)
-                                            )
-                                            if (hasJustification) {
-                                                Icon(
-                                                    imageVector = RodapeIcons.Info,
-                                                    contentDescription = "Ver justificativa",
-                                                    tint = RodapeTheme.colors.olivaMid,
-                                                    modifier = Modifier
-                                                        .size(16.dp)
-                                                        .clickable { justificationSheetFor = book.id }
-                                                )
-                                            }
-                                        }
+                                        Text(
+                                            text = book.title,
+                                            style = MaterialTheme.typography.headlineLarge.copy(fontSize = 16.sp, color = RodapeTheme.colors.ink),
+                                            maxLines = 2,
+                                            overflow = TextOverflow.Ellipsis,
+                                        )
                                         Text(text = book.author, style = MaterialTheme.typography.bodyLarge.copy(color = RodapeTheme.colors.muted))
+                                        // Affordance unificada com a fila: texto-link
+                                        // (o Info icon 16dp tinha target minúsculo e
+                                        // linguagem diferente da lista irmã).
+                                        if (hasJustification) {
+                                            Text(
+                                                text = "Ver justificativa",
+                                                style = MaterialTheme.typography.labelSmall.copy(
+                                                    color = RodapeTheme.colors.olivaMid, fontWeight = FontWeight.SemiBold
+                                                ),
+                                                modifier = Modifier
+                                                    .padding(top = 2.dp)
+                                                    .minimumInteractiveComponentSize()
+                                                    .clickable(role = Role.Button) { justificationSheetFor = book.id }
+                                            )
+                                        }
                                     }
                                     if (hasUserVoted) {
                                         // C1: liveRegion faz o leitor de tela anunciar
@@ -1214,8 +1313,10 @@ fun VotacaoTab(
             // "na fila", pra o membro ver que a sugestão dele pegou (antes a lista
             // só renderizava com rodada aberta e o membro sugeria no vazio → bug).
             item {
+                // Desambiguação (3.3): "Sugestões..." = aguardando votação;
+                // "PRÓXIMAS LEITURAS" (abaixo) = livros JÁ escolhidos, na ordem.
                 Text(
-                    text = "Sugestões na fila (${suggestedBooks.size})",
+                    text = "Sugestões pra próxima votação (${suggestedBooks.size})",
                     style = MaterialTheme.typography.titleMedium.copy(
                         fontWeight = FontWeight.SemiBold, color = RodapeTheme.colors.ink
                     )
@@ -1280,7 +1381,7 @@ fun VotacaoTab(
                             .size(6.dp)
                             .background(RodapeTheme.colors.terracota, androidx.compose.foundation.shape.CircleShape)
                     )
-                    Overline(text = "FILA DO CLUBE", color = RodapeTheme.colors.terracota)
+                    Overline(text = "PRÓXIMAS LEITURAS", color = RodapeTheme.colors.terracota)
                 }
             }
             item {
@@ -1433,27 +1534,43 @@ private fun OpenVotingSheet(
 
             Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
                 Text("Quantos livros vamos escolher?", style = MaterialTheme.typography.bodyLarge.copy(fontWeight = FontWeight.SemiBold))
+                // Stepper com ÍCONES (Minus/Plus) — "−"/"+" texto tinha cara de
+                // label, não de controle. Target 48dp via minimumInteractiveComponentSize.
                 Row(
                     horizontalArrangement = Arrangement.spacedBy(12.dp),
                     verticalAlignment = Alignment.CenterVertically
                 ) {
-                    TbButton(text = "−", onClick = { if (n > 1) n-- }, variant = TbButtonVariant.Outline, size = TbButtonSize.Sm)
-                    Text("$n", style = MaterialTheme.typography.headlineLarge)
-                    TbButton(text = "+", onClick = { if (n < 12) n++ }, variant = TbButtonVariant.Outline, size = TbButtonSize.Sm)
+                    StepperIconButton(
+                        icon = RodapeIcons.Minus,
+                        contentDescription = "Diminuir quantidade",
+                        enabled = n > 1,
+                        onClick = { if (n > 1) n-- },
+                    )
+                    Text(
+                        "$n",
+                        style = MaterialTheme.typography.headlineLarge,
+                        modifier = Modifier.semantics { liveRegion = LiveRegionMode.Polite },
+                    )
+                    StepperIconButton(
+                        icon = RodapeIcons.Plus,
+                        contentDescription = "Aumentar quantidade",
+                        enabled = n < 12,
+                        onClick = { if (n < 12) n++ },
+                    )
                 }
             }
 
             Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
                 Text("Por quanto tempo a votação fica aberta?", style = MaterialTheme.typography.bodyLarge.copy(fontWeight = FontWeight.SemiBold))
+                // PillToggle de verdade: target 48dp + Role/selected pro TalkBack
+                // (antes era clickable em Box, target pequeno, sem semântica).
                 Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                     listOf(3, 7, 14, 30).forEach { d ->
-                        val selected = dias == d
-                        Box(modifier = Modifier.clickable { dias = d }) {
-                            Pill(
-                                text = "$d dias",
-                                variant = if (selected) PillVariant.OliveDeep else PillVariant.Default
-                            )
-                        }
+                        PillToggle(
+                            text = "$d dias",
+                            selected = dias == d,
+                            onClick = { dias = d },
+                        )
                     }
                 }
             }
@@ -1475,13 +1592,11 @@ private fun OpenVotingSheet(
                         "anual" to "Anual",
                     )
                     opcoes.forEach { (key, label) ->
-                        val selected = cadencia == key
-                        Box(modifier = Modifier.clickable { cadencia = key }) {
-                            Pill(
-                                text = label,
-                                variant = if (selected) PillVariant.OliveDeep else PillVariant.Default
-                            )
-                        }
+                        PillToggle(
+                            text = label,
+                            selected = cadencia == key,
+                            onClick = { cadencia = key },
+                        )
                     }
                 }
             }
@@ -1492,6 +1607,36 @@ private fun OpenVotingSheet(
             }
             Spacer(modifier = Modifier.height(8.dp))
         }
+    }
+}
+
+/** Botão circular de stepper (−/+): ícone, borda divider, target 48dp, estado disabled. */
+@Composable
+private fun StepperIconButton(
+    icon: androidx.compose.ui.graphics.vector.ImageVector,
+    contentDescription: String,
+    onClick: () -> Unit,
+    enabled: Boolean = true,
+) {
+    Box(
+        modifier = Modifier
+            .minimumInteractiveComponentSize()
+            .size(40.dp)
+            .clip(CircleShape)
+            .border(
+                1.dp,
+                if (enabled) RodapeTheme.colors.divider else RodapeTheme.colors.dividerSoft,
+                CircleShape
+            )
+            .clickable(enabled = enabled, role = Role.Button, onClick = onClick),
+        contentAlignment = Alignment.Center,
+    ) {
+        Icon(
+            imageVector = icon,
+            contentDescription = contentDescription,
+            tint = if (enabled) RodapeTheme.colors.ink else RodapeTheme.colors.muted.copy(alpha = 0.5f),
+            modifier = Modifier.size(16.dp),
+        )
     }
 }
 

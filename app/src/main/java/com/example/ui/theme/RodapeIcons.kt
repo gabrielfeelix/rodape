@@ -201,6 +201,16 @@ object RodapeIcons {
         }
     }
 
+    // minus: só o traço horizontal do Plus (steppers −/+).
+    val Minus: ImageVector by lazy {
+        icon("Minus") {
+            strokePath {
+                moveTo(5f, 12f)
+                horizontalLineToRelative(14f)
+            }
+        }
+    }
+
     // check: M5 13l4 4L19 7
     val Check: ImageVector by lazy {
         icon("Check") {
