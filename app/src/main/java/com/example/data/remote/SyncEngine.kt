@@ -51,7 +51,9 @@ internal object Ttl {
 
 internal class SyncEngine(
     private val appContext: android.content.Context,
-    private val supabase: SupabaseClient,
+    // Exposto: os repos de domínio (F3c) fazem os SELECTs/mutations com o mesmo
+    // client, via engine — superfície documentada no DESIGN-ALVO §SyncEngine.
+    val supabase: SupabaseClient,
 ) {
 
     val json = Json { ignoreUnknownKeys = true; coerceInputValues = true }
