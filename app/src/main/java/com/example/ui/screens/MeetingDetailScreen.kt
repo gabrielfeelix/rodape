@@ -1,5 +1,7 @@
 package com.example.ui.screens
 
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
+
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.selection.selectable
@@ -49,15 +51,15 @@ fun MeetingDetailScreen(
     onNavigateBack: () -> Unit
 ) {
     val meetingFlow = remember(meetingId) { viewModel.getMeetingByIdFlow(meetingId) }
-    val meeting by meetingFlow.collectAsState(initial = null)
+    val meeting by meetingFlow.collectAsStateWithLifecycle(initialValue = null)
     val rsvpFlow = remember(meetingId) { viewModel.getRsvpOfUser(meetingId) }
-    val userRsvp by rsvpFlow.collectAsState(initial = null)
-    val members by viewModel.clubMembers.collectAsState()
-    val isAdmin by viewModel.isCurrentUserAdmin.collectAsState()
+    val userRsvp by rsvpFlow.collectAsStateWithLifecycle(initialValue = null)
+    val members by viewModel.clubMembers.collectAsStateWithLifecycle()
+    val isAdmin by viewModel.isCurrentUserAdmin.collectAsStateWithLifecycle()
     val minutesFlow = remember(meetingId) { viewModel.getMeetingMinutesFlow(meetingId) }
-    val minutes by minutesFlow.collectAsState(initial = null)
+    val minutes by minutesFlow.collectAsStateWithLifecycle(initialValue = null)
     val noteFlow = remember(meetingId) { viewModel.getMyMeetingNoteFlow(meetingId) }
-    val myNote by noteFlow.collectAsState(initial = null)
+    val myNote by noteFlow.collectAsStateWithLifecycle(initialValue = null)
 
     var showMinutesEdit by rememberSaveable { mutableStateOf(false) }
     var minutesDraft by rememberSaveable { mutableStateOf("") }

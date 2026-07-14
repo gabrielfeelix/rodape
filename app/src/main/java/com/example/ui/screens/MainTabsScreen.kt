@@ -1,5 +1,7 @@
 package com.example.ui.screens
 
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
+
 import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.rememberScrollState
@@ -156,7 +158,7 @@ fun MainTabsScreen(
     // estado interno; main_tabs e a raiz da backstack de navegacao).
     BackHandler(enabled = selectedTab != "home") { selectedTab = "home" }
     // Observa pedidos externos de troca de tab (ex: notificações navegando)
-    val requestedTab by viewModel.requestedTab.collectAsState()
+    val requestedTab by viewModel.requestedTab.collectAsStateWithLifecycle()
     LaunchedEffect(requestedTab) {
         requestedTab?.let { tab ->
             selectedTab = tab
@@ -168,22 +170,22 @@ fun MainTabsScreen(
     // chave; o overlay no topo do Scaffold dispara a explosão sobre tudo.
     var celebrateKey by remember { mutableStateOf(0) }
     val context = androidx.compose.ui.platform.LocalContext.current
-    val shouldShowRatePrompt by viewModel.shouldShowRatePrompt.collectAsState()
+    val shouldShowRatePrompt by viewModel.shouldShowRatePrompt.collectAsStateWithLifecycle()
     // Mostra prompt só 1x por sessão pra não ser invasivo (e o markAppRated já garante 1x permanente)
     var ratePromptShown by remember { mutableStateOf(false) }
     val showRateDialog = shouldShowRatePrompt && !ratePromptShown
 
-    val activeClub by viewModel.activeClub.collectAsState()
-    val allClubs by viewModel.allClubs.collectAsState()
-    val currentUser by viewModel.currentUser.collectAsState()
-    val supaName by viewModel.supabaseDisplayName.collectAsState()
+    val activeClub by viewModel.activeClub.collectAsStateWithLifecycle()
+    val allClubs by viewModel.allClubs.collectAsStateWithLifecycle()
+    val currentUser by viewModel.currentUser.collectAsStateWithLifecycle()
+    val supaName by viewModel.supabaseDisplayName.collectAsStateWithLifecycle()
     val unreadFlow = remember(viewModel.notifications) {
         viewModel.notifications.map { notifs -> notifs.count { !it.lida } }
     }
-    val unreadNotificationsCount by unreadFlow.collectAsState(initial = 0)
-    val isAdmin by viewModel.isCurrentUserAdmin.collectAsState()
+    val unreadNotificationsCount by unreadFlow.collectAsStateWithLifecycle(initialValue = 0)
+    val isAdmin by viewModel.isCurrentUserAdmin.collectAsStateWithLifecycle()
     // A2: badge na aba "Clube" quando há votação aberta (algo pra você votar).
-    val activeVotingRoundForBadge by viewModel.activeVotingRound.collectAsState()
+    val activeVotingRoundForBadge by viewModel.activeVotingRound.collectAsStateWithLifecycle()
 
     // Estado vazio: usuario logado mas nao tem clubes. Mostra CTAs em vez das tabs
     // (as tabs todas dependem de um clube ativo — sem clube, todas mostrariam vazio).
@@ -218,7 +220,7 @@ fun MainTabsScreen(
             }
         }
     }
-    val pendingCount by viewModel.pendingMutationsCount.collectAsState()
+    val pendingCount by viewModel.pendingMutationsCount.collectAsStateWithLifecycle()
     // G1: depois de drenar a fila, mostra um "Tudo salvo ✓" transitório em vez de
     // a pill só sumir — pro leigo, a rodinha que some sozinha parecia "travado".
     var showSavedPill by remember { mutableStateOf(false) }
@@ -460,7 +462,7 @@ fun MainTabsScreen(
                     modifier = Modifier.padding(bottom = 16.dp)
                 )
 
-                val currentBooks by viewModel.currentBooksMap.collectAsState()
+                val currentBooks by viewModel.currentBooksMap.collectAsStateWithLifecycle()
                 Column(
                     modifier = Modifier
                         .fillMaxWidth()
@@ -1218,27 +1220,27 @@ fun HomeScreenTab(
     onNavigateToTab: (String, String?) -> Unit,
     onShowMessage: (String) -> Unit = {},
 ) {
-    val activeClub by viewModel.activeClub.collectAsState()
-    val currentBook by viewModel.currentBook.collectAsState()
-    val chapters by viewModel.currentChapters.collectAsState()
-    val progress by viewModel.userProgress.collectAsState()
-    val allProgress by viewModel.allProgressForClub.collectAsState()
-    val members by viewModel.clubMembers.collectAsState()
-    val memberRoles by viewModel.activeClubMembersRaw.collectAsState()
+    val activeClub by viewModel.activeClub.collectAsStateWithLifecycle()
+    val currentBook by viewModel.currentBook.collectAsStateWithLifecycle()
+    val chapters by viewModel.currentChapters.collectAsStateWithLifecycle()
+    val progress by viewModel.userProgress.collectAsStateWithLifecycle()
+    val allProgress by viewModel.allProgressForClub.collectAsStateWithLifecycle()
+    val members by viewModel.clubMembers.collectAsStateWithLifecycle()
+    val memberRoles by viewModel.activeClubMembersRaw.collectAsStateWithLifecycle()
     var showMembersSheet by remember { mutableStateOf(false) }
     val context = androidx.compose.ui.platform.LocalContext.current
 
     val currentChapIndex = progress?.currentChapter ?: 0
 
-    val meeting by viewModel.latestMeeting.collectAsState()
-    val rsvps by viewModel.latestMeetingRsvps.collectAsState()
-    val homeIsAdmin by viewModel.isCurrentUserAdmin.collectAsState()
+    val meeting by viewModel.latestMeeting.collectAsStateWithLifecycle()
+    val rsvps by viewModel.latestMeetingRsvps.collectAsStateWithLifecycle()
+    val homeIsAdmin by viewModel.isCurrentUserAdmin.collectAsStateWithLifecycle()
     // Estado do ciclo pro checklist guiado (A1): votação aberta, sugestões na
     // fila e se este membro já votou na rodada ativa.
-    val activeRound by viewModel.activeVotingRound.collectAsState()
-    val suggestedForChecklist by viewModel.suggestedBooks.collectAsState()
-    val roundVotesForChecklist by viewModel.votesForActiveRound.collectAsState()
-    val homeUserId by viewModel.currentUserId.collectAsState()
+    val activeRound by viewModel.activeVotingRound.collectAsStateWithLifecycle()
+    val suggestedForChecklist by viewModel.suggestedBooks.collectAsStateWithLifecycle()
+    val roundVotesForChecklist by viewModel.votesForActiveRound.collectAsStateWithLifecycle()
+    val homeUserId by viewModel.currentUserId.collectAsStateWithLifecycle()
     val hasUserVotedChecklist = remember(roundVotesForChecklist, homeUserId) {
         homeUserId != null && roundVotesForChecklist.any { it.userId == homeUserId }
     }
@@ -1359,7 +1361,7 @@ fun HomeScreenTab(
             if (stillLoadingMeeting) {
                 com.example.ui.components.SkeletonMeetingCard()
             } else if (meeting == null) {
-                val isAdminHome by viewModel.isCurrentUserAdmin.collectAsState()
+                val isAdminHome by viewModel.isCurrentUserAdmin.collectAsStateWithLifecycle()
                 Column(
                     modifier = Modifier
                         .fillMaxWidth()
@@ -1978,8 +1980,8 @@ private fun currentUserFirst(viewModel: MainViewModel): String {
     // Prefere o nome do Room (User.nome), que ATUALIZA depois de editar o perfil;
     // supaName (JWT auth.user_metadata.full_name) e imutavel, entao vira so
     // fallback enquanto o Room ainda nao carregou. "Leitor(a)" e ultimo recurso.
-    val supaName by viewModel.supabaseDisplayName.collectAsState()
-    val currentUser by viewModel.currentUser.collectAsState()
+    val supaName by viewModel.supabaseDisplayName.collectAsStateWithLifecycle()
+    val currentUser by viewModel.currentUser.collectAsStateWithLifecycle()
     return displayFirstName(currentUser?.nome, supaName)
 }
 
@@ -1995,10 +1997,10 @@ fun BookDetailScreenTab(
     onNavigateToManageChapters: () -> Unit = {},
     onCelebrate: () -> Unit = {},
 ) {
-    val currentBook by viewModel.currentBook.collectAsState()
-    val chapters by viewModel.currentChapters.collectAsState()
-    val progress by viewModel.userProgress.collectAsState()
-    val isAdmin by viewModel.isCurrentUserAdmin.collectAsState()
+    val currentBook by viewModel.currentBook.collectAsStateWithLifecycle()
+    val chapters by viewModel.currentChapters.collectAsStateWithLifecycle()
+    val progress by viewModel.userProgress.collectAsStateWithLifecycle()
+    val isAdmin by viewModel.isCurrentUserAdmin.collectAsStateWithLifecycle()
     val haptics = LocalHapticFeedback.current
 
     val currentChapIndex = progress?.currentChapter ?: 0
@@ -2566,7 +2568,7 @@ fun BookDetailScreenTab(
                             val commentsFlow = remember(chapter.id) {
                                 viewModel.getCommentsForChapter(chapter.id)
                             }
-                            val chapterComments by commentsFlow.collectAsState(initial = emptyList())
+                            val chapterComments by commentsFlow.collectAsStateWithLifecycle(initialValue = emptyList())
                             val commentsCount = chapterComments.size
 
                             // Chapter row card
@@ -2705,23 +2707,23 @@ fun ProfileScreenTab(
     onNavigateToBookDetail: (String) -> Unit,
     onNavigateToAbout: () -> Unit = {}
 ) {
-    val supaName by viewModel.supabaseDisplayName.collectAsState()
-    val supaEmail by viewModel.supabaseEmail.collectAsState()
-    val nameLegacy by viewModel.userName.collectAsState()
-    val emailLegacy by viewModel.userEmail.collectAsState()
-    val currentUser by viewModel.currentUser.collectAsState()
+    val supaName by viewModel.supabaseDisplayName.collectAsStateWithLifecycle()
+    val supaEmail by viewModel.supabaseEmail.collectAsStateWithLifecycle()
+    val nameLegacy by viewModel.userName.collectAsStateWithLifecycle()
+    val emailLegacy by viewModel.userEmail.collectAsStateWithLifecycle()
+    val currentUser by viewModel.currentUser.collectAsStateWithLifecycle()
     // Nome exibido vem do Room (User.nome), que ATUALIZA depois de editar o perfil;
     // supaName (JWT imutavel) e nameLegacy sao apenas fallback.
     val name = currentUser?.nome ?: supaName ?: nameLegacy
     val email = supaEmail ?: emailLegacy
-    val allClubs by viewModel.allClubs.collectAsState()
-    val activeClub by viewModel.activeClub.collectAsState()
-    val savedQuotes by viewModel.savedQuotes.collectAsState()
-    val finishedBooks by viewModel.finishedBooks.collectAsState()
-    val archivedClubs by viewModel.archivedClubsForUser.collectAsState()
-    val ratedApp by viewModel.ratedApp.collectAsState()
-    val profileCurrentBooks by viewModel.currentBooksMap.collectAsState()
-    val favoriteBooks by viewModel.favoriteBooks.collectAsState()
+    val allClubs by viewModel.allClubs.collectAsStateWithLifecycle()
+    val activeClub by viewModel.activeClub.collectAsStateWithLifecycle()
+    val savedQuotes by viewModel.savedQuotes.collectAsStateWithLifecycle()
+    val finishedBooks by viewModel.finishedBooks.collectAsStateWithLifecycle()
+    val archivedClubs by viewModel.archivedClubsForUser.collectAsStateWithLifecycle()
+    val ratedApp by viewModel.ratedApp.collectAsStateWithLifecycle()
+    val profileCurrentBooks by viewModel.currentBooksMap.collectAsStateWithLifecycle()
+    val favoriteBooks by viewModel.favoriteBooks.collectAsStateWithLifecycle()
 
     val context = androidx.compose.ui.platform.LocalContext.current
     // rememberSaveable: a edicao de perfil sobrevive a rotacao / mudanca de fonte.
@@ -3186,7 +3188,7 @@ fun ProfileScreenTab(
                     text = "APARÊNCIA",
                     modifier = Modifier.padding(start = 4.dp, bottom = 8.dp)
                 )
-                val fontScale by viewModel.fontScale.collectAsState()
+                val fontScale by viewModel.fontScale.collectAsStateWithLifecycle()
                 RodapeCard(modifier = Modifier.fillMaxWidth()) {
                     Text(
                         text = "Tamanho da letra",
@@ -3250,7 +3252,7 @@ fun ProfileScreenTab(
             // ── Aparência (tema claro/escuro) ────────────────────────────
             item {
                 Spacer(modifier = Modifier.height(12.dp))
-                val themeMode by viewModel.themeMode.collectAsState()
+                val themeMode by viewModel.themeMode.collectAsStateWithLifecycle()
                 RodapeCard(modifier = Modifier.fillMaxWidth()) {
                     Text(
                         text = "Tema",

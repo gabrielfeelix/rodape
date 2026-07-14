@@ -1,5 +1,7 @@
 package com.example.ui.screens
 
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
+
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
@@ -57,8 +59,8 @@ fun SuggestScreen(
     onNavigateToAddManual: () -> Unit = {}
 ) {
     var query by rememberSaveable { mutableStateOf("") }
-    val searchResults by viewModel.searchResults.collectAsState()
-    val loading by viewModel.searchLoading.collectAsState()
+    val searchResults by viewModel.searchResults.collectAsStateWithLifecycle()
+    val loading by viewModel.searchLoading.collectAsStateWithLifecycle()
     val keyboardController = LocalSoftwareKeyboardController.current
 
     var selectedDoc by remember { mutableStateOf<OpenLibraryDoc?>(null) }

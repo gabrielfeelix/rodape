@@ -1,5 +1,7 @@
 package com.example.ui.screens
 
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
+
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
@@ -30,9 +32,9 @@ fun ModerationLogScreen(
     viewModel: MainViewModel,
     onNavigateBack: () -> Unit
 ) {
-    val removed by viewModel.removedCommentsInActiveClub.collectAsState()
-    val members by viewModel.clubMembers.collectAsState()
-    val isSuper by viewModel.isCurrentUserSuperAdmin.collectAsState()
+    val removed by viewModel.removedCommentsInActiveClub.collectAsStateWithLifecycle()
+    val members by viewModel.clubMembers.collectAsStateWithLifecycle()
+    val isSuper by viewModel.isCurrentUserSuperAdmin.collectAsStateWithLifecycle()
     val showLoading = rememberShowLoading(hasData = removed.isNotEmpty())
 
     // Restaurar reverte uma decisão de moderação — exige confirmação (evita

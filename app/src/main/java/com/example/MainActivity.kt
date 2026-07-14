@@ -1,5 +1,7 @@
 package com.example
 
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
+
 import android.Manifest
 import android.content.Intent
 import android.content.pm.PackageManager
@@ -25,7 +27,6 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.ui.Modifier
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -68,7 +69,7 @@ class MainActivity : ComponentActivity() {
         // Triggering fresh compilation and preview deployment for the user
         enableEdgeToEdge()
         setContent {
-            val fontScale by viewModel.fontScale.collectAsState()
+            val fontScale by viewModel.fontScale.collectAsStateWithLifecycle()
             val baseDensity = LocalDensity.current
             // Acessibilidade: COMBINA a escala do sistema (config "Tamanho da fonte"
             // do Android, essencial pra baixa visão) com o ajuste interno, em vez de
@@ -78,7 +79,7 @@ class MainActivity : ComponentActivity() {
                 density = baseDensity.density,
                 fontScale = baseDensity.fontScale * fontScale
             )
-            val themeMode by viewModel.themeMode.collectAsState()
+            val themeMode by viewModel.themeMode.collectAsStateWithLifecycle()
             val darkTheme = when (themeMode) {
                 ThemeMode.LIGHT -> false
                 ThemeMode.DARK -> true
@@ -107,7 +108,7 @@ class MainActivity : ComponentActivity() {
                     color = MaterialTheme.colorScheme.background
                 ) {
                     val navController = rememberNavController()
-                    val sessionStatus by viewModel.sessionStatus.collectAsState()
+                    val sessionStatus by viewModel.sessionStatus.collectAsStateWithLifecycle()
 
                     // Push (F1): pedido de permissão de notificação (Android 13+).
                     // Resultado não importa aqui — se negar, o app só não vibra.
@@ -222,7 +223,7 @@ class MainActivity : ComponentActivity() {
                         // Intro de primeiro uso antes do welcome. introSeen == null:
                         // ainda lendo do DataStore — não renderiza nada (evita piscar
                         // a intro pra quem já viu, ou o welcome pra quem ainda vai ver).
-                        val introSeen by viewModel.introSeen.collectAsState()
+                        val introSeen by viewModel.introSeen.collectAsStateWithLifecycle()
                         when (introSeen) {
                             null -> { /* aguarda o DataStore (1 frame) */ }
                             false -> IntroScreen(onFinished = { viewModel.markIntroSeen() })
@@ -383,13 +384,13 @@ class MainActivity : ComponentActivity() {
                         // device mostra OnboardingScreen (avatar + apelido + fonte).
                         // Estado vem de DataStore (onboardedUsersFlow) cruzado com
                         // currentUserId — defensivo contra trocar de conta.
-                        val needsOnboarding by viewModel.needsOnboarding.collectAsState()
-                        val currentUser by viewModel.currentUser.collectAsState()
-                        val supaName by viewModel.supabaseDisplayName.collectAsState()
-                        val fontScale by viewModel.fontScale.collectAsState()
+                        val needsOnboarding by viewModel.needsOnboarding.collectAsStateWithLifecycle()
+                        val currentUser by viewModel.currentUser.collectAsStateWithLifecycle()
+                        val supaName by viewModel.supabaseDisplayName.collectAsStateWithLifecycle()
+                        val fontScale by viewModel.fontScale.collectAsStateWithLifecycle()
                         // B1: chegou aqui com um convite pendente (fluxo do convidado)
                         // → entra no clube automaticamente e limpa o código.
-                        val pendingInvite by viewModel.pendingInviteCode.collectAsState()
+                        val pendingInvite by viewModel.pendingInviteCode.collectAsStateWithLifecycle()
                         LaunchedEffect(pendingInvite) {
                             pendingInvite?.let { code ->
                                 viewModel.joinClubWithCode(code) { _, _ -> }

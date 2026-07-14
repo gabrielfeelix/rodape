@@ -1,5 +1,7 @@
 package com.example.ui.screens
 
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
+
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
@@ -13,7 +15,6 @@ import androidx.compose.material3.*
 import androidx.compose.ui.draw.drawBehind
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
@@ -46,8 +47,8 @@ fun NotificationsScreen(
     onNavigateToDiscussion: (chapterId: String, title: String) -> Unit = { _, _ -> },
     onNavigateToTab: (String) -> Unit = {}
 ) {
-    val list by viewModel.notifications.collectAsState()
-    val chapters by viewModel.currentChapters.collectAsState()
+    val list by viewModel.notifications.collectAsStateWithLifecycle()
+    val chapters by viewModel.currentChapters.collectAsStateWithLifecycle()
     val showLoading = rememberShowLoading(hasData = list.isNotEmpty())
 
     Scaffold(

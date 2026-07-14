@@ -1,5 +1,7 @@
 package com.example.ui.screens
 
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
+
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.grid.GridCells
@@ -50,8 +52,8 @@ fun ShelfTabScreen(
     onNavigateToBookDetail: (String) -> Unit,
     onNavigateToSuggest: () -> Unit = {}
 ) {
-    val finishedBooks by viewModel.finishedBooks.collectAsState()
-    val meetingDates by viewModel.finishedBooksMeetingDates.collectAsState()
+    val finishedBooks by viewModel.finishedBooks.collectAsStateWithLifecycle()
+    val meetingDates by viewModel.finishedBooksMeetingDates.collectAsStateWithLifecycle()
     var filterBy by remember { mutableStateOf("Todos") }
 
     // Média por-livro reativa, sem N+1 posicional.
@@ -80,12 +82,12 @@ fun ShelfTabScreen(
             ) { pairs -> pairs.toMap() }
         }
     }
-    val ratingsByBook by ratingsFlow.collectAsState(initial = emptyMap())
+    val ratingsByBook by ratingsFlow.collectAsStateWithLifecycle(initialValue = emptyMap())
 
     // "Favoritos" = favoritos PESSOAIS de verdade (♥), não mais a média do clube
     // ≥ 4.5 (que enganava — o usuário não escolhia nada). Mostra os livros que ESTE
     // usuário favoritou e que o clube já leu (interseção).
-    val favoriteBooks by viewModel.favoriteBooks.collectAsState()
+    val favoriteBooks by viewModel.favoriteBooks.collectAsStateWithLifecycle()
     val favoriteIds = remember(favoriteBooks) { favoriteBooks.map { it.id }.toSet() }
     val displayedBooks = if (filterBy == "Favoritos") {
         finishedBooks.filter { it.id in favoriteIds }

@@ -1,5 +1,7 @@
 package com.example.ui.screens
 
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
+
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
@@ -70,15 +72,15 @@ fun DiscussionScreen(
     // Flows memoizados por chapterId: sem isso, cada recomposição recriava o
     // Flow e disparava um refetch em loop (maior gargalo de performance da tela).
     val commentsFlow = remember(chapterId) { viewModel.getCommentsForChapter(chapterId) }
-    val commentsRaw by commentsFlow.collectAsState(initial = emptyList())
+    val commentsRaw by commentsFlow.collectAsStateWithLifecycle(initialValue = emptyList())
     // Moderação (0010): esconde comentários de usuários que eu bloqueei.
-    val blockedIds by viewModel.blockedIds.collectAsState()
+    val blockedIds by viewModel.blockedIds.collectAsStateWithLifecycle()
     val comments = remember(commentsRaw, blockedIds) { commentsRaw.filter { it.userId !in blockedIds } }
-    val chapters by viewModel.currentChapters.collectAsState()
-    val progress by viewModel.userProgress.collectAsState()
-    val members by viewModel.clubMembers.collectAsState()
+    val chapters by viewModel.currentChapters.collectAsStateWithLifecycle()
+    val progress by viewModel.userProgress.collectAsStateWithLifecycle()
+    val members by viewModel.clubMembers.collectAsStateWithLifecycle()
     val reactionsFlow = remember(chapterId) { viewModel.getReactionsForChapter(chapterId) }
-    val reactions by reactionsFlow.collectAsState(initial = emptyList())
+    val reactions by reactionsFlow.collectAsStateWithLifecycle(initialValue = emptyList())
 
     val chapterObj = chapters.find { it.id == chapterId }
     val chapterNum = chapterObj?.numero ?: 1
@@ -356,8 +358,8 @@ fun DiscussionScreen(
 
                 // Coletores e derivações memoizados UMA vez, fora do items{}:
                 // evita 1 coletor de state + 1 filter/find por comentário a cada frame.
-                val currentUid by viewModel.currentUserId.collectAsState()
-                val isAdmin by viewModel.isCurrentUserAdmin.collectAsState()
+                val currentUid by viewModel.currentUserId.collectAsStateWithLifecycle()
+                val isAdmin by viewModel.isCurrentUserAdmin.collectAsStateWithLifecycle()
                 val reactionsByComment = remember(reactions) { reactions.groupBy { it.commentId } }
                 val membersById = remember(members) { members.associateBy { it.id } }
                 val listState = rememberLazyListState()

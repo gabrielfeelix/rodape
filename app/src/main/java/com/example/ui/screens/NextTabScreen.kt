@@ -1,5 +1,7 @@
 package com.example.ui.screens
 
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
+
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
@@ -181,16 +183,16 @@ fun EncontroTab(
     viewModel: MainViewModel,
     onNavigateToMeetingDetail: (String) -> Unit = {}
 ) {
-    val meeting by viewModel.latestMeeting.collectAsState()
-    val rsvps by viewModel.latestMeetingRsvps.collectAsState()
-    val members by viewModel.clubMembers.collectAsState()
-    val meetingsForBook by viewModel.meetingsForCurrentBook.collectAsState()
-    val currentBook by viewModel.currentBook.collectAsState()
+    val meeting by viewModel.latestMeeting.collectAsStateWithLifecycle()
+    val rsvps by viewModel.latestMeetingRsvps.collectAsStateWithLifecycle()
+    val members by viewModel.clubMembers.collectAsStateWithLifecycle()
+    val meetingsForBook by viewModel.meetingsForCurrentBook.collectAsStateWithLifecycle()
+    val currentBook by viewModel.currentBook.collectAsStateWithLifecycle()
     val currentBookTitle = currentBook?.title
-    val currentUserId = viewModel.currentUserId.collectAsState().value
-    val isAdmin by viewModel.isCurrentUserAdmin.collectAsState()
-    val chapters by viewModel.currentChapters.collectAsState()
-    val meetingPattern by viewModel.activeMeetingPattern.collectAsState()
+    val currentUserId = viewModel.currentUserId.collectAsStateWithLifecycle().value
+    val isAdmin by viewModel.isCurrentUserAdmin.collectAsStateWithLifecycle()
+    val chapters by viewModel.currentChapters.collectAsStateWithLifecycle()
+    val meetingPattern by viewModel.activeMeetingPattern.collectAsStateWithLifecycle()
     // Agendamento DIRETO na aba Encontro (antes só existia enterrado em Gerenciar
     // clube → Encontros — ninguém achava).
     var creatingMeeting by remember { mutableStateOf(false) }
@@ -267,7 +269,7 @@ fun EncontroTab(
         // A11y + perf: memoiza o flow por id do encontro (sem remember o flow era
         // recriado a cada recomposição).
         val userRsvpFlow = remember(meeting!!.id) { viewModel.getRsvpOfUser(meeting!!.id) }
-        val userRsvp by userRsvpFlow.collectAsState(initial = null)
+        val userRsvp by userRsvpFlow.collectAsStateWithLifecycle(initialValue = null)
         val userStatus = userRsvp?.status ?: "Sem resposta"
 
         LazyColumn(
@@ -1038,16 +1040,16 @@ fun VotacaoTab(
     viewModel: MainViewModel,
     onNavigateToSuggestBook: () -> Unit
 ) {
-    val suggestedBooks by viewModel.suggestedBooks.collectAsState()
-    val nextBooks by viewModel.nextBooks.collectAsState()
+    val suggestedBooks by viewModel.suggestedBooks.collectAsStateWithLifecycle()
+    val nextBooks by viewModel.nextBooks.collectAsStateWithLifecycle()
     // Room-backed reativo, já escopado à rodada ativa: o voto otimista reflete na hora.
-    val roundVotes by viewModel.votesForActiveRound.collectAsState()
-    val members by viewModel.clubMembers.collectAsState()
-    val activeRound by viewModel.activeVotingRound.collectAsState()
-    val suggestionsByBookId by viewModel.bookSuggestionsByBookId.collectAsState()
-    val isAdmin by viewModel.isCurrentUserAdmin.collectAsState()
+    val roundVotes by viewModel.votesForActiveRound.collectAsStateWithLifecycle()
+    val members by viewModel.clubMembers.collectAsStateWithLifecycle()
+    val activeRound by viewModel.activeVotingRound.collectAsStateWithLifecycle()
+    val suggestionsByBookId by viewModel.bookSuggestionsByBookId.collectAsStateWithLifecycle()
+    val isAdmin by viewModel.isCurrentUserAdmin.collectAsStateWithLifecycle()
 
-    val currentUserId = viewModel.currentUserId.collectAsState().value ?: ""
+    val currentUserId = viewModel.currentUserId.collectAsStateWithLifecycle().value ?: ""
 
     val totalVotes = roundVotes.size
 

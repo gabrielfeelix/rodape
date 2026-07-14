@@ -1,5 +1,7 @@
 package com.example.ui.screens
 
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
+
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.*
@@ -45,21 +47,21 @@ fun ManageClubScreen(
     onNavigateToModerationLog: () -> Unit,
     onNavigateToModerationQueue: () -> Unit
 ) {
-    val club by viewModel.activeClub.collectAsState()
-    val currentBook by viewModel.currentBook.collectAsState()
-    val chapters by viewModel.currentChapters.collectAsState()
-    val members by viewModel.clubMembers.collectAsState()
-    val membersRaw by viewModel.activeClubMembersRaw.collectAsState()
-    val pattern by viewModel.activeMeetingPattern.collectAsState()
-    val meeting by viewModel.latestMeeting.collectAsState()
-    val removed by viewModel.removedCommentsInActiveClub.collectAsState()
-    val isSuper by viewModel.isCurrentUserSuperAdmin.collectAsState()
-    val currentUserId by viewModel.currentUserId.collectAsState()
-    val currentUserPapel by viewModel.currentUserPapel.collectAsState()
-    val suggestedBooks by viewModel.suggestedBooks.collectAsState()
-    val nextBooks by viewModel.nextBooks.collectAsState()
-    val bookSearchResults by viewModel.searchResultsUnified.collectAsState()
-    val bookSearchLoading by viewModel.searchLoading.collectAsState()
+    val club by viewModel.activeClub.collectAsStateWithLifecycle()
+    val currentBook by viewModel.currentBook.collectAsStateWithLifecycle()
+    val chapters by viewModel.currentChapters.collectAsStateWithLifecycle()
+    val members by viewModel.clubMembers.collectAsStateWithLifecycle()
+    val membersRaw by viewModel.activeClubMembersRaw.collectAsStateWithLifecycle()
+    val pattern by viewModel.activeMeetingPattern.collectAsStateWithLifecycle()
+    val meeting by viewModel.latestMeeting.collectAsStateWithLifecycle()
+    val removed by viewModel.removedCommentsInActiveClub.collectAsStateWithLifecycle()
+    val isSuper by viewModel.isCurrentUserSuperAdmin.collectAsStateWithLifecycle()
+    val currentUserId by viewModel.currentUserId.collectAsStateWithLifecycle()
+    val currentUserPapel by viewModel.currentUserPapel.collectAsStateWithLifecycle()
+    val suggestedBooks by viewModel.suggestedBooks.collectAsStateWithLifecycle()
+    val nextBooks by viewModel.nextBooks.collectAsStateWithLifecycle()
+    val bookSearchResults by viewModel.searchResultsUnified.collectAsStateWithLifecycle()
+    val bookSearchLoading by viewModel.searchLoading.collectAsStateWithLifecycle()
 
     var showEditInfo by remember { mutableStateOf(false) }
     var showRegenCode by remember { mutableStateOf(false) }
@@ -378,8 +380,8 @@ fun ManageClubScreen(
                     )
 
                     // ── Encontros do livro atual ─────────────────────────
-                    val meetingsBook by viewModel.meetingsForCurrentBook.collectAsState()
-                    val scheduledMeetings by viewModel.scheduledMeetingsInActiveClub.collectAsState()
+                    val meetingsBook by viewModel.meetingsForCurrentBook.collectAsStateWithLifecycle()
+                    val scheduledMeetings by viewModel.scheduledMeetingsInActiveClub.collectAsStateWithLifecycle()
 
                     Spacer(modifier = Modifier.height(20.dp))
                     Row(
@@ -750,8 +752,8 @@ fun ManageClubScreen(
     }
 
     if (editingMeetingId != null) {
-        val meetingsBook by viewModel.meetingsForCurrentBook.collectAsState()
-        val scheduled by viewModel.scheduledMeetingsInActiveClub.collectAsState()
+        val meetingsBook by viewModel.meetingsForCurrentBook.collectAsStateWithLifecycle()
+        val scheduled by viewModel.scheduledMeetingsInActiveClub.collectAsStateWithLifecycle()
         val editing = meetingsBook.find { it.id == editingMeetingId } ?: scheduled.find { it.id == editingMeetingId }
         if (editing != null) {
             EditSingleMeetingDialog(

@@ -1,5 +1,7 @@
 package com.example.ui.screens
 
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
+
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
@@ -43,7 +45,7 @@ fun BookDetailScreen(
     bookId: String,
     onNavigateBack: () -> Unit
 ) {
-    val clubBooks by viewModel.clubBooks.collectAsState()
+    val clubBooks by viewModel.clubBooks.collectAsStateWithLifecycle()
     val book = clubBooks.find { it.id == bookId }
 
     if (book == null) {
@@ -93,10 +95,10 @@ fun BookDetailScreen(
 
     // --- Flows ---
     val quotesFlow = remember(bookId) { viewModel.getSavedQuotesForBook(bookId) }
-    val quotes by quotesFlow.collectAsState(initial = emptyList())
-    val meetingDates by viewModel.finishedBooksMeetingDates.collectAsState()
+    val quotes by quotesFlow.collectAsStateWithLifecycle(initialValue = emptyList())
+    val meetingDates by viewModel.finishedBooksMeetingDates.collectAsStateWithLifecycle()
     val dataEncontro = meetingDates[bookId]
-    val isFavorite by remember(bookId) { viewModel.isBookFavoriteFlow(bookId) }.collectAsState(initial = false)
+    val isFavorite by remember(bookId) { viewModel.isBookFavoriteFlow(bookId) }.collectAsStateWithLifecycle(initialValue = false)
 
     // Parallax do hero: o conteúdo abaixo rola, a capa reage. Scroll hoisteado pra
     // a capa (no hero fixo) ler o offset e recuar de leve — profundidade sem tirar
@@ -396,8 +398,8 @@ fun BookDetailScreen(
 @Composable
 private fun SummaryTab(viewModel: MainViewModel, bookId: String) {
     val summaryFlow = remember(bookId) { viewModel.getBookSummaryFlow(bookId) }
-    val summary by summaryFlow.collectAsState(initial = null)
-    val members by viewModel.clubMembers.collectAsState()
+    val summary by summaryFlow.collectAsStateWithLifecycle(initialValue = null)
+    val members by viewModel.clubMembers.collectAsStateWithLifecycle()
     val membersById = remember(members) { members.associateBy { it.id } }
     var showEditDialog by remember { mutableStateOf(false) }
     var draftText by remember { mutableStateOf("") }
@@ -488,7 +490,7 @@ private fun FrasesTab(
     quotes: List<com.example.data.model.SavedQuote>,
     onShowQuoteDialog: () -> Unit
 ) {
-    val members by viewModel.clubMembers.collectAsState()
+    val members by viewModel.clubMembers.collectAsStateWithLifecycle()
     val membersById = remember(members) { members.associateBy { it.id } }
     val showLoading = rememberShowLoading(hasData = quotes.isNotEmpty())
     if (showLoading) {
@@ -564,8 +566,8 @@ private fun FrasesTab(
 @Composable
 private fun ChatTab(viewModel: MainViewModel, bookId: String) {
     val chaptersFlow = remember(bookId) { viewModel.getCommentsForBookFlow(bookId) }
-    val comments by chaptersFlow.collectAsState(initial = emptyList())
-    val members by viewModel.clubMembers.collectAsState()
+    val comments by chaptersFlow.collectAsStateWithLifecycle(initialValue = emptyList())
+    val members by viewModel.clubMembers.collectAsStateWithLifecycle()
     val membersById = remember(members) { members.associateBy { it.id } }
 
     // Buscar chapters: precisamos resolver chapterId -> Chapter pra header.
@@ -573,7 +575,7 @@ private fun ChatTab(viewModel: MainViewModel, bookId: String) {
     // como Comment já tem chapterId, agrupamos por chapterId.
     // Para mostrar título do capítulo, precisamos consultar os chapters do livro.
     // Reusamos currentChapters quando bate, senão fallback genérico.
-    val currentChapters by viewModel.currentChapters.collectAsState()
+    val currentChapters by viewModel.currentChapters.collectAsStateWithLifecycle()
     val chapterById = remember(currentChapters) { currentChapters.associateBy { it.id } }
 
     val showLoading = rememberShowLoading(hasData = comments.isNotEmpty())
@@ -701,10 +703,10 @@ private fun ChatTab(viewModel: MainViewModel, bookId: String) {
 @Composable
 private fun RatingsTab(viewModel: MainViewModel, bookId: String) {
     val ratingsFlow = remember(bookId) { viewModel.getBookRatingsFlow(bookId) }
-    val ratings by ratingsFlow.collectAsState(initial = emptyList())
+    val ratings by ratingsFlow.collectAsStateWithLifecycle(initialValue = emptyList())
     val myRatingFlow = remember(bookId) { viewModel.getBookRatingOfCurrentUserFlow(bookId) }
-    val myRating by myRatingFlow.collectAsState(initial = null)
-    val members by viewModel.clubMembers.collectAsState()
+    val myRating by myRatingFlow.collectAsStateWithLifecycle(initialValue = null)
+    val members by viewModel.clubMembers.collectAsStateWithLifecycle()
     val membersById = remember(members) { members.associateBy { it.id } }
 
     var showRatingDialog by remember { mutableStateOf(false) }
@@ -859,9 +861,9 @@ private fun RatingsTab(viewModel: MainViewModel, bookId: String) {
 @Composable
 private fun HistoryTab(viewModel: MainViewModel, bookId: String, dataEncontro: Long?) {
     val suggestionFlow = remember(bookId) { viewModel.getBookSuggestionFlow(bookId) }
-    val suggestion by suggestionFlow.collectAsState(initial = null)
-    val members by viewModel.clubMembers.collectAsState()
-    val isAdmin by viewModel.isCurrentUserAdmin.collectAsState()
+    val suggestion by suggestionFlow.collectAsStateWithLifecycle(initialValue = null)
+    val members by viewModel.clubMembers.collectAsStateWithLifecycle()
+    val isAdmin by viewModel.isCurrentUserAdmin.collectAsStateWithLifecycle()
 
     val suggester = suggestion?.let { s -> members.find { it.id == s.suggestedByUserId }?.nome }
 

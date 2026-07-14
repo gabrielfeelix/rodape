@@ -1,5 +1,7 @@
 package com.example.ui.screens
 
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
+
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
@@ -34,9 +36,9 @@ fun ModerationQueueScreen(
     viewModel: MainViewModel,
     onNavigateBack: () -> Unit,
 ) {
-    val reports by viewModel.pendingReports.collectAsState()
-    val loading by viewModel.pendingReportsLoading.collectAsState()
-    val members by viewModel.clubMembers.collectAsState()
+    val reports by viewModel.pendingReports.collectAsStateWithLifecycle()
+    val loading by viewModel.pendingReportsLoading.collectAsStateWithLifecycle()
+    val members by viewModel.clubMembers.collectAsStateWithLifecycle()
     val showLoading = rememberShowLoading(hasData = reports.isNotEmpty()) || loading
 
     LaunchedEffect(Unit) { viewModel.refreshPendingReports() }

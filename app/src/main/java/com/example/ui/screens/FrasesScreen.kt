@@ -1,5 +1,7 @@
 package com.example.ui.screens
 
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
+
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
@@ -40,8 +42,8 @@ fun FrasesScreen(
     viewModel: MainViewModel,
     onNavigateBack: () -> Unit,
 ) {
-    val quotes by viewModel.savedQuotes.collectAsState()
-    val clubBooks by viewModel.clubBooks.collectAsState()
+    val quotes by viewModel.savedQuotes.collectAsStateWithLifecycle()
+    val clubBooks by viewModel.clubBooks.collectAsStateWithLifecycle()
     val context = LocalContext.current
     var query by remember { mutableStateOf("") }
     val snackbarHostState = remember { SnackbarHostState() }

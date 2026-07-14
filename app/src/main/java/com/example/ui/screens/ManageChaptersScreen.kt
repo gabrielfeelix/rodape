@@ -1,5 +1,7 @@
 package com.example.ui.screens
 
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
+
 import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
@@ -47,8 +49,8 @@ fun ManageChaptersScreen(
     viewModel: MainViewModel,
     onNavigateBack: () -> Unit
 ) {
-    val currentBook by viewModel.currentBook.collectAsState()
-    val chapters by viewModel.currentChapters.collectAsState()
+    val currentBook by viewModel.currentBook.collectAsStateWithLifecycle()
+    val chapters by viewModel.currentChapters.collectAsStateWithLifecycle()
 
     // Seed do rascunho UMA vez. Usar remember(chapters) reseta a lista quando um
     // reload em tempo real troca a referência de `chapters` no meio da edição,
