@@ -5,6 +5,7 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.outlined.ArrowBack
@@ -31,6 +32,7 @@ import androidx.compose.ui.unit.dp
 import com.example.ui.components.Avatar
 import com.example.ui.components.SkeletonRowList
 import com.example.ui.components.rememberShowLoading
+import com.example.ui.components.staggeredEntrance
 import com.example.ui.theme.RodapeIcons
 import com.example.ui.theme.RodapeTheme
 import com.example.ui.viewmodel.MainViewModel
@@ -163,8 +165,9 @@ fun NotificationsScreen(
                             )
                         )
                     }
-                    items(groupItems) { notif ->
+                    itemsIndexed(groupItems) { i, notif ->
                         NotificationItem(
+                            modifier = Modifier.staggeredEntrance(index = i),
                             tipo = notif.tipo,
                             payloadJson = notif.payloadJson,
                             lida = notif.lida,
@@ -192,7 +195,8 @@ private fun NotificationItem(
     tipo: String,
     payloadJson: String,
     lida: Boolean,
-    onClick: () -> Unit
+    onClick: () -> Unit,
+    modifier: Modifier = Modifier,
 ) {
     // Decodifica o payload JSON de forma segura. Qualquer falha vira null,
     // então nunca renderizamos JSON cru na tela.
@@ -275,7 +279,7 @@ private fun NotificationItem(
     }
 
     Row(
-        modifier = Modifier
+        modifier = modifier
             .fillMaxWidth()
             .clip(MaterialTheme.shapes.medium)
             .background(if (!lida) RodapeTheme.colors.cream else androidx.compose.ui.graphics.Color.Transparent)

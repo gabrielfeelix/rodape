@@ -5,6 +5,7 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.grid.GridCells
 import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
 import androidx.compose.foundation.lazy.grid.items
+import androidx.compose.foundation.lazy.grid.itemsIndexed
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.outlined.Book
 import androidx.compose.material3.Icon
@@ -27,6 +28,7 @@ import com.example.ui.components.TbButton
 import com.example.ui.components.SkeletonBox
 import com.example.ui.components.SkeletonText
 import com.example.ui.components.rememberShowLoading
+import com.example.ui.components.staggeredEntrance
 import com.example.ui.theme.RodapeIcons
 import com.example.ui.theme.RodapeRadii
 import com.example.ui.theme.Ink
@@ -155,13 +157,17 @@ fun ShelfTabScreen(
                 horizontalArrangement = Arrangement.spacedBy(16.dp),
                 verticalArrangement = Arrangement.spacedBy(20.dp)
             ) {
-                items(displayedBooks, key = { it.id }) { book ->
-                    ShelfBookCard(
-                        book = book,
-                        rating = ratingsByBook[book.id] ?: 0f,
-                        dataEncontroLabel = meetingDates[book.id]?.let { formatShortDate(it) },
-                        onClick = { onNavigateToBookDetail(book.id) }
-                    )
+                itemsIndexed(displayedBooks, key = { _, b -> b.id }) { i, book ->
+                    // "Prateleira enchendo": cada capa pousa em stagger (fade+rise)
+                    // conforme entra na composição.
+                    Box(modifier = Modifier.staggeredEntrance(index = i)) {
+                        ShelfBookCard(
+                            book = book,
+                            rating = ratingsByBook[book.id] ?: 0f,
+                            dataEncontroLabel = meetingDates[book.id]?.let { formatShortDate(it) },
+                            onClick = { onNavigateToBookDetail(book.id) }
+                        )
+                    }
                 }
             }
         }

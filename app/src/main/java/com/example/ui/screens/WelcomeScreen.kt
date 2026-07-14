@@ -49,6 +49,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.ui.components.Pill
 import com.example.ui.components.PillVariant
+import com.example.ui.components.staggeredEntrance
 import com.example.ui.components.TbButton
 import com.example.ui.components.TbButtonSize
 import com.example.ui.components.TbButtonVariant
@@ -132,7 +133,10 @@ fun WelcomeScreen(
                     .weight(1f)
                     .padding(start = 28.dp, end = 28.dp, top = 44.dp)
             ) {
-                Pill(text = "Clubes de leitura", variant = PillVariant.OliveDeep)
+                // Entrada encenada do hero: pílula → headline → subhead (stagger).
+                Box(modifier = Modifier.staggeredEntrance(index = 0)) {
+                    Pill(text = "Clubes de leitura", variant = PillVariant.OliveDeep)
+                }
                 Spacer(modifier = Modifier.height(18.dp))
                 // Cores hoistadas: buildAnnotatedString é lambda não-composable.
                 val olivaColor = RodapeTheme.colors.oliva
@@ -143,6 +147,7 @@ fun WelcomeScreen(
                         withStyle(SpanStyle(fontStyle = FontStyle.Italic, color = olivaColor)) { append("juntas") }
                         withStyle(SpanStyle(color = terracotaColor)) { append(".") }
                     },
+                    modifier = Modifier.staggeredEntrance(index = 1),
                     style = MaterialTheme.typography.displayLarge.copy(
                         fontFamily = LiterataFontFamily,
                         fontWeight = FontWeight.SemiBold,
@@ -160,7 +165,9 @@ fun WelcomeScreen(
                         fontSize = 16.sp,
                         color = RodapeTheme.colors.muted
                     ),
-                    modifier = Modifier.widthIn(max = 290.dp)
+                    modifier = Modifier
+                        .widthIn(max = 290.dp)
+                        .staggeredEntrance(index = 2)
                 )
             }
 
@@ -178,10 +185,12 @@ fun WelcomeScreen(
                     verticalAlignment = Alignment.Bottom,
                     horizontalArrangement = Arrangement.spacedBy(5.dp)
                 ) {
-                    BookSpine(80.dp, Color(0xFFD9C9B0))
-                    BookSpine(110.dp, RodapeTheme.colors.terracota)
-                    BookSpine(92.dp, RodapeTheme.colors.cream, stroke = true)
-                    BookSpine(72.dp, RodapeTheme.colors.oliva)
+                    // "Livros pousando na prateleira": cada lombada sobe em stagger
+                    // depois do hero (índices seguem pílula/headline/subhead).
+                    Box(modifier = Modifier.staggeredEntrance(index = 3)) { BookSpine(80.dp, Color(0xFFD9C9B0)) }
+                    Box(modifier = Modifier.staggeredEntrance(index = 4)) { BookSpine(110.dp, RodapeTheme.colors.terracota) }
+                    Box(modifier = Modifier.staggeredEntrance(index = 5)) { BookSpine(92.dp, RodapeTheme.colors.cream, stroke = true) }
+                    Box(modifier = Modifier.staggeredEntrance(index = 6)) { BookSpine(72.dp, RodapeTheme.colors.oliva) }
                 }
 
                 Column(

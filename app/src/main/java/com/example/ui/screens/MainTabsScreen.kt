@@ -1244,8 +1244,11 @@ fun HomeScreenTab(
         // Welcome and Headline Block (Image 1 Left Top)
         item {
             Spacer(modifier = Modifier.height(16.dp))
+            // Entrada encenada: greeting → headline em stagger (fade + rise 8dp)
+            // na primeira composição do Home.
             Text(
                 text = fullGreeting,
+                modifier = Modifier.staggeredEntrance(index = 0),
                 style = MaterialTheme.typography.bodyLarge.copy(
                     fontFamily = InterFontFamily,
                     fontWeight = FontWeight.Medium,
@@ -1273,6 +1276,7 @@ fun HomeScreenTab(
                         color = olivaColor
                     )) { append(accent) }
                 },
+                modifier = Modifier.staggeredEntrance(index = 1),
                 // Design: 28px serif SemiBold (screens-main.jsx headline)
                 style = MaterialTheme.typography.displayMedium.copy(
                     fontFamily = LiterataFontFamily,
