@@ -174,6 +174,9 @@ fun MainTabsScreen(
         }
     }
     var showBottomSheet by remember { mutableStateOf(false) }
+    // Confete de marco de leitura (25/50/75/100%): a aba Livro incrementa esta
+    // chave; o overlay no topo do Scaffold dispara a explosão sobre tudo.
+    var celebrateKey by remember { mutableStateOf(0) }
     val context = androidx.compose.ui.platform.LocalContext.current
     val shouldShowRatePrompt by viewModel.shouldShowRatePrompt.collectAsState()
     // Mostra prompt só 1x por sessão pra não ser invasivo (e o markAppRated já garante 1x permanente)
@@ -310,6 +313,7 @@ fun MainTabsScreen(
                     onNavigateToVoting = { pendingNextSubTab = "votacao"; selectedTab = "next" },
                     onNavigateToManageClub = onNavigateToManageClub,
                     onNavigateToManageChapters = onNavigateToManageChapters,
+                    onCelebrate = { celebrateKey++ },
                 )
                 "next" -> NextTabScreen(
                     viewModel = viewModel,
@@ -336,6 +340,10 @@ fun MainTabsScreen(
             }
             }
             }
+
+            // Confete de marco de leitura — overlay full-screen acima das abas,
+            // transparente a toques; respeita reduced-motion internamente.
+            ConfettiBurst(trigger = celebrateKey, modifier = Modifier.fillMaxSize())
 
             // Indicador de sync offline: a fila de mutações sempre existiu,
             // mas era invisível — o usuário não sabia se a ação tinha "pegado".
@@ -1847,6 +1855,7 @@ fun BookDetailScreenTab(
     onNavigateToVoting: () -> Unit = {},
     onNavigateToManageClub: () -> Unit = {},
     onNavigateToManageChapters: () -> Unit = {},
+    onCelebrate: () -> Unit = {},
 ) {
     val currentBook by viewModel.currentBook.collectAsState()
     val chapters by viewModel.currentChapters.collectAsState()
@@ -2253,6 +2262,7 @@ fun BookDetailScreenTab(
                                         }
                                         if (milestone != null) {
                                             haptics.performHapticFeedback(HapticFeedbackType.LongPress)
+                                            onCelebrate()
                                             onShowMessage(milestone)
                                         } else {
                                             onShowMessage("Progresso salvo — Cap. $nextChap")
