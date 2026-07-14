@@ -25,10 +25,15 @@ import com.example.ui.components.PillVariant
 import com.example.ui.components.RatingStars
 import com.example.ui.components.RodapeCard
 import com.example.ui.components.TbButton
+import androidx.compose.foundation.background
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.ui.draw.clip
+import com.example.ui.components.SegmentedControl
 import com.example.ui.components.SkeletonBox
 import com.example.ui.components.SkeletonText
 import com.example.ui.components.rememberShowLoading
 import com.example.ui.components.staggeredEntrance
+import com.example.ui.theme.shelfCoverShadow
 import com.example.ui.theme.RodapeIcons
 import com.example.ui.theme.RodapeRadii
 import com.example.ui.theme.Ink
@@ -91,23 +96,21 @@ fun ShelfTabScreen(
     // vazio antes do primeiro sync, mostrando o empty state por engano.
     val showLoading = rememberShowLoading(hasData = finishedBooks.isNotEmpty())
 
+    // Contagem de favoritos LIDOS (interseção) pro rótulo do filtro.
+    val favoritesCount = remember(finishedBooks, favoriteIds) {
+        finishedBooks.count { it.id in favoriteIds }
+    }
+
     Column(modifier = Modifier.fillMaxSize()) {
-        Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(horizontal = 24.dp, vertical = 12.dp),
-            horizontalArrangement = Arrangement.spacedBy(8.dp)
-        ) {
-            listOf("Todos", "Favoritos").forEach { option ->
-                val isSelected = filterBy == option
-                Box(modifier = Modifier.clickable { filterBy = option }) {
-                    Pill(
-                        text = option,
-                        variant = if (isSelected) PillVariant.OliveDeep else PillVariant.Default
-                    )
-                }
-            }
-        }
+        // 3.9: filtro vira SegmentedControl de verdade (track oliva, target 48dp,
+        // semântica de seleção) com ♥ + contagem — era Pill em Box clickable.
+        SegmentedControl(
+            options = listOf("Todos", "Favoritos"),
+            selected = filterBy,
+            onSelect = { filterBy = it },
+            label = { if (it == "Favoritos") "♥ Favoritos ($favoritesCount)" else it },
+            modifier = Modifier.padding(horizontal = 24.dp, vertical = 12.dp),
+        )
 
         if (showLoading) {
             SkeletonCoverGrid()
@@ -128,11 +131,24 @@ fun ShelfTabScreen(
                         horizontalAlignment = Alignment.CenterHorizontally,
                         modifier = Modifier.padding(horizontal = 40.dp)
                     ) {
-                        Icon(
-                            imageVector = RodapeIcons.Book,
-                            contentDescription = null,
-                            tint = RodapeTheme.colors.muted,
-                            modifier = Modifier.size(48.dp)
+                        // Prateleira vazia ilustrada (3.9): lombadas esmaecidas +
+                        // UMA terracota ("o primeiro livro de vocês") sobre a linha
+                        // da prateleira. Geometria pura — sem vetor arriscado.
+                        Row(
+                            verticalAlignment = Alignment.Bottom,
+                            horizontalArrangement = Arrangement.spacedBy(5.dp)
+                        ) {
+                            Box(Modifier.size(width = 14.dp, height = 44.dp).clip(RoundedCornerShape(RodapeRadii.xs)).background(RodapeTheme.colors.dividerSoft))
+                            Box(Modifier.size(width = 16.dp, height = 58.dp).clip(RoundedCornerShape(RodapeRadii.xs)).background(RodapeTheme.colors.terracota))
+                            Box(Modifier.size(width = 13.dp, height = 50.dp).clip(RoundedCornerShape(RodapeRadii.xs)).background(RodapeTheme.colors.divider))
+                            Box(Modifier.size(width = 15.dp, height = 40.dp).clip(RoundedCornerShape(RodapeRadii.xs)).background(RodapeTheme.colors.dividerSoft))
+                        }
+                        Box(
+                            Modifier
+                                .width(120.dp)
+                                .height(2.dp)
+                                .clip(RoundedCornerShape(RodapeRadii.full))
+                                .background(RodapeTheme.colors.divider)
                         )
                         Spacer(modifier = Modifier.height(16.dp))
                         Text(
@@ -154,7 +170,8 @@ fun ShelfTabScreen(
                 columns = GridCells.Fixed(2),
                 modifier = Modifier.fillMaxSize().padding(horizontal = 16.dp),
                 contentPadding = PaddingValues(bottom = 32.dp),
-                horizontalArrangement = Arrangement.spacedBy(16.dp),
+                // Gutter 12dp (3.9): capas maiores e mais juntas = estante, não catálogo.
+                horizontalArrangement = Arrangement.spacedBy(12.dp),
                 verticalArrangement = Arrangement.spacedBy(20.dp)
             ) {
                 itemsIndexed(displayedBooks, key = { _, b -> b.id }) { i, book ->
@@ -210,46 +227,55 @@ private fun ShelfBookCard(
     dataEncontroLabel: String?,
     onClick: () -> Unit
 ) {
-    RodapeCard(
-        modifier = Modifier.fillMaxWidth().clickable { onClick() },
-        contentPadding = PaddingValues(12.dp)
+    // 3.9 cover-first: SEM card branco — a CAPA é o objeto (maior, com sombra
+    // tingida de prateleira); título/autor/estrelas menores e mudos por baixo.
+    Column(
+        horizontalAlignment = Alignment.CenterHorizontally,
+        modifier = Modifier
+            .fillMaxWidth()
+            .clip(RoundedCornerShape(RodapeRadii.sm))
+            .clickable { onClick() }
+            .padding(vertical = 6.dp, horizontal = 2.dp)
     ) {
-        Column(horizontalAlignment = Alignment.CenterHorizontally) {
+        Box(modifier = Modifier.shelfCoverShadow(cornerRadius = RodapeRadii.xs)) {
             Cover(
                 title = book.title,
                 author = book.author,
                 coverUrl = book.coverUrl,
-                width = 100.dp,
-                height = 150.dp
+                width = 128.dp,
+                height = 192.dp
             )
-            Spacer(modifier = Modifier.height(12.dp))
+        }
+        Spacer(modifier = Modifier.height(10.dp))
+        Text(
+            text = book.title,
+            // C3: 2 linhas — em fonte grande (A++), o título cortava no ellipsis.
+            style = MaterialTheme.typography.titleSmall.copy(color = RodapeTheme.colors.ink),
+            textAlign = TextAlign.Center,
+            maxLines = 2,
+            overflow = TextOverflow.Ellipsis,
+            modifier = Modifier.fillMaxWidth()
+        )
+        Text(
+            text = book.author,
+            style = MaterialTheme.typography.bodySmall.copy(color = RodapeTheme.colors.muted),
+            textAlign = TextAlign.Center,
+            maxLines = 1,
+            overflow = TextOverflow.Ellipsis,
+            modifier = Modifier.fillMaxWidth()
+        )
+        if (dataEncontroLabel != null) {
+            Spacer(modifier = Modifier.height(2.dp))
             Text(
-                text = book.title,
-                // C3: 2 linhas — em fonte grande (A++), o título cortava no ellipsis.
-                style = MaterialTheme.typography.headlineLarge.copy(fontSize = 14.sp, color = RodapeTheme.colors.ink),
-                textAlign = TextAlign.Center,
-                maxLines = 2,
-                overflow = TextOverflow.Ellipsis,
-                modifier = Modifier.fillMaxWidth()
+                text = "Encontro em $dataEncontroLabel",
+                style = MaterialTheme.typography.labelSmall.copy(color = RodapeTheme.colors.muted, fontSize = 11.sp),
+                textAlign = TextAlign.Center
             )
-            Text(
-                text = book.author,
-                style = MaterialTheme.typography.bodyLarge.copy(color = RodapeTheme.colors.muted, fontSize = 12.sp),
-                textAlign = TextAlign.Center,
-                maxLines = 1,
-                overflow = TextOverflow.Ellipsis,
-                modifier = Modifier.fillMaxWidth()
-            )
-            if (dataEncontroLabel != null) {
-                Spacer(modifier = Modifier.height(4.dp))
-                Text(
-                    text = "Encontro em $dataEncontroLabel",
-                    style = MaterialTheme.typography.labelSmall.copy(color = RodapeTheme.colors.muted, fontSize = 11.sp),
-                    textAlign = TextAlign.Center
-                )
-            }
-            Spacer(modifier = Modifier.height(8.dp))
-            RatingStars(rating = rating, size = 16.dp)
+        }
+        // Sem rating → nada (5 estrelas vazias liam como "0 = odiei").
+        if (rating > 0f) {
+            Spacer(modifier = Modifier.height(6.dp))
+            RatingStars(rating = rating, size = 13.dp)
         }
     }
 }

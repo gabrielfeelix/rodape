@@ -90,6 +90,11 @@ fun Modifier.detailCoverShadow(cornerRadius: Dp = 4.dp): Modifier = this
 fun Modifier.floatShadow(cornerRadius: Dp = 20.dp): Modifier = this
     .softShadow(Color.Black, 0.08f, blur = 28.dp, offsetY = 8.dp, cornerRadius = cornerRadius)
 
+/** Capa na estante (grid): tingida e mais leve que a do detalhe — "livro na prateleira". */
+fun Modifier.shelfCoverShadow(cornerRadius: Dp = 3.dp): Modifier = this
+    .softShadow(ShadowOlive, 0.18f, blur = 18.dp, offsetY = 8.dp, cornerRadius = cornerRadius)
+    .softShadow(Color.Black, 0.08f, blur = 4.dp, offsetY = 2.dp, cornerRadius = cornerRadius)
+
 /** Pill de status pequena: `0 1px 4px rgba(0,0,0,0.10)`. */
 fun Modifier.pillShadow(cornerRadius: Dp = 999.dp): Modifier = this
     .softShadow(Color.Black, 0.10f, blur = 4.dp, offsetY = 1.dp, cornerRadius = cornerRadius)
