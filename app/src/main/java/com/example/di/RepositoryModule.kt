@@ -8,8 +8,10 @@ import com.example.data.remote.repo.OfflineFirstModerationRepository
 import com.example.data.remote.repo.OfflineFirstNotificationRepository
 import com.example.data.remote.repo.OfflineFirstProgressRepository
 import com.example.data.remote.repo.OfflineFirstQuoteRepository
+import com.example.data.remote.repo.OfflineFirstVotingRepository
 import com.example.data.remote.repo.ProgressRepository
 import com.example.data.remote.repo.QuoteRepository
+import com.example.data.remote.repo.VotingRepository
 import dagger.Binds
 import dagger.Module
 import dagger.hilt.InstallIn
@@ -42,4 +44,8 @@ internal abstract class RepositoryModule {
     @Binds
     @Singleton
     abstract fun bindDiscussionRepository(impl: OfflineFirstDiscussionRepository): DiscussionRepository
+
+    @Binds
+    @Singleton
+    abstract fun bindVotingRepository(impl: OfflineFirstVotingRepository): VotingRepository
 }
