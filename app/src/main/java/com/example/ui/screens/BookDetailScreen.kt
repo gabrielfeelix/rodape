@@ -314,16 +314,23 @@ fun BookDetailScreen(
                 },
                 label = "bookDetailTab",
             ) { t ->
-                when (t) {
-                    "resumo" -> SummaryTab(viewModel = viewModel, bookId = bookId)
-                    "frases" -> FrasesTab(
-                        viewModel = viewModel,
-                        quotes = quotes,
-                        onShowQuoteDialog = { showQuoteDialog = true }
-                    )
-                    "chat" -> ChatTab(viewModel = viewModel, bookId = bookId)
-                    "avaliacoes" -> RatingsTab(viewModel = viewModel, bookId = bookId)
-                    "historico" -> HistoryTab(viewModel = viewModel, bookId = bookId, dataEncontro = dataEncontro)
+                // As tabs emitem VÁRIOS composables irmãos na raiz (card + botão…):
+                // dentro do AnimatedContent os filhos do lambda são SOBREPOSTOS
+                // (semântica de Box), não empilhados — o botão cobria o card. A
+                // Column devolve o arranjo vertical que elas tinham quando eram
+                // chamadas direto na Column rolável.
+                Column {
+                    when (t) {
+                        "resumo" -> SummaryTab(viewModel = viewModel, bookId = bookId)
+                        "frases" -> FrasesTab(
+                            viewModel = viewModel,
+                            quotes = quotes,
+                            onShowQuoteDialog = { showQuoteDialog = true }
+                        )
+                        "chat" -> ChatTab(viewModel = viewModel, bookId = bookId)
+                        "avaliacoes" -> RatingsTab(viewModel = viewModel, bookId = bookId)
+                        "historico" -> HistoryTab(viewModel = viewModel, bookId = bookId, dataEncontro = dataEncontro)
+                    }
                 }
             }
             // A raiz só reservava o statusBar (topo). Sem reservar a barra de
