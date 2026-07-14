@@ -29,6 +29,10 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.ui.components.*
 import com.example.ui.theme.*
+import androidx.compose.animation.AnimatedContent
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.togetherWith
 import com.example.ui.viewmodel.MainViewModel
 import com.example.util.formatShortDate
 import com.example.util.timeAgo
@@ -275,16 +279,29 @@ fun BookDetailScreen(
                 .verticalScroll(rememberScrollState())
                 .padding(horizontal = 24.dp)
         ) {
-            when (tab) {
-                "resumo" -> SummaryTab(viewModel = viewModel, bookId = bookId)
-                "frases" -> FrasesTab(
-                    viewModel = viewModel,
-                    quotes = quotes,
-                    onShowQuoteDialog = { showQuoteDialog = true }
-                )
-                "chat" -> ChatTab(viewModel = viewModel, bookId = bookId)
-                "avaliacoes" -> RatingsTab(viewModel = viewModel, bookId = bookId)
-                "historico" -> HistoryTab(viewModel = viewModel, bookId = bookId, dataEncontro = dataEncontro)
+            // Fade-through na troca de aba do livro (era troca seca). O SizeTransform
+            // default do AnimatedContent acomoda a diferença de altura entre abas.
+            // Specs hoisteados: transitionSpec não é contexto @Composable.
+            val bdEnterSpec = rodapeTween<Float>(RodapeMotion.Dur.standard)
+            val bdExitSpec = rodapeTween<Float>(RodapeMotion.Dur.fast)
+            AnimatedContent(
+                targetState = tab,
+                transitionSpec = {
+                    fadeIn(bdEnterSpec) togetherWith fadeOut(bdExitSpec)
+                },
+                label = "bookDetailTab",
+            ) { t ->
+                when (t) {
+                    "resumo" -> SummaryTab(viewModel = viewModel, bookId = bookId)
+                    "frases" -> FrasesTab(
+                        viewModel = viewModel,
+                        quotes = quotes,
+                        onShowQuoteDialog = { showQuoteDialog = true }
+                    )
+                    "chat" -> ChatTab(viewModel = viewModel, bookId = bookId)
+                    "avaliacoes" -> RatingsTab(viewModel = viewModel, bookId = bookId)
+                    "historico" -> HistoryTab(viewModel = viewModel, bookId = bookId, dataEncontro = dataEncontro)
+                }
             }
             Spacer(modifier = Modifier.height(40.dp))
         }

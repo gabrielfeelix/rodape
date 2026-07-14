@@ -35,6 +35,10 @@ import com.example.ui.components.TbButton
 import com.example.ui.components.TbButtonSize
 import com.example.ui.components.TbButtonVariant
 import com.example.ui.theme.*
+import androidx.compose.animation.AnimatedContent
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.togetherWith
 
 /**
  * Onboarding pos-primeiro-login.
@@ -96,29 +100,45 @@ fun OnboardingScreen(
     ) {
         item {
             Spacer(modifier = Modifier.height(36.dp))
-            Text(
-                text = when (step) {
-                    0 -> "Quem é você no clube?"
-                    1 -> "Como te chamam?"
-                    else -> "Tamanho da letra"
+            // Cabeçalho crossfade por step — a troca de conteúdo do step em si
+            // vive em items de LazyColumn (animar exige reestruturar com footer
+            // fixo — plano 2.3, deferido pro checkpoint). Specs hoisteados:
+            // transitionSpec não é contexto @Composable.
+            val stepEnterSpec = rodapeTween<Float>(RodapeMotion.Dur.standard)
+            val stepExitSpec = rodapeTween<Float>(RodapeMotion.Dur.fast)
+            AnimatedContent(
+                targetState = step,
+                transitionSpec = {
+                    fadeIn(stepEnterSpec) togetherWith fadeOut(stepExitSpec)
                 },
-                style = MaterialTheme.typography.headlineSmall.copy(
-                    fontFamily = LiterataFontFamily,
-                    fontWeight = FontWeight.SemiBold,
-                    color = RodapeTheme.colors.ink,
-                ),
-                textAlign = TextAlign.Center,
-            )
-            Spacer(modifier = Modifier.height(4.dp))
-            Text(
-                text = when (step) {
-                    0 -> "Escolha o avatar que vai te representar"
-                    1 -> "Pode ser o seu primeiro nome ou um apelido"
-                    else -> "Vale pro app todo. Dá pra mudar depois no seu perfil"
-                },
-                style = MaterialTheme.typography.bodyMedium.copy(color = RodapeTheme.colors.muted),
-                textAlign = TextAlign.Center,
-            )
+                label = "onboardingHeader",
+            ) { s ->
+                Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                    Text(
+                        text = when (s) {
+                            0 -> "Quem é você no clube?"
+                            1 -> "Como te chamam?"
+                            else -> "Tamanho da letra"
+                        },
+                        style = MaterialTheme.typography.headlineSmall.copy(
+                            fontFamily = LiterataFontFamily,
+                            fontWeight = FontWeight.SemiBold,
+                            color = RodapeTheme.colors.ink,
+                        ),
+                        textAlign = TextAlign.Center,
+                    )
+                    Spacer(modifier = Modifier.height(4.dp))
+                    Text(
+                        text = when (s) {
+                            0 -> "Escolha o avatar que vai te representar"
+                            1 -> "Pode ser o seu primeiro nome ou um apelido"
+                            else -> "Vale pro app todo. Dá pra mudar depois no seu perfil"
+                        },
+                        style = MaterialTheme.typography.bodyMedium.copy(color = RodapeTheme.colors.muted),
+                        textAlign = TextAlign.Center,
+                    )
+                }
+            }
         }
 
         when (step) {

@@ -36,6 +36,10 @@ import androidx.compose.ui.unit.sp
 import com.example.data.model.*
 import com.example.ui.components.*
 import com.example.ui.theme.*
+import androidx.compose.animation.AnimatedContent
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.togetherWith
 import com.example.ui.viewmodel.MainViewModel
 
 @Composable
@@ -130,9 +134,21 @@ fun NextTabScreen(
                 .fillMaxWidth()
                 .weight(1f)
         ) {
-            when (subTab) {
-                "encontro" -> EncontroTab(viewModel = viewModel, onNavigateToMeetingDetail = onNavigateToMeetingDetail)
-                "votacao" -> VotacaoTab(viewModel = viewModel, onNavigateToSuggestBook = onNavigateToSuggestBook)
+            // Fade-through na troca de sub-tab (Encontro ↔ Votação) — antes era seco.
+            // Specs hoisteados: transitionSpec não é contexto @Composable.
+            val subEnterSpec = rodapeTween<Float>(RodapeMotion.Dur.standard)
+            val subExitSpec = rodapeTween<Float>(RodapeMotion.Dur.fast)
+            AnimatedContent(
+                targetState = subTab,
+                transitionSpec = {
+                    fadeIn(subEnterSpec) togetherWith fadeOut(subExitSpec)
+                },
+                label = "nextSubTab",
+            ) { tab ->
+                when (tab) {
+                    "encontro" -> EncontroTab(viewModel = viewModel, onNavigateToMeetingDetail = onNavigateToMeetingDetail)
+                    "votacao" -> VotacaoTab(viewModel = viewModel, onNavigateToSuggestBook = onNavigateToSuggestBook)
+                }
             }
         }
     }

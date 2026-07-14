@@ -97,8 +97,10 @@ import androidx.compose.ui.semantics.selected
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.role
 import androidx.compose.ui.semantics.clearAndSetSemantics
+import androidx.compose.animation.AnimatedContent
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.animateColorAsState
+import androidx.compose.animation.togetherWith
 import androidx.compose.animation.core.Spring
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.expandHorizontally
@@ -259,14 +261,29 @@ fun MainTabsScreen(
                 .fillMaxSize()
                 .padding(paddingValues)
         ) {
-            saveableStateHolder.SaveableStateProvider(selectedTab) {
-            when (selectedTab) {
+            // Fade-through nas trocas de aba (padrão M3 pra destinos irmãos —
+            // slide implicaria hierarquia que abas não têm). Detalhe importante:
+            // durante a transição as DUAS abas compõem ao mesmo tempo, então o
+            // SaveableStateProvider usa o `tab` do lambda (não o selectedTab
+            // externo) — cada lado da transição resgata o próprio estado.
+            // Specs hoisteados: transitionSpec não é contexto @Composable.
+            val tabEnterSpec = rodapeTween<Float>(RodapeMotion.Dur.standard)
+            val tabExitSpec = rodapeTween<Float>(RodapeMotion.Dur.fast)
+            AnimatedContent(
+                targetState = selectedTab,
+                transitionSpec = {
+                    fadeIn(tabEnterSpec) togetherWith fadeOut(tabExitSpec)
+                },
+                label = "mainTabSwitch",
+            ) { tab ->
+            saveableStateHolder.SaveableStateProvider(tab) {
+            when (tab) {
                 "home" -> HomeScreenTab(
                     viewModel = viewModel,
                     onNavigateToDiscussion = onNavigateToDiscussion,
-                    onNavigateToTab = { tab, sub ->
+                    onNavigateToTab = { tab2, sub ->
                         pendingNextSubTab = sub
-                        selectedTab = tab
+                        selectedTab = tab2
                     },
                     onShowMessage = showMessage,
                 )
@@ -304,6 +321,7 @@ fun MainTabsScreen(
                     onNavigateToBookDetail = onNavigateToBookDetail,
                     onNavigateToAbout = onNavigateToAbout
                 )
+            }
             }
             }
 
