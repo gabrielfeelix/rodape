@@ -20,7 +20,10 @@ import com.example.ui.components.TbButtonSize
 import com.example.ui.components.TbButtonVariant
 import com.example.ui.components.RodapeCard
 import com.example.ui.theme.*
+import com.example.util.URL_PRIVACIDADE
+import com.example.util.URL_TERMOS
 import com.example.util.openEmailFeedback
+import com.example.util.openUrl
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -124,7 +127,9 @@ fun AboutScreen(
                     )
                     Spacer(modifier = Modifier.height(8.dp))
                     Text(
-                        text = "Pra denunciar conteúdo inadequado ou pedir remoção, use o botão de feedback.",
+                        text = "Pra denunciar conteúdo inadequado ou bloquear alguém, use o menu (⋮) " +
+                            "no próprio conteúdo ou no membro. Admins veem as denúncias em " +
+                            "Gerenciar clube › Denúncias pendentes.",
                         style = MaterialTheme.typography.bodySmall.copy(color = RodapeTheme.colors.muted)
                     )
                 }
@@ -134,17 +139,27 @@ fun AboutScreen(
             item {
                 SectionTitle("TERMOS DE USO")
                 RodapeCard(modifier = Modifier.fillMaxWidth()) {
-                    Text(
-                        text = "Usando o Rodapé, você concorda em respeitar direitos autorais e " +
-                            "usar a ferramenta de boa-fé com seu clube. O app é fornecido como está, " +
-                            "sem garantias. Estamos em fase inicial — quebra de funcionalidade pode " +
-                            "acontecer.",
-                        style = MaterialTheme.typography.bodyMedium.copy(
-                            fontFamily = InterFontFamily,
-                            color = RodapeTheme.colors.inkSoft,
-                            lineHeight = 22.sp
+                    Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
+                        Text(
+                            text = "Usando o Rodapé, você concorda em respeitar direitos autorais e " +
+                                "usar a ferramenta de boa-fé com seu clube, sem publicar conteúdo " +
+                                "abusivo, ilegal ou ofensivo. O app é fornecido como está, sem " +
+                                "garantias. Estamos em fase inicial — quebra de funcionalidade pode " +
+                                "acontecer.",
+                            style = MaterialTheme.typography.bodyMedium.copy(
+                                fontFamily = InterFontFamily,
+                                color = RodapeTheme.colors.inkSoft,
+                                lineHeight = 22.sp
+                            )
                         )
-                    )
+                        TbButton(
+                            text = "Ler os termos completos",
+                            onClick = { openUrl(context, URL_TERMOS) },
+                            variant = TbButtonVariant.Outline,
+                            size = TbButtonSize.Sm,
+                            modifier = Modifier.fillMaxWidth()
+                        )
+                    }
                 }
             }
 
@@ -152,19 +167,28 @@ fun AboutScreen(
             item {
                 SectionTitle("PRIVACIDADE")
                 RodapeCard(modifier = Modifier.fillMaxWidth()) {
-                    Text(
-                        text = "O conteúdo do clube (comentários, frases, votos e listas de " +
-                            "leitura) fica num servidor privado (Supabase) pra sincronizar entre " +
-                            "os membros, e é visível só pra quem faz parte do clube. Não há " +
-                            "publicidade nem rastreamento de terceiros. Você pode pedir a exclusão " +
-                            "da sua conta e dos seus dados a qualquer momento. Detalhes na política " +
-                            "de privacidade completa.",
-                        style = MaterialTheme.typography.bodyMedium.copy(
-                            fontFamily = InterFontFamily,
-                            color = RodapeTheme.colors.inkSoft,
-                            lineHeight = 22.sp
+                    Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
+                        Text(
+                            text = "O conteúdo do clube (comentários, frases, votos e listas de " +
+                                "leitura) fica num servidor privado (Supabase) pra sincronizar entre " +
+                                "os membros, e é visível só pra quem faz parte do clube. Não há " +
+                                "publicidade nem rastreamento de terceiros. Você pode excluir " +
+                                "sua conta e seus dados a qualquer momento. Detalhes na política " +
+                                "de privacidade completa.",
+                            style = MaterialTheme.typography.bodyMedium.copy(
+                                fontFamily = InterFontFamily,
+                                color = RodapeTheme.colors.inkSoft,
+                                lineHeight = 22.sp
+                            )
                         )
-                    )
+                        TbButton(
+                            text = "Ler a política de privacidade",
+                            onClick = { openUrl(context, URL_PRIVACIDADE) },
+                            variant = TbButtonVariant.Outline,
+                            size = TbButtonSize.Sm,
+                            modifier = Modifier.fillMaxWidth()
+                        )
+                    }
                 }
             }
 

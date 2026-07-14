@@ -25,6 +25,22 @@ fun openPlayStorePage(context: Context, packageName: String = context.packageNam
     }
 }
 
+/** URLs públicas dos documentos legais (hospedados no repositório). */
+const val URL_TERMOS = "https://github.com/gabrielfeelix/rodape/blob/master/docs/legal/termos-de-uso.md"
+const val URL_PRIVACIDADE = "https://github.com/gabrielfeelix/rodape/blob/master/docs/privacy/privacy-policy.md"
+
+/** Abre uma URL no navegador. Fallback silencioso se não houver navegador. */
+fun openUrl(context: Context, url: String) {
+    val intent = Intent(Intent.ACTION_VIEW, Uri.parse(url)).apply {
+        addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+    }
+    try {
+        context.startActivity(intent)
+    } catch (e: ActivityNotFoundException) {
+        // Sem navegador — fallback silencioso.
+    }
+}
+
 /**
  * Abre o cliente de email padrão com destino, assunto e corpo pré-preenchidos.
  */

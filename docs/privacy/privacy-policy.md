@@ -1,10 +1,11 @@
 # Política de Privacidade — Rodapé
 
-**Última atualização:** 24 de maio de 2026
+**Última atualização:** 14 de julho de 2026
 
 O Rodapé (`app.rodape`) é um aplicativo Android para clubes de leitura
 privados. Esta política descreve quais dados coletamos, como usamos e quais são
-seus direitos.
+seus direitos. Ao usar o app você também concorda com os
+[Termos de Uso](../legal/termos-de-uso.md).
 
 > **Versão curta:** coletamos só o necessário pra você participar do clube
 > (nome, email, avatar opcional e o que você posta dentro do clube). Não
@@ -44,6 +45,18 @@ outros membros do mesmo clube:
 
 Esses dados são compartilhados **apenas com membros do clube em que foram
 postados** (garantido por Row Level Security no banco).
+
+### 2.5 Dados de moderação
+
+Para manter os clubes seguros, também tratamos:
+
+- **Denúncias:** ao denunciar um conteúdo, guardamos quem denunciou, o conteúdo
+  denunciado, o motivo e um detalhe opcional. Visível apenas aos administradores
+  do clube e a nós, para análise.
+- **Bloqueios:** guardamos a relação de quem você bloqueou, para esconder o
+  conteúdo entre vocês. Essa lista é privada — só você a vê.
+- **Remoções:** quando um conteúdo é removido por moderação, registramos quem
+  removeu e o motivo (log de moderação do clube).
 
 ### 2.3 Dados técnicos do app
 
@@ -98,11 +111,15 @@ pra operar o app:
 ## 6. Retenção e exclusão
 
 - Seu conteúdo fica armazenado enquanto sua conta estiver ativa.
-- Para **excluir sua conta e todos os seus dados**, envie um email para
-  [feedback@rodape.app](mailto:feedback@rodape.app) com o assunto
-  "Excluir minha conta". Processamos em até 30 dias.
+- Você pode **excluir sua conta e todos os seus dados** direto no app
+  (Perfil › Excluir conta) — a exclusão é imediata. Alternativamente, envie um
+  email para [feedback@rodape.app](mailto:feedback@rodape.app) com o assunto
+  "Excluir minha conta" e processamos em até 30 dias.
 - Conteúdo que você postou em clubes pode permanecer visível pros outros
   membros (ex: comentários em capítulos), mas será anonimizado.
+- **Denúncias e logs de moderação** são retidos enquanto necessário para a
+  segurança do clube e para cumprir obrigações legais, mesmo após o conteúdo
+  original ser removido.
 
 ## 7. Seus direitos (LGPD/GDPR)
 

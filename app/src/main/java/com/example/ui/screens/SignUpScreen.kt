@@ -28,7 +28,12 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.R
+import androidx.compose.foundation.clickable
 import com.example.ui.components.RodapeCard
+import com.example.ui.components.ThemedCheckbox
+import com.example.util.URL_PRIVACIDADE
+import com.example.util.URL_TERMOS
+import com.example.util.openUrl
 import com.example.ui.theme.RodapeRadii
 import com.example.ui.theme.RodapeIcons
 import com.example.ui.theme.InterFontFamily
@@ -56,6 +61,9 @@ fun SignUpScreen(
     var email by rememberSaveable { mutableStateOf("") }
     var password by rememberSaveable { mutableStateOf("") }
     var passwordVisible by remember { mutableStateOf(false) }
+    // Gate de aceite (EULA) — requisito de loja p/ apps com UGC.
+    var acceptedTerms by rememberSaveable { mutableStateOf(false) }
+    val context = androidx.compose.ui.platform.LocalContext.current
     var isLoading by remember { mutableStateOf(false) }
     var errorMsg by remember { mutableStateOf<String?>(null) }
     var showConfirmHint by remember { mutableStateOf(false) }
@@ -77,7 +85,7 @@ fun SignUpScreen(
         password.any { it.isUpperCase() } &&
         password.any { it.isDigit() } &&
         password.any { !it.isLetterOrDigit() }
-    val formValid = nameValid && emailValid && pwValid
+    val formValid = nameValid && emailValid && pwValid && acceptedTerms
 
     val submitSignUp: () -> Unit = {
         if (formValid && !isLoading) {
@@ -335,6 +343,33 @@ fun SignUpScreen(
                                 style = MaterialTheme.typography.bodySmall.copy(color = RodapeTheme.colors.muted),
                                 modifier = Modifier.fillMaxWidth(),
                             )
+                        }
+
+                        // Gate de aceite dos Termos + Privacidade (EULA).
+                        Spacer(Modifier.height(12.dp))
+                        Row(
+                            verticalAlignment = Alignment.CenterVertically,
+                            modifier = Modifier.fillMaxWidth(),
+                        ) {
+                            ThemedCheckbox(
+                                checked = acceptedTerms,
+                                onCheckedChange = { acceptedTerms = it },
+                            )
+                            Text(
+                                "Li e aceito os Termos de Uso e a Política de Privacidade.",
+                                style = MaterialTheme.typography.bodySmall.copy(color = RodapeTheme.colors.inkSoft),
+                                modifier = Modifier
+                                    .weight(1f)
+                                    .clickable { acceptedTerms = !acceptedTerms },
+                            )
+                        }
+                        Row(modifier = Modifier.fillMaxWidth()) {
+                            TextButton(onClick = { openUrl(context, URL_TERMOS) }) {
+                                Text("Termos", style = MaterialTheme.typography.labelMedium, color = RodapeTheme.colors.oliva)
+                            }
+                            TextButton(onClick = { openUrl(context, URL_PRIVACIDADE) }) {
+                                Text("Privacidade", style = MaterialTheme.typography.labelMedium, color = RodapeTheme.colors.oliva)
+                            }
                         }
 
                         Spacer(Modifier.height(16.dp))
