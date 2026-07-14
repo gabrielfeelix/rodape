@@ -11,8 +11,10 @@ import com.example.data.remote.repo.OfflineFirstQuoteRepository
 import com.example.data.remote.repo.MeetingRepository
 import com.example.data.remote.repo.OfflineFirstMeetingRepository
 import com.example.data.remote.repo.OfflineFirstVotingRepository
+import com.example.data.remote.repo.OfflineFirstUserRepository
 import com.example.data.remote.repo.ProgressRepository
 import com.example.data.remote.repo.QuoteRepository
+import com.example.data.remote.repo.UserRepository
 import com.example.data.remote.repo.VotingRepository
 import dagger.Binds
 import dagger.Module
@@ -54,4 +56,8 @@ internal abstract class RepositoryModule {
     @Binds
     @Singleton
     abstract fun bindMeetingRepository(impl: OfflineFirstMeetingRepository): MeetingRepository
+
+    @Binds
+    @Singleton
+    abstract fun bindUserRepository(impl: OfflineFirstUserRepository): UserRepository
 }

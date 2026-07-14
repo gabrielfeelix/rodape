@@ -88,6 +88,7 @@ class RemoteRepository(
     private val discussionRepo = com.example.data.remote.repo.OfflineFirstDiscussionRepository(engine)
     private val votingRepo = com.example.data.remote.repo.OfflineFirstVotingRepository(engine)
     private val meetingRepo = com.example.data.remote.repo.OfflineFirstMeetingRepository(engine)
+    private val userRepo = com.example.data.remote.repo.OfflineFirstUserRepository(engine)
 
     private val json = engine.json
     private val dao = engine.dao
@@ -135,70 +136,17 @@ class RemoteRepository(
     // USERS / PROFILES
     // ============================================================
 
-    fun getUserFlow(userId: String): Flow<User?> {
-        // Reload manual (via realtime/mutation) ignora TTL — sempre re-busca.
-        val reload: suspend () -> Unit = { syncUser(userId); markSynced("user:$userId") }
-        // Trigger on view: respeita TTL.
-        scope.launch { syncOnce("user:$userId", Ttl.SLOW) { syncUser(userId) } }
-        ensureRealtime("profiles", filterColumn = "id", filterValue = userId, reload = reload)
-        return dao.userFlow(userId)
-    }
+    // F3c: movido pra repo/UserRepository.kt — fachada delega.
+    fun getUserFlow(userId: String): Flow<User?> = userRepo.getUserFlow(userId)
 
-    private suspend fun syncUser(userId: String) {
-        val u = runCatching {
-            supabase.from("profiles").select {
-                filter { eq("id", userId) }
-                limit(1)
-            }.decodeSingleOrNull<ProfileDto>()?.toDomain()
-        }.getOrNull()
-        if (u != null) dao.upsertUser(u)
-    }
-
-    suspend fun getUser(userId: String): User? {
-        // Snapshot: prefere Room (rapido), busca remoto se nao tem.
-        dao.user(userId)?.let { return it }
-        syncUser(userId)
-        return dao.user(userId)
-    }
+    suspend fun getUser(userId: String): User? = userRepo.getUser(userId)
 
     /** Nao usado hoje (RLS limita visibilidade); mantido como stub vazio. */
-    fun getAllUsersFlow(): Flow<List<User>> = kotlinx.coroutines.flow.flowOf(emptyList())
+    fun getAllUsersFlow(): Flow<List<User>> = userRepo.getAllUsersFlow()
 
-    suspend fun insertUser(user: User) {
-        // Apenas atualiza profile do USUARIO LOGADO (RLS bloqueia outros).
-        // Para criar profile de outro usuario o trigger handle_new_user e quem faz.
-        //
-        // Local-first: grava no Room ANTES do remoto e enfileira se offline. Antes
-        // era remoto-primeiro dentro de runCatching SEM escrita local — editar o
-        // perfil (nome/avatar) offline sumia sem aviso e a saudacao nao mudava.
-        val partes = user.nome.trim().split(" ", limit = 2)
-        val nome = partes.firstOrNull()?.ifBlank { user.nome } ?: user.nome
-        val sobrenome = if (partes.size > 1) partes[1].trim().ifBlank { null } else null
-        val avatarKey = user.avatarUrl.ifBlank { "preset:leitor" }
-        val pronome = user.pronome?.trim()?.ifBlank { null }
-        dao.upsertUser(user.copy(avatarUrl = avatarKey, pronome = pronome))
-        notifyLocalMutation("profiles")
-        val payload = buildJsonObject {
-            put("id", user.id)
-            put("nome", nome)
-            if (sobrenome != null) put("sobrenome", sobrenome)
-            put("avatarKey", avatarKey)
-            if (pronome != null) put("pronome", pronome)
-        }.toString()
-        tryRemoteOrEnqueue("upsert_profile", payload) {
-            supabase.from("profiles").upsert(
-                ProfileUpdateDto(id = user.id, nome = nome, sobrenome = sobrenome, avatarKey = avatarKey, pronome = pronome)
-            )
-        }
-    }
+    suspend fun insertUser(user: User) = userRepo.insertUser(user)
 
-    suspend fun updateFontScale(userId: String, scale: Float) {
-        runCatching {
-            supabase.from("profiles").update({ set("font_scale", scale) }) {
-                filter { eq("id", userId) }
-            }
-        }
-    }
+    suspend fun updateFontScale(userId: String, scale: Float) = userRepo.updateFontScale(userId, scale)
 
     // ============================================================
     // CLUBS
@@ -346,15 +294,9 @@ class RemoteRepository(
         supabase.postgrest.rpc("leave_club", buildJsonObject { put("p_club_id", clubId) })
     }
 
-    /**
-     * Exclui a propria conta via RPC SECURITY DEFINER `delete_own_account`
-     * (apaga dados do usuario + auth.users). O RPC precisa existir no Supabase
-     * — SQL documentado em docs/release/account-deletion.sql. Propaga a exceptin
-     * pra UI decidir o fallback (email) se o RPC ainda nao estiver criado.
-     */
-    suspend fun deleteOwnAccountViaRpc() {
-        supabase.postgrest.rpc("delete_own_account")
-    }
+    // F3c: deleteOwnAccountViaRpc realocado pro UserRepository (é a conta do
+    // usuário, não o clube) — fachada delega.
+    suspend fun deleteOwnAccountViaRpc() = userRepo.deleteOwnAccountViaRpc()
 
     /** RPC: regenerate_invite_code. PROPAGA excecao (antes retornava "" e a UI
      *  mostrava "Novo codigo: " em branco). */
