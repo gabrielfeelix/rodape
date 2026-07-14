@@ -241,3 +241,53 @@ Criar `RodapeDialog` (shell: título Literata sempre, raio `.md`, sombra tingida
 
 ## 7. RESUMO DE 1 LINHA
 Onda 0 ✅ · Onda 1 ✅ · Onda 2 (movimento) ✅ · Onda 3 (13 momentos-assinatura) ✅ · Onda 4 (fecho batch 1: splash, predictive back, status bar, crossfade, pull-refresh, snackbar) ✅ — **TUDO pendente de checkpoint visual em device**; deferidos listados no bloco de atualização acima (dynamic type/RTL/tablet/AA/TalkBack + itens que exigem olho). Compile e commite a cada batch. Não vaze segredo.
+
+---
+
+## 8. SESSÃO 2026-07-14 — CHECKPOINT VISUAL EM DEVICE + FECHO 1.1.5
+
+Executado o `PLANO-SESSAO-2026-07-14.md` (5 fases) rodando o app no emulador.
+
+**Fase 1 — checkpoint visual (light + dark + reduced-motion).** Percorrido o
+roteiro tela-a-tela. 3 bugs REAIS achados e consertados (só apareciam em runtime):
+- `cf4e6d2` FlowRow do foundation crashava o sheet de "Abrir votação"
+  (`NoSuchMethodError`, assinatura binária mudou) → trocado por `WrapRow` (Layout puro).
+- `10c8da5` share da frase-como-imagem dava `SecurityException` no preview do
+  chooser → `ClipData.newUri` no intent propaga o grant pro processo do preview.
+- `159f8a8` fundo do swipe de notificação vazava atrás do item (item era
+  transparente) → `.background(colorScheme.background)` opaco.
+- Dark mode: validados os riscos do plano — backdrop do hero legível, warning
+  token do RSVP (Talvez) em dourado legível, notches do ticket ancorados e na cor
+  do fundo nos 2 temas, header/pill da votação. Sem bug.
+- Reduced-motion (`ANIMATOR_DURATION_SCALE=0`): Welcome resolve stagger/lombadas
+  instantâneo e limpo; nav vira `EnterTransition.None` (MainActivity), motion
+  degrada central no `RodapeMotion`. Sem bug.
+
+**Fase 2 — robustez.** Dynamic type no MÁXIMO (font_scale 1.3): Home segura —
+headline quebra em 2 linhas, notches do ticket SOBREVIVEM (ancorados), navbar
+cabe. Truncamentos com ellipsis na coluna do day-stamp são graceful, não quebra.
+TalkBack/RTL/contraste-AA/landscape ficam como varredura futura (device-heavy).
+
+**Fase 3 — débitos contáveis.** ✅ 23 `AlertDialog`→`RodapeDialog` nos 8 arquivos
+(radios/checkbox internos → `ThemedRadio`/`ThemedCheckbox`). ✅ 3 `.copy(fontSize)`
+de headline no NextTab → tokens reais (título de livro→`titleLarge`, header de
+sheet→`headlineMedium`). ✅ ChatTab do BookDetail reusa a bolha Literata do
+Discussion (3.6). ✅ Novo `ErrorState` (retry consistente, 4.3), adotado no Suggest.
+⏸️ Ícones Material restantes: DEFERIDOS de propósito — desenhar engrenagem/aspas/
+olho às cegas viola a regra "não inventar vetor sem revisão visual". Continuam
+como placeholders Material intencionais até existir vetor de marca.
+
+**Fase 4 — upgrades.** ✅ Marco de leitura recompensado (25/50/75/100%): háptico
+`LongPress` + copy comemorativa quando CRUZA o marco (validado em device — "Um
+quarto lido 🌱" no 40%). ✅ Doc `IDENTIDADE-MOVIMENTO-HAPTICO.md` (mapa háptico).
+⏸️ DEFERIDOS (risco/tamanho antes de release): drag-to-reorder real (exige lib
+nova + validação de gesto; up/down animado já funciona), shared-element
+ticket→detail (experimental), reestrutura do onboarding (grande). Confete no
+marco fica como enriquecimento futuro (overlay + validação visual).
+
+**Fase 5 — release.** Bump 1.1.5 / code 19; `assembleRelease` assinado; APK
+copiado pra Área de Trabalho do Windows como `rodape-1.1.5.apk` (1.1.4 apagado).
+
+**Config de backend a resolver (não-UI):** Realtime do Supabase NÃO está ligado
+pra `clubs`/`voting_rounds` (subscription dá erro; o client refaz fetch na
+navegação, então funciona, mas sem tempo-real). Ligar no painel do Supabase.
