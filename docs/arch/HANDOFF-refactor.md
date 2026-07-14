@@ -13,38 +13,51 @@ calma na sessão anterior. Este doc te dá o estado exato e as regras. Leia na o
 4. [MAP-MainViewModel.md](MAP-MainViewModel.md) — grafo de sessão + ordem de split. P/ F4/F5.
 5. [PLANO-ARQUITETURA-2026-07-14.md](PLANO-ARQUITETURA-2026-07-14.md) — visão das 7 fases.
 
-## Estado atual (2026-07-14)
+## Estado atual (2026-07-14 — atualizado após F3c)
 
 **Feito e no git (branch master, remoto github.com/gabrielfeelix/rodape):**
-- F1 — collectAsState → collectAsStateWithLifecycle (143 sites). Commit `acc9812`.
-- F2 — navegação type-safe (@Serializable em ui/navigation/Routes.kt). Commit `42026a0`.
-- F3a — DTOs movidos p/ RemoteDtos.kt (private→internal). **Ver "primeiro passo" abaixo.**
+- F1 lifecycle `acc9812` · F2 nav type-safe `42026a0` · F3a DTOs→RemoteDtos `9f0a35f`.
+- **F3b** — kernel offline extraído p/ `SyncEngine.kt` (SWR/TTL + write-queue + 25 handlers +
+  realtime). Commit `e29ae6d`. Movimento PURO.
+- **F4a** — scaffolding Hilt 2.60.1 (@HiltAndroidApp, @AndroidEntryPoint, `di/DataModule`).
+  Commit `eac9ff7`. Aditivo.
+- **F3c COMPLETO** — os 10 repos de domínio fatiados (interface + `OfflineFirst*Impl @Inject`
+  + `@Binds` em `di/RepositoryModule`): Progress `d7607d5`, Notif+Quote `59deb89`, User+Moder
+  `54e0622`, Voting `93bb4e5`, Discussion+Meeting `ed5de8c`, Book `2871b29`, Club `b011cec`.
+  **RemoteRepository virou fachada pura (2654→574 linhas): SyncEngine + 10 delegadores
+  reusando o mesmo engine.**
 
-**Compliance/beta:** outro agente já fechou 8 ondas (moderação, Termos, Crashlytics,
-age gate, RLS, etc.) — tudo commitado. NÃO mexer nisso.
+**⚠️ DEVICE-TEST PENDENTE:** F3b+F4a estão no AAB vc20 (aguardando o usuário testar no cel
+~2026-07-16, quando o reset da chave de upload do Play ativa). F3c ainda NÃO foi testado em
+device — entra num vc21+ depois. Ver [[rodape-keystore-upload-2026-07-14]] na memória.
 
-**Ambiente:** JDK 17 + Android SDK instalados (WSL). SEM device/emulador aqui — quem
-testa no aparelho é o usuário. gradle.jvmargs baixado p/ -Xmx2g (RAM da máquina é
-apertada, 11Gi).
+**Compliance/beta:** outro agente já fechou 8 ondas — tudo commitado. NÃO mexer.
 
-## PRIMEIRO PASSO obrigatório
+**Ambiente:** JDK 17 + Android SDK (WSL). SEM device/emulador aqui — o usuário testa no
+aparelho. gradle.jvmargs = **-Xmx3g** (subido de 2g: Hilt+KSP dava OOM em 2g).
 
-O F3a (mover DTOs) pode ter sido commitado ou não. Rode `git status` e `git log --oneline -3`.
-- Se F3a NÃO estiver commitado: **compile primeiro** (comando abaixo) pra verificar o
-  move, então commite `refactor(F3a): DTOs → RemoteDtos.kt internal`.
-- Confirme `git status` limpo antes de começar o F3b.
+## PRIMEIRO PASSO (agora: F4b SessionManager)
 
-## Comandos (RAM é crítica — o usuário reclama de estouro)
+F3c está fechado e compilando. Próximo é **F4b — extrair SessionManager** (o grafo de sessão
+que trava o split de VM). Leia [MAP-MainViewModel.md](MAP-MainViewModel.md) §3 (grafo de
+sessão), §4 (4 observers do init) e §5 (ordem folha→hub) ANTES. Confirme `git status` limpo +
+compile 1x pra baseline antes de tocar código.
 
-**Type-check (NÃO buildar APK à toa):**
+## Comandos (RAM é crítica — 11Gi, o usuário reclama de estouro)
+
+**Type-check:**
 ```
-./gradlew :app:compileDebugKotlin -x processDebugGoogleServices --no-configuration-cache --console=plain
+./gradlew :app:compileDebugKotlin -x processDebugGoogleServices --no-configuration-cache --console=plain --no-daemon -Pkotlin.compiler.execution.strategy=in-process
 ```
 - `-x processDebugGoogleServices`: applicationId debug não bate com google-services.json.
-- **SEMPRE rode `./gradlew --stop` depois** de compilar pra liberar o daemon (-Xmx2g).
-- NÃO fique compilando a cada micro-edição — junte mudanças, compile 1x por passo.
-- **NUNCA** mate/derrube o WSL. Pra liberar RAM: `./gradlew --stop` + `pkill -f GradleDaemon`
-  (só o daemon do gradle, nada de WSL).
+- **`--no-daemon` + `in-process`**: o daemon Gradle separado crashava/sumia ("daemon
+  disappeared") de forma intermitente; rodar no JVM do launcher resolve. Buildar em background
+  (a compile leva ~2min) e ler o log.
+- **SEMPRE limpar após buildar** (o usuário quer a máquina leve): `./gradlew --stop` +
+  `pkill -f GradleDaemon` + `pkill -f KotlinCompileDaemon`. Ver [[keep-machine-light-ram]].
+- **Gotcha:** `pkill` no INÍCIO de um comando composto (`pkill ...; ./gradlew ...`) buga o
+  shell (pkill sai 1 e mata o resto). Rodar o pkill num comando separado.
+- **NUNCA** mate/derrube o WSL.
 
 **Commit/push:** conventional commits, sufixo
 `Co-Authored-By: Claude Opus 4.8 (1M context) <noreply@anthropic.com>`. Push só quando o
@@ -72,9 +85,23 @@ usuário pedir OU quando um passo fecha limpo e ele confirma.
 
 ## Sequência (resumo — detalhe no DESIGN-ALVO)
 
-F3a ✅ → **F3b SyncEngine** (🔴 device) → F4a Hilt scaffolding → F3c fatiar ~10 repos
-(1/commit) → F4b SessionManager + F5 VMs/UiState/Route-Screen por tela (folha→hub) →
-F6 previews → F7 testes (fakes das interfaces).
+F3a ✅ → F3b SyncEngine ✅ → F4a Hilt ✅ → F3c fatiar 10 repos ✅ →
+**F4b SessionManager** (próximo) → **F5** VMs/UiState/Route-Screen por tela (folha→hub;
+ordem em MAP-MainViewModel §5) → **F6** previews (@ThemePreviews por tela fatiada) →
+**F7** testes (fakes das 10 interfaces + VM/fluxo) → deferidos: **@HiltWorker** no
+DrainQueueWorker + **@HiltViewModel** (entram no F5).
+
+**Detalhe do que falta:**
+- **F4b** — SessionManager `@Singleton` segura currentUserId/activeClubId (Tier 1) + os 4
+  observers do init + helpers cross-domain (bumpEngagement/existingClubBookId/
+  promoteNextQueuedBook/selectActiveClub). É O NÓ que trava o split de VM. Detalhe:
+  MAP-MainViewModel §3-4 + DESIGN-ALVO "SessionManager".
+- **F5** — por TELA, folha→hub: `@HiltViewModel` + `sealed UiState` + split Route/Screen,
+  esvaziando o MainViewModel (1781L). Ordem (MAP-MainViewModel §5): tab → sync → notif →
+  busca → prefs → quotes → moderação → progresso → ratings → votação → meetings → discussão
+  → book → club → **sessão (por último)**. Injetar as interfaces de repo do F3c (já prontas)
+  + o SessionManager.
+- **F6/F7** — previews + testes (as interfaces do F3c destravam fakes).
 
 ## Onde estão as coisas
 
