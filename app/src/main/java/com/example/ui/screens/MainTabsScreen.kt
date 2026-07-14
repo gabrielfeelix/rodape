@@ -40,7 +40,9 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.saveable.rememberSaveableStateHolder
 import androidx.compose.ui.layout.boundsInParent
 import androidx.compose.ui.layout.onGloballyPositioned
+import androidx.compose.ui.hapticfeedback.HapticFeedbackType
 import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.draw.blur
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -1850,6 +1852,7 @@ fun BookDetailScreenTab(
     val chapters by viewModel.currentChapters.collectAsState()
     val progress by viewModel.userProgress.collectAsState()
     val isAdmin by viewModel.isCurrentUserAdmin.collectAsState()
+    val haptics = LocalHapticFeedback.current
 
     val currentChapIndex = progress?.currentChapter ?: 0
 
@@ -2235,10 +2238,25 @@ fun BookDetailScreenTab(
                                         onShowMessage("Cadastre os capítulos do livro pra acompanhar a leitura.")
                                     nextChap <= chapters.size -> {
                                         viewModel.updateBookProgress(currentBook!!.id, nextChap)
-                                        onShowMessage(
-                                            if (nextChap == chapters.size) "Livro terminado! 🎉"
-                                            else "Progresso salvo — Cap. $nextChap"
-                                        )
+                                        val total = chapters.size
+                                        val oldPct = currentChapIndex.toFloat() / total
+                                        val newPct = nextChap.toFloat() / total
+                                        // Marco de leitura (25/50/75/100%): quando a
+                                        // marcação CRUZA um marco (não em toda marcação),
+                                        // há recompensa — háptico + copy comemorativa.
+                                        val milestone = when {
+                                            newPct >= 1f -> "Livro terminado! 🎉"
+                                            oldPct < 0.75f && newPct >= 0.75f -> "Reta final — 75% lido! 🏁"
+                                            oldPct < 0.5f && newPct >= 0.5f -> "Metade do livro! 📖"
+                                            oldPct < 0.25f && newPct >= 0.25f -> "Um quarto lido — pegando o ritmo! 🌱"
+                                            else -> null
+                                        }
+                                        if (milestone != null) {
+                                            haptics.performHapticFeedback(HapticFeedbackType.LongPress)
+                                            onShowMessage(milestone)
+                                        } else {
+                                            onShowMessage("Progresso salvo — Cap. $nextChap")
+                                        }
                                     }
                                     else -> onShowMessage("Você já terminou o livro! 🎉")
                                 }
