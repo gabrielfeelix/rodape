@@ -27,9 +27,10 @@ import javax.inject.Singleton
  * `internal` porque provê SyncEngine (kernel internal do pacote data.remote);
  * o Hilt gera no mesmo modulo Gradle, entao enxerga sem problema.
  *
- * NOTA: RemoteRepository (god-repo) de proposito NAO e provido aqui — esta sendo
- * estrangulado. VMs ainda o constroem manualmente ate o F5; o F3c introduz os
- * repos de dominio (interface + OfflineFirst*), que injetam SyncEngine direto.
+ * NOTA: RemoteRepository (god-repo) não é provido AQUI, mas desde o F5.0 tem `@Inject
+ * constructor(SyncEngine, ...)` + `@Singleton` → o Hilt o auto-provê, usando o MESMO
+ * SyncEngine deste módulo (um engine só na UI). O MainViewModel o busca via UiGraphEntryPoint
+ * enquanto não é @HiltViewModel. Segue estrangulado (some quando a última tela sair da VM).
  */
 @Module
 @InstallIn(SingletonComponent::class)

@@ -62,10 +62,17 @@ import kotlinx.serialization.json.put
 // onde nao tem, a tela fica vazia momentaneamente — sem crash.
 // ============================================================================
 
-class RemoteRepository(
-    private val appContext: android.content.Context,
+@javax.inject.Singleton
+internal class RemoteRepository @javax.inject.Inject constructor(
+    private val engine: SyncEngine,
     private val supabase: SupabaseClient = Supabase.client,
 ) {
+    // Ctor de conveniência p/ o DrainQueueWorker (F5.0): o worker roda em background e cria
+    // um kernel PRÓPRIO e self-contained pra drenar a fila compartilhada (Room/pendingDao são
+    // singletons de processo), sem depender do engine @Singleton da UI. A UI recebe o engine
+    // do Hilt via o ctor @Inject acima — um engine só do lado da UI (antes a fachada criava o
+    // seu, separado do @Singleton do Hilt: realtime duplicado).
+    constructor(appContext: android.content.Context) : this(SyncEngine(appContext, Supabase.client))
 
     // ============================================================
     // KERNEL OFFLINE → SyncEngine (F3b)
@@ -76,7 +83,6 @@ class RemoteRepository(
     // ficaram intocados; os simbolos que eles usavam (dao, json, scope,
     // syncOnce, tryRemoteOrEnqueue, ensureRealtime, notifyLocalMutation,
     // markSynced, stateOf, Ttl) resolvem via os delegadores finos abaixo.
-    private val engine = SyncEngine(appContext, supabase)
 
     // --- Delegadores pro kernel: mantem os call sites do dominio byte-a-byte. ---
     private val json get() = engine.json

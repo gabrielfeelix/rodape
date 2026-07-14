@@ -20,7 +20,7 @@ import kotlinx.coroutines.launch
  * interfaces de repo fatiadas (User/Club/Book/Voting) em vez da fachada RemoteRepository.
  * Já é Android-free de propósito (testável sem Robolectric).
  */
-class SessionManager(
+internal class SessionManager(
     private val scope: CoroutineScope,
     private val repository: RemoteRepository,
     private val dataStoreManager: DataStoreManager,

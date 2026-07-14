@@ -11,6 +11,8 @@ import com.example.data.model.*
 import com.example.data.remote.AuthRepository
 import com.example.data.remote.RemoteRepository
 import com.example.data.session.SessionManager
+import com.example.di.UiGraphEntryPoint
+import dagger.hilt.android.EntryPointAccessors
 import com.example.util.MeetingTime
 import io.github.jan.supabase.auth.status.SessionStatus
 import kotlinx.coroutines.flow.*
@@ -21,9 +23,15 @@ import java.util.UUID
 
 class MainViewModel(application: Application) : AndroidViewModel(application) {
 
-    private val repository = RemoteRepository(application.applicationContext)
-    private val dataStoreManager = DataStoreManager(application)
-    private val authRepository = AuthRepository()
+    // F5.0: colaboradores vêm do grafo Hilt (via EntryPoint — a VM ainda não é @HiltViewModel).
+    // Assim a fachada usa o MESMO SyncEngine @Singleton (um engine só na UI) e tudo compartilha
+    // as mesmas instâncias que o SessionManager passará a injetar no F5.1.
+    private val entryPoint = EntryPointAccessors.fromApplication(
+        application.applicationContext, UiGraphEntryPoint::class.java
+    )
+    private val repository = entryPoint.remoteRepository()
+    private val dataStoreManager = entryPoint.dataStoreManager()
+    private val authRepository = entryPoint.authRepository()
 
     // F4b: grafo de sessão extraído p/ SessionManager. Recebe o viewModelScope — lifecycle
     // IDÊNTICO ao antigo (flows/observers cancelam quando o VM é limpo). A VM re-expõe os
@@ -403,9 +411,10 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
 
     override fun onCleared() {
         super.onCleared()
-        // Cancela subscriptions Realtime e loops de reload do repo (antes ficavam
-        // rodando pra sempre, detached do ciclo de vida — leak de socket/coroutine).
-        repository.close()
+        // F5.0: o SyncEngine agora é @Singleton (vive pelo processo, compartilhado). Não se
+        // fecha no clear da VM — senão config-change/recreation deixaria a UI com um engine
+        // morto. Realtime/reload são encerrados pela morte do processo. (Antes a fachada tinha
+        // engine próprio atado à VM; fechar aqui fazia sentido; agora não.)
     }
 
     fun logout(onCompleted: () -> Unit) {
