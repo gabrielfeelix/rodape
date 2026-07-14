@@ -577,17 +577,26 @@ fun EncontroTab(
                         listOf("Vou", "Talvez", "Não vou").forEach { statusOption ->
                             val isSelected = userStatus == statusOption
 
+                            // Identidade SEMÂNTICA por opção (3.4) — antes tudo
+                            // virava ink e "Vou"/"Não vou" ficavam idênticos.
+                            // Mesmas cores da contagem "Quem vai?" logo abaixo:
+                            // Vou=oliva, Talvez=dourado legível (warning), Não vou=neutro.
+                            val (selBg, selFg) = when (statusOption) {
+                                "Vou" -> RodapeTheme.colors.olivaSoft to RodapeTheme.colors.olivaDark
+                                "Talvez" -> RodapeTheme.colors.warningSoft to RodapeTheme.colors.warning
+                                else -> RodapeTheme.colors.dividerSoft to RodapeTheme.colors.tertiary
+                            }
                             // "Carimbo" de RSVP: cores animadas + punch de escala
                             // (afunda 0.92 e volta de mola) + check com scale-in +
                             // háptico. O punch só dispara em MUDANÇA real de seleção
                             // (guard da 1ª composição) — não ao entrar na tela.
                             val pillBg by animateColorAsState(
-                                targetValue = if (isSelected) RodapeTheme.colors.ink else RodapeTheme.colors.ink.copy(alpha = 0f),
+                                targetValue = if (isSelected) selBg else selBg.copy(alpha = 0f),
                                 animationSpec = rodapeTween(RodapeMotion.Dur.standard),
                                 label = "rsvpBg",
                             )
                             val pillFg by animateColorAsState(
-                                targetValue = if (isSelected) RodapeTheme.colors.cream else RodapeTheme.colors.tertiary,
+                                targetValue = if (isSelected) selFg else RodapeTheme.colors.tertiary,
                                 animationSpec = rodapeTween(RodapeMotion.Dur.standard),
                                 label = "rsvpFg",
                             )
@@ -630,7 +639,7 @@ fun EncontroTab(
                                     .semantics { if (isSelected) liveRegion = LiveRegionMode.Polite }
                                     .border(
                                         width = 1.dp,
-                                        color = if (isSelected) Color.Transparent else RodapeTheme.colors.divider,
+                                        color = if (isSelected) selFg.copy(alpha = 0.35f) else RodapeTheme.colors.divider,
                                         shape = RoundedCornerShape(RodapeRadii.full)
                                     ),
                                 contentAlignment = Alignment.Center
@@ -682,11 +691,12 @@ fun EncontroTab(
                         horizontalArrangement = Arrangement.SpaceAround,
                         verticalAlignment = Alignment.CenterVertically
                     ) {
+                        // Cores EXATAS do picker "Sua participação" (3.4).
                         Column(horizontalAlignment = Alignment.CenterHorizontally) {
                             Text(
                                 confirmados.size.toString(),
                                 style = MaterialTheme.typography.displayLarge.copy(
-                                    color = RodapeTheme.colors.oliva,
+                                    color = RodapeTheme.colors.olivaDark,
                                     fontWeight = FontWeight.Bold
                                 )
                             )
@@ -697,7 +707,7 @@ fun EncontroTab(
                             Text(
                                 talvez.size.toString(),
                                 style = MaterialTheme.typography.displayLarge.copy(
-                                    color = RodapeTheme.colors.olivaMid, // substituído de Color(0xFFD4A373)
+                                    color = RodapeTheme.colors.warning,
                                     fontWeight = FontWeight.Bold
                                 )
                             )
@@ -716,7 +726,39 @@ fun EncontroTab(
                         }
                     }
 
-                    Spacer(modifier = Modifier.height(16.dp))
+                    // Barra EMPILHADA (3.5): proporção Vou/Talvez/Não vou de relance,
+                    // nas mesmas cores. Só aparece quando alguém já respondeu.
+                    val totalRsvps = confirmados.size + talvez.size + naoVou.size
+                    if (totalRsvps > 0) {
+                        Row(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .height(8.dp)
+                                .clip(RoundedCornerShape(RodapeRadii.full)),
+                        ) {
+                            if (confirmados.isNotEmpty()) Box(
+                                Modifier
+                                    .weight(confirmados.size.toFloat())
+                                    .fillMaxHeight()
+                                    .background(RodapeTheme.colors.olivaDark)
+                            )
+                            if (talvez.isNotEmpty()) Box(
+                                Modifier
+                                    .weight(talvez.size.toFloat())
+                                    .fillMaxHeight()
+                                    .background(RodapeTheme.colors.warning)
+                            )
+                            if (naoVou.isNotEmpty()) Box(
+                                Modifier
+                                    .weight(naoVou.size.toFloat())
+                                    .fillMaxHeight()
+                                    .background(RodapeTheme.colors.tertiary.copy(alpha = 0.45f))
+                            )
+                        }
+                        Spacer(modifier = Modifier.height(8.dp))
+                    }
+
+                    Spacer(modifier = Modifier.height(8.dp))
                     HorizontalDivider(thickness = 0.5.dp, color = RodapeTheme.colors.divider)
                     Spacer(modifier = Modifier.height(8.dp))
 
@@ -743,6 +785,14 @@ fun EncontroTab(
                             ),
                             modifier = Modifier.weight(1f)
                         )
+                        if (!isConfirmadosExpanded && confirmados.isNotEmpty()) {
+                            RsvpPeekAvatars(
+                                userIds = confirmados.mapNotNull { it.userId },
+                                membersById = membersById,
+                                currentUserId = currentUserId,
+                                currentUserAvatarUrl = viewModel.currentUser.value?.avatarUrl,
+                            )
+                        }
                     }
 
                     if (isConfirmadosExpanded) {
@@ -799,6 +849,14 @@ fun EncontroTab(
                             ),
                             modifier = Modifier.weight(1f)
                         )
+                        if (!isTalvezExpanded && talvez.isNotEmpty()) {
+                            RsvpPeekAvatars(
+                                userIds = talvez.mapNotNull { it.userId },
+                                membersById = membersById,
+                                currentUserId = currentUserId,
+                                currentUserAvatarUrl = viewModel.currentUser.value?.avatarUrl,
+                            )
+                        }
                     }
 
                     if (isTalvezExpanded) {
@@ -855,6 +913,14 @@ fun EncontroTab(
                             ),
                             modifier = Modifier.weight(1f)
                         )
+                        if (!isNaoVouExpanded && naoVou.isNotEmpty()) {
+                            RsvpPeekAvatars(
+                                userIds = naoVou.mapNotNull { it.userId },
+                                membersById = membersById,
+                                currentUserId = currentUserId,
+                                currentUserAvatarUrl = viewModel.currentUser.value?.avatarUrl,
+                            )
+                        }
                     }
 
                     if (isNaoVouExpanded) {
@@ -1606,6 +1672,28 @@ private fun OpenVotingSheet(
                 TbButton(text = "Abrir votação", onClick = { onConfirm(n, dias, cadencia) }, variant = TbButtonVariant.Terra, modifier = Modifier.weight(1f))
             }
             Spacer(modifier = Modifier.height(8.dp))
+        }
+    }
+}
+
+/**
+ * Avatares "espiando" na linha COLAPSADA de um grupo de RSVP (3.5) — dá pra ver
+ * quem respondeu sem expandir. Some quando o grupo expande (a lista completa
+ * assume) ou está vazio.
+ */
+@Composable
+private fun RsvpPeekAvatars(
+    userIds: List<String>,
+    membersById: Map<String, User>,
+    currentUserId: String?,
+    currentUserAvatarUrl: String?,
+) {
+    Row(horizontalArrangement = Arrangement.spacedBy((-8).dp)) {
+        userIds.take(3).forEach { uid ->
+            val u = membersById[uid]
+            val nm = if (uid == currentUserId) "Você" else u?.nome ?: "Membro"
+            val url = if (uid == currentUserId) (currentUserAvatarUrl ?: "") else u?.avatarUrl ?: ""
+            Avatar(name = nm, avatarUrl = url, size = 24.dp, ring = RodapeTheme.colors.cardSurface)
         }
     }
 }

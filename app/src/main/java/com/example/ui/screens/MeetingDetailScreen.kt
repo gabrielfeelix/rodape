@@ -4,6 +4,10 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.selection.selectable
 import androidx.compose.ui.semantics.Role
+import androidx.compose.ui.semantics.LiveRegionMode
+import androidx.compose.ui.semantics.liveRegion
+import androidx.compose.ui.semantics.semantics
+import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.shape.CircleShape
@@ -209,23 +213,38 @@ fun MeetingDetailScreen(
                         ) {
                             listOf("Vou", "Talvez", "Não vou").forEach { opt ->
                                 val sel = userRsvp?.status == opt
+                                // 3.4: mesma identidade semântica do picker da NextTab
+                                // (Vou=oliva, Talvez=dourado legível, Não vou=neutro),
+                                // raio unificado em pílula (full) e liveRegion que
+                                // faltava aqui (a NextTab já anunciava).
+                                val (selBg, selFg) = when (opt) {
+                                    "Vou" -> RodapeTheme.colors.olivaSoft to RodapeTheme.colors.olivaDark
+                                    "Talvez" -> RodapeTheme.colors.warningSoft to RodapeTheme.colors.warning
+                                    else -> RodapeTheme.colors.dividerSoft to RodapeTheme.colors.tertiary
+                                }
                                 Box(
                                     modifier = Modifier
                                         .weight(1f)
                                         .height(48.dp)
-                                        .clip(RoundedCornerShape(RodapeRadii.md))
-                                        .background(if (sel) RodapeTheme.colors.ink else androidx.compose.ui.graphics.Color.Transparent)
+                                        .clip(RoundedCornerShape(RodapeRadii.full))
+                                        .background(if (sel) selBg else androidx.compose.ui.graphics.Color.Transparent)
+                                        .border(
+                                            1.dp,
+                                            if (sel) selFg.copy(alpha = 0.35f) else RodapeTheme.colors.divider,
+                                            RoundedCornerShape(RodapeRadii.full)
+                                        )
                                         .selectable(
                                             selected = sel,
                                             role = Role.RadioButton,
                                             onClick = { viewModel.rsvpMeeting(m.id, opt) },
-                                        ),
+                                        )
+                                        .semantics { if (sel) liveRegion = LiveRegionMode.Polite },
                                     contentAlignment = Alignment.Center
                                 ) {
                                     Text(
                                         text = opt,
                                         style = MaterialTheme.typography.bodyMedium.copy(
-                                            color = if (sel) RodapeTheme.colors.cream else RodapeTheme.colors.tertiary,
+                                            color = if (sel) selFg else RodapeTheme.colors.tertiary,
                                             fontWeight = FontWeight.Medium
                                         )
                                     )
