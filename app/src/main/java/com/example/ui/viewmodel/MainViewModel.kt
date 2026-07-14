@@ -10,6 +10,7 @@ import com.example.data.api.OpenLibraryDoc
 import com.example.data.model.*
 import com.example.data.remote.AuthRepository
 import com.example.data.remote.RemoteRepository
+import com.example.data.session.SessionManager
 import com.example.util.MeetingTime
 import io.github.jan.supabase.auth.status.SessionStatus
 import kotlinx.coroutines.flow.*
@@ -24,6 +25,11 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
     private val dataStoreManager = DataStoreManager(application)
     private val authRepository = AuthRepository()
 
+    // F4b: grafo de sessão extraído p/ SessionManager. Recebe o viewModelScope — lifecycle
+    // IDÊNTICO ao antigo (flows/observers cancelam quando o VM é limpo). A VM re-expõe os
+    // flows via forwarders abaixo, então telas e ações internas seguem inalteradas.
+    private val session = SessionManager(viewModelScope, repository, dataStoreManager, authRepository)
+
     // Mostra um erro na tela quando uma ação de salvar FALHA de verdade. Antes o
     // app engolia a exceção e o usuário não sabia por que "não acontecia nada".
     private fun toastErro(msg: String, err: Throwable? = null) {
@@ -36,9 +42,6 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
     // --- Supabase session ---
     val sessionStatus: StateFlow<SessionStatus> = authRepository.sessionStatus
 
-    val supabaseUserId: StateFlow<String?> = authRepository.currentUserIdFlow
-        .stateIn(viewModelScope, SharingStarted.Eagerly, null)
-
     /** Nome do usuario logado vindo direto do JWT do Supabase (user_metadata.full_name).
      *  Disponivel imediatamente apos login (sem precisar query no Postgres).
      *  Cai pra null se nao autenticado. */
@@ -48,21 +51,17 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
     val supabaseEmail: StateFlow<String?> = authRepository.currentEmailFlow
         .stateIn(viewModelScope, SharingStarted.Eagerly, null)
 
-    // currentUserId agora derivado direto do Supabase Auth (sem DataStore).
-    val currentUserId: StateFlow<String?> = supabaseUserId
+    // F4b: sessão (currentUserId/currentUser + clube/livro/papel) agora vive no SessionManager.
+    // A VM só re-expõe. Comportamento idêntico.
+    val currentUserId: StateFlow<String?> = session.currentUserId
 
-    val currentUser: StateFlow<User?> = currentUserId.flatMapLatest { userId ->
-        if (userId != null) repository.getUserFlow(userId) else flowOf(null)
-    }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(60_000), null)
+    val currentUser: StateFlow<User?> = session.currentUser
 
     // Legacy: telas antigas leem userName/userEmail. Mapeamos pra Supabase.
     val userName: StateFlow<String?> = supabaseDisplayName
     val userEmail: StateFlow<String?> = supabaseEmail
 
-    // activeClubId vira state em memoria. Auto-inicializado com o primeiro clube
-    // ao logar; persiste so durante a sessao do app (cold-start cai no primeiro).
-    private val _activeClubId = MutableStateFlow<String?>(null)
-    val activeClubId: StateFlow<String?> = _activeClubId.asStateFlow()
+    val activeClubId: StateFlow<String?> = session.activeClubId
 
     // App-level prefs (avaliação na Play Store + contador de engajamento)
     val ratedApp: StateFlow<Boolean> = dataStoreManager.ratedAppFlow
@@ -81,9 +80,7 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
     }
 
     /** Chamado em pontos de engajamento (votar, comentar, salvar frase, RSVP, avaliar livro). */
-    fun bumpEngagement() {
-        viewModelScope.launch { dataStoreManager.incrementEngagementCount() }
-    }
+    fun bumpEngagement() = session.bumpEngagement()
 
     /** Marca como rated sem mostrar prompt de novo (pra "Agora não, talvez mais tarde" também silenciar). */
     fun dismissRatePromptForever() {
@@ -156,49 +153,12 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
         }
     }
 
-    // Clubs
-    val allClubs: StateFlow<List<Club>> = currentUserId.flatMapLatest { userId ->
-        if (userId != null) repository.getClubsForUser(userId) else flowOf(emptyList())
-    }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(60_000), emptyList())
-
-    val activeClub: StateFlow<Club?> = activeClubId.flatMapLatest { clubId ->
-        if (clubId != null) repository.getClubFlow(clubId) else flowOf(null)
-    }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(60_000), null)
-
-    val currentBooksMap: StateFlow<Map<String, String>> = currentUserId.flatMapLatest { userId ->
-        if (userId == null) {
-            flowOf(emptyMap())
-        } else {
-            repository.getClubsForUser(userId).flatMapLatest { clubs ->
-                if (clubs.isEmpty()) {
-                    flowOf(emptyMap())
-                } else {
-                    val flowsList = clubs.map { club ->
-                        repository.getBookByStatusFlow(club.id, "current").map { books ->
-                            club.id to (books.firstOrNull()?.title ?: "Sem livro atual")
-                        }
-                    }
-                    combine(flowsList) { pairs ->
-                        pairs.toMap()
-                    }
-                }
-            }
-        }
-    }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(60_000), emptyMap())
-
-    // Current Lendo Agora Book
-    val currentBook: StateFlow<Book?> = activeClubId.flatMapLatest { clubId ->
-        if (clubId != null) {
-            repository.getBookByStatusFlow(clubId, "current").map { it.firstOrNull() }
-        } else {
-            flowOf(null)
-        }
-    }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(60_000), null)
-
-    // Chapters for Current Book
-    val currentChapters: StateFlow<List<Chapter>> = currentBook.flatMapLatest { book ->
-        if (book != null) repository.getChaptersForBookFlow(book.id) else flowOf(emptyList())
-    }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(60_000), emptyList())
+    // Clubs / livro atual — grafo de sessão (F4b), re-exposto do SessionManager.
+    val allClubs: StateFlow<List<Club>> = session.allClubs
+    val activeClub: StateFlow<Club?> = session.activeClub
+    val currentBooksMap: StateFlow<Map<String, String>> = session.currentBooksMap
+    val currentBook: StateFlow<Book?> = session.currentBook
+    val currentChapters: StateFlow<List<Chapter>> = session.currentChapters
 
     // Active User Progress
     val userProgress: StateFlow<UserProgress?> = combine(currentUserId, activeClubId, currentBook) { userId, clubId, book ->
@@ -211,10 +171,8 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
         }
     }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(60_000), null)
 
-    // Club Books
-    val clubBooks: StateFlow<List<Book>> = activeClubId.flatMapLatest { clubId ->
-        if (clubId != null) repository.getClubBooksFlow(clubId) else flowOf(emptyList())
-    }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(60_000), emptyList())
+    // Club Books — grafo de sessão (F4b).
+    val clubBooks: StateFlow<List<Book>> = session.clubBooks
 
     val suggestedBooks: StateFlow<List<Book>> = activeClubId.flatMapLatest { clubId ->
         if (clubId != null) repository.getBookByStatusFlow(clubId, "suggested") else flowOf(emptyList())
@@ -259,10 +217,8 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
     }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(60_000), emptyList())
 
     // --- Fase 4 ---
-    // Active voting round
-    val activeVotingRound: StateFlow<VotingRound?> = activeClubId.flatMapLatest { clubId ->
-        if (clubId != null) repository.getActiveVotingRoundFlow(clubId) else flowOf(null)
-    }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(60_000), null)
+    // Active voting round — grafo de sessão (F4b); o observer de auto-close vive no SessionManager.
+    val activeVotingRound: StateFlow<VotingRound?> = session.activeVotingRound
 
     // Votos da RODADA ATIVA — Room-backed (REATIVO): o voto otimista aparece na
     // hora. Antes a UI usava getVotesForClubFlow, um fetch de rede ÚNICO e
@@ -285,32 +241,10 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
         if (clubId != null) repository.getBookByStatusFlow(clubId, "next") else flowOf(emptyList())
     }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(60_000), emptyList())
 
-    // Papel do usuário atual no clube ativo: "super_admin" | "admin" | "member" | null
-    // Emite null IMEDIATAMENTE ao trocar de clube (antes o stateIn segurava o papel
-    // do clube ANTERIOR até o novo flow emitir — os guards de admin e o header
-    // piscavam/misfire com o papel errado).
-    val currentUserPapel: StateFlow<String?> = combine(currentUserId, activeClubId) { uid, cid -> Pair(uid, cid) }
-        .flatMapLatest { (uid, cid) ->
-            if (uid != null && cid != null) {
-                flow<String?> {
-                    emit(null) // reset ao trocar de clube
-                    emitAll(
-                        repository.getClubMembersRawFlow(cid).map { list ->
-                            list.find { it.userId == uid }?.papel
-                        }
-                    )
-                }
-            } else flowOf(null)
-        }
-        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(60_000), null)
-
-    val isCurrentUserAdmin: StateFlow<Boolean> = currentUserPapel
-        .map { it == "admin" || it == "super_admin" }
-        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(60_000), false)
-
-    val isCurrentUserSuperAdmin: StateFlow<Boolean> = currentUserPapel
-        .map { it == "super_admin" }
-        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(60_000), false)
+    // Papel do usuário atual no clube ativo — grafo de sessão (F4b).
+    val currentUserPapel: StateFlow<String?> = session.currentUserPapel
+    val isCurrentUserAdmin: StateFlow<Boolean> = session.isCurrentUserAdmin
+    val isCurrentUserSuperAdmin: StateFlow<Boolean> = session.isCurrentUserSuperAdmin
 
     // Membros do clube ativo (raw com papel)
     val activeClubMembersRaw: StateFlow<List<ClubMember>> = activeClubId.flatMapLatest { clubId ->
@@ -438,64 +372,10 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
     fun consumeRequestedTab() { _requestedTab.value = null }
 
     init {
-        // App nasce vazio em producao — sem seed, sem auto-login fake.
-        //
-        // Defesa em profundidade contra leak de dados entre contas no mesmo
-        // device: quando detectamos que o userId logado e DIFERENTE do que
-        // persistimos no ultimo cold-start, limpamos o cache Room antes de
-        // qualquer fluxo comecar a ler dele. Cobre 3 cenarios:
-        //  1. App morto entre signOut() e clearLocalCache() no logout anterior
-        //  2. Conta nova logando em device que ja teve outra conta antes
-        //  3. Mesmo userId persistido mas diferente do logado agora
-        // Tambem limpa quando NUNCA houve user antes mas o cache nao esta vazio
-        // (instalacao antiga com dados orfaos).
-        viewModelScope.launch {
-            currentUserId.collect { newUserId ->
-                if (newUserId == null) return@collect
-                val lastId = runCatching { dataStoreManager.lastUserId() }.getOrNull()
-                if (lastId != newUserId) {
-                    android.util.Log.w(
-                        "Rodape/VM",
-                        "Troca/primeiro login (last=$lastId, new=$newUserId). Limpando cache local."
-                    )
-                    // SEM drenar: as mutations pendentes eram do usuario ANTERIOR e
-                    // seriam reenviadas sob a sessao do novo (misattribution/RLS-reject).
-                    runCatching { repository.clearLocalCacheNoDrain() }
-                    runCatching { dataStoreManager.setLastActiveClubId(null) }
-                    runCatching { dataStoreManager.setLastUserId(newUserId) }
-                }
-            }
-        }
-
-        // Quando o currentUserId mudar (login/logout), auto-seleciona o primeiro
-        // clube do usuario como activeClub. Se ele nao for membro de nenhum,
-        // activeClubId fica null e a UI mostra estado vazio com CTA de criar/entrar.
-        viewModelScope.launch {
-            allClubs.collect { clubs ->
-                val current = _activeClubId.value
-                if (clubs.isEmpty()) {
-                    _activeClubId.value = null
-                } else if (current == null || clubs.none { it.id == current }) {
-                    // Restaura o último clube selecionado (se ainda é membro),
-                    // em vez de sempre cair no primeiro. Power user volta pro
-                    // clube onde estava.
-                    val saved = dataStoreManager.lastActiveClubId()
-                    _activeClubId.value = clubs.firstOrNull { it.id == saved }?.id
-                        ?: clubs.first().id
-                }
-            }
-        }
-        // Auto-close reativo: fecha a rodada assim que ela vira "expirada", em vez
-        // de um delay(500) fixo que rodava com activeClubId ainda null (nao fechava).
-        viewModelScope.launch {
-            activeVotingRound.collect { round ->
-                if (round != null && round.status == "aberta" &&
-                    System.currentTimeMillis() >= round.fechaEm
-                ) {
-                    maybeAutoCloseExpiredRound()
-                }
-            }
-        }
+        // F4b: os 3 observers de sessão (guard troca-de-conta, auto-seleção de clube,
+        // auto-close de votação) migraram pro SessionManager.init. Fica aqui só o observer
+        // de avatar, que depende de AvatarPicker (camada ui) — não desce pro SessionManager
+        // pra não criar dependência data→ui.
 
         // Avatar inicial inteligente: quando detectamos profile com avatar default
         // 'preset:leitor' (que o trigger handle_new_user usa pra todos), escolhe um
@@ -538,7 +418,7 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
             runCatching { repository.clearLocalCacheNoDrain() }
             runCatching { dataStoreManager.setLastUserId(null) }
             runCatching { dataStoreManager.setLastActiveClubId(null) }
-            _activeClubId.value = null
+            session.setActiveClub(null)
             onCompleted()
         }
     }
@@ -554,16 +434,12 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
             runCatching { repository.clearLocalCacheNoDrain() }
             runCatching { dataStoreManager.setLastUserId(null) }
             runCatching { dataStoreManager.setLastActiveClubId(null) }
-            _activeClubId.value = null
+            session.setActiveClub(null)
             onCompleted()
         }
     }
 
-    fun selectActiveClub(clubId: String) {
-        _activeClubId.value = clubId
-        // Persiste pra restaurar no próximo cold start.
-        viewModelScope.launch { dataStoreManager.setLastActiveClubId(clubId) }
-    }
+    fun selectActiveClub(clubId: String) = session.selectActiveClub(clubId)
 
     /**
      * Exclui a conta do usuario (requisito da Play Store). Tenta o RPC
@@ -586,7 +462,7 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
             runCatching { repository.clearLocalCacheNoDrain() }
             runCatching { dataStoreManager.setLastUserId(null) }
             runCatching { dataStoreManager.setLastActiveClubId(null) }
-            _activeClubId.value = null
+            session.setActiveClub(null)
             onDeleted()
         }
     }
@@ -620,7 +496,7 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
                     onError("Demorou demais. Verifique a conexão e tente de novo.")
                     return@launch
                 }
-                _activeClubId.value = clubId
+                session.setActiveClub(clubId)
                 dataStoreManager.setLastActiveClubId(clubId)
                 onCompleted(clubId)
             } catch (e: Exception) {
@@ -650,7 +526,7 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
                 }
                 val clubId = raw.ifEmpty { null }
                 if (clubId != null) {
-                    _activeClubId.value = clubId
+                    session.setActiveClub(clubId)
                     dataStoreManager.setLastActiveClubId(clubId)
                     // Inicializa progresso no livro atual, se existir.
                     val curBooks = repository.getBookByStatusFlow(clubId, "current").first()
@@ -798,15 +674,8 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
         }
     }
 
-    fun maybeAutoCloseExpiredRound() {
-        viewModelScope.launch {
-            val clubId = activeClubId.value ?: return@launch
-            val round = repository.getActiveVotingRound(clubId) ?: return@launch
-            if (System.currentTimeMillis() >= round.fechaEm) {
-                closeRoundInternal(round, clubId)
-            }
-        }
-    }
+    // F4b: o auto-close reativo de rodada expirada virou observer interno do SessionManager
+    // (era init observer 3 + maybeAutoCloseExpiredRound). A ação manual abaixo permanece.
 
     private suspend fun closeRoundInternal(round: VotingRound, clubId: String) {
         // RPC close_voting_round faz tudo no servidor:
@@ -960,18 +829,8 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
     /** Dedup: se o clube já tem esse livro (mesmo ISBN, ou mesmo openlibraryId, ou
      *  mesmo título), reusa o bookId em vez de criar um candidato duplicado. Antes,
      *  o mesmo livro sugerido por 3 pessoas virava 3 candidatos de voto separados. */
-    private fun existingClubBookId(title: String, isbn: String, openlibraryId: String = ""): String? {
-        val books = clubBooks.value
-        val cleanIsbn = isbn.filter { it.isDigit() }
-        if (cleanIsbn.isNotBlank()) {
-            books.firstOrNull { it.isbn.filter { c -> c.isDigit() } == cleanIsbn }?.let { return it.id }
-        }
-        if (openlibraryId.isNotBlank()) {
-            books.firstOrNull { it.openlibraryId.isNotBlank() && it.openlibraryId == openlibraryId }?.let { return it.id }
-        }
-        val normTitle = title.trim().lowercase()
-        return books.firstOrNull { it.title.trim().lowercase() == normTitle }?.id
-    }
+    private fun existingClubBookId(title: String, isbn: String, openlibraryId: String = ""): String? =
+        session.existingClubBookId(title, isbn, openlibraryId)
 
     fun createBookSuggestion(
         doc: OpenLibraryDoc,
@@ -1264,7 +1123,7 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
                 repository.leaveClubViaRpc(clubId)
                 val outros = repository.getClubsForUserList(meId)
                 val proximo = outros.firstOrNull()?.id
-                _activeClubId.value = proximo
+                session.setActiveClub(proximo)
                 dataStoreManager.setLastActiveClubId(proximo)
                 onDone()
             } catch (e: Exception) {
@@ -1448,12 +1307,8 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
     // o id promovido ou null se a fila está vazia. Faz o ciclo AVANÇAR sozinho ao
     // finalizar um livro — antes o clube ficava "sem leitura" com a fila cheia até
     // alguém trocar o livro manualmente em settings.
-    private suspend fun promoteNextQueuedBook(clubId: String): String? {
-        val next = repository.getBookByStatusFlow(clubId, "next").first()
-        val head = next.firstOrNull() ?: return null
-        repository.updateClubBookStatus(clubId, head.id, "current")
-        return head.id
-    }
+    private suspend fun promoteNextQueuedBook(clubId: String): String? =
+        session.promoteNextQueuedBook(clubId)
 
     fun markCurrentBookFinished() {
         viewModelScope.launch {
@@ -1505,7 +1360,7 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
             val uid = currentUserId.value ?: return@launch
             val outros = repository.getClubsForUserList(uid)
             val proximo = outros.firstOrNull()?.id
-            _activeClubId.value = proximo
+            session.setActiveClub(proximo)
             dataStoreManager.setLastActiveClubId(proximo)
         }
     }
@@ -1516,7 +1371,7 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
             val member = repository.getClubMember(clubId, uid) ?: return@launch
             if (member.papel != "super_admin") return@launch
             repository.updateClubArquivado(clubId, false)
-            _activeClubId.value = clubId
+            session.setActiveClub(clubId)
         }
     }
 
