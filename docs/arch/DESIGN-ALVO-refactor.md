@@ -151,7 +151,13 @@ incremental e de baixo risco em cima da engine estável.
 
 - [x] F1 lifecycle · [x] F2 nav type-safe · [x] F3a DTOs (`9f0a35f`)
 - [x] F3b SyncEngine (`e29ae6d`, compila; **device-test PENDENTE**) · [x] F4a Hilt (`eac9ff7`)
-- [ ] F3c repos · [ ] F4b/F5 VMs+UiState · [ ] F6 previews · [ ] F7 testes
+- [~] F3c repos (1/~10: **ProgressRepository** `d7607d5` — molde provado; grafo Hilt
+  validado de verdade via @Binds) · [ ] F4b/F5 VMs+UiState · [ ] F6 previews · [ ] F7 testes
+
+**F3c molde:** interface em `data/remote/repo/`, `OfflineFirst*Repository @Inject(SyncEngine,
+SupabaseClient, RodapeDao)` (bodies verbatim, infra via `engine.*`), `@Binds` em
+`di/RepositoryModule`, fachada delega reusando o `engine` existente. Restam ~9:
+notif/quote (fáceis, folha) → moderação/voting/meeting/book/club (cross-domain, cuidado).
 
 **F4a nota:** grafo Hilt aditivo/inerte. Deferidos: @HiltWorker (DrainQueueWorker,
 toca drain) e @HiltViewModel (F5). RemoteRepository não é provido (estrangulado).
