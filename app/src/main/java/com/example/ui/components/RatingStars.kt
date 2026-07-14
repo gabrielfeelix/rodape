@@ -1,5 +1,8 @@
 package com.example.ui.components
 
+import androidx.compose.animation.core.Animatable
+import androidx.compose.animation.core.Spring
+import androidx.compose.animation.core.spring
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.*
@@ -8,8 +11,13 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.minimumInteractiveComponentSize
 import androidx.compose.material3.ripple
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.draw.drawWithContent
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.drawscope.clipRect
@@ -23,6 +31,7 @@ import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import com.example.ui.theme.RodapeIcons
 import com.example.ui.theme.RodapeTheme
+import com.example.ui.theme.reduceMotion
 
 @Composable
 fun RatingStars(
@@ -102,6 +111,7 @@ fun RatingStarsInput(
 ) {
     val gold = RodapeTheme.colors.dourado
     val empty = RodapeTheme.colors.dividerSoft
+    val starsReduce = reduceMotion()
     Row(
         // selectableGroup: TalkBack anuncia as 5 estrelas como um grupo de opcoes
         // (ex: "opcao 3 de 5") em vez de 5 botoes soltos sem relacao.
@@ -111,6 +121,20 @@ fun RatingStarsInput(
         for (i in 1..5) {
             val isThisSelected = i == selected
             val filled = i <= selected
+            // Scale-pop na estrela escolhida (mola, draw-only). Guard de 1ª
+            // composição: nota já dada não pipoca ao abrir a tela.
+            val popScale = remember { Animatable(1f) }
+            var popArmed by remember { mutableStateOf(false) }
+            LaunchedEffect(isThisSelected) {
+                if (!popArmed) { popArmed = true; return@LaunchedEffect }
+                if (isThisSelected && !starsReduce) {
+                    popScale.snapTo(0.7f)
+                    popScale.animateTo(
+                        1f,
+                        spring(dampingRatio = Spring.DampingRatioMediumBouncy, stiffness = Spring.StiffnessMedium),
+                    )
+                }
+            }
             Icon(
                 imageVector = if (filled) RodapeIcons.StarFill else RodapeIcons.Star,
                 contentDescription = "Dar nota $i de 5",
@@ -119,6 +143,7 @@ fun RatingStarsInput(
                     // Alvo de toque de 48dp (a estrela visual continua com `size`).
                     .minimumInteractiveComponentSize()
                     .size(size)
+                    .graphicsLayer { scaleX = popScale.value; scaleY = popScale.value }
                     .clickable(
                         interactionSource = remember { MutableInteractionSource() },
                         indication = ripple(bounded = false, radius = 24.dp),

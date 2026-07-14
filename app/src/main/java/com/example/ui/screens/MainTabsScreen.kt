@@ -56,6 +56,9 @@ import com.example.ui.theme.RodapeTheme
 import com.example.ui.theme.RodapeMotion
 import com.example.ui.theme.rodapeTween
 import com.example.ui.theme.rodapeSpring
+import com.example.ui.theme.reduceMotion
+import androidx.compose.animation.core.Animatable
+import androidx.compose.animation.core.spring
 import com.example.util.displayName
 import com.example.util.displayFirstName
 import com.example.ui.components.*
@@ -684,11 +687,27 @@ private fun GlobalHeader(
                     modifier = Modifier.size(18.dp),
                 )
             }
+            // Badge pulsa de mola quando o contador SOBE (nova notificação) —
+            // guard de 1ª composição pra não pular ao abrir a tela.
+            val badgeReduce = reduceMotion()
+            val badgeScale = remember { Animatable(1f) }
+            var prevUnread by remember { mutableStateOf(unreadCount) }
+            LaunchedEffect(unreadCount) {
+                if (unreadCount > prevUnread && !badgeReduce) {
+                    badgeScale.snapTo(0.6f)
+                    badgeScale.animateTo(
+                        1f,
+                        spring(dampingRatio = Spring.DampingRatioMediumBouncy, stiffness = Spring.StiffnessMedium),
+                    )
+                }
+                prevUnread = unreadCount
+            }
             if (unreadCount > 0) {
                 Box(
                     modifier = Modifier
                         .align(Alignment.TopEnd)
                         .offset(x = 3.dp, y = (-3).dp)
+                        .graphicsLayer { scaleX = badgeScale.value; scaleY = badgeScale.value }
                         .border(2.dp, RodapeTheme.colors.paper, CircleShape)
                         .padding(2.dp)
                         .defaultMinSize(minWidth = 16.dp, minHeight = 16.dp)
