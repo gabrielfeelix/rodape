@@ -28,6 +28,13 @@ calma na sessão anterior. Este doc te dá o estado exato e as regras. Leia na o
   Commit `5482524`, compilou limpo. Usuário autorizou seguir antes do teste de device
   do F3b — o smoke dos dois roda junto. Fix visual avulso: `ee71dbc` (tabs do
   BookDetail sobrepostas dentro do AnimatedContent).
+- F3c — 10 repos de domínio fatiados, 1/commit (`ff3cdf0`…`06074fa`), cada um
+  compilado: Progress, Notification, Quote, Moderation, Discussion, Voting, Meeting,
+  User, Book, Club. Padrão: interface pública + OfflineFirst*Impl internal
+  (base repo/OfflineFirstRepository delega pra engine; corpos verbatim) + @Binds em
+  di/RepositoryModule. RemoteRepository = fachada pura (~560 linhas) delegando tudo;
+  API pública intocada — MainViewModel nem recompilou diferente. ⚠️ Smoke de device
+  acumulado: F3b+F4a+F3c testam juntos (roteiro do F3b cobre).
 
 **Compliance/beta:** outro agente já fechou 8 ondas (moderação, Termos, Crashlytics,
 age gate, RLS, etc.) — tudo commitado. NÃO mexer nisso.

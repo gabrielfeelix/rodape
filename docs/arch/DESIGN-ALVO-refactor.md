@@ -153,5 +153,9 @@ incremental e de baixo risco em cima da engine estável.
 - [x] F3b SyncEngine (commit 5fd7255 — ⚠️ AGUARDA teste em device: avião→ação→reconecta)
 - [x] F4a Hilt scaffolding (commit 5482524 — Hilt 2.60.1; worker injeta engine @Singleton;
       smoke em device junto com o teste do F3b)
-- [ ] F3c repos · [ ] F4b/F5 VMs+UiState
+- [x] F3c repos — 10 repos fatiados, 1/commit (ff3cdf0→06074fa). RemoteRepository é
+      fachada pura (~560 linhas); repos compartilham a engine da fachada; @Binds prontos
+      pro F4b/F5. Realocações: closeVotingRoundViaRpc→Voting, deleteOwnAccountViaRpc→User,
+      IdOnlyDto/ProfileUpdateDto/escapeJson→internal compartilhados.
+- [ ] F4b/F5 VMs+UiState
 - [ ] F6 previews · [ ] F7 testes
