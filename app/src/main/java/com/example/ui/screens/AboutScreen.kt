@@ -33,13 +33,18 @@ fun AboutScreen(
 
     Scaffold(
         topBar = {
+            // 3.13: app bar unificada com as irmãs — título na escala (Literata
+            // via titleLarge) e back terracota.
             TopAppBar(
-                title = { Text("Sobre o Rodapé") },
+                title = { Text("Sobre o Rodapé", style = MaterialTheme.typography.titleLarge) },
                 navigationIcon = {
                     IconButton(onClick = onNavigateBack) {
-                        Icon(RodapeIcons.Back, contentDescription = "Voltar")
+                        Icon(RodapeIcons.Back, contentDescription = "Voltar", tint = RodapeTheme.colors.terracota)
                     }
-                }
+                },
+                colors = TopAppBarDefaults.topAppBarColors(
+                    containerColor = MaterialTheme.colorScheme.background
+                )
             )
         },
         containerColor = MaterialTheme.colorScheme.background
@@ -201,10 +206,11 @@ fun AboutScreen(
             // ── Feedback ──
             item {
                 Spacer(modifier = Modifier.height(8.dp))
+                // 3.13: feedback é convite, não ação neutra — oliva-soft acolhe.
                 TbButton(
                     text = "Mandar feedback",
                     onClick = { openEmailFeedback(context) },
-                    variant = TbButtonVariant.Outline,
+                    variant = TbButtonVariant.OlivaSoft,
                     size = TbButtonSize.Md,
                     modifier = Modifier.fillMaxWidth()
                 )

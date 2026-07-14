@@ -155,34 +155,9 @@ fun SuggestScreen(
                         )
                     }
                 },
-                actions = {
-                    TextButton(
-                        onClick = {
-                            val doc = selectedDoc ?: return@TextButton
-                            beginSuggest(doc)
-                        },
-                        enabled = selectedStillVisible && !verifying,
-                        colors = ButtonDefaults.textButtonColors(
-                            contentColor = RodapeTheme.colors.terracota,
-                            disabledContentColor = RodapeTheme.colors.terracota.copy(alpha = 0.4f)
-                        )
-                    ) {
-                        if (verifying) {
-                            CircularProgressIndicator(
-                                color = RodapeTheme.colors.terracota,
-                                strokeWidth = 2.dp,
-                                modifier = Modifier.size(18.dp)
-                            )
-                        } else {
-                            Text(
-                                "Sugerir",
-                                style = MaterialTheme.typography.bodyLarge.copy(
-                                    fontWeight = FontWeight.Bold
-                                )
-                            )
-                        }
-                    }
-                },
+                // 3.13: morreu o CTA "Sugerir" duplicado do topo — a barra
+                // inferior "Sugerir selecionado" (perto da seleção) é o único
+                // caminho; o spinner de verificação foi pra ela (loading).
                 colors = TopAppBarDefaults.topAppBarColors(
                     containerColor = MaterialTheme.colorScheme.background
                 )
@@ -201,6 +176,7 @@ fun SuggestScreen(
                         onClick = { selectedDoc?.let { beginSuggest(it) } },
                         variant = TbButtonVariant.Terra,
                         enabled = !verifying,
+                        loading = verifying,
                         modifier = Modifier
                             .fillMaxWidth()
                             .padding(horizontal = 24.dp, vertical = 12.dp)

@@ -29,6 +29,7 @@ import androidx.compose.ui.unit.sp
 import com.example.data.model.ClubMember
 import com.example.ui.admin.*
 import com.example.ui.components.Avatar
+import com.example.ui.components.Cover
 import com.example.ui.components.Overline
 import com.example.ui.components.TbButton
 import com.example.ui.components.TbButtonSize
@@ -97,6 +98,76 @@ fun ManageClubScreen(
             verticalArrangement = Arrangement.spacedBy(16.dp),
             contentPadding = PaddingValues(vertical = 16.dp)
         ) {
+            // 0. HERO dashboard (3.13): o retrato do clube ANTES dos controles —
+            // nome grande em Literata, pulso (membros · leitura · próximo
+            // encontro) de relance, capa atual à direita.
+            item {
+                val heroShape = RoundedCornerShape(RodapeRadii.md)
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(16.dp),
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .clip(heroShape)
+                        .background(RodapeTheme.colors.olivaDeep)
+                        .padding(20.dp)
+                ) {
+                    Column(modifier = Modifier.weight(1f)) {
+                        Text(
+                            text = club?.nome ?: "—",
+                            style = MaterialTheme.typography.headlineLarge.copy(
+                                color = RodapeTheme.colors.cream
+                            ),
+                            maxLines = 2,
+                            overflow = TextOverflow.Ellipsis,
+                        )
+                        Spacer(modifier = Modifier.height(6.dp))
+                        Text(
+                            text = buildString {
+                                append("${members.size} ${if (members.size == 1) "membro" else "membros"}")
+                                currentBook?.let { append(" · lendo ${it.title}") }
+                            },
+                            style = MaterialTheme.typography.bodyMedium.copy(
+                                color = RodapeTheme.colors.cream.copy(alpha = 0.8f)
+                            ),
+                            maxLines = 2,
+                            overflow = TextOverflow.Ellipsis,
+                        )
+                        meeting?.let { m ->
+                            Spacer(modifier = Modifier.height(4.dp))
+                            Row(
+                                verticalAlignment = Alignment.CenterVertically,
+                                horizontalArrangement = Arrangement.spacedBy(6.dp),
+                            ) {
+                                Icon(
+                                    imageVector = RodapeIcons.Calendar,
+                                    contentDescription = null,
+                                    tint = RodapeTheme.colors.cream.copy(alpha = 0.7f),
+                                    modifier = Modifier.size(13.dp),
+                                )
+                                Text(
+                                    text = "Próximo: ${m.data}",
+                                    style = MaterialTheme.typography.labelSmall.copy(
+                                        color = RodapeTheme.colors.cream.copy(alpha = 0.8f)
+                                    ),
+                                    maxLines = 1,
+                                    overflow = TextOverflow.Ellipsis,
+                                )
+                            }
+                        }
+                    }
+                    currentBook?.let { b ->
+                        Cover(
+                            title = b.title,
+                            author = b.author,
+                            coverUrl = b.coverUrl,
+                            width = 56.dp,
+                            height = 84.dp,
+                        )
+                    }
+                }
+            }
+
             // 1. Info
             item {
                 SectionCard(title = "Informações do clube") {
