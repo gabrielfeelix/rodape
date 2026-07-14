@@ -157,5 +157,9 @@ incremental e de baixo risco em cima da engine estável.
       fachada pura (~560 linhas); repos compartilham a engine da fachada; @Binds prontos
       pro F4b/F5. Realocações: closeVotingRoundViaRpc→Voting, deleteOwnAccountViaRpc→User,
       IdOnlyDto/ProfileUpdateDto/escapeJson→internal compartilhados.
-- [ ] F4b/F5 VMs+UiState
+- [x] F4b SessionManager (commit bb93bd6 — @Singleton com os 4 observers + helpers;
+      engine UNIFICADA: RemoteRepository/SessionManager/worker compartilham a mesma
+      SyncEngine via DI; MainViewModel virou @HiltViewModel e consome por aliases;
+      sem repository.close() no onCleared)
+- [ ] F5 VMs+UiState por tela (folha→hub, ordem no MAP-MainViewModel §5)
 - [ ] F6 previews · [ ] F7 testes

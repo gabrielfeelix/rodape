@@ -35,6 +35,11 @@ calma na sessão anterior. Este doc te dá o estado exato e as regras. Leia na o
   di/RepositoryModule. RemoteRepository = fachada pura (~560 linhas) delegando tudo;
   API pública intocada — MainViewModel nem recompilou diferente. ⚠️ Smoke de device
   acumulado: F3b+F4a+F3c testam juntos (roteiro do F3b cobre).
+- F4b — SessionManager @Singleton (data/session/) com o grafo de sessão + 4 observers
+  + helpers, corpos verbatim. Engine unificada via DI (RemoteRepository(engine) via
+  @Provides; MainViewModel @HiltViewModel com aliases; SEM close() no onCleared — a
+  engine agora vive o processo). Commit `bb93bd6`. ⚠️ Device: roteiro F3b + rotação
+  + logout/troca de conta.
 
 **Compliance/beta:** outro agente já fechou 8 ondas (moderação, Termos, Crashlytics,
 age gate, RLS, etc.) — tudo commitado. NÃO mexer nisso.
