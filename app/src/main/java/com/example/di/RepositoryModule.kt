@@ -1,6 +1,8 @@
 package com.example.di
 
+import com.example.data.remote.repo.ModerationRepository
 import com.example.data.remote.repo.NotificationRepository
+import com.example.data.remote.repo.OfflineFirstModerationRepository
 import com.example.data.remote.repo.OfflineFirstNotificationRepository
 import com.example.data.remote.repo.OfflineFirstProgressRepository
 import com.example.data.remote.repo.OfflineFirstQuoteRepository
@@ -30,4 +32,8 @@ internal abstract class RepositoryModule {
     @Binds
     @Singleton
     abstract fun bindQuoteRepository(impl: OfflineFirstQuoteRepository): QuoteRepository
+
+    @Binds
+    @Singleton
+    abstract fun bindModerationRepository(impl: OfflineFirstModerationRepository): ModerationRepository
 }

@@ -84,6 +84,7 @@ class RemoteRepository(
     private val progressRepo = com.example.data.remote.repo.OfflineFirstProgressRepository(engine)
     private val notificationRepo = com.example.data.remote.repo.OfflineFirstNotificationRepository(engine)
     private val quoteRepo = com.example.data.remote.repo.OfflineFirstQuoteRepository(engine)
+    private val moderationRepo = com.example.data.remote.repo.OfflineFirstModerationRepository(engine)
 
     private val json = engine.json
     private val dao = engine.dao
@@ -977,8 +978,7 @@ class RemoteRepository(
     // MODERAÇÃO — denúncia, bloqueio, remoção (migration 0010)
     // ============================================================
 
-    /** Denuncia um conteúdo. Idempotente por (reporter, tipo, alvo) — reenvio é no-op.
-     *  Local-first via fila offline; não precisa de cache local (é write-only). */
+    // F3c: movido pra repo/ModerationRepository.kt — fachada delega.
     suspend fun reportContent(
         reporterId: String,
         clubId: String,
@@ -987,75 +987,16 @@ class RemoteRepository(
         targetUserId: String,
         motivo: ReportReason,
         detalhe: String?,
-    ) {
-        val payload = buildJsonObject {
-            put("reporterId", reporterId)
-            put("clubId", clubId)
-            put("targetType", targetType.wire)
-            put("targetId", targetId)
-            put("targetUserId", targetUserId)
-            put("motivo", motivo.wire)
-            if (!detalhe.isNullOrBlank()) put("detalhe", detalhe)
-        }.toString()
-        tryRemoteOrEnqueue("insert_report", payload) {
-            supabase.from("content_reports").upsert(
-                ContentReportInsertDto(
-                    reporterId = reporterId, clubId = clubId,
-                    targetType = targetType.wire, targetId = targetId,
-                    targetUserId = targetUserId, motivo = motivo.wire,
-                    detalhe = detalhe?.takeIf { it.isNotBlank() },
-                )
-            ) { onConflict = "reporter_id,target_type,target_id"; ignoreDuplicates = true }
-        }
-    }
+    ) = moderationRepo.reportContent(reporterId, clubId, targetType, targetId, targetUserId, motivo, detalhe)
 
-    /** Bloqueia um usuário. Cache local imediato (some da UI na hora) + fila. */
-    suspend fun blockUser(me: String, blockedId: String) {
-        if (me == blockedId) return
-        dao.upsertUserBlock(UserBlock(me, blockedId, System.currentTimeMillis()))
-        val payload = buildJsonObject { put("blockerId", me); put("blockedId", blockedId) }.toString()
-        tryRemoteOrEnqueue("insert_user_block", payload) {
-            supabase.from("user_blocks").upsert(UserBlockInsertDto(me, blockedId)) { ignoreDuplicates = true }
-        }
-    }
+    suspend fun blockUser(me: String, blockedId: String) = moderationRepo.blockUser(me, blockedId)
 
-    /** Desbloqueia. */
-    suspend fun unblockUser(me: String, blockedId: String) {
-        dao.deleteUserBlock(me, blockedId)
-        val payload = buildJsonObject { put("blockerId", me); put("blockedId", blockedId) }.toString()
-        tryRemoteOrEnqueue("delete_user_block", payload) {
-            supabase.from("user_blocks").delete {
-                filter { eq("blocker_id", me); eq("blocked_id", blockedId) }
-            }
-        }
-    }
+    suspend fun unblockUser(me: String, blockedId: String) = moderationRepo.unblockUser(me, blockedId)
 
-    /** Ids que EU bloqueei — pra esconder conteúdo desses usuários nas listas.
-     *  Dispara um sync em background (padrão dos demais getters de Flow). */
-    fun observeBlockedIds(me: String): Flow<List<String>> {
-        scope.launch { runCatching { syncMyBlocks(me) } }
-        return dao.blockedIdsFlow(me)
-    }
+    fun observeBlockedIds(me: String): Flow<List<String>> = moderationRepo.observeBlockedIds(me)
 
-    fun isBlockedFlow(me: String, other: String): Flow<Boolean> = dao.isBlockedFlow(me, other)
+    fun isBlockedFlow(me: String, other: String): Flow<Boolean> = moderationRepo.isBlockedFlow(me, other)
 
-    private suspend fun syncMyBlocks(me: String) {
-        val list = supabase.from("user_blocks").select {
-            filter { eq("blocker_id", me) }
-        }.decodeList<UserBlockDto>().map { it.toDomain() }
-        dao.replaceUserBlocks(me, list)
-    }
-
-    private fun tableForTarget(type: ReportTargetType): String = when (type) {
-        ReportTargetType.COMMENT -> "comments"
-        ReportTargetType.SAVED_QUOTE -> "saved_quotes"
-        ReportTargetType.BOOK_SUGGESTION -> "book_suggestions"
-        ReportTargetType.BOOK_RATING -> "book_ratings"
-        else -> "comments"
-    }
-
-    /** Admin remove conteúdo abusivo. Chama moderate_remove_content (checa admin no
-     *  servidor) e reflete local otimista. targetId: id da linha (ou book_id p/ rating). */
     suspend fun moderateRemoveContent(
         type: ReportTargetType,
         targetId: String,
@@ -1063,62 +1004,15 @@ class RemoteRepository(
         clubId: String,
         motivo: String?,
         removidoPor: String,
-    ) {
-        when (type) {
-            ReportTargetType.COMMENT -> dao.markCommentRemoved(targetId, removidoPor, motivo)
-            ReportTargetType.SAVED_QUOTE -> dao.markQuoteRemoved(targetId, removidoPor, motivo)
-            ReportTargetType.BOOK_SUGGESTION -> dao.markSuggestionRemoved(targetId, removidoPor, motivo)
-            ReportTargetType.BOOK_RATING -> dao.markRatingRemoved(targetId, clubId, targetUserId, removidoPor, motivo)
-            else -> {}
-        }
-        val payload = buildJsonObject {
-            put("type", type.wire)
-            put("targetId", targetId)
-            put("targetUserId", targetUserId)
-            put("clubId", clubId)
-            if (!motivo.isNullOrBlank()) put("motivo", motivo)
-        }.toString()
-        tryRemoteOrEnqueue("moderate_remove", payload, notifyTable = tableForTarget(type)) {
-            supabase.postgrest.rpc("moderate_remove_content", buildJsonObject {
-                put("p_type", type.wire)
-                put("p_target_id", targetId)
-                put("p_target_user_id", targetUserId)
-                put("p_club_id", clubId)
-                put("p_motivo", motivo)
-            })
-        }
-    }
+    ) = moderationRepo.moderateRemoveContent(type, targetId, targetUserId, clubId, motivo, removidoPor)
 
-    /** Fila de denúncias pendentes de um clube (só admin lê — RLS garante). Online. */
-    suspend fun fetchPendingReports(clubId: String): List<ContentReport> = runCatching {
-        supabase.from("content_reports").select {
-            filter { eq("club_id", clubId); eq("status", "pendente") }
-            order("created_at", Order.DESCENDING)
-        }.decodeList<ContentReportDto>().map { it.toDomain() }
-    }.getOrDefault(emptyList())
+    suspend fun fetchPendingReports(clubId: String): List<ContentReport> =
+        moderationRepo.fetchPendingReports(clubId)
 
-    /** Admin descarta denúncia (improcedente) sem remover conteúdo. */
-    suspend fun dismissReport(reportId: String) {
-        runCatching {
-            supabase.postgrest.rpc("dismiss_report", buildJsonObject { put("p_report_id", reportId) })
-        }
-    }
+    suspend fun dismissReport(reportId: String) = moderationRepo.dismissReport(reportId)
 
-    fun getRemovedCommentsForClubFlow(clubId: String): Flow<List<Comment>> {
-        scope.launch {
-            runCatching {
-                val list = supabase.from("comments").select {
-                    filter {
-                        eq("club_id", clubId)
-                        eq("removido", true)
-                    }
-                    order("created_at", Order.DESCENDING)
-                }.decodeList<CommentDto>().map { it.toDomain() }
-                dao.upsertComments(list)
-            }
-        }
-        return dao.removedCommentsForClubFlow(clubId)
-    }
+    fun getRemovedCommentsForClubFlow(clubId: String): Flow<List<Comment>> =
+        moderationRepo.getRemovedCommentsForClubFlow(clubId)
 
     // ---- reactions ----
 
