@@ -1,6 +1,7 @@
 package com.example.ui.screens
 
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.layout.WindowInsets
@@ -605,39 +606,57 @@ private fun ChatTab(viewModel: MainViewModel, bookId: String) {
             ) {
                 Avatar(name = authorName, avatarUrl = authorAvatar, size = 32.dp)
                 Column(modifier = Modifier.weight(1f)) {
-                    Row(
-                        horizontalArrangement = Arrangement.spacedBy(8.dp),
-                        verticalAlignment = Alignment.CenterVertically
+                    // 3.6: mesma bolha Literata do DiscussionScreen — aqui em modo
+                    // leitura (histórico, sem reações): cream + borda leve + corpo Literata.
+                    Box(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .background(RodapeTheme.colors.cream, RoundedCornerShape(RodapeRadii.sm))
+                            .border(0.5.dp, RodapeTheme.colors.divider, RoundedCornerShape(RodapeRadii.sm))
+                            .clip(RoundedCornerShape(RodapeRadii.sm))
+                            .padding(horizontal = 14.dp, vertical = 10.dp)
                     ) {
-                        Text(
-                            text = authorName,
-                            style = MaterialTheme.typography.bodyMedium.copy(
-                                fontWeight = FontWeight.SemiBold,
-                                color = RodapeTheme.colors.ink
-                            )
-                        )
-                        Text(
-                            text = timeAgo(c.criadoEm),
-                            style = MaterialTheme.typography.labelSmall.copy(color = RodapeTheme.colors.muted)
-                        )
-                    }
-                    if (c.removido) {
-                        Text(
-                            text = "[mensagem removida pela moderação]",
-                            style = MaterialTheme.typography.bodyMedium.copy(
-                                color = RodapeTheme.colors.muted,
-                                fontStyle = androidx.compose.ui.text.font.FontStyle.Italic,
-                                lineHeight = 20.sp
-                            )
-                        )
-                    } else {
-                        Text(
-                            text = c.texto,
-                            style = MaterialTheme.typography.bodyMedium.copy(
-                                color = RodapeTheme.colors.inkSoft,
-                                lineHeight = 20.sp
-                            )
-                        )
+                        Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
+                            Row(
+                                horizontalArrangement = Arrangement.spacedBy(8.dp),
+                                verticalAlignment = Alignment.CenterVertically
+                            ) {
+                                Text(
+                                    text = authorName,
+                                    style = MaterialTheme.typography.bodyMedium.copy(
+                                        fontFamily = InterFontFamily,
+                                        fontWeight = FontWeight.SemiBold,
+                                        color = RodapeTheme.colors.ink
+                                    )
+                                )
+                                Text(
+                                    text = timeAgo(c.criadoEm),
+                                    style = MaterialTheme.typography.labelSmall.copy(color = RodapeTheme.colors.muted)
+                                )
+                            }
+                            if (c.removido) {
+                                Text(
+                                    text = "[mensagem removida pela moderação]",
+                                    style = MaterialTheme.typography.bodyMedium.copy(
+                                        fontFamily = LiterataFontFamily,
+                                        fontSize = 14.5.sp,
+                                        lineHeight = 21.sp,
+                                        color = RodapeTheme.colors.muted,
+                                        fontStyle = androidx.compose.ui.text.font.FontStyle.Italic
+                                    )
+                                )
+                            } else {
+                                Text(
+                                    text = c.texto,
+                                    style = MaterialTheme.typography.bodyMedium.copy(
+                                        fontFamily = LiterataFontFamily,
+                                        fontSize = 14.5.sp,
+                                        lineHeight = 21.sp,
+                                        color = RodapeTheme.colors.ink
+                                    )
+                                )
+                            }
+                        }
                     }
                 }
             }
