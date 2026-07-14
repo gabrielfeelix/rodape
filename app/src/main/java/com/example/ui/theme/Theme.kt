@@ -1,11 +1,14 @@
 package com.example.ui.theme
 
+import android.provider.Settings
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.darkColorScheme
 import androidx.compose.material3.lightColorScheme
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
+import androidx.compose.runtime.remember
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalContext
 
 // Tema CLARO. Oliva é herói (secondary), terracota é acento (primary).
 private val LightColorScheme = lightColorScheme(
@@ -56,7 +59,20 @@ fun MyApplicationTheme(
 ) {
     val colorScheme = if (darkTheme) DarkColorScheme else LightColorScheme
     val rodapeColors = if (darkTheme) DarkRodapeColors else LightRodapeColors
-    CompositionLocalProvider(LocalRodapeColors provides rodapeColors) {
+    // Reduced-motion: usuário que ligou "remover animações" no sistema tem
+    // ANIMATOR_DURATION_SCALE = 0. Lido uma vez (recompõe em recreate/config change).
+    val context = LocalContext.current
+    val reducedMotion = remember(context) {
+        Settings.Global.getFloat(
+            context.contentResolver,
+            Settings.Global.ANIMATOR_DURATION_SCALE,
+            1f,
+        ) == 0f
+    }
+    CompositionLocalProvider(
+        LocalRodapeColors provides rodapeColors,
+        LocalReducedMotion provides reducedMotion,
+    ) {
         MaterialTheme(
             colorScheme = colorScheme,
             typography = Typography,
