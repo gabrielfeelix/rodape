@@ -152,6 +152,7 @@ dependencies {
   implementation(libs.androidx.room.ktx)
   implementation(libs.androidx.work.runtime)
   implementation(libs.coil.compose)
+  implementation(libs.reorderable)
   implementation(libs.converter.moshi)
   // implementation(libs.firebase.ai)
   implementation(libs.kotlinx.coroutines.android)

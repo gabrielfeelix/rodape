@@ -5,6 +5,9 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.itemsIndexed
+import androidx.compose.foundation.lazy.rememberLazyListState
+import sh.calvin.reorderable.ReorderableItem
+import sh.calvin.reorderable.rememberReorderableLazyListState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.outlined.ArrowBack
@@ -286,17 +289,32 @@ fun ManageChaptersScreen(
                     )
                 }
             } else {
+            val chapterListState = rememberLazyListState()
+            val reorderState = rememberReorderableLazyListState(chapterListState) { from, to ->
+                draftList = draftList.toMutableList().apply { add(to.index, removeAt(from.index)) }
+            }
             LazyColumn(
+                state = chapterListState,
                 modifier = Modifier.weight(1f).padding(horizontal = 16.dp),
                 verticalArrangement = Arrangement.spacedBy(8.dp)
             ) {
                 itemsIndexed(draftList, key = { _, d -> d.id }) { idx, draft ->
-                    // 3.7: linha COLAPSADA em "Cap.N · título · ⋮" — subir/descer/
-                    // remover moram no menu (eram 3 botões espremidos ao lado do
-                    // campo). Reordenar ANIMA (animateItem). Terracota reservado
-                    // pro destrutivo (Remover), dentro do menu.
-                    RodapeCard(modifier = Modifier.fillMaxWidth().animateItem()) {
+                    // 3.7 + drag-to-reorder: arraste pela alça (Bars); Subir/Descer
+                    // no menu seguem como alternativa acessível (TalkBack). Terracota
+                    // reservado pro destrutivo (Remover), dentro do menu.
+                    ReorderableItem(reorderState, key = draft.id) { _ ->
+                    RodapeCard(modifier = Modifier.fillMaxWidth()) {
                         Row(verticalAlignment = Alignment.CenterVertically) {
+                            IconButton(
+                                onClick = {},
+                                modifier = Modifier.draggableHandle(),
+                            ) {
+                                Icon(
+                                    RodapeIcons.Bars,
+                                    contentDescription = "Arrastar pra reordenar",
+                                    tint = RodapeTheme.colors.muted,
+                                )
+                            }
                             Text(
                                 // Numero = posição na lista (recalculado ao salvar). O
                                 // id (uuid) é a identidade real; o numero é só ordem.
@@ -374,6 +392,7 @@ fun ManageChaptersScreen(
                                 }
                             }
                         }
+                    }
                     }
                 }
                 item {
