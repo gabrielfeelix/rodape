@@ -1,7 +1,9 @@
 package com.example.di
 
 import com.example.data.remote.repo.BookRepository
+import com.example.data.remote.repo.ClubRepository
 import com.example.data.remote.repo.DiscussionRepository
+import com.example.data.remote.repo.OfflineFirstClubRepository
 import com.example.data.remote.repo.OfflineFirstBookRepository
 import com.example.data.remote.repo.ModerationRepository
 import com.example.data.remote.repo.OfflineFirstDiscussionRepository
@@ -66,4 +68,8 @@ internal abstract class RepositoryModule {
     @Binds
     @Singleton
     abstract fun bindBookRepository(impl: OfflineFirstBookRepository): BookRepository
+
+    @Binds
+    @Singleton
+    abstract fun bindClubRepository(impl: OfflineFirstClubRepository): ClubRepository
 }

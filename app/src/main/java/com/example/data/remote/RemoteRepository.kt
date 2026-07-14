@@ -90,6 +90,7 @@ class RemoteRepository(
     private val meetingRepo = com.example.data.remote.repo.OfflineFirstMeetingRepository(engine)
     private val userRepo = com.example.data.remote.repo.OfflineFirstUserRepository(engine)
     private val bookRepo = com.example.data.remote.repo.OfflineFirstBookRepository(engine)
+    private val clubRepo = com.example.data.remote.repo.OfflineFirstClubRepository(engine)
 
     private val json = engine.json
     private val dao = engine.dao
@@ -153,357 +154,84 @@ class RemoteRepository(
     // CLUBS
     // ============================================================
 
-    fun getClubFlow(clubId: String): Flow<Club?> {
-        val reload: suspend () -> Unit = { syncClub(clubId); markSynced("club:$clubId") }
-        scope.launch { syncOnce("club:$clubId", Ttl.MED) { syncClub(clubId) } }
-        ensureRealtime("clubs", filterColumn = "id", filterValue = clubId, reload = reload)
-        return dao.clubFlow(clubId)
-    }
+    // F3c: movido pra repo/ClubRepository.kt (clubs+members+admin+RPCs) — fachada delega.
+    fun getClubFlow(clubId: String): Flow<Club?> = clubRepo.getClubFlow(clubId)
 
-    private suspend fun syncClub(clubId: String) {
-        val c = runCatching {
-            supabase.from("clubs").select {
-                filter { eq("id", clubId) }
-                limit(1)
-            }.decodeSingleOrNull<ClubDto>()?.toDomain()
-        }.getOrNull()
-        if (c != null) dao.upsertClub(c)
-    }
+    suspend fun getClub(clubId: String): Club? = clubRepo.getClub(clubId)
 
-    suspend fun getClub(clubId: String): Club? {
-        dao.club(clubId)?.let { return it }
-        syncClub(clubId)
-        return dao.club(clubId)
-    }
+    suspend fun getClubByCodigo(codigo: String): Club? = clubRepo.getClubByCodigo(codigo)
 
-    suspend fun getClubByCodigo(codigo: String): Club? = runCatching {
-        // Pra entrar em clube por codigo, busca direto no servidor (clube pode
-        // nao estar no cache local porque user nao e membro ainda).
-        val club = supabase.from("clubs").select {
-            filter { eq("codigo", codigo) }
-            limit(1)
-        }.decodeSingleOrNull<ClubDto>()?.toDomain()
-        // Nao cacheamos — RLS deve impedir acesso se nao for membro.
-        club
-    }.getOrNull()
+    fun getClubsForUser(userId: String): Flow<List<Club>> = clubRepo.getClubsForUser(userId)
 
-    fun getClubsForUser(userId: String): Flow<List<Club>> {
-        val reload: suspend () -> Unit = { syncClubsForUser(userId); markSynced("clubs:user:$userId") }
-        scope.launch { syncOnce("clubs:user:$userId", Ttl.MED) { syncClubsForUser(userId) } }
-        ensureRealtime("club_members", filterColumn = "user_id", filterValue = userId, reload = reload)
-        // clubs sem filtro dispararia reload a cada mudanca de QUALQUER clube publico;
-        // filtra pelo membership via club_members acima. Mantemos clubs filtrado por
-        // nada removido — mas com o reload escopado, o custo fica no membership.
-        return dao.clubsActiveFlow()
-    }
+    suspend fun getClubsForUserList(userId: String): List<Club> = clubRepo.getClubsForUserList(userId)
 
-    private suspend fun syncClubsForUser(userId: String) {
-        runCatching {
-            // Escopa por MEMBERSHIP (join club_members do usuario), em vez de baixar
-            // TODOS os clubes que o SELECT policy libera (publicos + os que sou membro).
-            // Antes o cliente cacheava clubes publicos que o usuario nunca entrou —
-            // poluia o switcher, o empty-state e a escolha de clube ativo.
-            val rows = supabase.from("club_members").select(Columns.raw("clubs!inner(*)")) {
-                filter { eq("user_id", userId) }
-            }.decodeList<JoinClubOnly>()
-            val list = rows.map { it.club.toDomain() }
-            dao.upsertClubs(list)
-            // Substitui: o que sumiu (saiu do clube) some do cache tambem.
-            dao.pruneClubsExcept(list.map { it.id })
-        }
-    }
+    suspend fun insertClub(club: Club) = clubRepo.insertClub(club)
 
-    @Serializable
-    private data class JoinClubOnly(@SerialName("clubs") val club: ClubDto)
+    suspend fun createClubViaRpc(nome: String, descricao: String?, cor: String, privacidade: String): String =
+        clubRepo.createClubViaRpc(nome, descricao, cor, privacidade)
 
-    suspend fun getClubsForUserList(userId: String): List<Club> = runCatching {
-        // Escopado por membership (nao por "todos nao-arquivados"). Usado pra
-        // escolher o proximo clube ativo ao sair/arquivar — nao pode cair num
-        // clube publico que o usuario nem e membro.
-        supabase.from("club_members").select(Columns.raw("clubs!inner(*)")) {
-            filter { eq("user_id", userId) }
-        }.decodeList<JoinClubOnly>().map { it.club.toDomain() }.filter { !it.arquivado }
-    }.getOrDefault(emptyList())
+    suspend fun joinClubWithCodeViaRpc(codigo: String): String? = clubRepo.joinClubWithCodeViaRpc(codigo)
 
-    suspend fun insertClub(club: Club) {
-        // App nao deve mais inserir clube diretamente — usa RPC create_club.
-        // Mantido como no-op pra preservar interface.
-    }
-
-    /** RPC: create_club. Retorna o UUID do novo clube.
-     *
-     *  A funcao Postgres `create_club` esta declarada como `RETURNS clubs`, ou
-     *  seja, devolve a ROW INTEIRA do novo clube como JSON (nao so o UUID).
-     *  Precisamos decodificar como JsonObject e extrair o campo `id`. Bug
-     *  anterior tratava o JSON inteiro como string -> filtros HTTP montavam
-     *  URL invalida (?id=eq.{json...}) -> 400 Bad Request silencioso e clube
-     *  ficava "perdido" pro cliente apesar de criado no banco. */
-    suspend fun createClubViaRpc(
-        nome: String,
-        descricao: String?,
-        cor: String,
-        privacidade: String,
-    ): String {
-        val resp = supabase.postgrest.rpc(
-            function = "create_club",
-            parameters = buildJsonObject {
-                put("p_nome", nome)
-                put("p_descricao", descricao ?: "")
-                put("p_cor", cor)
-                put("p_privacidade", privacidade)
-            },
-        ).data
-        return extractIdFromRpcRow(resp)
-            ?: error("create_club: resposta sem campo id: $resp")
-    }
-
-    /** RPC: join_club_with_code. Retorna ROW de club_members (campo `club_id`).
-     *  Mesmo padrao do create_club — extrai o id apos parsear.
-     *  PROPAGA excecao (codigo invalido / nao encontrado / sem rede) pra VM
-     *  distinguir os casos em vez de mostrar sempre "codigo errado". */
-    suspend fun joinClubWithCodeViaRpc(codigo: String): String? {
-        val resp = supabase.postgrest.rpc(
-            function = "join_club_with_code",
-            parameters = buildJsonObject { put("p_codigo", codigo.uppercase().trim()) }
-        ).data
-        return extractFieldFromRpcRow(resp, "club_id")
-    }
-
-    /** Parse helper: pega `id` da row retornada por uma RPC `RETURNS tabela`.
-     *  Resposta vem como JSON: '{"id":"uuid","nome":"...",...}'. Em casos
-     *  raros vem como array de 1 elemento: '[{"id":"uuid",...}]'. Tolera ambos. */
-    private fun extractIdFromRpcRow(raw: String): String? =
-        extractFieldFromRpcRow(raw, "id")
-
-    private fun extractFieldFromRpcRow(raw: String, field: String): String? {
-        if (raw.isBlank() || raw == "null") return null
-        return runCatching {
-            val element = json.parseToJsonElement(raw)
-            val obj = when (element) {
-                is JsonObject -> element
-                is kotlinx.serialization.json.JsonArray -> element.firstOrNull() as? JsonObject
-                else -> null
-            }
-            obj?.get(field)?.let { (it as? kotlinx.serialization.json.JsonPrimitive)?.contentOrNull }
-        }.getOrNull()
-    }
-
-    /** RPC: leave_club. PROPAGA excecao — o caller so pode trocar o clube ativo
-     *  APOS confirmar o sucesso. Antes engolia o erro e o app reportava "saiu"
-     *  mesmo quando falhava (e o clube reaparecia no proximo sync). */
-    suspend fun leaveClubViaRpc(clubId: String) {
-        supabase.postgrest.rpc("leave_club", buildJsonObject { put("p_club_id", clubId) })
-    }
+    suspend fun leaveClubViaRpc(clubId: String) = clubRepo.leaveClubViaRpc(clubId)
 
     // F3c: deleteOwnAccountViaRpc realocado pro UserRepository (é a conta do
     // usuário, não o clube) — fachada delega.
     suspend fun deleteOwnAccountViaRpc() = userRepo.deleteOwnAccountViaRpc()
 
-    /** RPC: regenerate_invite_code. PROPAGA excecao (antes retornava "" e a UI
-     *  mostrava "Novo codigo: " em branco). */
-    suspend fun regenerateInviteCodeViaRpc(clubId: String): String {
-        val resp = supabase.postgrest.rpc(
-            "regenerate_invite_code",
-            buildJsonObject { put("p_club_id", clubId) }
-        ).data
-        return resp.trim('"', ' ', '\n')
-    }
+    suspend fun regenerateInviteCodeViaRpc(clubId: String): String =
+        clubRepo.regenerateInviteCodeViaRpc(clubId)
 
-    /** RPC: promote_member. PROPAGA excecao (rede/RLS) pra UI mostrar o erro em
-     *  vez de reportar sucesso falso e nao mudar o papel. */
-    suspend fun promoteMemberViaRpc(clubId: String, targetUserId: String) {
-        supabase.postgrest.rpc("promote_member", buildJsonObject {
-            put("p_club_id", clubId); put("p_target_user_id", targetUserId)
-        })
-    }
+    suspend fun promoteMemberViaRpc(clubId: String, targetUserId: String) =
+        clubRepo.promoteMemberViaRpc(clubId, targetUserId)
 
-    /** RPC: demote_admin. PROPAGA excecao (ver promote). */
-    suspend fun demoteAdminViaRpc(clubId: String, targetUserId: String) {
-        supabase.postgrest.rpc("demote_admin", buildJsonObject {
-            put("p_club_id", clubId); put("p_target_user_id", targetUserId)
-        })
-    }
+    suspend fun demoteAdminViaRpc(clubId: String, targetUserId: String) =
+        clubRepo.demoteAdminViaRpc(clubId, targetUserId)
 
-    /** RPC: transfer_super_admin. PROPAGA excecao (invariante super_admin/RLS). */
-    suspend fun transferSuperAdminViaRpc(clubId: String, toUserId: String) {
-        supabase.postgrest.rpc("transfer_super_admin", buildJsonObject {
-            put("p_club_id", clubId); put("p_target_user_id", toUserId)
-        })
-    }
+    suspend fun transferSuperAdminViaRpc(clubId: String, toUserId: String) =
+        clubRepo.transferSuperAdminViaRpc(clubId, toUserId)
 
-    /** RPC: remove_member. PROPAGA excecao (ex: admin tentando remover admin) pra
-     *  UI mostrar o erro em vez de o toque nao fazer nada silenciosamente. */
-    suspend fun removeMemberViaRpc(clubId: String, targetUserId: String, motivo: String?) {
-        supabase.postgrest.rpc("remove_member", buildJsonObject {
-            put("p_club_id", clubId)
-            put("p_target_user_id", targetUserId)
-            put("p_motivo", motivo ?: "")
-        })
-    }
+    suspend fun removeMemberViaRpc(clubId: String, targetUserId: String, motivo: String?) =
+        clubRepo.removeMemberViaRpc(clubId, targetUserId, motivo)
 
     // F3c: closeVotingRoundViaRpc realocado pro VotingRepository (estava
     // fisicamente em CLUBS — mapa §2 nota) — fachada delega.
     suspend fun closeVotingRoundViaRpc(roundId: String) = votingRepo.closeVotingRoundViaRpc(roundId)
 
-    // ============================================================
-    // CLUB MEMBERS
-    // ============================================================
+    suspend fun insertClubMember(member: ClubMember) = clubRepo.insertClubMember(member)
 
-    suspend fun insertClubMember(member: ClubMember) {
-        // Nao inserimos membro diretamente — RPCs (create_club / join_club_with_code)
-        // ja cuidam. Manter no-op preserva interface.
-    }
+    fun getClubMembersFlow(clubId: String): Flow<List<User>> = clubRepo.getClubMembersFlow(clubId)
 
-    fun getClubMembersFlow(clubId: String): Flow<List<User>> {
-        val key = "members:$clubId"
-        val reload: suspend () -> Unit = { syncClubMembers(clubId); markSynced(key) }
-        scope.launch { syncOnce(key, Ttl.MED) { syncClubMembers(clubId) } }
-        ensureRealtime("club_members", filterColumn = "club_id", filterValue = clubId, reload = reload)
-        return dao.memberUsersInClubFlow(clubId)
-    }
+    suspend fun getClubMember(clubId: String, userId: String): ClubMember? =
+        clubRepo.getClubMember(clubId, userId)
 
-    private suspend fun syncClubMembers(clubId: String) {
-        runCatching {
-            val rows = supabase.from("club_members").select(Columns.raw("user_id, papel, entrou_em, profiles!inner(*)")) {
-                filter { eq("club_id", clubId) }
-            }.decodeList<JoinMemberProfile>()
-            val users = rows.map { it.profile.toDomain() }
-            val members = rows.map { row ->
-                ClubMember(
-                    clubId = clubId,
-                    userId = row.userId,
-                    papel = row.papel ?: "member",
-                    entrouEm = row.entrouEm.fromIso(),
-                )
-            }
-            dao.replaceMembersInClub(clubId, members, users)
-        }
-    }
+    suspend fun getClubMembersListOrderedByJoin(clubId: String): List<ClubMember> =
+        clubRepo.getClubMembersListOrderedByJoin(clubId)
 
-    @Serializable
-    private data class JoinMemberProfile(
-        @SerialName("user_id") val userId: String,
-        val papel: String? = null,
-        @SerialName("entrou_em") val entrouEm: String? = null,
-        @SerialName("profiles") val profile: ProfileDto,
-    )
+    fun getClubMembersRawFlow(clubId: String): Flow<List<ClubMember>> =
+        clubRepo.getClubMembersRawFlow(clubId)
 
-    suspend fun getClubMember(clubId: String, userId: String): ClubMember? {
-        dao.member(clubId, userId)?.let { return it }
-        return runCatching {
-            supabase.from("club_members").select {
-                filter {
-                    eq("club_id", clubId)
-                    eq("user_id", userId)
-                }
-                limit(1)
-            }.decodeSingleOrNull<ClubMemberDto>()?.toDomain()
-                ?.also { dao.upsertMembers(listOf(it)) }
-        }.getOrNull()
-    }
+    suspend fun updateMemberPapel(clubId: String, userId: String, papel: String) =
+        clubRepo.updateMemberPapel(clubId, userId, papel)
 
-    suspend fun getClubMembersListOrderedByJoin(clubId: String): List<ClubMember> = runCatching {
-        supabase.from("club_members").select {
-            filter { eq("club_id", clubId) }
-            order("entrou_em", Order.ASCENDING)
-        }.decodeList<ClubMemberDto>().map { it.toDomain() }
-    }.getOrDefault(emptyList())
+    suspend fun deleteClubMember(clubId: String, userId: String) =
+        clubRepo.deleteClubMember(clubId, userId)
 
-    fun getClubMembersRawFlow(clubId: String): Flow<List<ClubMember>> {
-        val reload: suspend () -> Unit = { syncClubMembers(clubId) }
-        scope.launch { runCatching { reload() } }
-        ensureRealtime("club_members", filterColumn = "club_id", filterValue = clubId, reload = reload)
-        return dao.membersInClubFlow(clubId)
-    }
+    suspend fun insertMemberRemoval(removal: MemberRemoval) = clubRepo.insertMemberRemoval(removal)
 
-    suspend fun updateMemberPapel(clubId: String, userId: String, papel: String) {
-        // RLS bloqueia update direto de papel — use as RPCs *ViaRpc.
-        // Caminho legado: o MainViewModel chama updateMemberPapel diretamente em alguns
-        // fluxos (transferir super_admin). Mantemos um update direto que so funciona se
-        // o usuario tiver permissao via RLS (caller_role super_admin).
-        runCatching {
-            supabase.from("club_members").update({ set("papel", papel) }) {
-                filter {
-                    eq("club_id", clubId)
-                    eq("user_id", userId)
-                }
-            }
-            notifyLocalMutation("club_members")
-        }
-    }
+    fun getMemberRemovalsForClubFlow(clubId: String): Flow<List<MemberRemoval>> =
+        clubRepo.getMemberRemovalsForClubFlow(clubId)
 
-    suspend fun deleteClubMember(clubId: String, userId: String) {
-        runCatching {
-            supabase.from("club_members").delete {
-                filter {
-                    eq("club_id", clubId)
-                    eq("user_id", userId)
-                }
-            }
-            notifyLocalMutation("club_members")
-        }
-    }
+    suspend fun updateClubInfo(clubId: String, nome: String, descricao: String, cor: String, privacidade: String) =
+        clubRepo.updateClubInfo(clubId, nome, descricao, cor, privacidade)
 
-    suspend fun insertMemberRemoval(removal: MemberRemoval) {
-        // RPC remove_member ja cuida disso. Mantido no-op.
-    }
+    suspend fun updateClubCodigo(clubId: String, codigo: String) =
+        clubRepo.updateClubCodigo(clubId, codigo)
 
-    fun getMemberRemovalsForClubFlow(clubId: String): Flow<List<MemberRemoval>> {
-        scope.launch {
-            runCatching {
-                val list = supabase.from("member_removals").select {
-                    filter { eq("club_id", clubId) }
-                    order("removed_at", Order.DESCENDING)
-                }.decodeList<MemberRemovalDto>().map { it.toDomain() }
-                dao.upsertMemberRemovals(list)
-            }
-        }
-        return dao.memberRemovalsForClubFlow(clubId)
-    }
+    suspend fun updateClubArquivado(clubId: String, arquivado: Boolean) =
+        clubRepo.updateClubArquivado(clubId, arquivado)
 
-    // ============================================================
-    // CLUB ADMIN
-    // ============================================================
-
-    suspend fun updateClubInfo(clubId: String, nome: String, descricao: String, cor: String, privacidade: String) {
-        runCatching {
-            supabase.from("clubs").update({
-                set("nome", nome)
-                set("descricao", descricao)
-                set("cor", cor)
-                set("privacidade", privacidade)
-            }) { filter { eq("id", clubId) } }
-        }
-    }
-
-    suspend fun updateClubCodigo(clubId: String, codigo: String) {
-        // Use a RPC regenerateInviteCodeViaRpc em vez deste path.
-        runCatching {
-            supabase.from("clubs").update({ set("codigo", codigo) }) {
-                filter { eq("id", clubId) }
-            }
-        }
-    }
-
-    suspend fun updateClubArquivado(clubId: String, arquivado: Boolean) {
-        runCatching {
-            supabase.from("clubs").update({ set("arquivado", arquivado) }) {
-                filter { eq("id", clubId) }
-            }
-        }
-    }
-
-    fun getArchivedClubsForUserFlow(userId: String): Flow<List<Club>> {
-        scope.launch {
-            runCatching {
-                val list = supabase.from("clubs").select {
-                    filter { eq("arquivado", true) }
-                }.decodeList<ClubDto>().map { it.toDomain() }
-                dao.upsertClubs(list)
-            }
-        }
-        return dao.clubsArchivedFlow()
-    }
+    fun getArchivedClubsForUserFlow(userId: String): Flow<List<Club>> =
+        clubRepo.getArchivedClubsForUserFlow(userId)
 
     // ============================================================
     // BOOKS / CLUB_BOOKS
