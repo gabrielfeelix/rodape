@@ -7,7 +7,12 @@ import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.LiveRegionMode
 import androidx.compose.ui.semantics.liveRegion
 import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.foundation.border
+import androidx.compose.ui.draw.drawBehind
+import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.graphics.PathEffect
+import androidx.compose.ui.text.font.FontStyle
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.shape.CircleShape
@@ -113,68 +118,99 @@ fun MeetingDetailScreen(
             verticalArrangement = Arrangement.spacedBy(16.dp),
             contentPadding = PaddingValues(vertical = 16.dp)
         ) {
-            // Header card
+            // Header = CANHOTO EXPANDIDO do ticket (3.2): quem toca no ticket da
+            // NextTab reencontra o mesmo objeto aqui — olivaDeep, day-stamp serif
+            // e linha picotada embaixo. Concluído rebaixa pra neutro (memória).
             item {
+                val headerBg = if (concluded) RodapeTheme.colors.dividerSoft.copy(alpha = 0.4f)
+                    else RodapeTheme.colors.olivaDeep
+                val headerFg = if (concluded) RodapeTheme.colors.muted else RodapeTheme.colors.cream
+                val dateParts = m.data.split(",")
+                val hWeekday = dateParts.firstOrNull()?.trim()?.uppercase()?.take(3) ?: ""
+                val hRest = dateParts.getOrNull(1)?.trim() ?: m.data.trim()
+                val hDay = hRest.takeWhile { it.isDigit() }.ifEmpty { "–" }
+                val hMonth = hRest.dropWhile { it.isDigit() }.trim().lowercase()
+                    .removePrefix("de ").trim().take(3)
                 Row(
                     modifier = Modifier
                         .fillMaxWidth()
+                        .then(if (concluded) Modifier else Modifier.ticketShadow(cornerRadius = RodapeRadii.md))
                         .clip(RoundedCornerShape(RodapeRadii.md))
-                        .background(if (concluded) RodapeTheme.colors.dividerSoft.copy(alpha = 0.3f) else RodapeTheme.colors.cream)
-                        .padding(16.dp),
-                    verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.spacedBy(14.dp)
-                ) {
-                    Box(
-                        modifier = Modifier
-                            .size(64.dp)
-                            .clip(RoundedCornerShape(RodapeRadii.sm))
-                            .background(
-                                if (concluded) RodapeTheme.colors.muted.copy(alpha = 0.15f)
-                                else RodapeTheme.colors.terracota.copy(alpha = 0.12f)
-                            ),
-                        contentAlignment = Alignment.Center
-                    ) {
-                        val dayNumber = m.data
-                            .substringAfter(",", "")
-                            .trim()
-                            .takeWhile { it.isDigit() }
-                            .ifEmpty { m.data.trim().takeWhile { it.isDigit() }.ifEmpty { "—" } }
-                        Text(
-                            text = dayNumber,
-                            style = MaterialTheme.typography.displayMedium.copy(
-                                fontSize = 26.sp,
-                                fontWeight = FontWeight.Bold,
-                                color = if (concluded) RodapeTheme.colors.muted else RodapeTheme.colors.terracota,
-                                fontFamily = LiterataFontFamily
+                        .background(headerBg)
+                        .drawBehind {
+                            drawLine(
+                                color = headerFg.copy(alpha = 0.35f),
+                                start = Offset(0f, size.height - 0.5.dp.toPx()),
+                                end = Offset(size.width, size.height - 0.5.dp.toPx()),
+                                strokeWidth = 1.dp.toPx(),
+                                pathEffect = PathEffect.dashPathEffect(
+                                    floatArrayOf(4.dp.toPx(), 4.dp.toPx())
+                                ),
                             )
+                        }
+                        .padding(horizontal = 20.dp, vertical = 16.dp),
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(16.dp)
+                ) {
+                    // Day-stamp tipografado — mesmo motivo do ticket.
+                    Column(
+                        horizontalAlignment = Alignment.CenterHorizontally,
+                        modifier = Modifier.semantics(mergeDescendants = true) {
+                            contentDescription = "${m.data}, ${m.hora}"
+                        },
+                    ) {
+                        Text(
+                            text = hWeekday,
+                            fontFamily = InterFontFamily,
+                            fontSize = 10.sp,
+                            fontWeight = FontWeight.Bold,
+                            letterSpacing = 2.sp,
+                            color = headerFg.copy(alpha = 0.65f),
+                            maxLines = 1,
+                        )
+                        Text(
+                            text = hDay,
+                            fontFamily = LiterataFontFamily,
+                            fontStyle = FontStyle.Italic,
+                            fontWeight = FontWeight.Medium,
+                            fontSize = 40.sp,
+                            lineHeight = 40.sp,
+                            letterSpacing = (-1).sp,
+                            color = headerFg,
+                        )
+                        Text(
+                            text = hMonth,
+                            fontFamily = LiterataFontFamily,
+                            fontStyle = FontStyle.Italic,
+                            fontSize = 13.sp,
+                            color = headerFg.copy(alpha = 0.85f),
+                            maxLines = 1,
                         )
                     }
                     Column(modifier = Modifier.weight(1f)) {
-                        Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(6.dp)) {
-                            Text(
-                                text = m.data,
-                                style = MaterialTheme.typography.titleMedium.copy(
-                                    fontFamily = LiterataFontFamily,
-                                    fontWeight = FontWeight.SemiBold,
-                                    color = if (concluded) RodapeTheme.colors.muted else RodapeTheme.colors.ink
-                                ),
-                                modifier = Modifier.weight(1f, fill = false)
-                            )
-                            if (concluded) {
-                                Pill(text = "Concluído", variant = PillVariant.Olive)
-                            }
+                        if (concluded) {
+                            Pill(text = "Concluído", variant = PillVariant.Olive)
+                            Spacer(modifier = Modifier.height(4.dp))
                         }
-                        Text(m.hora, style = MaterialTheme.typography.bodyMedium.copy(color = RodapeTheme.colors.muted))
+                        Text(
+                            text = m.data,
+                            style = MaterialTheme.typography.titleMedium.copy(
+                                fontFamily = LiterataFontFamily,
+                                fontWeight = FontWeight.SemiBold,
+                                color = headerFg
+                            ),
+                        )
+                        Text(m.hora, style = MaterialTheme.typography.bodyMedium.copy(color = headerFg.copy(alpha = 0.85f)))
                         Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(4.dp)) {
-                            Icon(RodapeIcons.Pin, contentDescription = null, tint = RodapeTheme.colors.muted, modifier = Modifier.size(14.dp))
-                            Text(m.local, style = MaterialTheme.typography.bodySmall.copy(color = RodapeTheme.colors.muted))
+                            Icon(RodapeIcons.Pin, contentDescription = null, tint = headerFg.copy(alpha = 0.7f), modifier = Modifier.size(14.dp))
+                            Text(m.local, style = MaterialTheme.typography.bodySmall.copy(color = headerFg.copy(alpha = 0.85f)))
                         }
                         if (m.chapterStart != null && m.chapterEnd != null) {
                             Spacer(modifier = Modifier.height(4.dp))
                             Text(
                                 text = "Caps ${m.chapterStart}–${m.chapterEnd}",
                                 style = MaterialTheme.typography.labelSmall.copy(
-                                    color = RodapeTheme.colors.terracota,
+                                    color = if (concluded) RodapeTheme.colors.terracota else RodapeTheme.colors.olivaSoft,
                                     fontWeight = FontWeight.SemiBold
                                 )
                             )
