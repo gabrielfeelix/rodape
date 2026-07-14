@@ -1643,11 +1643,10 @@ private fun OpenVotingSheet(
 
             Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
                 Text("Qual a cadência?", style = MaterialTheme.typography.bodyLarge.copy(fontWeight = FontWeight.SemiBold))
-                // FlowRow pra acomodar 7 opcoes em 2 linhas em phone, 1 linha em tablet.
-                androidx.compose.foundation.layout.FlowRow(
-                    horizontalArrangement = Arrangement.spacedBy(8.dp),
-                    verticalArrangement = Arrangement.spacedBy(8.dp),
-                ) {
+                // Wrap próprio pra acomodar 7 opcoes em 2 linhas em phone, 1 linha em
+                // tablet. (FlowRow do foundation crashava em runtime com
+                // NoSuchMethodError — assinatura experimental mudou entre versões.)
+                WrapRow(spacing = 8.dp) {
                     val opcoes = listOf(
                         "unica" to "Única",
                         "semanal" to "Semanal",
@@ -1672,6 +1671,43 @@ private fun OpenVotingSheet(
                 TbButton(text = "Abrir votação", onClick = { onConfirm(n, dias, cadencia) }, variant = TbButtonVariant.Terra, modifier = Modifier.weight(1f))
             }
             Spacer(modifier = Modifier.height(8.dp))
+        }
+    }
+}
+
+/**
+ * Wrap horizontal minimalista: quebra os filhos em linhas quando não cabem,
+ * com [spacing] uniforme. Substitui o FlowRow experimental do foundation,
+ * cuja assinatura binária mudou entre versões (NoSuchMethodError em runtime).
+ */
+@Composable
+private fun WrapRow(
+    spacing: androidx.compose.ui.unit.Dp,
+    modifier: Modifier = Modifier,
+    content: @Composable () -> Unit,
+) {
+    androidx.compose.ui.layout.Layout(content = content, modifier = modifier) { measurables, constraints ->
+        val gap = spacing.roundToPx()
+        val maxW = constraints.maxWidth
+        val placeables = measurables.map { it.measure(constraints.copy(minWidth = 0, minHeight = 0)) }
+        var x = 0
+        var y = 0
+        var lineH = 0
+        val positions = placeables.map { p ->
+            if (x > 0 && x + p.width > maxW) {
+                x = 0
+                y += lineH + gap
+                lineH = 0
+            }
+            val pos = x to y
+            x += p.width + gap
+            lineH = maxOf(lineH, p.height)
+            pos
+        }
+        layout(maxW, y + lineH) {
+            placeables.forEachIndexed { i, p ->
+                p.placeRelative(positions[i].first, positions[i].second)
+            }
         }
     }
 }
