@@ -34,11 +34,20 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.unit.Density
+import androidx.compose.animation.EnterTransition
+import androidx.compose.animation.ExitTransition
+import androidx.compose.animation.core.tween
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.slideInHorizontally
+import androidx.compose.animation.slideOutHorizontally
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 import com.example.ui.screens.*
+import com.example.ui.theme.LocalReducedMotion
 import com.example.ui.theme.MyApplicationTheme
+import com.example.ui.theme.RodapeMotion
 import com.example.ui.viewmodel.MainViewModel
 import kotlinx.coroutines.launch
 
@@ -150,9 +159,38 @@ class MainActivity : ComponentActivity() {
                         }
                     }
 
+                    // Transições padrão de navegação (2.7): direcionais — avançar
+                    // desliza da direita (slide 1/5 + fade, emphasizedDecelerate),
+                    // voltar devolve pra direita (accelerate). O eixo comunica a
+                    // hierarquia; antes as trocas de tela eram secas. Os lambdas de
+                    // transição NÃO são @Composable, então reduced-motion é lido
+                    // aqui fora e capturado (vira None = instantâneo).
+                    val reducedMotionNav = LocalReducedMotion.current
                     NavHost(
                         navController = navController,
-                        startDestination = "welcome"
+                        startDestination = "welcome",
+                        enterTransition = {
+                            if (reducedMotionNav) EnterTransition.None
+                            else slideInHorizontally(
+                                animationSpec = tween(RodapeMotion.Dur.emphasized, easing = RodapeMotion.Ease.emphasizedDecelerate),
+                                initialOffsetX = { it / 5 },
+                            ) + fadeIn(tween(RodapeMotion.Dur.standard))
+                        },
+                        exitTransition = {
+                            if (reducedMotionNav) ExitTransition.None
+                            else fadeOut(tween(RodapeMotion.Dur.fast))
+                        },
+                        popEnterTransition = {
+                            if (reducedMotionNav) EnterTransition.None
+                            else fadeIn(tween(RodapeMotion.Dur.standard))
+                        },
+                        popExitTransition = {
+                            if (reducedMotionNav) ExitTransition.None
+                            else slideOutHorizontally(
+                                animationSpec = tween(RodapeMotion.Dur.emphasized, easing = RodapeMotion.Ease.emphasizedAccelerate),
+                                targetOffsetX = { it / 5 },
+                            ) + fadeOut(tween(RodapeMotion.Dur.standard))
+                        },
                     ) {
                     composable("welcome") {
                         // Intro de primeiro uso antes do welcome. introSeen == null:
