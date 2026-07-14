@@ -37,9 +37,18 @@ import com.example.data.model.*
 import com.example.ui.components.*
 import com.example.ui.theme.*
 import androidx.compose.animation.AnimatedContent
+import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.animateColorAsState
+import androidx.compose.animation.core.Animatable
+import androidx.compose.animation.core.Spring
+import androidx.compose.animation.core.spring
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
+import androidx.compose.animation.scaleIn
 import androidx.compose.animation.togetherWith
+import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.ui.hapticfeedback.HapticFeedbackType
+import androidx.compose.ui.platform.LocalHapticFeedback
 import com.example.ui.viewmodel.MainViewModel
 
 @Composable
@@ -477,6 +486,8 @@ fun EncontroTab(
                     )
                     Spacer(modifier = Modifier.height(16.dp))
 
+                    val haptics = LocalHapticFeedback.current
+                    val rsvpReduceMotion = reduceMotion()
                     Row(
                         modifier = Modifier.fillMaxWidth(),
                         horizontalArrangement = Arrangement.spacedBy(8.dp)
@@ -484,17 +495,54 @@ fun EncontroTab(
                         listOf("Vou", "Talvez", "Não vou").forEach { statusOption ->
                             val isSelected = userStatus == statusOption
 
+                            // "Carimbo" de RSVP: cores animadas + punch de escala
+                            // (afunda 0.92 e volta de mola) + check com scale-in +
+                            // háptico. O punch só dispara em MUDANÇA real de seleção
+                            // (guard da 1ª composição) — não ao entrar na tela.
+                            val pillBg by animateColorAsState(
+                                targetValue = if (isSelected) RodapeTheme.colors.ink else RodapeTheme.colors.ink.copy(alpha = 0f),
+                                animationSpec = rodapeTween(RodapeMotion.Dur.standard),
+                                label = "rsvpBg",
+                            )
+                            val pillFg by animateColorAsState(
+                                targetValue = if (isSelected) RodapeTheme.colors.cream else RodapeTheme.colors.tertiary,
+                                animationSpec = rodapeTween(RodapeMotion.Dur.standard),
+                                label = "rsvpFg",
+                            )
+                            val stampScale = remember { Animatable(1f) }
+                            var stampArmed by remember { mutableStateOf(false) }
+                            LaunchedEffect(isSelected) {
+                                if (!stampArmed) { stampArmed = true; return@LaunchedEffect }
+                                if (isSelected && !rsvpReduceMotion) {
+                                    stampScale.snapTo(0.92f)
+                                    stampScale.animateTo(
+                                        1f,
+                                        spring(
+                                            dampingRatio = Spring.DampingRatioMediumBouncy,
+                                            stiffness = Spring.StiffnessMedium,
+                                        ),
+                                    )
+                                }
+                            }
+
                             Box(
                                 modifier = Modifier
                                     .weight(1f)
                                     .height(48.dp)
+                                    .graphicsLayer {
+                                        scaleX = stampScale.value
+                                        scaleY = stampScale.value
+                                    }
                                     .clip(RoundedCornerShape(RodapeRadii.full))
-                                    .background(if (isSelected) RodapeTheme.colors.ink else Color.Transparent)
+                                    .background(pillBg)
                                     // A11y: anuncia "selecionado" e papel de opção única.
                                     .selectable(
                                         selected = isSelected,
                                         role = Role.RadioButton,
-                                        onClick = { viewModel.rsvpMeeting(meeting!!.id, statusOption) },
+                                        onClick = {
+                                            haptics.performHapticFeedback(HapticFeedbackType.LongPress)
+                                            viewModel.rsvpMeeting(meeting!!.id, statusOption)
+                                        },
                                     )
                                     // C1: a opção escolhida anuncia a mudança (RSVP salvo).
                                     .semantics { if (isSelected) liveRegion = LiveRegionMode.Polite }
@@ -505,11 +553,29 @@ fun EncontroTab(
                                     ),
                                 contentAlignment = Alignment.Center
                             ) {
-                                Text(
-                                    text = statusOption,
-                                    color = if (isSelected) RodapeTheme.colors.cream else RodapeTheme.colors.tertiary,
-                                    style = MaterialTheme.typography.bodyLarge.copy(fontWeight = FontWeight.Medium)
-                                )
+                                Row(
+                                    verticalAlignment = Alignment.CenterVertically,
+                                    horizontalArrangement = Arrangement.spacedBy(4.dp),
+                                ) {
+                                    AnimatedVisibility(
+                                        visible = isSelected,
+                                        enter = scaleIn(
+                                            rodapeSpring(dampingRatio = Spring.DampingRatioMediumBouncy)
+                                        ) + fadeIn(rodapeTween(RodapeMotion.Dur.fast)),
+                                    ) {
+                                        Icon(
+                                            imageVector = RodapeIcons.Check,
+                                            contentDescription = null,
+                                            tint = pillFg,
+                                            modifier = Modifier.size(16.dp),
+                                        )
+                                    }
+                                    Text(
+                                        text = statusOption,
+                                        color = pillFg,
+                                        style = MaterialTheme.typography.bodyLarge.copy(fontWeight = FontWeight.Medium)
+                                    )
+                                }
                             }
                         }
                     }

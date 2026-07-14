@@ -101,6 +101,9 @@ import androidx.compose.animation.AnimatedContent
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.animateColorAsState
 import androidx.compose.animation.togetherWith
+import androidx.compose.foundation.Canvas
+import androidx.compose.ui.graphics.drawscope.Stroke
+import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.animation.core.Spring
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.expandHorizontally
@@ -999,12 +1002,46 @@ private fun ClubSetupChecklist(
                         )
                     )
                 }
+                // Badge doneCount virou ANEL de progresso: o arco enche
+                // (emphasizedDecelerate) conforme os passos concluem.
+                val ringFraction by animateFloatAsState(
+                    targetValue = if (steps.isEmpty()) 0f else doneCount.toFloat() / steps.size,
+                    animationSpec = rodapeTween(
+                        durationMillis = RodapeMotion.Dur.emphasized,
+                        easing = RodapeMotion.Ease.emphasizedDecelerate,
+                    ),
+                    label = "checklistRing",
+                )
+                val ringTrack = RodapeTheme.colors.olivaSoft
+                val ringFill = RodapeTheme.colors.oliva
                 Box(
                     modifier = Modifier
                         .size(46.dp)
                         .background(RodapeTheme.colors.olivaSoft, CircleShape),
                     contentAlignment = Alignment.Center
                 ) {
+                    Canvas(modifier = Modifier.fillMaxSize()) {
+                        val stroke = 3.dp.toPx()
+                        val inset = stroke / 2
+                        drawArc(
+                            color = ringTrack,
+                            startAngle = -90f,
+                            sweepAngle = 360f,
+                            useCenter = false,
+                            topLeft = androidx.compose.ui.geometry.Offset(inset, inset),
+                            size = androidx.compose.ui.geometry.Size(size.width - stroke, size.height - stroke),
+                            style = Stroke(width = stroke),
+                        )
+                        drawArc(
+                            color = ringFill,
+                            startAngle = -90f,
+                            sweepAngle = 360f * ringFraction,
+                            useCenter = false,
+                            topLeft = androidx.compose.ui.geometry.Offset(inset, inset),
+                            size = androidx.compose.ui.geometry.Size(size.width - stroke, size.height - stroke),
+                            style = Stroke(width = stroke, cap = StrokeCap.Round),
+                        )
+                    }
                     Text(
                         text = "$doneCount/${steps.size}",
                         style = MaterialTheme.typography.labelLarge.copy(
@@ -1016,6 +1053,10 @@ private fun ClubSetupChecklist(
                 }
             }
 
+            // Specs das animações do passo — hoisteados (transitionSpec não é
+            // contexto @Composable) e criados UMA vez fora do loop.
+            val stepCheckEnter = rodapeSpring<Float>(dampingRatio = Spring.DampingRatioMediumBouncy)
+            val stepCheckFade = rodapeTween<Float>(RodapeMotion.Dur.fast)
             Column {
                 steps.forEachIndexed { i, step ->
                     val isNext = i == nextIndex
@@ -1027,46 +1068,77 @@ private fun ClubSetupChecklist(
                             .then(if (isNext) Modifier.clickable { step.onClick() } else Modifier)
                     ) {
                         Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                            // Círculo MORFANDO cream→terracota→oliva (era troca seca)
+                            // + número↔check trocando com mola.
+                            val circleColor by animateColorAsState(
+                                targetValue = when {
+                                    step.done -> RodapeTheme.colors.oliva
+                                    isNext -> RodapeTheme.colors.terracota
+                                    else -> RodapeTheme.colors.cream
+                                },
+                                animationSpec = rodapeTween(RodapeMotion.Dur.emphasized),
+                                label = "stepCircle",
+                            )
                             Box(
                                 modifier = Modifier
                                     .size(32.dp)
-                                    .background(
-                                        color = when {
-                                            step.done -> RodapeTheme.colors.oliva
-                                            isNext -> RodapeTheme.colors.terracota
-                                            else -> RodapeTheme.colors.cream
-                                        },
-                                        shape = CircleShape
-                                    )
+                                    .background(color = circleColor, shape = CircleShape)
                                     .then(
                                         if (!step.done && !isNext) Modifier.border(1.5.dp, RodapeTheme.colors.divider, CircleShape)
                                         else Modifier
                                     ),
                                 contentAlignment = Alignment.Center
                             ) {
-                                if (step.done) {
-                                    Text(
-                                        text = "✓",
-                                        color = RodapeTheme.colors.cream,
-                                        style = MaterialTheme.typography.labelLarge.copy(fontWeight = FontWeight.Bold)
-                                    )
-                                } else {
-                                    Text(
-                                        text = "${i + 1}",
-                                        style = MaterialTheme.typography.labelLarge.copy(
-                                            fontWeight = FontWeight.Bold,
-                                            color = if (isNext) RodapeTheme.colors.cream else RodapeTheme.colors.muted
+                                AnimatedContent(
+                                    targetState = step.done,
+                                    transitionSpec = {
+                                        (scaleIn(stepCheckEnter) + fadeIn(stepCheckFade)) togetherWith
+                                            fadeOut(stepCheckFade)
+                                    },
+                                    label = "stepMark",
+                                ) { done ->
+                                    if (done) {
+                                        Icon(
+                                            imageVector = RodapeIcons.Check,
+                                            contentDescription = null,
+                                            tint = RodapeTheme.colors.cream,
+                                            modifier = Modifier.size(16.dp),
                                         )
-                                    )
+                                    } else {
+                                        Text(
+                                            text = "${i + 1}",
+                                            style = MaterialTheme.typography.labelLarge.copy(
+                                                fontWeight = FontWeight.Bold,
+                                                color = if (isNext) RodapeTheme.colors.cream else RodapeTheme.colors.muted
+                                            )
+                                        )
+                                    }
                                 }
                             }
                             if (!isLast) {
+                                // Conector ENCHENDO de cima pra baixo quando o passo
+                                // conclui (trilho divider por baixo, fill oliva por cima).
+                                val connectorFill by animateFloatAsState(
+                                    targetValue = if (step.done) 1f else 0f,
+                                    animationSpec = rodapeTween(
+                                        durationMillis = RodapeMotion.Dur.emphasized,
+                                        easing = RodapeMotion.Ease.emphasizedDecelerate,
+                                    ),
+                                    label = "stepConnector",
+                                )
                                 Box(
                                     modifier = Modifier
                                         .width(2.dp)
                                         .height(26.dp)
-                                        .background(if (step.done) RodapeTheme.colors.oliva else RodapeTheme.colors.divider)
-                                )
+                                        .background(RodapeTheme.colors.divider)
+                                ) {
+                                    Box(
+                                        modifier = Modifier
+                                            .fillMaxWidth()
+                                            .fillMaxHeight(connectorFill)
+                                            .background(RodapeTheme.colors.oliva)
+                                    )
+                                }
                             }
                         }
 
