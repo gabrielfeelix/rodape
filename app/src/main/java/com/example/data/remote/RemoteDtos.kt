@@ -54,6 +54,18 @@ internal data class ProfileDto(
     )
 }
 
+// Update parcial do profile do usuário logado (insertUser + handler upsert_profile).
+// Era nested privado no RemoteRepository; virou internal no F3b porque o handler
+// mora na SyncEngine e o caminho online continua no repository.
+@Serializable
+internal data class ProfileUpdateDto(
+    val id: String,
+    val nome: String,
+    val sobrenome: String? = null,
+    @SerialName("avatar_key") val avatarKey: String,
+    val pronome: String? = null,
+)
+
 // ---- clubs ----
 @Serializable
 internal data class ClubDto(
