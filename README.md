@@ -6,6 +6,34 @@ e discutam capítulo por capítulo sem estragar a leitura de quem está atrasado
 
 > Nome oficial e definitivo do produto: **Rodapé**.
 
+---
+
+## ⚠️ Situação atual (para agentes/devs — leia antes de mexer)
+
+_Atualizado 2026-07-14._
+
+**1. Chave de upload do Play foi RECRIADA (a original se perdeu).** Play App Signing está
+ligado → a chave de assinatura do app (do Google) está intacta; só a chave de UPLOAD
+(`my-upload-key.jks`, gitignored) foi resetada via Play Console. **Reset ativa ~16/07/2026**
+(trava automática de 48h). Antes disso NÃO dá pra subir AAB novo.
+- ⏳ **Ação humana pendente:** backup da `my-upload-key.jks` + senhas (`.env`) num gerenciador.
+- ⏳ **Dia 16:** subir o AAB `versionCode 20` em Teste interno → baixar no cel.
+- Detalhe + fingerprints: [`docs/release/PLAYSTORE-CHECKLIST.md`](docs/release/PLAYSTORE-CHECKLIST.md).
+
+**2. Refactor de arquitetura em andamento (strangler-fig).** F1→F4a + F3c feitos: kernel
+offline extraído (`SyncEngine`), Hilt scaffolding, e os 10 repos de domínio fatiados da
+god-repo (`RemoteRepository` foi de 2654→574 linhas, virou fachada). **Próximo: F4b
+SessionManager + F5 (VMs por tela).**
+- ⚠️ **Backbone offline (F3b) + F3c ainda NÃO testados em device** — o vc20 (F3b+F4a) é o
+  teste do dia 16; F3c entra em vc21+ depois. NÃO empilhar mudança no backbone assumindo
+  que está validado.
+- Ponto de partida obrigatório pro próximo agente: [`docs/arch/HANDOFF-refactor.md`](docs/arch/HANDOFF-refactor.md).
+
+**3. Build (RAM apertada, 11Gi WSL):** compilar com `--no-daemon -Pkotlin.compiler.execution.strategy=in-process`
+(o daemon separado crashava). `gradle.jvmargs=-Xmx3g`. Limpar daemons após cada build.
+
+---
+
 ## Funcionalidades
 
 - Cadastro/login por email+senha ou Google Sign-In
