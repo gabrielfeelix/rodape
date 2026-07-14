@@ -157,6 +157,10 @@ Conteúdo já pronto pra colar:
 > - Backup automático do Android desligado pra não vazar conteúdo do clube em backups pessoais
 >
 > Política de privacidade: https://github.com/gabrielfeelix/rodape/blob/master/docs/privacy/privacy-policy.md
+> Termos de uso: https://github.com/gabrielfeelix/rodape/blob/master/docs/legal/termos-de-uso.md
+>
+> **Segurança da comunidade:** o Rodapé tem ferramentas de denúncia e bloqueio,
+> e administradores de clube moderam o conteúdo. Tolerância zero a conteúdo abusivo.
 
 ### 8. Ativos gráficos necessários
 
@@ -178,25 +182,54 @@ Tudo o que a Play Store **exige**:
 5. Votação no próximo livro
 6. Tela de criar/escolher clube
 
-### 9. Classificação de conteúdo (Content rating)
+### 9. Classificação de conteúdo (Content rating) — respostas do IARC
 
-Preencher o questionário do IARC:
-- **Faixa esperada:** 12+ (conteúdo gerado por usuário, sem moderação automática de palavrões)
-- Marcar: "User-generated content" SIM, "Comunicação com outros usuários" SIM (dentro do clube)
+Questionário do IARC (Books & Reference / Social). Responder honesto:
 
-### 10. Data Safety form
+| Pergunta | Resposta |
+|---|---|
+| Violência, sangue, sexo, nudez, drogas, jogos de azar, linguagem imprópria | **Não** (o app em si não tem esse conteúdo) |
+| Usuários interagem / se comunicam entre si | **Sim** (comentários, chat de capítulo dentro do clube) |
+| Usuários podem criar/compartilhar conteúdo (UGC) | **Sim** (comentários, citações, resenhas, sugestões) |
+| Existem ferramentas de moderação/denúncia/bloqueio | **Sim** — denunciar, bloquear, admin remove, fila de denúncias |
+| Compartilha localização do usuário | **Não** |
+| Compra digital / conteúdo pago | **Não** (beta sem monetização) |
 
-Declarar exatamente o que coletamos. Modelo:
+- **Faixa esperada:** ~**Teen/12+** por causa de UGC + interação social. As
+  ferramentas de moderação ajudam a manter no menor patamar aplicável.
+- Público-alvo (Target audience): **13+** (não é app pra crianças).
 
-- **Dados coletados:**
-  - Nome e endereço de email (obrigatório, função do app, criptografado em trânsito, usuário pode pedir exclusão)
-  - Conteúdo gerado pelo usuário: textos, fotos (capas de livros), reações (obrigatório, função do app)
-- **Dados compartilhados:** Nenhum (Supabase é processador, não terceiro)
-- **Práticas de segurança:**
-  - ✅ Dados criptografados em trânsito (HTTPS)
-  - ✅ Usuário pode solicitar exclusão
-  - ❌ Política de retenção: enviado por email pra `feedback@rodape.app`
-- **Atende guidelines de Family policy:** não direcionado a crianças <13
+### 10. Data Safety form — respostas prontas
+
+O formulário exige declarar **coleta**, **compartilhamento**, finalidade,
+se é vinculado ao usuário e se é obrigatório. Bate 1:1 com a
+[privacy policy](../privacy/privacy-policy.md).
+
+**Coleta os dados abaixo? Sim.** (nenhum é compartilhado com terceiros p/ uso
+próprio deles; Supabase/Google/Firebase são **processadores**.)
+
+| Tipo (categoria Play) | Coletado | Vinculado ao usuário | Obrigatório | Finalidade |
+|---|---|---|---|---|
+| **Email** (Personal info) | Sim | Sim | Sim | Gestão de conta, autenticação |
+| **Nome** (display name) | Sim | Sim | Sim | Funcionalidade do app |
+| **Fotos** (capas de livro, câmera) | Sim | Sim | Opcional | Funcionalidade do app |
+| **Mensagens no app / outro UGC** (comentários, citações, resenhas, sugestões, reações) | Sim | Sim | Opcional | Funcionalidade do app |
+| **Crash logs** (App info & performance) | Sim | Não | — | Diagnóstico/estabilidade (Crashlytics) |
+| **Diagnósticos** (device model, OS, ID de instalação do Crashlytics) | Sim | Não | — | Diagnóstico/estabilidade |
+
+**Não coletamos:** localização, contatos, arquivos pessoais, dados financeiros,
+identificadores de publicidade, histórico de navegação/busca fora do app.
+
+**Compartilhamento com terceiros:** **Nenhum** para uso próprio deles.
+
+**Práticas de segurança (marcar):**
+- ✅ Dados **criptografados em trânsito** (HTTPS/TLS).
+- ✅ Usuário **pode solicitar exclusão** dos dados — **direto no app**
+  (Perfil › Excluir conta, imediata) ou por email.
+- ✅ Segue política de dados de crianças (não direcionado a <13).
+
+> **Atenção:** com Crashlytics ligado, você **precisa** declarar "Crash logs" e
+> "Diagnostics" no Data Safety, senão o app pode ser rejeitado por divergência.
 
 ---
 
@@ -229,11 +262,15 @@ Fazer:
 
 ---
 
-## Limitações conhecidas (pra incluir na descrição se quiser ser transparente)
+## Limitações conhecidas
 
-- Sem push notifications (FCM) — planejado pra v1.1
-- Sem dark mode (decisão de design)
-- HIBP (proteção contra senhas vazadas no Supabase) requer plano Pro
-- Captcha desabilitado (sem hCaptcha secret)
-- Exclusão de conta automática depende do RPC `delete_own_account` (ver item 0);
-  até criá-lo, usa fallback por email
+> Atualizado em 2026-07-14 — vários itens antigos já foram resolvidos.
+
+- ✅ Push notifications (FCM) — implementado (ver `push-fcm-setup.md`)
+- ✅ Dark mode — implementado
+- ✅ Exclusão de conta in-app — RPC `delete_own_account` já existe (migration 0001)
+- ✅ Moderação de UGC (denúncia/bloqueio/fila admin) — implementado (0010)
+- ⚠️ HIBP (proteção contra senhas vazadas no Supabase) requer plano Pro
+- ⚠️ Captcha desabilitado (sem hCaptcha secret)
+- ⚠️ SMTP de produção (Resend) precisa ser configurado antes de escalar
+  (ver `email-templates.md` + `supabase-auth-setup.md`)
