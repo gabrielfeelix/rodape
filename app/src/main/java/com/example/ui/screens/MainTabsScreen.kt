@@ -1448,6 +1448,16 @@ fun HomeScreenTab(
                         Spacer(modifier = Modifier.height(10.dp))
 
                         val visualPct = if (totalChaps > 0) (curChap.toFloat() / totalChaps.toFloat()).coerceIn(0f, 1f) else 0f
+                        // Count-up do % em sincronia com a barra: mesmo alvo + mesmo
+                        // spec do ProgressBar (emphasizedDecelerate) → sobem juntos.
+                        val animatedPct by animateFloatAsState(
+                            targetValue = visualPct,
+                            animationSpec = rodapeTween(
+                                durationMillis = RodapeMotion.Dur.emphasized,
+                                easing = RodapeMotion.Ease.emphasizedDecelerate,
+                            ),
+                            label = "readPctCountUp",
+                        )
                         Row(
                             verticalAlignment = Alignment.CenterVertically,
                             horizontalArrangement = Arrangement.spacedBy(8.dp)
@@ -1458,7 +1468,7 @@ fun HomeScreenTab(
                                 modifier = Modifier.weight(1f)
                             )
                             Text(
-                                text = "${(visualPct * 100).toInt()}%",
+                                text = "${(animatedPct * 100).toInt()}%",
                                 style = MaterialTheme.typography.labelSmall.copy(
                                     fontWeight = FontWeight.Medium,
                                     color = RodapeTheme.colors.muted

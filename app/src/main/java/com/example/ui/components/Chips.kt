@@ -1,5 +1,6 @@
 package com.example.ui.components
 
+import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Box
@@ -12,6 +13,7 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material3.Text
 import androidx.compose.material3.minimumInteractiveComponentSize
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
@@ -32,7 +34,9 @@ import com.example.ui.theme.Ink
 import com.example.ui.theme.Oliva
 import com.example.ui.theme.OlivaDark
 import com.example.ui.theme.OlivaSoft
+import com.example.ui.theme.RodapeMotion
 import com.example.ui.theme.RodapeTheme
+import com.example.ui.theme.rodapeTween
 import com.example.ui.theme.Tertiary
 import com.example.ui.theme.TerracotaDark
 import com.example.ui.theme.TerracotaSoft
@@ -115,6 +119,17 @@ fun ProgressBar(
     height: Dp = 6.dp,
 ) {
     val clamped = value.coerceIn(0f, 1f)
+    // A barra ENCHE (emphasizedDecelerate) em vez de teleportar — vale pra
+    // leitura, votação e qualquer call-site. Sob reduced-motion vira snap.
+    // A11y: a semântica anuncia o valor-ALVO (clamped), nunca frames do meio.
+    val animated by animateFloatAsState(
+        targetValue = clamped,
+        animationSpec = rodapeTween(
+            durationMillis = RodapeMotion.Dur.emphasized,
+            easing = RodapeMotion.Ease.emphasizedDecelerate,
+        ),
+        label = "progressFill",
+    )
     Box(
         modifier
             .height(height)
@@ -127,7 +142,7 @@ fun ProgressBar(
     ) {
         Box(
             Modifier
-                .fillMaxWidth(clamped)
+                .fillMaxWidth(animated)
                 .fillMaxHeight()
                 .background(color),
         )
