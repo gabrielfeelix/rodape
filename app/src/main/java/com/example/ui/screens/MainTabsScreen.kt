@@ -407,7 +407,8 @@ fun MainTabsScreen(
             },
             confirmButton = {
                 TextButton(onClick = {
-                    com.example.util.openPlayStorePage(context)
+                    // In-App Review nativo (não sai do app); fallback pra loja no util.
+                    com.example.util.requestInAppReview(context)
                     viewModel.markAppRated()
                     ratePromptShown = true
                 }) {
