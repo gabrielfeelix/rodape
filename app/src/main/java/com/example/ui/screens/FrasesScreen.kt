@@ -160,7 +160,7 @@ fun FrasesScreen(
                         modifier = Modifier.padding(horizontal = 40.dp),
                     ) {
                         Icon(
-                            Icons.Outlined.FormatQuote,
+                            RodapeIcons.Quote,
                             contentDescription = null,
                             tint = RodapeTheme.colors.muted,
                             modifier = Modifier.size(48.dp),

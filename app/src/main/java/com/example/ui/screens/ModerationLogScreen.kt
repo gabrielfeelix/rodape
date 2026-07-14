@@ -72,7 +72,7 @@ fun ModerationLogScreen(
                     verticalArrangement = Arrangement.spacedBy(16.dp)
                 ) {
                     Icon(
-                        imageVector = Icons.Outlined.VerifiedUser,
+                        imageVector = RodapeIcons.Shield,
                         contentDescription = null,
                         tint = RodapeTheme.colors.muted,
                         modifier = Modifier.size(64.dp)

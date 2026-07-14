@@ -290,7 +290,7 @@ fun SignUpScreen(
                             trailingIcon = {
                                 IconButton(onClick = { passwordVisible = !passwordVisible }) {
                                     Icon(
-                                        imageVector = if (passwordVisible) Icons.Outlined.VisibilityOff else Icons.Outlined.Visibility,
+                                        imageVector = if (passwordVisible) RodapeIcons.EyeOff else RodapeIcons.Eye,
                                         contentDescription = if (passwordVisible) "Ocultar senha" else "Mostrar senha",
                                         tint = RodapeTheme.colors.muted,
                                     )

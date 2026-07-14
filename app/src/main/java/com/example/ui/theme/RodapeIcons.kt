@@ -722,6 +722,104 @@ object RodapeIcons {
             }
         }
     }
+
+    // heartFill: mesma geometria do Heart, preenchida (favorito ativo)
+    val HeartFill: ImageVector by lazy {
+        icon("HeartFill") {
+            fillPath {
+                moveTo(12f, 20f)
+                reflectiveCurveToRelative(-7f, -4.5f, -7f, -10f)
+                arcToRelative(4f, 4f, 0f, false, true, 7f, -2.6f)
+                arcTo(4f, 4f, 0f, false, true, 19f, 10f)
+                curveToRelative(0f, 5.5f, -7f, 10f, -7f, 10f)
+                close()
+            }
+        }
+    }
+
+    // eye: lente (2 quadráticas) + pupila
+    val Eye: ImageVector by lazy {
+        icon("Eye") {
+            strokePath {
+                moveTo(3f, 12f)
+                quadTo(12f, 4f, 21f, 12f)
+                quadTo(12f, 20f, 3f, 12f)
+                close()
+                circle(12f, 12f, 3.2f)
+            }
+        }
+    }
+
+    // eyeOff: mesma lente + barra diagonal (senha oculta)
+    val EyeOff: ImageVector by lazy {
+        icon("EyeOff") {
+            strokePath {
+                moveTo(3f, 12f)
+                quadTo(12f, 4f, 21f, 12f)
+                quadTo(12f, 20f, 3f, 12f)
+                close()
+                circle(12f, 12f, 3.2f)
+                moveTo(3f, 3f)
+                lineTo(21f, 21f)
+            }
+        }
+    }
+
+    // refresh: 2 arcos + 2 cabeças de seta
+    val Refresh: ImageVector by lazy {
+        icon("Refresh") {
+            strokePath {
+                moveTo(20f, 8f)
+                arcToRelative(8f, 8f, 0f, false, false, -14f, -1f)
+                moveTo(4f, 16f)
+                arcToRelative(8f, 8f, 0f, false, false, 14f, 1f)
+                moveTo(20f, 4f); verticalLineTo(8f); horizontalLineTo(16f)
+                moveTo(4f, 20f); verticalLineTo(16f); horizontalLineTo(8f)
+            }
+        }
+    }
+
+    // quote: duas aspas preenchidas (decorativo em Frases)
+    val Quote: ImageVector by lazy {
+        icon("Quote") {
+            fillPath {
+                moveTo(6f, 7f)
+                horizontalLineToRelative(4f)
+                verticalLineToRelative(5f)
+                arcToRelative(4f, 4f, 0f, false, true, -4f, 4f)
+                verticalLineToRelative(-2f)
+                arcToRelative(2f, 2f, 0f, false, false, 2f, -2f)
+                horizontalLineTo(6f)
+                close()
+                moveTo(14f, 7f)
+                horizontalLineToRelative(4f)
+                verticalLineToRelative(5f)
+                arcToRelative(4f, 4f, 0f, false, true, -4f, 4f)
+                verticalLineToRelative(-2f)
+                arcToRelative(2f, 2f, 0f, false, false, 2f, -2f)
+                horizontalLineTo(14f)
+                close()
+            }
+        }
+    }
+
+    // shield: escudo + check (verificado/moderação)
+    val Shield: ImageVector by lazy {
+        icon("Shield") {
+            strokePath {
+                moveTo(12f, 3f)
+                lineTo(19f, 6f)
+                verticalLineToRelative(5f)
+                curveToRelative(0f, 4f, -3f, 6.5f, -7f, 8f)
+                curveToRelative(-4f, -1.5f, -7f, -4f, -7f, -8f)
+                verticalLineTo(6f)
+                close()
+                moveTo(9f, 12f)
+                lineToRelative(2f, 2f)
+                lineToRelative(4f, -4f)
+            }
+        }
+    }
 }
 
 // Geometria compartilhada entre Star (stroke) e StarFill (fill).

@@ -323,7 +323,7 @@ fun ManageClubScreen(
                                 contentAlignment = Alignment.Center
                             ) {
                                 Icon(
-                                    imageVector = Icons.Outlined.Refresh,
+                                    imageVector = RodapeIcons.Refresh,
                                     contentDescription = null,
                                     tint = RodapeTheme.colors.cream,
                                     modifier = Modifier.size(20.dp)
@@ -359,7 +359,7 @@ fun ManageClubScreen(
                             horizontalArrangement = Arrangement.spacedBy(12.dp)
                         ) {
                             Icon(
-                                imageVector = Icons.Outlined.Refresh,
+                                imageVector = RodapeIcons.Refresh,
                                 contentDescription = null,
                                 tint = RodapeTheme.colors.muted,
                                 modifier = Modifier.size(24.dp)

@@ -184,7 +184,7 @@ fun BookDetailScreen(
                 contentAlignment = Alignment.Center
             ) {
                 Icon(
-                    imageVector = if (isFavorite) Icons.Filled.Favorite else Icons.Outlined.FavoriteBorder,
+                    imageVector = if (isFavorite) RodapeIcons.HeartFill else RodapeIcons.Heart,
                     contentDescription = if (isFavorite) "Remover dos favoritos" else "Adicionar aos favoritos",
                     tint = if (isFavorite) RodapeTheme.colors.terracota else RodapeTheme.colors.ink,
                     modifier = Modifier.size(20.dp)
