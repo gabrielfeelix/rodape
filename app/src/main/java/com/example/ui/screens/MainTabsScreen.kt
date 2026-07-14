@@ -2366,9 +2366,11 @@ fun BookDetailScreenTab(
                                 horizontalAlignment = Alignment.CenterHorizontally,
                                 verticalArrangement = Arrangement.spacedBy(8.dp)
                             ) {
-                                Text(
-                                    text = "📚",
-                                    fontSize = 32.sp
+                                Icon(
+                                    imageVector = RodapeIcons.Book,
+                                    contentDescription = null,
+                                    tint = RodapeTheme.colors.muted,
+                                    modifier = Modifier.size(32.dp),
                                 )
                                 Text(
                                     text = "Capítulos ainda não cadastrados",
