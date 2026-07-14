@@ -5,7 +5,9 @@ import com.example.data.remote.repo.OfflineFirstNotificationRepository
 import com.example.data.remote.repo.ModerationRepository
 import com.example.data.remote.repo.OfflineFirstModerationRepository
 import com.example.data.remote.repo.OfflineFirstUserRepository
+import com.example.data.remote.repo.OfflineFirstVotingRepository
 import com.example.data.remote.repo.UserRepository
+import com.example.data.remote.repo.VotingRepository
 import com.example.data.remote.repo.OfflineFirstProgressRepository
 import com.example.data.remote.repo.OfflineFirstQuoteRepository
 import com.example.data.remote.repo.ProgressRepository
@@ -56,4 +58,10 @@ internal abstract class RepositoryModule {
     abstract fun bindModerationRepository(
         impl: OfflineFirstModerationRepository,
     ): ModerationRepository
+
+    @Binds
+    @Singleton
+    abstract fun bindVotingRepository(
+        impl: OfflineFirstVotingRepository,
+    ): VotingRepository
 }

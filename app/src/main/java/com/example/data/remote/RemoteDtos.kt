@@ -709,3 +709,33 @@ internal data class ProfileUpdateDto(
     @SerialName("avatar_key") val avatarKey: String,
     val pronome: String? = null,
 )
+
+// Projeção só-id (select("id")). Usado por 4 domínios (chapters/reactions/votes×2).
+// Era nested-private em RemoteRepository; virou internal no F3c.
+@Serializable
+internal data class IdOnlyDto(val id: String)
+
+// Projeções de JOIN e status — eram nested-private em RemoteRepository; internal no F3c
+// pros repos fatiados (Club/Book) enxergarem.
+@Serializable
+internal data class JoinClubOnly(@SerialName("clubs") val club: ClubDto)
+
+@Serializable
+internal data class JoinMemberProfile(
+    @SerialName("user_id") val userId: String,
+    val papel: String? = null,
+    @SerialName("entrou_em") val entrouEm: String? = null,
+    @SerialName("profiles") val profile: ProfileDto,
+)
+
+@Serializable
+internal data class JoinClubBookFull(
+    @SerialName("book_id") val bookId: String,
+    val status: String,
+    val ordem: Int = 0,
+    @SerialName("data_encontro") val dataEncontro: String? = null,
+    @SerialName("books") val book: BookDto,
+)
+
+@Serializable
+internal data class StatusOnlyDto(val status: String)
