@@ -53,6 +53,9 @@ import com.example.data.model.*
 import com.example.data.ThemeMode
 import com.example.ui.theme.RodapeRadii
 import com.example.ui.theme.RodapeTheme
+import com.example.ui.theme.RodapeMotion
+import com.example.ui.theme.rodapeTween
+import com.example.ui.theme.rodapeSpring
 import com.example.util.displayName
 import com.example.util.displayFirstName
 import com.example.ui.components.*
@@ -93,6 +96,18 @@ import androidx.compose.ui.semantics.stateDescription
 import androidx.compose.ui.semantics.selected
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.role
+import androidx.compose.ui.semantics.clearAndSetSemantics
+import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.animateColorAsState
+import androidx.compose.animation.core.Spring
+import androidx.compose.animation.core.animateFloatAsState
+import androidx.compose.animation.expandHorizontally
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.scaleIn
+import androidx.compose.animation.scaleOut
+import androidx.compose.animation.shrinkHorizontally
+import androidx.compose.ui.graphics.graphicsLayer
 import com.example.ui.viewmodel.MainViewModel
 import com.example.ui.components.Cover
 import com.example.ui.components.Pill
@@ -784,12 +799,20 @@ private fun TabIconWithBadge(
             tint = tint,
             modifier = Modifier.size(20.dp),
         )
-        if (badge) {
-            // Anel olivaDeep (cor da barra) separa o dot do fundo — sem ele, na
-            // aba "Clube" selecionada (pílula terracota) o dot terracota sumia.
+        // Badge entra com mola (scale-in) e sai suave — chama atenção quando a
+        // votação abre sem ser abrupto. Anel olivaDeep (cor da barra) separa o dot
+        // do fundo — sem ele, na aba "Clube" selecionada (pílula terracota) o dot
+        // terracota sumia.
+        AnimatedVisibility(
+            visible = badge,
+            enter = scaleIn(rodapeSpring(dampingRatio = Spring.DampingRatioMediumBouncy)) +
+                fadeIn(rodapeTween(RodapeMotion.Dur.fast)),
+            exit = scaleOut(rodapeTween(RodapeMotion.Dur.fast)) +
+                fadeOut(rodapeTween(RodapeMotion.Dur.fast)),
+            modifier = Modifier.align(Alignment.TopEnd),
+        ) {
             Box(
                 modifier = Modifier
-                    .align(Alignment.TopEnd)
                     .size(10.dp)
                     .clip(CircleShape)
                     .background(RodapeTheme.colors.olivaDeep)
@@ -809,62 +832,63 @@ fun BottomBarItem(
     onClick: () -> Unit,
     badge: Boolean = false,
 ) {
-    if (selected) {
-        Row(
-            modifier = Modifier
-                // Alvo de toque de 48dp + anuncia como aba selecionada (Role.Tab)
-                .minimumInteractiveComponentSize()
-                .clip(RoundedCornerShape(RodapeRadii.full))
-                .background(RodapeTheme.colors.terracota)
-                .clickable(
-                    interactionSource = remember { MutableInteractionSource() },
-                    indication = ripple(bounded = true),
-                    onClick = onClick
-                )
-                .semantics { this.selected = selected; role = Role.Tab }
-                .padding(horizontal = 12.dp, vertical = 10.dp),
-            verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.spacedBy(6.dp)
-        ) {
-            TabIconWithBadge(icon = icon, tint = RodapeTheme.colors.cream, badge = badge)
-            Text(
-                text = label,
-                style = MaterialTheme.typography.labelLarge.copy(
-                    color = RodapeTheme.colors.cream,
-                    fontFamily = InterFontFamily,
-                    fontWeight = FontWeight.SemiBold
-                )
+    // Layout UNIFORME (sempre Column) — antes era Row(selecionado) vs Column(não),
+    // e a diferença de largura empurrava os vizinhos a cada troca (bug do "pulo").
+    // Agora a seleção só PINTA o fundo (cor animada) e dá um pop no ícone via
+    // graphicsLayer (scale é draw-only, não muda o layout) → zero reflow. Os
+    // rótulos continuam SEMPRE visíveis (decisão de UX pra letramento variado).
+    val bg by animateColorAsState(
+        targetValue = if (selected) RodapeTheme.colors.terracota
+        else RodapeTheme.colors.terracota.copy(alpha = 0f),
+        animationSpec = rodapeTween(RodapeMotion.Dur.standard),
+        label = "navItemBg",
+    )
+    val contentColor by animateColorAsState(
+        targetValue = if (selected) RodapeTheme.colors.cream
+        else RodapeTheme.colors.cream.copy(alpha = 0.7f),
+        animationSpec = rodapeTween(RodapeMotion.Dur.standard),
+        label = "navItemContent",
+    )
+    // Mola sutil ao selecionar. Draw-only (graphicsLayer) → não empurra ninguém.
+    val iconScale by animateFloatAsState(
+        targetValue = if (selected) 1.12f else 1f,
+        animationSpec = rodapeSpring(dampingRatio = Spring.DampingRatioMediumBouncy),
+        label = "navItemScale",
+    )
+    Column(
+        modifier = Modifier
+            // Alvo de toque de 48dp + anuncia como aba (Role.Tab). O
+            // contentDescription no container é a fonte única do nome (o Text
+            // abaixo é decorativo via clearAndSetSemantics) — evita leitura dupla.
+            .minimumInteractiveComponentSize()
+            .clip(RoundedCornerShape(RodapeRadii.full))
+            .background(bg)
+            .clickable(
+                interactionSource = remember { MutableInteractionSource() },
+                indication = ripple(bounded = true),
+                onClick = onClick
             )
+            .semantics { this.selected = selected; role = Role.Tab; contentDescription = label }
+            .padding(horizontal = 10.dp, vertical = 6.dp),
+        horizontalAlignment = Alignment.CenterHorizontally,
+        verticalArrangement = Arrangement.spacedBy(2.dp)
+    ) {
+        Box(modifier = Modifier.graphicsLayer { scaleX = iconScale; scaleY = iconScale }) {
+            TabIconWithBadge(icon = icon, tint = contentColor, badge = badge)
         }
-    } else {
-        Column(
-            modifier = Modifier
-                // Alvo de toque de 48dp + anuncia como aba (nao selecionada)
-                .minimumInteractiveComponentSize()
-                .clip(RoundedCornerShape(RodapeRadii.full))
-                .clickable(
-                    interactionSource = remember { MutableInteractionSource() },
-                    indication = ripple(bounded = true),
-                    onClick = onClick
-                )
-                .semantics { this.selected = selected; role = Role.Tab }
-                .padding(horizontal = 8.dp, vertical = 6.dp),
-            horizontalAlignment = Alignment.CenterHorizontally,
-            verticalArrangement = Arrangement.spacedBy(2.dp)
-        ) {
-            TabIconWithBadge(icon = icon, tint = RodapeTheme.colors.cream.copy(alpha = 0.7f), badge = badge)
-            // Rótulo sempre visível: sem ele, 4 das 5 abas viram só ícone e o
-            // usuário precisa decorar o que cada uma faz.
-            Text(
-                text = label,
-                style = MaterialTheme.typography.labelSmall.copy(
-                    color = RodapeTheme.colors.cream.copy(alpha = 0.7f),
-                    fontFamily = InterFontFamily,
-                    fontSize = 10.sp
-                ),
-                maxLines = 1
-            )
-        }
+        // Rótulo sempre visível: sem ele, 4 das 5 abas viram só ícone e o usuário
+        // precisa decorar o que cada uma faz. Peso/tamanho FIXOS (não mudam ao
+        // selecionar) pra métrica de texto não variar e reintroduzir o pulo.
+        Text(
+            text = label,
+            modifier = Modifier.clearAndSetSemantics {},
+            style = MaterialTheme.typography.labelSmall.copy(
+                color = contentColor,
+                fontFamily = InterFontFamily,
+                fontSize = 10.sp
+            ),
+            maxLines = 1
+        )
     }
 }
 
