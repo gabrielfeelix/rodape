@@ -149,6 +149,7 @@ incremental e de baixo risco em cima da engine estável.
 
 ## Progresso
 
-- [x] F1 lifecycle · [x] F2 nav type-safe · [x] F3a DTOs (compile pendente)
-- [ ] F3b SyncEngine · [ ] F4a Hilt · [ ] F3c repos · [ ] F4b/F5 VMs+UiState
+- [x] F1 lifecycle · [x] F2 nav type-safe · [x] F3a DTOs
+- [x] F3b SyncEngine (commit 5fd7255 — ⚠️ AGUARDA teste em device: avião→ação→reconecta)
+- [ ] F4a Hilt · [ ] F3c repos · [ ] F4b/F5 VMs+UiState
 - [ ] F6 previews · [ ] F7 testes

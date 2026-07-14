@@ -18,7 +18,10 @@ calma na sessão anterior. Este doc te dá o estado exato e as regras. Leia na o
 **Feito e no git (branch master, remoto github.com/gabrielfeelix/rodape):**
 - F1 — collectAsState → collectAsStateWithLifecycle (143 sites). Commit `acc9812`.
 - F2 — navegação type-safe (@Serializable em ui/navigation/Routes.kt). Commit `42026a0`.
-- F3a — DTOs movidos p/ RemoteDtos.kt (private→internal). **Ver "primeiro passo" abaixo.**
+- F3a — DTOs movidos p/ RemoteDtos.kt (private→internal). Commit `9f0a35f`, compilou limpo.
+- F3b — SyncEngine extraído (infra + 25 handlers; RemoteRepository delega). Commit
+  `5fd7255`, compilou limpo. **⚠️ AGUARDA teste em device** (avião→ação→reconecta→
+  sincroniza + badge + realtime) ANTES do F4a.
 
 **Compliance/beta:** outro agente já fechou 8 ondas (moderação, Termos, Crashlytics,
 age gate, RLS, etc.) — tudo commitado. NÃO mexer nisso.
