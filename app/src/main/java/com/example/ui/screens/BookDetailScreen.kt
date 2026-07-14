@@ -8,14 +8,12 @@ import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.statusBars
 import androidx.compose.foundation.layout.windowInsetsPadding
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.ui.graphics.graphicsLayer
+import com.example.ui.theme.LocalReducedMotion
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.verticalScroll
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.outlined.ArrowBack
-import androidx.compose.material.icons.filled.Favorite
-import androidx.compose.material.icons.outlined.FavoriteBorder
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.runtime.saveable.rememberSaveable
@@ -100,6 +98,12 @@ fun BookDetailScreen(
     val dataEncontro = meetingDates[bookId]
     val isFavorite by remember(bookId) { viewModel.isBookFavoriteFlow(bookId) }.collectAsState(initial = false)
 
+    // Parallax do hero: o conteúdo abaixo rola, a capa reage. Scroll hoisteado pra
+    // a capa (no hero fixo) ler o offset e recuar de leve — profundidade sem tirar
+    // a capa do lugar. Respeita reduced-motion.
+    val heroScroll = rememberScrollState()
+    val reducedMotion = LocalReducedMotion.current
+
     Column(
         modifier = Modifier
             .fillMaxSize()
@@ -125,8 +129,22 @@ fun BookDetailScreen(
                     coverUrl = book.coverUrl,
                     width = 150.dp,
                     height = 224.dp,
-                    // Sombra dramática do design (screens-book-detail.jsx:98)
-                    modifier = Modifier.detailCoverShadow(cornerRadius = 3.dp)
+                    // Sombra dramática do design (screens-book-detail.jsx:98) + parallax:
+                    // ao rolar o conteúdo, a capa sobe de leve, encolhe e esmaece —
+                    // recuo sutil (transform-only, não desloca o layout). Fatores
+                    // pequenos e clampados pra não colidir com título/voltar.
+                    modifier = Modifier
+                        .graphicsLayer {
+                            if (!reducedMotion) {
+                                val p = heroScroll.value.toFloat()
+                                translationY = -(p * 0.12f).coerceAtMost(14f)
+                                val s = (1f - p / 2600f).coerceIn(0.93f, 1f)
+                                scaleX = s
+                                scaleY = s
+                                alpha = (1f - p / 1400f).coerceIn(0.7f, 1f)
+                            }
+                        }
+                        .detailCoverShadow(cornerRadius = 3.dp)
                 )
 
                 Spacer(modifier = Modifier.height(20.dp))
@@ -277,7 +295,7 @@ fun BookDetailScreen(
         Column(
             modifier = Modifier
                 .fillMaxSize()
-                .verticalScroll(rememberScrollState())
+                .verticalScroll(heroScroll)
                 // Sobe o conteúdo acima do teclado quando um campo inline recebe foco.
                 .imePadding()
                 .padding(horizontal = 24.dp)

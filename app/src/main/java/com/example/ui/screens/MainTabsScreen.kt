@@ -20,16 +20,9 @@ import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
 import androidx.compose.foundation.lazy.grid.items
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.ArrowDropDown
 import androidx.compose.material.icons.filled.Home
 import androidx.compose.material.icons.filled.Edit
-import androidx.compose.material.icons.filled.HowToVote
 import androidx.compose.material.icons.filled.List
-import androidx.compose.material.icons.filled.LocalLibrary
-import androidx.compose.material.icons.filled.MenuBook
-import androidx.compose.material.icons.filled.Star
-import androidx.compose.material.icons.filled.Person
 import androidx.compose.material.icons.outlined.List
 import androidx.compose.material.icons.outlined.*
 import androidx.compose.material3.*
@@ -135,8 +128,6 @@ import androidx.compose.ui.text.buildAnnotatedString
 import androidx.compose.ui.text.withStyle
 import androidx.compose.ui.text.SpanStyle
 import androidx.compose.ui.text.font.FontStyle
-import androidx.compose.material.icons.automirrored.outlined.ArrowBack
-import androidx.compose.material.icons.automirrored.outlined.KeyboardArrowRight
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
