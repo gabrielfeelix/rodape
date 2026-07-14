@@ -2,8 +2,10 @@ package com.example.di
 
 import com.example.data.remote.repo.NotificationRepository
 import com.example.data.remote.repo.OfflineFirstNotificationRepository
+import com.example.data.remote.repo.BookRepository
 import com.example.data.remote.repo.DiscussionRepository
 import com.example.data.remote.repo.MeetingRepository
+import com.example.data.remote.repo.OfflineFirstBookRepository
 import com.example.data.remote.repo.ModerationRepository
 import com.example.data.remote.repo.OfflineFirstMeetingRepository
 import com.example.data.remote.repo.OfflineFirstDiscussionRepository
@@ -80,4 +82,10 @@ internal abstract class RepositoryModule {
     abstract fun bindMeetingRepository(
         impl: OfflineFirstMeetingRepository,
     ): MeetingRepository
+
+    @Binds
+    @Singleton
+    abstract fun bindBookRepository(
+        impl: OfflineFirstBookRepository,
+    ): BookRepository
 }
