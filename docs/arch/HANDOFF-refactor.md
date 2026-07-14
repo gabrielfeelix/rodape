@@ -21,7 +21,13 @@ calma na sessão anterior. Este doc te dá o estado exato e as regras. Leia na o
 - F3a — DTOs movidos p/ RemoteDtos.kt (private→internal). Commit `9f0a35f`, compilou limpo.
 - F3b — SyncEngine extraído (infra + 25 handlers; RemoteRepository delega). Commit
   `5fd7255`, compilou limpo. **⚠️ AGUARDA teste em device** (avião→ação→reconecta→
-  sincroniza + badge + realtime) ANTES do F4a.
+  sincroniza + badge + realtime).
+- F4a — Hilt scaffolding (2.60.1): @HiltAndroidApp+Configuration.Provider,
+  @AndroidEntryPoint, di/DataModule (engine @Singleton/dao/supabase/DataStore),
+  DrainQueueWorker @HiltWorker injetando a engine (sem close; era repo por execução).
+  Commit `5482524`, compilou limpo. Usuário autorizou seguir antes do teste de device
+  do F3b — o smoke dos dois roda junto. Fix visual avulso: `ee71dbc` (tabs do
+  BookDetail sobrepostas dentro do AnimatedContent).
 
 **Compliance/beta:** outro agente já fechou 8 ondas (moderação, Termos, Crashlytics,
 age gate, RLS, etc.) — tudo commitado. NÃO mexer nisso.

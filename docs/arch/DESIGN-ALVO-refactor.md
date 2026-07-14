@@ -151,5 +151,7 @@ incremental e de baixo risco em cima da engine estável.
 
 - [x] F1 lifecycle · [x] F2 nav type-safe · [x] F3a DTOs
 - [x] F3b SyncEngine (commit 5fd7255 — ⚠️ AGUARDA teste em device: avião→ação→reconecta)
-- [ ] F4a Hilt · [ ] F3c repos · [ ] F4b/F5 VMs+UiState
+- [x] F4a Hilt scaffolding (commit 5482524 — Hilt 2.60.1; worker injeta engine @Singleton;
+      smoke em device junto com o teste do F3b)
+- [ ] F3c repos · [ ] F4b/F5 VMs+UiState
 - [ ] F6 previews · [ ] F7 testes
