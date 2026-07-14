@@ -3,7 +3,9 @@ package com.example.di
 import com.example.data.remote.repo.NotificationRepository
 import com.example.data.remote.repo.OfflineFirstNotificationRepository
 import com.example.data.remote.repo.OfflineFirstProgressRepository
+import com.example.data.remote.repo.OfflineFirstQuoteRepository
 import com.example.data.remote.repo.ProgressRepository
+import com.example.data.remote.repo.QuoteRepository
 import dagger.Binds
 import dagger.Module
 import dagger.hilt.InstallIn
@@ -24,4 +26,8 @@ internal abstract class RepositoryModule {
     @Binds
     @Singleton
     abstract fun bindNotificationRepository(impl: OfflineFirstNotificationRepository): NotificationRepository
+
+    @Binds
+    @Singleton
+    abstract fun bindQuoteRepository(impl: OfflineFirstQuoteRepository): QuoteRepository
 }

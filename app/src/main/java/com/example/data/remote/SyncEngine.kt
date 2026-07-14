@@ -42,6 +42,14 @@ import kotlinx.serialization.json.put
 // classe, nunca espalhados por repositórios lazy.
 // ============================================================================
 
+/** Escapa caracteres especiais pra string JSON (payloads ad-hoc da fila). */
+internal fun String.escapeJson(): String = this
+    .replace("\\", "\\\\")
+    .replace("\"", "\\\"")
+    .replace("\n", "\\n")
+    .replace("\r", "\\r")
+    .replace("\t", "\\t")
+
 // TTLs canonicos: balanceiam frescor vs custo.
 internal object Ttl {
     const val FAST = 5_000L      // 5s — chat ativo, votos em rodada aberta

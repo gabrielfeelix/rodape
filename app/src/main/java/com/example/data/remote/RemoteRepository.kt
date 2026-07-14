@@ -83,6 +83,7 @@ class RemoteRepository(
     // delega; a API pública pro MainViewModel não muda até o F4b/F5).
     private val progressRepo = com.example.data.remote.repo.OfflineFirstProgressRepository(engine)
     private val notificationRepo = com.example.data.remote.repo.OfflineFirstNotificationRepository(engine)
+    private val quoteRepo = com.example.data.remote.repo.OfflineFirstQuoteRepository(engine)
 
     private val json = engine.json
     private val dao = engine.dao
@@ -881,13 +882,8 @@ class RemoteRepository(
         }
     }
 
-    /** Escapa caracteres especiais pra string JSON. */
-    private fun String.escapeJson(): String = this
-        .replace("\\", "\\\\")
-        .replace("\"", "\\\"")
-        .replace("\n", "\\n")
-        .replace("\r", "\\r")
-        .replace("\t", "\\t")
+    // escapeJson agora é top-level internal em SyncEngine.kt (F3c) — os repos
+    // de domínio e a fachada usam o mesmo.
 
     fun getCommentsForChapterFlow(chapterId: String, clubId: String): Flow<List<Comment>> {
         val key = "comments:ch:$chapterId"
@@ -1787,62 +1783,16 @@ class RemoteRepository(
     // SAVED QUOTES
     // ============================================================
 
-    suspend fun insertSavedQuote(quote: SavedQuote) {
-        dao.upsertSavedQuotes(listOf(quote))
-        val cap = quote.capituloRef.escapeJson()
-        val payload = """{"id":"${quote.id}","userId":"${quote.userId}","clubId":"${quote.clubId}","bookId":"${quote.bookId}","texto":"${quote.texto.escapeJson()}","capituloRef":"$cap"}"""
-        tryRemoteOrEnqueue("insert_saved_quote", payload, notifyTable = "saved_quotes") {
-            supabase.from("saved_quotes").upsert(
-                SavedQuoteInsertDto(
-                    id = quote.id,
-                    userId = quote.userId,
-                    clubId = quote.clubId,
-                    bookId = quote.bookId,
-                    texto = quote.texto,
-                    capituloRef = quote.capituloRef.ifBlank { null },
-                )
-            )
-        }
-    }
+    // F3c: movido pra repo/QuoteRepository.kt — fachada delega.
+    suspend fun insertSavedQuote(quote: SavedQuote) = quoteRepo.insertSavedQuote(quote)
 
-    suspend fun deleteSavedQuote(quote: SavedQuote) {
-        runCatching {
-            supabase.from("saved_quotes").delete { filter { eq("id", quote.id) } }
-            dao.deleteSavedQuote(quote.id)
-            notifyLocalMutation("saved_quotes")
-        }
-    }
+    suspend fun deleteSavedQuote(quote: SavedQuote) = quoteRepo.deleteSavedQuote(quote)
 
-    fun getSavedQuotesForUserFlow(userId: String): Flow<List<SavedQuote>> {
-        val reload: suspend () -> Unit = {
-            runCatching {
-                val list = supabase.from("saved_quotes").select {
-                    filter { eq("user_id", userId) }
-                    order("created_at", Order.DESCENDING)
-                }.decodeList<SavedQuoteDto>().map { it.toDomain() }
-                dao.replaceSavedQuotesForUser(userId, list)
-            }
-        }
-        scope.launch { runCatching { reload() } }
-        ensureRealtime("saved_quotes", filterColumn = "user_id", filterValue = userId, reload = reload)
-        return dao.savedQuotesForUserFlow(userId)
-    }
+    fun getSavedQuotesForUserFlow(userId: String): Flow<List<SavedQuote>> =
+        quoteRepo.getSavedQuotesForUserFlow(userId)
 
-    fun getSavedQuotesForBookFlow(userId: String, bookId: String): Flow<List<SavedQuote>> {
-        scope.launch {
-            runCatching {
-                val list = supabase.from("saved_quotes").select {
-                    filter {
-                        eq("user_id", userId)
-                        eq("book_id", bookId)
-                    }
-                    order("created_at", Order.DESCENDING)
-                }.decodeList<SavedQuoteDto>().map { it.toDomain() }
-                dao.upsertSavedQuotes(list)
-            }
-        }
-        return dao.savedQuotesForBookFlow(userId, bookId)
-    }
+    fun getSavedQuotesForBookFlow(userId: String, bookId: String): Flow<List<SavedQuote>> =
+        quoteRepo.getSavedQuotesForBookFlow(userId, bookId)
 
     // ============================================================
     // BOOK SUMMARIES / RATINGS
