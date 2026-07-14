@@ -28,6 +28,7 @@ import com.example.ui.components.SkeletonBox
 import com.example.ui.components.SkeletonText
 import com.example.ui.components.rememberShowLoading
 import com.example.ui.theme.RodapeIcons
+import com.example.ui.theme.RodapeRadii
 import com.example.ui.theme.Ink
 import com.example.ui.theme.Muted
 import com.example.ui.theme.RodapeTheme
@@ -170,6 +171,9 @@ fun ShelfTabScreen(
 /** Grid de skeletons de capa enquanto a estante carrega (mesmo layout 2 colunas). */
 @Composable
 private fun SkeletonCoverGrid() {
+    // UM relógio de shimmer pro grid inteiro (6 capas + 12 linhas), varredura síncrona.
+    val shimmer = com.example.ui.components.rememberShimmerProgress()
+    val p = remember(shimmer) { { shimmer.value } }
     Column(
         modifier = Modifier.fillMaxSize().padding(horizontal = 16.dp),
         verticalArrangement = Arrangement.spacedBy(20.dp)
@@ -182,9 +186,10 @@ private fun SkeletonCoverGrid() {
                         horizontalAlignment = Alignment.CenterHorizontally,
                         verticalArrangement = Arrangement.spacedBy(8.dp)
                     ) {
-                        SkeletonBox(modifier = Modifier.width(100.dp).height(150.dp), cornerRadius = 6.dp)
-                        SkeletonText(width = 90.dp, height = 12.dp)
-                        SkeletonText(width = 60.dp, height = 10.dp)
+                        // Capa skeleton no MESMO raio da capa real (xs=3) — era 6 (drift).
+                        SkeletonBox(modifier = Modifier.width(100.dp).height(150.dp), cornerRadius = RodapeRadii.xs, progress = p)
+                        SkeletonText(width = 90.dp, height = 12.dp, progress = p)
+                        SkeletonText(width = 60.dp, height = 10.dp, progress = p)
                     }
                 }
             }
