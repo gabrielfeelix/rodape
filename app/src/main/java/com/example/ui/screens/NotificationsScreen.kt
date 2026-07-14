@@ -17,6 +17,8 @@ import androidx.compose.material.icons.outlined.Notifications
 import androidx.compose.material.icons.outlined.Star
 import androidx.compose.material.icons.outlined.ThumbUp
 import androidx.compose.material3.*
+import androidx.compose.ui.draw.drawBehind
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
@@ -112,16 +114,33 @@ fun NotificationsScreen(
                     horizontalAlignment = Alignment.CenterHorizontally,
                     verticalArrangement = Arrangement.spacedBy(16.dp)
                 ) {
-                    Icon(
-                        imageVector = RodapeIcons.Bell,
-                        contentDescription = "Sino",
-                        tint = RodapeTheme.colors.muted,
-                        modifier = Modifier.size(64.dp)
+                    // Empty com personalidade (3.11): sino em disco pastel +
+                    // copy que celebra o vazio em vez de constatar ausência.
+                    Box(
+                        modifier = Modifier
+                            .size(72.dp)
+                            .clip(CircleShape)
+                            .background(RodapeTheme.colors.olivaSoft),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Icon(
+                            imageVector = RodapeIcons.Bell,
+                            contentDescription = null,
+                            tint = RodapeTheme.colors.olivaDark,
+                            modifier = Modifier.size(30.dp)
+                        )
+                    }
+                    Text(
+                        text = "Tudo em dia por aqui",
+                        style = MaterialTheme.typography.titleMedium,
+                        color = RodapeTheme.colors.ink
                     )
                     Text(
-                        text = "Você não tem nenhuma notificação.",
-                        style = MaterialTheme.typography.bodyLarge,
-                        color = RodapeTheme.colors.muted
+                        text = "Quando o clube se mexer — votação, encontro, comentário — você fica sabendo aqui.",
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = RodapeTheme.colors.muted,
+                        textAlign = TextAlign.Center,
+                        modifier = Modifier.padding(horizontal = 40.dp)
                     )
                 }
             }
@@ -147,7 +166,8 @@ fun NotificationsScreen(
                     .fillMaxSize()
                     .padding(padding)
                     .padding(horizontal = 16.dp),
-                verticalArrangement = Arrangement.spacedBy(4.dp),
+                // 10dp (3.11): 4dp colava unread/read e as linhas viravam bloco.
+                verticalArrangement = Arrangement.spacedBy(10.dp),
                 contentPadding = PaddingValues(top = 8.dp, bottom = 24.dp)
             ) {
                 grouped.forEach { (group, groupItems) ->
@@ -165,7 +185,46 @@ fun NotificationsScreen(
                             )
                         )
                     }
-                    itemsIndexed(groupItems) { i, notif ->
+                    itemsIndexed(groupItems, key = { _, n -> n.id }) { i, notif ->
+                        // Swipe = marcar como LIDA (3.11) — não há delete de
+                        // notificação no backend, então o gesto usa a ação real
+                        // que existe; o item volta pro lugar e o estilo unread some.
+                        val swipeState = rememberSwipeToDismissBoxState(
+                            confirmValueChange = { v ->
+                                if (v != SwipeToDismissBoxValue.Settled && !notif.lida) {
+                                    viewModel.markNotificationAsRead(notif.id)
+                                }
+                                false
+                            }
+                        )
+                        SwipeToDismissBox(
+                            state = swipeState,
+                            enableDismissFromStartToEnd = !notif.lida,
+                            enableDismissFromEndToStart = !notif.lida,
+                            backgroundContent = {
+                                Row(
+                                    verticalAlignment = Alignment.CenterVertically,
+                                    horizontalArrangement = Arrangement.spacedBy(8.dp),
+                                    modifier = Modifier
+                                        .fillMaxSize()
+                                        .clip(MaterialTheme.shapes.medium)
+                                        .background(RodapeTheme.colors.olivaSoft)
+                                        .padding(horizontal = 16.dp),
+                                ) {
+                                    Icon(
+                                        imageVector = RodapeIcons.Check,
+                                        contentDescription = null,
+                                        tint = RodapeTheme.colors.olivaDark,
+                                        modifier = Modifier.size(18.dp),
+                                    )
+                                    Text(
+                                        text = "Lida",
+                                        style = MaterialTheme.typography.labelLarge,
+                                        color = RodapeTheme.colors.olivaDark,
+                                    )
+                                }
+                            },
+                        ) {
                         NotificationItem(
                             modifier = Modifier.staggeredEntrance(index = i),
                             tipo = notif.tipo,
@@ -183,6 +242,7 @@ fun NotificationsScreen(
                                 )
                             }
                         )
+                        } // fecha o content do SwipeToDismissBox
                     }
                 }
             }
@@ -271,18 +331,31 @@ private fun NotificationItem(
         "comment_on_chapter" -> Pair(RodapeIcons.Heart, Pair(RodapeTheme.colors.olivaSoft, RodapeTheme.colors.olivaDark))
         "voting_open", "next_book_decided", "voting_closed" -> Pair(RodapeIcons.Vote, Pair(RodapeTheme.colors.terracotaSoft, RodapeTheme.colors.terracota))
         "meeting_reminder" -> Pair(RodapeIcons.Calendar, Pair(RodapeTheme.colors.olivaSoft, RodapeTheme.colors.olivaDark))
-        "member_finished" -> Pair(RodapeIcons.CheckCircle, Pair(RodapeTheme.colors.ink, RodapeTheme.colors.cream))
+        // 3.11: celebração em DOURADO (o círculo ink parecia bug entre pastéis).
+        "member_finished" -> Pair(RodapeIcons.CheckCircle, Pair(RodapeTheme.colors.warningSoft, RodapeTheme.colors.warning))
         "book_finished" -> Pair(RodapeIcons.CheckCircle, Pair(RodapeTheme.colors.olivaSoft, RodapeTheme.colors.olivaDark))
-        "member_removed" -> Pair(RodapeIcons.Info, Pair(RodapeTheme.colors.terracotaSoft, RodapeTheme.colors.terracota))
+        // 3.11: evento negativo em tom NEUTRO — terracota é de promoção/celebração,
+        // não de "você saiu do clube".
+        "member_removed" -> Pair(RodapeIcons.Info, Pair(RodapeTheme.colors.dividerSoft, RodapeTheme.colors.muted))
         "promoted_to_admin", "super_admin_transferred" -> Pair(RodapeIcons.StarFill, Pair(RodapeTheme.colors.terracotaSoft, RodapeTheme.colors.terracota))
         else -> Pair(RodapeIcons.Bell, Pair(RodapeTheme.colors.olivaSoft, RodapeTheme.colors.olivaDark))
     }
 
+    // 3.11: unread = TRILHO terracota 3dp na borda + título mais pesado — o
+    // fill cream inteiro era fraco sobre o app já cream. Dot vira só reforço.
+    val railColor = RodapeTheme.colors.terracota
     Row(
         modifier = modifier
             .fillMaxWidth()
             .clip(MaterialTheme.shapes.medium)
-            .background(if (!lida) RodapeTheme.colors.cream else androidx.compose.ui.graphics.Color.Transparent)
+            .drawBehind {
+                if (!lida) {
+                    drawRect(
+                        color = railColor,
+                        size = androidx.compose.ui.geometry.Size(3.dp.toPx(), size.height),
+                    )
+                }
+            }
             .clickable(onClick = onClick)
             .semantics { stateDescription = if (lida) "lida" else "não lida" }
             .padding(horizontal = 12.dp, vertical = 12.dp),
@@ -320,7 +393,8 @@ private fun NotificationItem(
             Text(
                 text = title,
                 style = MaterialTheme.typography.bodyMedium.copy(
-                    fontWeight = FontWeight.SemiBold
+                    // Peso diferencia unread de read (3.11) — antes tudo SemiBold.
+                    fontWeight = if (!lida) FontWeight.SemiBold else FontWeight.Normal
                 ),
                 color = RodapeTheme.colors.ink
             )
