@@ -697,3 +697,15 @@ internal data class MeetingNoteInsertDto(
     @SerialName("user_id") val userId: String,
     val texto: String,
 )
+
+// Update de perfil (insertUser online + handler upsert_profile na SyncEngine).
+// Era nested-private em RemoteRepository; virou internal no F3b pois a engine
+// (handler) e o repo (insertUser) precisam enxergar.
+@Serializable
+internal data class ProfileUpdateDto(
+    val id: String,
+    val nome: String,
+    val sobrenome: String? = null,
+    @SerialName("avatar_key") val avatarKey: String,
+    val pronome: String? = null,
+)
