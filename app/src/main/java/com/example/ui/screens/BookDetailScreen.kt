@@ -517,10 +517,12 @@ private fun FrasesTab(
             val authorAvatar = author?.avatarUrl ?: ""
 
             Column {
+                // 3.8: lixeira saiu de dentro do keepsake — long-press abre a
+                // confirmação de apagar (mesmo dialog de antes).
                 QuoteCard(
                     texto = quote.texto,
                     ref = quote.capituloRef,
-                    onDelete = { quoteToDelete = quote }
+                    onLongPress = { quoteToDelete = quote }
                 )
                 Spacer(modifier = Modifier.height(6.dp))
                 Row(

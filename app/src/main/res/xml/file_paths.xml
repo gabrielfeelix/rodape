@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Caminhos expostos pelo FileProvider (share-as-image das frases, 3.8).
+     Só o subdiretório de share — nunca o cache inteiro. -->
+<paths>
+    <cache-path name="shared_quotes" path="shared_quotes/" />
+</paths>

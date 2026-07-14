@@ -1,8 +1,10 @@
 package com.example.ui.screens
 
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.outlined.ArrowBack
@@ -14,6 +16,11 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.drawWithContent
+import androidx.compose.ui.graphics.asAndroidBitmap
+import androidx.compose.ui.graphics.drawscope.drawIntoCanvas
+import androidx.compose.ui.graphics.layer.drawLayer
+import androidx.compose.ui.graphics.rememberGraphicsLayer
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontStyle
 import androidx.compose.ui.text.font.FontWeight
@@ -27,6 +34,7 @@ import com.example.ui.theme.LiterataFontFamily
 import com.example.ui.theme.RodapeTheme
 import com.example.ui.viewmodel.MainViewModel
 import com.example.util.formatShortDate
+import com.example.util.shareBitmapAsPng
 import com.example.util.shareTextContent
 import kotlinx.coroutines.launch
 
@@ -206,46 +214,105 @@ fun FrasesScreen(
                         )
                     }
 
-                    items(filteredQuotes, key = { it.id }) { quote ->
-                        // Livro fora do clube: fallback neutro. O capítulo fica só na
-                        // linha de referência (QuoteCard), não no lugar do título.
+                    itemsIndexed(filteredQuotes, key = { _, q -> q.id }) { i, quote ->
+                        // Livro fora do clube: fallback neutro. A atribuição agora
+                        // vive DENTRO do card (3.8) — morreu o título órfão fora.
                         val bookTitle = clubBooks.find { it.id == quote.bookId }?.title
                             ?: "Livro removido"
+                        // Acento varia por card (oliva/terracota/dourado) — a lista
+                        // deixa de parecer template repetido.
+                        val accent = when (i % 3) {
+                            0 -> RodapeTheme.colors.oliva
+                            1 -> RodapeTheme.colors.terracota
+                            else -> RodapeTheme.colors.dourado
+                        }
+                        // Layer de captura: o card desenha através dele, então o
+                        // PNG compartilhado é EXATAMENTE o que está na tela.
+                        val captureLayer = rememberGraphicsLayer()
+                        var showActions by remember(quote.id) { mutableStateOf(false) }
 
-                        Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
-                            Text(
-                                text = bookTitle,
-                                style = MaterialTheme.typography.bodySmall,
-                                fontFamily = LiterataFontFamily,
-                                fontStyle = FontStyle.Italic,
-                                color = RodapeTheme.colors.muted,
-                                modifier = Modifier.padding(start = 4.dp),
-                            )
-                            QuoteCard(
-                                texto = quote.texto,
-                                ref = quote.capituloRef,
-                                onDelete = {
-                                    // Excluir com undo: destrutivo demais pra
-                                    // sumir sem rede de proteção.
-                                    viewModel.deleteQuote(quote)
-                                    scope.launch {
-                                        snackbarHostState.currentSnackbarData?.dismiss()
-                                        val result = snackbarHostState.showSnackbar(
-                                            message = "Frase excluída",
-                                            actionLabel = "Desfazer",
-                                            duration = SnackbarDuration.Short,
-                                        )
-                                        if (result == SnackbarResult.ActionPerformed) {
-                                            viewModel.restoreQuote(quote)
-                                        }
-                                    }
-                                },
-                            )
+                        QuoteCard(
+                            texto = quote.texto,
+                            ref = quote.capituloRef,
+                            bookTitle = bookTitle,
+                            accent = accent,
+                            onLongPress = { showActions = true },
+                            modifier = Modifier.drawWithContent {
+                                captureLayer.record { this@drawWithContent.drawContent() }
+                                drawLayer(captureLayer)
+                            },
+                        )
+
+                        if (showActions) {
+                            ModalBottomSheet(
+                                onDismissRequest = { showActions = false },
+                                containerColor = RodapeTheme.colors.cardSurface,
+                            ) {
+                                Column(modifier = Modifier.padding(bottom = 24.dp)) {
+                                    QuoteActionRow(
+                                        icon = RodapeIcons.Image,
+                                        label = "Compartilhar como imagem",
+                                        tint = RodapeTheme.colors.olivaDark,
+                                        onClick = {
+                                            showActions = false
+                                            scope.launch {
+                                                // Captura o layer já gravado no último draw.
+                                                val bmp = captureLayer.toImageBitmap().asAndroidBitmap()
+                                                shareBitmapAsPng(context, bmp, quote.id)
+                                            }
+                                        },
+                                    )
+                                    QuoteActionRow(
+                                        icon = RodapeIcons.Trash,
+                                        label = "Apagar frase",
+                                        tint = RodapeTheme.colors.terracota,
+                                        onClick = {
+                                            showActions = false
+                                            // Excluir com undo: destrutivo demais pra
+                                            // sumir sem rede de proteção.
+                                            viewModel.deleteQuote(quote)
+                                            scope.launch {
+                                                snackbarHostState.currentSnackbarData?.dismiss()
+                                                val result = snackbarHostState.showSnackbar(
+                                                    message = "Frase excluída",
+                                                    actionLabel = "Desfazer",
+                                                    duration = SnackbarDuration.Short,
+                                                )
+                                                if (result == SnackbarResult.ActionPerformed) {
+                                                    viewModel.restoreQuote(quote)
+                                                }
+                                            }
+                                        },
+                                    )
+                                }
+                            }
                         }
                     }
                 }
             }
         }
+    }
+}
+
+/** Linha de ação do sheet da frase (3.8): ícone + rótulo, target 48dp. */
+@Composable
+private fun QuoteActionRow(
+    icon: androidx.compose.ui.graphics.vector.ImageVector,
+    label: String,
+    tint: androidx.compose.ui.graphics.Color,
+    onClick: () -> Unit,
+) {
+    Row(
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.spacedBy(14.dp),
+        modifier = Modifier
+            .fillMaxWidth()
+            .heightIn(min = 52.dp)
+            .clickable(onClick = onClick)
+            .padding(horizontal = 24.dp),
+    ) {
+        Icon(imageVector = icon, contentDescription = null, tint = tint, modifier = Modifier.size(20.dp))
+        Text(text = label, style = MaterialTheme.typography.bodyLarge, color = tint)
     }
 }
 
