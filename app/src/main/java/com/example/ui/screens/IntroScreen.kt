@@ -17,6 +17,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.heading
 import androidx.compose.ui.semantics.semantics
@@ -41,8 +42,11 @@ import kotlinx.coroutines.launch
  * Sem assets externos de propósito (CSP do design system): as ilustrações são
  * compostas com formas + emoji nas cores da marca, fiéis ao claude-design.
  */
+/** Tipo da spot illustration Compose-drawn (3.10) — geometria pura de marca. */
+private enum class IntroArtKind { Book, Shelf, Chat, Calendar }
+
 private data class IntroPage(
-    val emoji: String,
+    val art: IntroArtKind,
     val accent: Color,
     val accentSoft: Color,
     val title: String,
@@ -58,28 +62,28 @@ fun IntroScreen(onFinished: () -> Unit) {
     val pages = remember {
         listOf(
             IntroPage(
-                emoji = "📖",
+                art = IntroArtKind.Book,
                 accent = terracotaColor,
                 accentSoft = terracotaSoftColor,
                 title = "Um clube de leitura só de vocês",
                 body = "Reúna a galera num clube privado. Sugiram livros e votem juntos no próximo — só entra quem vocês convidam.",
             ),
             IntroPage(
-                emoji = "📚",
+                art = IntroArtKind.Shelf,
                 accent = olivaColor,
                 accentSoft = olivaSoftColor,
                 title = "Leiam no ritmo do grupo",
                 body = "Marque seu progresso capítulo a capítulo e veja onde todo mundo está. Sem cobrança — no ritmo de vocês.",
             ),
             IntroPage(
-                emoji = "💬",
+                art = IntroArtKind.Chat,
                 accent = terracotaColor,
                 accentSoft = terracotaSoftColor,
                 title = "Conversem sem estragar a surpresa",
                 body = "Comente cada capítulo com barreira de spoiler: quem ainda não chegou lá não vê o que vem pela frente.",
             ),
             IntroPage(
-                emoji = "📅",
+                art = IntroArtKind.Calendar,
                 accent = olivaColor,
                 accentSoft = olivaSoftColor,
                 title = "Encontros de verdade",
@@ -147,7 +151,23 @@ fun IntroScreen(onFinished: () -> Unit) {
                 horizontalAlignment = Alignment.CenterHorizontally,
                 verticalArrangement = Arrangement.Center,
             ) {
-                IntroArt(emoji = p.emoji, accent = p.accent, accentSoft = p.accentSoft)
+                // Parallax (3.10): a arte anda mais rápido que o texto durante o
+                // swipe (offset da página dirige translação/escala/alpha) —
+                // profundidade sem custo. reduceMotion: parada.
+                val introReduce = reduceMotion()
+                IntroArt(
+                    kind = p.art,
+                    accent = p.accent,
+                    accentSoft = p.accentSoft,
+                    modifier = if (introReduce) Modifier else Modifier.graphicsLayer {
+                        val pageOffset = (pagerState.currentPage - page) + pagerState.currentPageOffsetFraction
+                        translationX = -pageOffset * 56.dp.toPx()
+                        val f = 1f - kotlin.math.abs(pageOffset).coerceIn(0f, 1f)
+                        alpha = 0.4f + 0.6f * f
+                        scaleX = 0.92f + 0.08f * f
+                        scaleY = 0.92f + 0.08f * f
+                    },
+                )
                 Spacer(Modifier.height(40.dp))
                 Text(
                     text = p.title,
@@ -211,11 +231,22 @@ fun IntroScreen(onFinished: () -> Unit) {
     }
 }
 
-/** Ilustração composta: disco suave da cor de destaque + emoji + pingos de profundidade. */
+/**
+ * Ilustração composta (3.10): disco suave + spot illustration Compose-drawn em
+ * GEOMETRIA pura de marca (rounded rects, círculos, traços — nada de path
+ * arriscado) + pingos de profundidade. Fim do emoji-como-arte.
+ */
 @Composable
-private fun IntroArt(emoji: String, accent: Color, accentSoft: Color) {
+private fun IntroArt(
+    kind: IntroArtKind,
+    accent: Color,
+    accentSoft: Color,
+    modifier: Modifier = Modifier,
+) {
+    val ink = RodapeTheme.colors.ink
+    val cream = RodapeTheme.colors.cream
     Box(
-        modifier = Modifier.size(200.dp),
+        modifier = modifier.size(200.dp),
         contentAlignment = Alignment.Center,
     ) {
         // pingo maior atrás, deslocado
@@ -233,20 +264,138 @@ private fun IntroArt(emoji: String, accent: Color, accentSoft: Color) {
                 .clip(CircleShape)
                 .background(accent.copy(alpha = 0.22f)),
         )
-        // disco principal
+        // disco principal + arte (decorativa: o título carrega o significado)
         Box(
             modifier = Modifier
                 .size(148.dp)
                 .clip(CircleShape)
-                .background(accentSoft),
+                .background(accentSoft)
+                .semantics { contentDescription = "" },
             contentAlignment = Alignment.Center,
         ) {
-            Text(
-                text = emoji,
-                fontSize = 72.sp,
-                // decorativo: o título ao lado já carrega o significado pro leitor de tela
-                modifier = Modifier.semantics { contentDescription = "" },
-            )
+            when (kind) {
+                IntroArtKind.Book -> {
+                    // Livro aberto: duas páginas cream com linhas de texto,
+                    // lombada no acento.
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        BookPageArt(cream = cream, line = accent.copy(alpha = 0.45f), flip = false)
+                        Box(
+                            Modifier
+                                .width(4.dp)
+                                .height(58.dp)
+                                .background(accent)
+                        )
+                        BookPageArt(cream = cream, line = accent.copy(alpha = 0.45f), flip = true)
+                    }
+                }
+                IntroArtKind.Shelf -> {
+                    // Prateleira: lombadas em alturas variadas + linha, com uma
+                    // lombada no acento (a leitura atual do grupo).
+                    Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                        Row(
+                            verticalAlignment = Alignment.Bottom,
+                            horizontalArrangement = Arrangement.spacedBy(5.dp),
+                        ) {
+                            Box(Modifier.size(13.dp, 36.dp).clip(RoundedCornerShape(3.dp)).background(ink.copy(alpha = 0.25f)))
+                            Box(Modifier.size(15.dp, 52.dp).clip(RoundedCornerShape(3.dp)).background(accent))
+                            Box(Modifier.size(12.dp, 44.dp).clip(RoundedCornerShape(3.dp)).background(cream))
+                            Box(Modifier.size(14.dp, 32.dp).clip(RoundedCornerShape(3.dp)).background(ink.copy(alpha = 0.35f)))
+                        }
+                        Spacer(Modifier.height(3.dp))
+                        Box(
+                            Modifier
+                                .width(84.dp)
+                                .height(3.dp)
+                                .clip(RoundedCornerShape(999.dp))
+                                .background(ink.copy(alpha = 0.30f))
+                        )
+                    }
+                }
+                IntroArtKind.Chat -> {
+                    // Conversa: bolha grande cream com traços + bolha-resposta
+                    // no acento, deslocada — diálogo à primeira vista.
+                    Box {
+                        Column(
+                            verticalArrangement = Arrangement.spacedBy(6.dp),
+                            modifier = Modifier
+                                .clip(RoundedCornerShape(14.dp, 14.dp, 14.dp, 4.dp))
+                                .background(cream)
+                                .padding(horizontal = 14.dp, vertical = 12.dp),
+                        ) {
+                            Box(Modifier.size(52.dp, 5.dp).clip(RoundedCornerShape(999.dp)).background(ink.copy(alpha = 0.30f)))
+                            Box(Modifier.size(36.dp, 5.dp).clip(RoundedCornerShape(999.dp)).background(ink.copy(alpha = 0.20f)))
+                        }
+                        Box(
+                            modifier = Modifier
+                                .align(Alignment.BottomEnd)
+                                .offset(x = 22.dp, y = 26.dp)
+                                .clip(RoundedCornerShape(14.dp, 14.dp, 4.dp, 14.dp))
+                                .background(accent)
+                                .padding(horizontal = 12.dp, vertical = 10.dp),
+                        ) {
+                            Box(Modifier.size(30.dp, 5.dp).clip(RoundedCornerShape(999.dp)).background(cream.copy(alpha = 0.85f)))
+                        }
+                    }
+                }
+                IntroArtKind.Calendar -> {
+                    // Calendário: cabeçalho no acento + grade de dias com o dia
+                    // do encontro destacado.
+                    Column(
+                        modifier = Modifier
+                            .clip(RoundedCornerShape(12.dp))
+                            .background(cream),
+                    ) {
+                        Box(
+                            Modifier
+                                .width(84.dp)
+                                .height(18.dp)
+                                .background(accent)
+                        )
+                        Column(
+                            verticalArrangement = Arrangement.spacedBy(7.dp),
+                            modifier = Modifier.padding(12.dp),
+                        ) {
+                            repeat(3) { row ->
+                                Row(horizontalArrangement = Arrangement.spacedBy(9.dp)) {
+                                    repeat(4) { col ->
+                                        val isMeetingDay = row == 1 && col == 2
+                                        Box(
+                                            Modifier
+                                                .size(8.dp)
+                                                .clip(CircleShape)
+                                                .background(
+                                                    if (isMeetingDay) accent
+                                                    else ink.copy(alpha = 0.18f)
+                                                )
+                                        )
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
         }
+    }
+}
+
+/** Página do livro aberto da IntroArt: retângulo cream com 3 traços de texto. */
+@Composable
+private fun BookPageArt(cream: Color, line: Color, flip: Boolean) {
+    Column(
+        verticalArrangement = Arrangement.spacedBy(6.dp),
+        horizontalAlignment = if (flip) Alignment.Start else Alignment.End,
+        modifier = Modifier
+            .clip(
+                if (flip) RoundedCornerShape(topStart = 2.dp, topEnd = 10.dp, bottomEnd = 10.dp, bottomStart = 2.dp)
+                else RoundedCornerShape(topStart = 10.dp, topEnd = 2.dp, bottomEnd = 2.dp, bottomStart = 10.dp)
+            )
+            .background(cream)
+            .padding(horizontal = 9.dp, vertical = 11.dp)
+            .width(30.dp),
+    ) {
+        Box(Modifier.size(28.dp, 4.dp).clip(RoundedCornerShape(999.dp)).background(line))
+        Box(Modifier.size(22.dp, 4.dp).clip(RoundedCornerShape(999.dp)).background(line.copy(alpha = 0.6f)))
+        Box(Modifier.size(25.dp, 4.dp).clip(RoundedCornerShape(999.dp)).background(line))
     }
 }

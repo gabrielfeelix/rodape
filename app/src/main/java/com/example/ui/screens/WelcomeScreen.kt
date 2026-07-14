@@ -56,6 +56,7 @@ import com.example.ui.components.TbButtonVariant
 import com.example.ui.components.RodapeCard
 import com.example.ui.theme.RodapeRadii
 import com.example.ui.theme.RodapeIcons
+import com.example.ui.theme.shelfCoverShadow
 import com.example.ui.theme.Cream
 import com.example.ui.theme.CardSurface
 import com.example.ui.theme.ClubColors
@@ -352,6 +353,8 @@ private fun BookSpine(height: Dp, color: Color, stroke: Boolean = false) {
         modifier = Modifier
             .width(24.dp)
             .height(height)
+            // 3.10: sombra tingida — as lombadas viram objetos físicos na curva.
+            .shelfCoverShadow(cornerRadius = 3.dp)
             .clip(shape)
             .background(color)
             .then(if (stroke) Modifier.border(1.dp, Color.Black.copy(alpha = 0.06f), shape) else Modifier)
