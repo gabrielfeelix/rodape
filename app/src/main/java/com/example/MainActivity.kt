@@ -49,6 +49,29 @@ import com.example.ui.theme.LocalNavAnimatedScope
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
+import androidx.navigation.NavDestination
+import androidx.navigation.toRoute
+import kotlin.reflect.KClass
+import com.example.ui.navigation.About
+import com.example.ui.navigation.AddBookManual
+import com.example.ui.navigation.BookDetail
+import com.example.ui.navigation.CreateClub
+import com.example.ui.navigation.Discussion
+import com.example.ui.navigation.ForgotPassword
+import com.example.ui.navigation.Frases
+import com.example.ui.navigation.JoinClub
+import com.example.ui.navigation.Login
+import com.example.ui.navigation.MainTabs
+import com.example.ui.navigation.ManageChapters
+import com.example.ui.navigation.ManageClub
+import com.example.ui.navigation.MeetingDetail
+import com.example.ui.navigation.ModerationLog
+import com.example.ui.navigation.ModerationQueue
+import com.example.ui.navigation.Notifications
+import com.example.ui.navigation.ResetPassword
+import com.example.ui.navigation.Signup
+import com.example.ui.navigation.SuggestBook
+import com.example.ui.navigation.Welcome
 import com.example.ui.screens.*
 import com.example.ui.theme.LocalReducedMotion
 import com.example.ui.theme.MyApplicationTheme
@@ -142,16 +165,18 @@ class MainActivity : ComponentActivity() {
                             s is SessionStatus.Authenticated && s.session.type == "recovery" -> {
                                 if (!recoveryConsumed) {
                                     recoveryConsumed = true
-                                    navController.navigate("reset_password") {
+                                    navController.navigate(ResetPassword) {
                                         popUpTo(0) { inclusive = true }
                                     }
                                 }
                             }
                             s is SessionStatus.Authenticated -> {
                                 // Logado: garante que esta em main_tabs (idempotente).
-                                val current = navController.currentBackStackEntry?.destination?.route
-                                if (current == "welcome" || current == null) {
-                                    navController.navigate("main_tabs") {
+                                // hasRoute<T>() em vez de comparar route string: com nav
+                                // type-safe o route vira o nome qualificado do @Serializable.
+                                val current = navController.currentBackStackEntry?.destination
+                                if (current == null || current.matchesRoute(Welcome::class)) {
+                                    navController.navigate(MainTabs) {
                                         popUpTo(0) { inclusive = true }
                                     }
                                 }
@@ -170,11 +195,15 @@ class MainActivity : ComponentActivity() {
                             s is SessionStatus.NotAuthenticated -> {
                                 // Deslogado: libera o guard pra um futuro link de recovery.
                                 recoveryConsumed = false
-                                // garante que esta em welcome.
-                                val current = navController.currentBackStackEntry?.destination?.route
-                                if (current != null && current != "welcome" && current != "login" &&
-                                    current != "signup" && current != "forgot_password" && current != "reset_password") {
-                                    navController.navigate("welcome") {
+                                // garante que esta em welcome (se nao ja estiver numa tela de auth).
+                                val current = navController.currentBackStackEntry?.destination
+                                val onAuthScreen = current != null && (
+                                    current.matchesRoute(Welcome::class) || current.matchesRoute(Login::class) ||
+                                    current.matchesRoute(Signup::class) || current.matchesRoute(ForgotPassword::class) ||
+                                    current.matchesRoute(ResetPassword::class)
+                                )
+                                if (current != null && !onAuthScreen) {
+                                    navController.navigate(Welcome) {
                                         popUpTo(0) { inclusive = true }
                                     }
                                 }
@@ -195,7 +224,7 @@ class MainActivity : ComponentActivity() {
                     CompositionLocalProvider(LocalSharedTransitionScope provides this) {
                     NavHost(
                         navController = navController,
-                        startDestination = "welcome",
+                        startDestination = Welcome,
                         enterTransition = {
                             if (reducedMotionNav) EnterTransition.None
                             else slideInHorizontally(
@@ -219,7 +248,7 @@ class MainActivity : ComponentActivity() {
                             ) + fadeOut(tween(RodapeMotion.Dur.standard))
                         },
                     ) {
-                    composable("welcome") {
+                    composable<Welcome> {
                         // Intro de primeiro uso antes do welcome. introSeen == null:
                         // ainda lendo do DataStore — não renderiza nada (evita piscar
                         // a intro pra quem já viu, ou o welcome pra quem ainda vai ver).
@@ -228,26 +257,26 @@ class MainActivity : ComponentActivity() {
                             null -> { /* aguarda o DataStore (1 frame) */ }
                             false -> IntroScreen(onFinished = { viewModel.markIntroSeen() })
                             else -> WelcomeScreen(
-                                onNavigateToLogin = { navController.navigate("login") },
-                                onNavigateToSignUp = { navController.navigate("signup") },
+                                onNavigateToLogin = { navController.navigate(Login) },
+                                onNavigateToSignUp = { navController.navigate(Signup) },
                                 onNavigateWithInvite = { code ->
                                     // B1: retém o código e manda criar conta; o join
                                     // automático acontece ao chegar em main_tabs.
                                     viewModel.setPendingInviteCode(code)
-                                    navController.navigate("signup")
+                                    navController.navigate(Signup)
                                 },
                             )
                         }
                     }
 
-                    composable("login") {
+                    composable<Login> {
                         val ctx = LocalContext.current
                         val authRepo = remember { AuthRepository() }
                         val google = remember { GoogleSignInHelper(ctx) }
                         LoginScreen(
                             onNavigateBack = { navController.popBackStack() },
-                            onNavigateToSignUp = { navController.navigate("signup") },
-                            onNavigateToForgotPassword = { navController.navigate("forgot_password") },
+                            onNavigateToSignUp = { navController.navigate(Signup) },
+                            onNavigateToForgotPassword = { navController.navigate(ForgotPassword) },
                             onSignInWithEmail = { email, password ->
                                 runCatching { authRepo.signInWithEmail(email, password) }
                             },
@@ -259,14 +288,14 @@ class MainActivity : ComponentActivity() {
                                 }
                             },
                             onSignedIn = {
-                                navController.navigate("main_tabs") {
-                                    popUpTo("welcome") { inclusive = true }
+                                navController.navigate(MainTabs) {
+                                    popUpTo(Welcome) { inclusive = true }
                                 }
                             },
                         )
                     }
 
-                    composable("signup") {
+                    composable<Signup> {
                         val ctx = LocalContext.current
                         val authRepo = remember { AuthRepository() }
                         val google = remember { GoogleSignInHelper(ctx) }
@@ -286,26 +315,26 @@ class MainActivity : ComponentActivity() {
                                 // popBackStack(route="login") falha silenciosamente se o
                                 // usuario veio Welcome -> SignUp (sem passar por Login).
                                 // navigate explicito popUpTo welcome resolve nos dois caminhos.
-                                navController.navigate("login") {
-                                    popUpTo("welcome") { inclusive = false }
+                                navController.navigate(Login) {
+                                    popUpTo(Welcome) { inclusive = false }
                                     launchSingleTop = true
                                 }
                             },
                             onNavigateToLogin = {
-                                navController.navigate("login") {
-                                    popUpTo("welcome") { inclusive = false }
+                                navController.navigate(Login) {
+                                    popUpTo(Welcome) { inclusive = false }
                                     launchSingleTop = true
                                 }
                             },
                             onGoogleSignedIn = {
-                                navController.navigate("main_tabs") {
-                                    popUpTo("welcome") { inclusive = true }
+                                navController.navigate(MainTabs) {
+                                    popUpTo(Welcome) { inclusive = true }
                                 }
                             },
                         )
                     }
 
-                    composable("forgot_password") {
+                    composable<ForgotPassword> {
                         val authRepo = remember { AuthRepository() }
                         ForgotPasswordScreen(
                             onNavigateBack = { navController.popBackStack() },
@@ -313,28 +342,28 @@ class MainActivity : ComponentActivity() {
                         )
                     }
 
-                    composable("reset_password") {
+                    composable<ResetPassword> {
                         val authRepo = remember { AuthRepository() }
                         val resetScope = rememberCoroutineScope()
                         ResetPasswordScreen(
                             onUpdatePassword = { newPassword -> runCatching { authRepo.updatePassword(newPassword) } },
                             onPasswordUpdated = {
-                                navController.navigate("main_tabs") {
-                                    popUpTo("welcome") { inclusive = true }
+                                navController.navigate(MainTabs) {
+                                    popUpTo(Welcome) { inclusive = true }
                                 }
                             },
                             onCancel = {
                                 // Sai do fluxo de recovery: encerra a sessao de recovery
                                 // e volta pro welcome (estado neutro/seguro).
                                 resetScope.launch { runCatching { authRepo.signOut() } }
-                                navController.navigate("welcome") {
+                                navController.navigate(Welcome) {
                                     popUpTo(0) { inclusive = true }
                                 }
                             },
                         )
                     }
 
-                    composable("create_club") {
+                    composable<CreateClub> {
                         CreateClubScreen(
                             onNavigateBack = { navController.popBackStack() },
                             onCreateCompleted = { nome, descricao, cor, privacidade, onError ->
@@ -343,11 +372,11 @@ class MainActivity : ComponentActivity() {
                                     onCompleted = { _ ->
                                         // popUpTo na propria rota corrente + inclusive=true remove
                                         // create_club do back stack e cai em main_tabs (que sempre
-                                        // existe). NAO usar popUpTo("welcome") — falha silenciosa
+                                        // existe). NAO usar popUpTo(Welcome) — falha silenciosa
                                         // quando welcome nao esta no back stack (usuario logado
                                         // direto via cold start) e causa comportamento bizarro.
-                                        navController.navigate("main_tabs") {
-                                            popUpTo("create_club") { inclusive = true }
+                                        navController.navigate(MainTabs) {
+                                            popUpTo(CreateClub) { inclusive = true }
                                             launchSingleTop = true
                                         }
                                     },
@@ -357,7 +386,7 @@ class MainActivity : ComponentActivity() {
                         )
                     }
 
-                    composable("join_club") {
+                    composable<JoinClub> {
                         JoinClubScreen(
                             onNavigateBack = { navController.popBackStack() },
                             onJoinWithCodeSubmit = { code, onResult ->
@@ -365,11 +394,11 @@ class MainActivity : ComponentActivity() {
                                     onResult(success, errorMsg)
                                     if (success) {
                                         // popUpTo na propria rota (join_club) + inclusive + singleTop,
-                                        // igual ao create_club. NAO usar popUpTo("welcome"): welcome
+                                        // igual ao create_club. NAO usar popUpTo(Welcome): welcome
                                         // ja saiu do back stack no login, entao vira no-op e empilha
                                         // main_tabs duplicado (voltar reabria a tela de codigo).
-                                        navController.navigate("main_tabs") {
-                                            popUpTo("join_club") { inclusive = true }
+                                        navController.navigate(MainTabs) {
+                                            popUpTo(JoinClub) { inclusive = true }
                                             launchSingleTop = true
                                         }
                                     }
@@ -378,7 +407,7 @@ class MainActivity : ComponentActivity() {
                         )
                     }
 
-                    composable("main_tabs") {
+                    composable<MainTabs> {
                         CompositionLocalProvider(LocalNavAnimatedScope provides this) {
                         // Gate de onboarding: primeiro login deste usuario neste
                         // device mostra OnboardingScreen (avatar + apelido + fonte).
@@ -409,32 +438,32 @@ class MainActivity : ComponentActivity() {
                         } else {
                             MainTabsScreen(
                                 viewModel = viewModel,
-                                onNavigateToNotifications = { navController.navigate("notifications") },
+                                onNavigateToNotifications = { navController.navigate(Notifications) },
                                 onNavigateToDiscussion = { chapterId, title ->
-                                    val encodedTitle = java.net.URLEncoder.encode(title, "UTF-8")
-                                    navController.navigate("discussion/$chapterId/$encodedTitle")
+                                    // Sem URLEncoder: a Navigation type-safe encoda o arg.
+                                    navController.navigate(Discussion(chapterId, title))
                                 },
-                                onNavigateToSuggestBook = { navController.navigate("suggest_book") },
-                                onNavigateToJoinClub = { navController.navigate("join_club") },
-                                onNavigateToCreateClub = { navController.navigate("create_club") },
+                                onNavigateToSuggestBook = { navController.navigate(SuggestBook) },
+                                onNavigateToJoinClub = { navController.navigate(JoinClub) },
+                                onNavigateToCreateClub = { navController.navigate(CreateClub) },
                                 onLogoutCompleted = {
-                                    navController.navigate("welcome") {
-                                        popUpTo("main_tabs") { inclusive = true }
+                                    navController.navigate(Welcome) {
+                                        popUpTo(MainTabs) { inclusive = true }
                                     }
                                 },
-                                onNavigateToBookDetail = { bookId -> navController.navigate("book_detail/$bookId") },
-                                onNavigateToFrases = { navController.navigate("frases") },
-                                onNavigateToManageClub = { navController.navigate("manage_club") },
-                                onNavigateToManageChapters = { navController.navigate("manage_chapters") },
-                                onNavigateToMeetingDetail = { mid -> navController.navigate("meeting_detail/$mid") },
-                                onNavigateToAbout = { navController.navigate("about") }
+                                onNavigateToBookDetail = { bookId -> navController.navigate(BookDetail(bookId)) },
+                                onNavigateToFrases = { navController.navigate(Frases) },
+                                onNavigateToManageClub = { navController.navigate(ManageClub) },
+                                onNavigateToManageChapters = { navController.navigate(ManageChapters) },
+                                onNavigateToMeetingDetail = { mid -> navController.navigate(MeetingDetail(mid)) },
+                                onNavigateToAbout = { navController.navigate(About) }
                             )
                         }
                         } // LocalNavAnimatedScope
                     }
 
-                    composable("meeting_detail/{meetingId}") { backStackEntry ->
-                        val mid = backStackEntry.arguments?.getString("meetingId") ?: ""
+                    composable<MeetingDetail> { backStackEntry ->
+                        val mid = backStackEntry.toRoute<MeetingDetail>().meetingId
                         CompositionLocalProvider(LocalNavAnimatedScope provides this) {
                         MeetingDetailScreen(
                             viewModel = viewModel,
@@ -444,46 +473,46 @@ class MainActivity : ComponentActivity() {
                         }
                     }
 
-                    composable("manage_club") {
+                    composable<ManageClub> {
                         ManageClubScreen(
                             viewModel = viewModel,
                             onNavigateBack = { navController.popBackStack() },
-                            onNavigateToChapters = { navController.navigate("manage_chapters") },
-                            onNavigateToModerationLog = { navController.navigate("moderation_log") },
-                            onNavigateToModerationQueue = { navController.navigate("moderation_queue") }
+                            onNavigateToChapters = { navController.navigate(ManageChapters) },
+                            onNavigateToModerationLog = { navController.navigate(ModerationLog) },
+                            onNavigateToModerationQueue = { navController.navigate(ModerationQueue) }
                         )
                     }
 
-                    composable("manage_chapters") {
+                    composable<ManageChapters> {
                         ManageChaptersScreen(
                             viewModel = viewModel,
                             onNavigateBack = { navController.popBackStack() }
                         )
                     }
 
-                    composable("moderation_log") {
+                    composable<ModerationLog> {
                         ModerationLogScreen(
                             viewModel = viewModel,
                             onNavigateBack = { navController.popBackStack() }
                         )
                     }
 
-                    composable("moderation_queue") {
+                    composable<ModerationQueue> {
                         ModerationQueueScreen(
                             viewModel = viewModel,
                             onNavigateBack = { navController.popBackStack() }
                         )
                     }
 
-                    composable("frases") {
+                    composable<Frases> {
                         FrasesScreen(
                             viewModel = viewModel,
                             onNavigateBack = { navController.popBackStack() }
                         )
                     }
 
-                    composable("book_detail/{bookId}") { backStackEntry ->
-                        val bookId = backStackEntry.arguments?.getString("bookId") ?: ""
+                    composable<BookDetail> { backStackEntry ->
+                        val bookId = backStackEntry.toRoute<BookDetail>().bookId
                         BookDetailScreen(
                             viewModel = viewModel,
                             bookId = bookId,
@@ -491,39 +520,36 @@ class MainActivity : ComponentActivity() {
                         )
                     }
 
-                    composable("notifications") {
+                    composable<Notifications> {
                         NotificationsScreen(
                             viewModel = viewModel,
                             onNavigateBack = { navController.popBackStack() },
                             onNavigateToDiscussion = { chapterId, title ->
-                                val encodedTitle = java.net.URLEncoder.encode(title, "UTF-8")
-                                navController.navigate("discussion/$chapterId/$encodedTitle")
+                                navController.navigate(Discussion(chapterId, title))
                             },
                             onNavigateToTab = { tab -> viewModel.requestTab(tab) }
                         )
                     }
 
-                    composable("discussion/{chapterId}/{title}") { backStackEntry ->
-                        val chapterId = backStackEntry.arguments?.getString("chapterId") ?: ""
-                        val rawTitle = backStackEntry.arguments?.getString("title") ?: ""
-                        val title = try { java.net.URLDecoder.decode(rawTitle, "UTF-8") } catch (e: Exception) { rawTitle }
+                    composable<Discussion> { backStackEntry ->
+                        val route = backStackEntry.toRoute<Discussion>()
                         DiscussionScreen(
                             viewModel = viewModel,
-                            chapterId = chapterId,
-                            chapterTitle = title,
+                            chapterId = route.chapterId,
+                            chapterTitle = route.title,
                             onNavigateBack = { navController.popBackStack() }
                         )
                     }
 
-                    composable("suggest_book") {
+                    composable<SuggestBook> {
                         SuggestScreen(
                             viewModel = viewModel,
                             onNavigateBack = { navController.popBackStack() },
-                            onNavigateToAddManual = { navController.navigate("add_book_manual") }
+                            onNavigateToAddManual = { navController.navigate(AddBookManual) }
                         )
                     }
 
-                    composable("add_book_manual") {
+                    composable<AddBookManual> {
                         AddBookManualScreen(
                             viewModel = viewModel,
                             onNavigateBack = { navController.popBackStack() },
@@ -535,7 +561,7 @@ class MainActivity : ComponentActivity() {
                         )
                     }
 
-                    composable("about") {
+                    composable<About> {
                         AboutScreen(
                             onNavigateBack = { navController.popBackStack() }
                         )
@@ -554,3 +580,10 @@ class MainActivity : ComponentActivity() {
         Supabase.client.handleDeeplinks(intent)
     }
 }
+
+// Checa se o destino atual é uma rota type-safe [clazz]. Com Navigation type-safe
+// o `route` é o serialName do @Serializable (= nome qualificado da classe); pra
+// rotas com args vem "…Classe/{arg}", então corta no primeiro '/' ou '?'.
+// (O hasRoute<T>() reified fica sombreado pelo membro hasRoute(String, Bundle?).)
+private fun NavDestination?.matchesRoute(clazz: KClass<*>): Boolean =
+    this?.route?.substringBefore("/")?.substringBefore("?") == clazz.qualifiedName
