@@ -1,5 +1,6 @@
 package com.example.util
 
+import android.content.ClipData
 import android.content.Context
 import android.content.Intent
 import android.graphics.Bitmap
@@ -29,6 +30,10 @@ suspend fun shareBitmapAsPng(
     val intent = Intent(Intent.ACTION_SEND).apply {
         type = "image/png"
         putExtra(Intent.EXTRA_STREAM, uri)
+        // clipData propaga o grant de leitura pro processo do chooser (intentresolver),
+        // que monta o preview num processo separado — sem isso o thumbnail falha com
+        // SecurityException mesmo com a FLAG setada (o grant só valia pro alvo final).
+        clipData = ClipData.newUri(context.contentResolver, "frase", uri)
         addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
     }
     context.startActivity(Intent.createChooser(intent, chooserTitle))
