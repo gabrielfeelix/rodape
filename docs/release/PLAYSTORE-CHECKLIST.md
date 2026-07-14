@@ -68,12 +68,26 @@ Sem isso o magic link de confirmação de email não consegue voltar pro app.
 Pro Google Sign-In funcionar em release, o **fingerprint SHA-1 do upload
 keystore** precisa estar registrado no OAuth Client.
 
-**Fingerprints do `my-upload-key.jks` (extraídos automaticamente):**
+**⚠️ CHAVE DE UPLOAD RECRIADA em 2026-07-14** — a `my-upload-key.jks` original foi
+perdida (estava só noutro PC). Play App Signing estava ligado → chave de upload
+resetada via Play Console ("Solicitar redefinição da chave de upload"). Chave nova
+gerada com as mesmas senhas do `.env`. Reset submetido, aguardando aprovação do Google.
+
+**Fingerprints da chave de UPLOAD NOVA (`my-upload-key.jks` atual):**
 
 ```
-SHA1:   8D:E8:B5:3C:8A:5B:D8:B1:9B:43:B5:2F:C8:57:EA:61:9F:1E:15:A3
-SHA256: DF:FE:36:E8:17:4B:C4:46:43:A1:1A:3F:6B:AC:66:9F:42:EE:32:76:A0:6A:36:44:04:10:59:B1:83:D6:29:CD
+SHA1:   48:C3:59:7D:FE:D5:0A:C6:AB:75:9D:A4:EE:77:E5:0D:E4:C7:D0:4A
+SHA256: FF:30:D1:E9:78:E3:21:1C:31:98:8F:BA:CE:9A:F6:F9:06:B0:A7:40:DD:7A:54:91:9E:B0:9C:BB:A0:8A:0C:4B
 ```
+
+**Fingerprints da chave de ASSINATURA DO APP (Google, permanente — pro Google Sign-In):**
+
+```
+SHA1:   27:50:C4:6D:3F:2F:46:7E:5E:BD:C3:C1:92:5C:E1:09:0D:F5:03:D5
+SHA256: 1F:A5:3D:BA:87:F2:B2:D6:6E:A7:C1:7D:5F:74:D7:66:AC:45:B8:57:45:CA:3A:12:AD:40:F4:84:11:D8:DE:79
+```
+
+_(velha chave de upload, revogada: SHA1 8D:E8:B5:3C:...:15:A3)_
 
 Pra extrair de novo (se trocar de keystore):
 
