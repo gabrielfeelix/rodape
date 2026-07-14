@@ -22,6 +22,7 @@ import com.example.ui.components.RodapeCard
 import com.example.ui.theme.*
 import com.example.util.URL_PRIVACIDADE
 import com.example.util.URL_TERMOS
+import com.example.util.openBugReport
 import com.example.util.openEmailFeedback
 import com.example.util.openUrl
 
@@ -234,6 +235,15 @@ fun AboutScreen(
                     onClick = { openEmailFeedback(context) },
                     variant = TbButtonVariant.OlivaSoft,
                     size = TbButtonSize.Md,
+                    modifier = Modifier.fillMaxWidth()
+                )
+                Spacer(modifier = Modifier.height(8.dp))
+                // Reportar bug: já anexa device + último erro registrado no corpo.
+                TbButton(
+                    text = "Reportar um problema",
+                    onClick = { openBugReport(context) },
+                    variant = TbButtonVariant.Outline,
+                    size = TbButtonSize.Sm,
                     modifier = Modifier.fillMaxWidth()
                 )
             }

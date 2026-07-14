@@ -4,6 +4,7 @@ import android.content.ActivityNotFoundException
 import android.content.Context
 import android.content.Intent
 import android.net.Uri
+import android.os.Build
 
 /**
  * Abre a página do app na Play Store. Se Play Store não estiver instalada,
@@ -61,6 +62,30 @@ fun openEmailFeedback(
     } catch (e: ActivityNotFoundException) {
         // Sem app de email — fallback é silencioso
     }
+}
+
+/**
+ * Abre um email de "reportar bug" pré-preenchido com info do device e o trecho
+ * inicial do último crash local (se houver). Assim o usuário nos manda um relato
+ * útil sem esforço. Corpo truncado pra caber num mailto.
+ */
+fun openBugReport(context: Context) {
+    val device = "${Build.MANUFACTURER} ${Build.MODEL} · Android ${Build.VERSION.RELEASE} (SDK ${Build.VERSION.SDK_INT})"
+    val ultimoCrash = CrashLogger.crashFiles(context).firstOrNull()
+        ?.let { runCatching { it.readText().take(1500) }.getOrNull() }
+    val body = buildString {
+        appendLine("Descreva o que aconteceu:")
+        appendLine()
+        appendLine()
+        appendLine("————————")
+        appendLine("Device: $device")
+        if (ultimoCrash != null) {
+            appendLine()
+            appendLine("Último erro registrado:")
+            appendLine(ultimoCrash)
+        }
+    }
+    openEmailFeedback(context, subject = "Bug no Rodapé", body = body)
 }
 
 /**
