@@ -33,7 +33,10 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.data.model.Comment
+import com.example.data.model.ReportTargetType
 import com.example.ui.components.Avatar
+import com.example.ui.components.BlockConfirmDialog
+import com.example.ui.components.ReportDialog
 import com.example.ui.components.TbButton
 import com.example.ui.components.TbButtonSize
 import com.example.ui.components.TbButtonVariant
@@ -67,7 +70,10 @@ fun DiscussionScreen(
     // Flows memoizados por chapterId: sem isso, cada recomposição recriava o
     // Flow e disparava um refetch em loop (maior gargalo de performance da tela).
     val commentsFlow = remember(chapterId) { viewModel.getCommentsForChapter(chapterId) }
-    val comments by commentsFlow.collectAsState(initial = emptyList())
+    val commentsRaw by commentsFlow.collectAsState(initial = emptyList())
+    // Moderação (0010): esconde comentários de usuários que eu bloqueei.
+    val blockedIds by viewModel.blockedIds.collectAsState()
+    val comments = remember(commentsRaw, blockedIds) { commentsRaw.filter { it.userId !in blockedIds } }
     val chapters by viewModel.currentChapters.collectAsState()
     val progress by viewModel.userProgress.collectAsState()
     val members by viewModel.clubMembers.collectAsState()
@@ -415,6 +421,9 @@ fun DiscussionScreen(
                             var showRemoveDialog by remember(comment.id) { mutableStateOf(false) }
                             var modMotivo by remember(comment.id) { mutableStateOf("") }
                             var showOwnerMenu by remember(comment.id) { mutableStateOf(false) }
+                            // Moderação (0010): denúncia + bloqueio (qualquer membro).
+                            var showReportDialog by remember(comment.id) { mutableStateOf(false) }
+                            var showBlockDialog by remember(comment.id) { mutableStateOf(false) }
                             var showEditDialog by remember(comment.id) { mutableStateOf(false) }
                             var editText by remember(comment.id) { mutableStateOf(comment.texto) }
                             var showDeleteDialog by remember(comment.id) { mutableStateOf(false) }
@@ -573,7 +582,7 @@ fun DiscussionScreen(
                                     }
                                 }
 
-                                if (isAdmin && !isOwn && !comment.removido) {
+                                if (!isOwn && !comment.removido) {
                                     Box {
                                         IconButton(
                                             onClick = { showModMenu = true },
@@ -581,7 +590,7 @@ fun DiscussionScreen(
                                         ) {
                                             Icon(
                                                 imageVector = RodapeIcons.MoreV,
-                                                contentDescription = "Moderação",
+                                                contentDescription = "Opções",
                                                 tint = RodapeTheme.colors.muted,
                                                 modifier = Modifier.size(18.dp)
                                             )
@@ -591,13 +600,29 @@ fun DiscussionScreen(
                                             onDismissRequest = { showModMenu = false }
                                         ) {
                                             DropdownMenuItem(
-                                                text = { Text("Remover (moderação)") },
+                                                text = { Text("Denunciar") },
                                                 onClick = {
                                                     showModMenu = false
-                                                    modMotivo = ""
-                                                    showRemoveDialog = true
+                                                    showReportDialog = true
                                                 }
                                             )
+                                            DropdownMenuItem(
+                                                text = { Text("Bloquear usuário") },
+                                                onClick = {
+                                                    showModMenu = false
+                                                    showBlockDialog = true
+                                                }
+                                            )
+                                            if (isAdmin) {
+                                                DropdownMenuItem(
+                                                    text = { Text("Remover (moderação)") },
+                                                    onClick = {
+                                                        showModMenu = false
+                                                        modMotivo = ""
+                                                        showRemoveDialog = true
+                                                    }
+                                                )
+                                            }
                                         }
                                     }
                                 }
@@ -715,6 +740,36 @@ fun DiscussionScreen(
                                             Text("Cancelar", color = RodapeTheme.colors.muted)
                                         }
                                     }
+                                )
+                            }
+
+                            // Moderação (0010): denunciar comentário.
+                            if (showReportDialog) {
+                                ReportDialog(
+                                    targetType = ReportTargetType.COMMENT,
+                                    onDismiss = { showReportDialog = false },
+                                    onSubmit = { motivo, detalhe ->
+                                        viewModel.reportContent(
+                                            targetType = ReportTargetType.COMMENT,
+                                            targetId = comment.id,
+                                            targetUserId = comment.userId,
+                                            motivo = motivo,
+                                            detalhe = detalhe,
+                                        )
+                                        showReportDialog = false
+                                    },
+                                )
+                            }
+
+                            // Moderação (0010): bloquear autor.
+                            if (showBlockDialog) {
+                                BlockConfirmDialog(
+                                    nome = userNameVal,
+                                    onDismiss = { showBlockDialog = false },
+                                    onConfirm = {
+                                        viewModel.blockUser(comment.userId)
+                                        showBlockDialog = false
+                                    },
                                 )
                             }
                         }

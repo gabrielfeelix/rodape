@@ -247,9 +247,10 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
         if (userId != null) repository.getNotificationsFlow(userId) else flowOf(emptyList())
     }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(60_000), emptyList())
 
-    // Saved Quotes
+    // Saved Quotes — esconde as removidas por moderação (0010).
     val savedQuotes: StateFlow<List<SavedQuote>> = currentUserId.flatMapLatest { userId ->
-        if (userId != null) repository.getSavedQuotesForUserFlow(userId) else flowOf(emptyList())
+        if (userId != null) repository.getSavedQuotesForUserFlow(userId).map { qs -> qs.filterNot { it.removido } }
+        else flowOf(emptyList())
     }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(60_000), emptyList())
 
     // Livros favoritos do usuário (♥ pessoal, cross-clube). Mesmo padrão de savedQuotes.
@@ -272,10 +273,10 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
         if (round != null) repository.getVotesForRoundFlow(round.id) else flowOf(emptyList())
     }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(60_000), emptyList())
 
-    // Book suggestions for current club, indexed by bookId
+    // Book suggestions for current club, indexed by bookId — esconde removidas (0010).
     val bookSuggestionsByBookId: StateFlow<Map<String, BookSuggestion>> = activeClubId.flatMapLatest { clubId ->
         if (clubId != null) repository.getBookSuggestionsForClubFlow(clubId).map { list ->
-            list.associateBy { it.bookId }
+            list.filterNot { it.removido }.associateBy { it.bookId }
         } else flowOf(emptyMap())
     }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(60_000), emptyMap())
 
@@ -325,6 +326,83 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
     val removedCommentsInActiveClub: StateFlow<List<Comment>> = activeClubId.flatMapLatest { clubId ->
         if (clubId != null) repository.getRemovedCommentsForClubFlow(clubId) else flowOf(emptyList())
     }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(60_000), emptyList())
+
+    // ===================== MODERAÇÃO (0010) =====================
+    // Usuários que EU bloqueei — as telas escondem o conteúdo desses ids.
+    val blockedIds: StateFlow<Set<String>> = currentUserId.flatMapLatest { uid ->
+        if (uid != null) repository.observeBlockedIds(uid).map { it.toSet() } else flowOf(emptySet())
+    }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(60_000), emptySet())
+
+    /** Denuncia um conteúdo (chat, citação, resenha, sugestão, perfil). */
+    fun reportContent(
+        targetType: ReportTargetType,
+        targetId: String,
+        targetUserId: String,
+        motivo: ReportReason,
+        detalhe: String?,
+        onDone: () -> Unit = {},
+    ) {
+        val me = currentUserId.value ?: return
+        val clubId = activeClubId.value ?: return
+        viewModelScope.launch {
+            repository.reportContent(me, clubId, targetType, targetId, targetUserId, motivo, detalhe)
+            onDone()
+        }
+    }
+
+    fun blockUser(userId: String, onDone: () -> Unit = {}) {
+        val me = currentUserId.value ?: return
+        if (me == userId) return
+        viewModelScope.launch { repository.blockUser(me, userId); onDone() }
+    }
+
+    fun unblockUser(userId: String) {
+        val me = currentUserId.value ?: return
+        viewModelScope.launch { repository.unblockUser(me, userId) }
+    }
+
+    /** Remoção por admin (comentário/citação/resenha/sugestão). */
+    fun moderateRemove(
+        targetType: ReportTargetType,
+        targetId: String,
+        targetUserId: String,
+        motivo: String? = null,
+        onDone: () -> Unit = {},
+    ) {
+        val me = currentUserId.value ?: return
+        val clubId = activeClubId.value ?: return
+        viewModelScope.launch {
+            repository.moderateRemoveContent(targetType, targetId, targetUserId, clubId, motivo, me)
+            onDone()
+        }
+    }
+
+    // Fila de denúncias pendentes (admin). Carregada sob demanda na tela.
+    private val _pendingReports = MutableStateFlow<List<ContentReport>>(emptyList())
+    val pendingReports: StateFlow<List<ContentReport>> = _pendingReports.asStateFlow()
+    private val _pendingReportsLoading = MutableStateFlow(false)
+    val pendingReportsLoading: StateFlow<Boolean> = _pendingReportsLoading.asStateFlow()
+
+    fun refreshPendingReports() {
+        val clubId = activeClubId.value ?: return
+        viewModelScope.launch {
+            _pendingReportsLoading.value = true
+            val raw = repository.fetchPendingReports(clubId)
+            _pendingReports.value = raw
+            _pendingReportsLoading.value = false
+        }
+    }
+
+    fun dismissReport(reportId: String) {
+        viewModelScope.launch { repository.dismissReport(reportId); refreshPendingReports() }
+    }
+
+    /** Remove o conteúdo denunciado e marca a denúncia como resolvida. */
+    fun resolveReportByRemoving(report: ContentReport) {
+        moderateRemove(report.targetType, report.targetId, report.targetUserId, "Denúncia procedente") {
+            refreshPendingReports()
+        }
+    }
 
     // Clubes arquivados do usuário
     val archivedClubsForUser: StateFlow<List<Club>> = currentUserId.flatMapLatest { uid ->

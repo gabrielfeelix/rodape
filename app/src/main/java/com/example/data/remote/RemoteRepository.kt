@@ -212,6 +212,60 @@ private fun ClubBook.toDto() = ClubBookDto(
     dataEncontro = dataEncontro?.toIso(),
 )
 
+// ---- moderation (0010) ----
+@Serializable
+private data class UserBlockInsertDto(
+    @SerialName("blocker_id") val blockerId: String,
+    @SerialName("blocked_id") val blockedId: String,
+)
+
+@Serializable
+private data class UserBlockDto(
+    @SerialName("blocker_id") val blockerId: String,
+    @SerialName("blocked_id") val blockedId: String,
+    @SerialName("created_at") val createdAt: String? = null,
+) {
+    fun toDomain(): UserBlock = UserBlock(blockerId, blockedId, createdAt.fromIso())
+}
+
+@Serializable
+private data class ContentReportInsertDto(
+    @SerialName("reporter_id") val reporterId: String,
+    @SerialName("club_id") val clubId: String,
+    @SerialName("target_type") val targetType: String,
+    @SerialName("target_id") val targetId: String,
+    @SerialName("target_user_id") val targetUserId: String,
+    val motivo: String,
+    val detalhe: String? = null,
+)
+
+@Serializable
+private data class ContentReportDto(
+    val id: String,
+    @SerialName("club_id") val clubId: String,
+    @SerialName("target_type") val targetType: String,
+    @SerialName("target_id") val targetId: String,
+    @SerialName("target_user_id") val targetUserId: String,
+    @SerialName("reporter_id") val reporterId: String,
+    val motivo: String,
+    val detalhe: String? = null,
+    val status: String = "pendente",
+    @SerialName("created_at") val createdAt: String? = null,
+) {
+    fun toDomain(): ContentReport = ContentReport(
+        id = id,
+        clubId = clubId,
+        targetType = ReportTargetType.entries.firstOrNull { it.wire == targetType } ?: ReportTargetType.COMMENT,
+        targetId = targetId,
+        targetUserId = targetUserId,
+        reporterId = reporterId,
+        motivo = ReportReason.entries.firstOrNull { it.wire == motivo } ?: ReportReason.OUTRO,
+        detalhe = detalhe,
+        status = status,
+        criadoEm = createdAt.fromIso(),
+    )
+}
+
 // ---- chapters ----
 @Serializable
 private data class ChapterDto(
@@ -463,11 +517,15 @@ private data class SavedQuoteDto(
     val texto: String,
     @SerialName("capitulo_ref") val capituloRef: String? = null,
     @SerialName("created_at") val createdAt: String? = null,
+    val removido: Boolean = false,
+    @SerialName("removido_por") val removidoPor: String? = null,
+    @SerialName("motivo_remocao") val motivoRemocao: String? = null,
 ) {
     fun toDomain(): SavedQuote = SavedQuote(
         id = id, userId = userId, clubId = clubId, bookId = bookId,
         texto = texto, capituloRef = capituloRef ?: "",
         criadoEm = createdAt.fromIso(),
+        removido = removido, removidoPor = removidoPor, motivoRemocao = motivoRemocao,
     )
 }
 
@@ -514,10 +572,14 @@ private data class BookRatingDto(
     val stars: Int,
     val comment: String = "",
     @SerialName("updated_at") val updatedAt: String? = null,
+    val removido: Boolean = false,
+    @SerialName("removido_por") val removidoPor: String? = null,
+    @SerialName("motivo_remocao") val motivoRemocao: String? = null,
 ) {
     fun toDomain(): BookRating = BookRating(
         bookId = bookId, clubId = clubId, userId = userId,
         stars = stars, comment = comment, updatedAt = updatedAt.fromIso(),
+        removido = removido, removidoPor = removidoPor, motivoRemocao = motivoRemocao,
     )
 }
 
@@ -554,12 +616,16 @@ private data class BookSuggestionDto(
     @SerialName("sugerido_por") val sugeridoPor: String,
     val justificativa: String? = null,
     @SerialName("created_at") val createdAt: String? = null,
+    val removido: Boolean = false,
+    @SerialName("removido_por") val removidoPor: String? = null,
+    @SerialName("motivo_remocao") val motivoRemocao: String? = null,
 ) {
     fun toDomain(): BookSuggestion = BookSuggestion(
         id = id, clubId = clubId, bookId = bookId,
         suggestedByUserId = sugeridoPor,
         justificativa = justificativa ?: "",
         criadoEm = createdAt.fromIso(),
+        removido = removido, removidoPor = removidoPor, motivoRemocao = motivoRemocao,
     )
 }
 
@@ -1132,6 +1198,43 @@ class RemoteRepository(
             supabase.from("notifications").update({ set("lida", true) }) {
                 filter { eq("id", obj.str("id")) }
             }
+        }
+        // ---- moderação (0010) ----
+        registerHandler("insert_report") { j ->
+            val obj = this.json.parseToJsonElement(j) as JsonObject
+            supabase.from("content_reports").upsert(
+                ContentReportInsertDto(
+                    reporterId = obj.str("reporterId"),
+                    clubId = obj.str("clubId"),
+                    targetType = obj.str("targetType"),
+                    targetId = obj.str("targetId"),
+                    targetUserId = obj.str("targetUserId"),
+                    motivo = obj.str("motivo"),
+                    detalhe = obj.strOrNull("detalhe"),
+                )
+            ) { onConflict = "reporter_id,target_type,target_id"; ignoreDuplicates = true }
+        }
+        registerHandler("insert_user_block") { j ->
+            val obj = this.json.parseToJsonElement(j) as JsonObject
+            supabase.from("user_blocks").upsert(
+                UserBlockInsertDto(blockerId = obj.str("blockerId"), blockedId = obj.str("blockedId"))
+            ) { ignoreDuplicates = true }
+        }
+        registerHandler("delete_user_block") { j ->
+            val obj = this.json.parseToJsonElement(j) as JsonObject
+            supabase.from("user_blocks").delete {
+                filter { eq("blocker_id", obj.str("blockerId")); eq("blocked_id", obj.str("blockedId")) }
+            }
+        }
+        registerHandler("moderate_remove") { j ->
+            val obj = this.json.parseToJsonElement(j) as JsonObject
+            supabase.postgrest.rpc("moderate_remove_content", buildJsonObject {
+                put("p_type", obj.str("type"))
+                put("p_target_id", obj.str("targetId"))
+                put("p_target_user_id", obj.str("targetUserId"))
+                put("p_club_id", obj.str("clubId"))
+                put("p_motivo", obj.strOrNull("motivo"))
+            })
         }
 
         // Tenta drenar logo no init (caso tenha sobrado fila da sessao anterior).
@@ -2174,6 +2277,137 @@ class RemoteRepository(
         val payload = buildJsonObject { put("id", commentId) }.toString()
         tryRemoteOrEnqueue("delete_comment", payload, notifyTable = "comments") {
             supabase.from("comments").delete { filter { eq("id", commentId) } }
+        }
+    }
+
+    // ============================================================
+    // MODERAÇÃO — denúncia, bloqueio, remoção (migration 0010)
+    // ============================================================
+
+    /** Denuncia um conteúdo. Idempotente por (reporter, tipo, alvo) — reenvio é no-op.
+     *  Local-first via fila offline; não precisa de cache local (é write-only). */
+    suspend fun reportContent(
+        reporterId: String,
+        clubId: String,
+        targetType: ReportTargetType,
+        targetId: String,
+        targetUserId: String,
+        motivo: ReportReason,
+        detalhe: String?,
+    ) {
+        val payload = buildJsonObject {
+            put("reporterId", reporterId)
+            put("clubId", clubId)
+            put("targetType", targetType.wire)
+            put("targetId", targetId)
+            put("targetUserId", targetUserId)
+            put("motivo", motivo.wire)
+            if (!detalhe.isNullOrBlank()) put("detalhe", detalhe)
+        }.toString()
+        tryRemoteOrEnqueue("insert_report", payload) {
+            supabase.from("content_reports").upsert(
+                ContentReportInsertDto(
+                    reporterId = reporterId, clubId = clubId,
+                    targetType = targetType.wire, targetId = targetId,
+                    targetUserId = targetUserId, motivo = motivo.wire,
+                    detalhe = detalhe?.takeIf { it.isNotBlank() },
+                )
+            ) { onConflict = "reporter_id,target_type,target_id"; ignoreDuplicates = true }
+        }
+    }
+
+    /** Bloqueia um usuário. Cache local imediato (some da UI na hora) + fila. */
+    suspend fun blockUser(me: String, blockedId: String) {
+        if (me == blockedId) return
+        dao.upsertUserBlock(UserBlock(me, blockedId, System.currentTimeMillis()))
+        val payload = buildJsonObject { put("blockerId", me); put("blockedId", blockedId) }.toString()
+        tryRemoteOrEnqueue("insert_user_block", payload) {
+            supabase.from("user_blocks").upsert(UserBlockInsertDto(me, blockedId)) { ignoreDuplicates = true }
+        }
+    }
+
+    /** Desbloqueia. */
+    suspend fun unblockUser(me: String, blockedId: String) {
+        dao.deleteUserBlock(me, blockedId)
+        val payload = buildJsonObject { put("blockerId", me); put("blockedId", blockedId) }.toString()
+        tryRemoteOrEnqueue("delete_user_block", payload) {
+            supabase.from("user_blocks").delete {
+                filter { eq("blocker_id", me); eq("blocked_id", blockedId) }
+            }
+        }
+    }
+
+    /** Ids que EU bloqueei — pra esconder conteúdo desses usuários nas listas.
+     *  Dispara um sync em background (padrão dos demais getters de Flow). */
+    fun observeBlockedIds(me: String): Flow<List<String>> {
+        scope.launch { runCatching { syncMyBlocks(me) } }
+        return dao.blockedIdsFlow(me)
+    }
+
+    fun isBlockedFlow(me: String, other: String): Flow<Boolean> = dao.isBlockedFlow(me, other)
+
+    private suspend fun syncMyBlocks(me: String) {
+        val list = supabase.from("user_blocks").select {
+            filter { eq("blocker_id", me) }
+        }.decodeList<UserBlockDto>().map { it.toDomain() }
+        dao.replaceUserBlocks(me, list)
+    }
+
+    private fun tableForTarget(type: ReportTargetType): String = when (type) {
+        ReportTargetType.COMMENT -> "comments"
+        ReportTargetType.SAVED_QUOTE -> "saved_quotes"
+        ReportTargetType.BOOK_SUGGESTION -> "book_suggestions"
+        ReportTargetType.BOOK_RATING -> "book_ratings"
+        else -> "comments"
+    }
+
+    /** Admin remove conteúdo abusivo. Chama moderate_remove_content (checa admin no
+     *  servidor) e reflete local otimista. targetId: id da linha (ou book_id p/ rating). */
+    suspend fun moderateRemoveContent(
+        type: ReportTargetType,
+        targetId: String,
+        targetUserId: String,
+        clubId: String,
+        motivo: String?,
+        removidoPor: String,
+    ) {
+        when (type) {
+            ReportTargetType.COMMENT -> dao.markCommentRemoved(targetId, removidoPor, motivo)
+            ReportTargetType.SAVED_QUOTE -> dao.markQuoteRemoved(targetId, removidoPor, motivo)
+            ReportTargetType.BOOK_SUGGESTION -> dao.markSuggestionRemoved(targetId, removidoPor, motivo)
+            ReportTargetType.BOOK_RATING -> dao.markRatingRemoved(targetId, clubId, targetUserId, removidoPor, motivo)
+            else -> {}
+        }
+        val payload = buildJsonObject {
+            put("type", type.wire)
+            put("targetId", targetId)
+            put("targetUserId", targetUserId)
+            put("clubId", clubId)
+            if (!motivo.isNullOrBlank()) put("motivo", motivo)
+        }.toString()
+        tryRemoteOrEnqueue("moderate_remove", payload, notifyTable = tableForTarget(type)) {
+            supabase.postgrest.rpc("moderate_remove_content", buildJsonObject {
+                put("p_type", type.wire)
+                put("p_target_id", targetId)
+                put("p_target_user_id", targetUserId)
+                put("p_club_id", clubId)
+                put("p_motivo", motivo)
+            })
+        }
+    }
+
+    /** Fila de denúncias pendentes de um clube (só admin lê — RLS garante). Online. */
+    suspend fun fetchPendingReports(clubId: String): List<ContentReport> = runCatching {
+        supabase.from("content_reports").select {
+            filter { eq("club_id", clubId); eq("status", "pendente") }
+            order("created_at", Order.DESCENDING)
+        }.decodeList<ContentReportDto>().map { it.toDomain() }
+    }.getOrDefault(emptyList())
+
+    /** Admin descarta denúncia (improcedente) sem remover conteúdo. */
+    suspend fun dismissReport(reportId: String) {
+        runCatching {
+            supabase.postgrest.rpc("dismiss_report", buildJsonObject { put("p_report_id", reportId) })
         }
     }
 

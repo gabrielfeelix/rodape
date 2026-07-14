@@ -448,7 +448,8 @@ class MainActivity : ComponentActivity() {
                             viewModel = viewModel,
                             onNavigateBack = { navController.popBackStack() },
                             onNavigateToChapters = { navController.navigate("manage_chapters") },
-                            onNavigateToModerationLog = { navController.navigate("moderation_log") }
+                            onNavigateToModerationLog = { navController.navigate("moderation_log") },
+                            onNavigateToModerationQueue = { navController.navigate("moderation_queue") }
                         )
                     }
 
@@ -461,6 +462,13 @@ class MainActivity : ComponentActivity() {
 
                     composable("moderation_log") {
                         ModerationLogScreen(
+                            viewModel = viewModel,
+                            onNavigateBack = { navController.popBackStack() }
+                        )
+                    }
+
+                    composable("moderation_queue") {
+                        ModerationQueueScreen(
                             viewModel = viewModel,
                             onNavigateBack = { navController.popBackStack() }
                         )

@@ -24,6 +24,7 @@ import androidx.compose.ui.unit.sp
 import com.example.data.model.ClubMember
 import com.example.ui.admin.*
 import com.example.ui.components.Avatar
+import com.example.ui.components.BlockConfirmDialog
 import com.example.ui.components.Cover
 import com.example.ui.components.Overline
 import com.example.ui.components.TbButton
@@ -41,7 +42,8 @@ fun ManageClubScreen(
     viewModel: MainViewModel,
     onNavigateBack: () -> Unit,
     onNavigateToChapters: () -> Unit,
-    onNavigateToModerationLog: () -> Unit
+    onNavigateToModerationLog: () -> Unit,
+    onNavigateToModerationQueue: () -> Unit
 ) {
     val club by viewModel.activeClub.collectAsState()
     val currentBook by viewModel.currentBook.collectAsState()
@@ -63,6 +65,7 @@ fun ManageClubScreen(
     var showRegenCode by remember { mutableStateOf(false) }
     var memberSheetFor by remember { mutableStateOf<ClubMember?>(null) }
     var removeMemberFor by remember { mutableStateOf<ClubMember?>(null) }
+    var blockMemberFor by remember { mutableStateOf<ClubMember?>(null) }
     var showEditPattern by remember { mutableStateOf(false) }
     var editingMeetingId by remember { mutableStateOf<String?>(null) }
     var creatingNewMeeting by remember { mutableStateOf(false) }
@@ -566,7 +569,15 @@ fun ManageClubScreen(
                     )
                     Spacer(modifier = Modifier.height(8.dp))
                     TbButton(
-                        text = "Ver log",
+                        text = "Denúncias pendentes",
+                        onClick = onNavigateToModerationQueue,
+                        variant = TbButtonVariant.Terra,
+                        size = TbButtonSize.Sm,
+                        modifier = Modifier.fillMaxWidth()
+                    )
+                    Spacer(modifier = Modifier.height(8.dp))
+                    TbButton(
+                        text = "Ver log de removidos",
                         onClick = onNavigateToModerationLog,
                         variant = TbButtonVariant.Outline,
                         size = TbButtonSize.Sm,
@@ -684,7 +695,25 @@ fun ManageClubScreen(
             onRemove = {
                 removeMemberFor = rawMember
                 memberSheetFor = null
+            },
+            isSelf = isSelf,
+            onBlock = {
+                blockMemberFor = rawMember
+                memberSheetFor = null
             }
+        )
+    }
+
+    blockMemberFor?.let { rawMember ->
+        val user = members.find { it.id == rawMember.userId }
+        BlockConfirmDialog(
+            nome = user?.nome ?: "este membro",
+            onDismiss = { blockMemberFor = null },
+            onConfirm = {
+                viewModel.blockUser(rawMember.userId)
+                blockMemberFor = null
+                scope.launch { snackbar.showSnackbar("Usuário bloqueado.") }
+            },
         )
     }
 
@@ -886,7 +915,9 @@ private fun MemberActionSheet(
     onPromote: () -> Unit,
     onDemote: () -> Unit,
     onTransferSuper: () -> Unit,
-    onRemove: () -> Unit
+    onRemove: () -> Unit,
+    isSelf: Boolean = false,
+    onBlock: () -> Unit = {},
 ) {
     // Confirmação pra transferir super admin — ação irreversível pelo próprio.
     var showTransferConfirm by remember { mutableStateOf(false) }
@@ -931,6 +962,10 @@ private fun MemberActionSheet(
             }
             if (canRemove) {
                 TbButton(text = "Remover do clube", onClick = onRemove, variant = TbButtonVariant.Outline, modifier = Modifier.fillMaxWidth())
+            }
+            // Moderação (0010): bloquear pessoa (esconde conteúdo dos dois lados).
+            if (!isSelf) {
+                TbButton(text = "Bloquear usuário", onClick = onBlock, variant = TbButtonVariant.Outline, modifier = Modifier.fillMaxWidth())
             }
             Spacer(modifier = Modifier.height(8.dp))
         }

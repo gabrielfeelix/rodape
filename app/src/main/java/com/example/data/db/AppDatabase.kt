@@ -34,9 +34,10 @@ import com.example.data.model.*
         MemberRemoval::class,
         MeetingMinutes::class,
         MeetingNote::class,
+        UserBlock::class,
         PendingMutation::class,
     ],
-    version = 5,
+    version = 6,
     exportSchema = true,
 )
 abstract class AppDatabase : RoomDatabase() {
@@ -101,6 +102,25 @@ abstract class AppDatabase : RoomDatabase() {
             }
         }
 
+        // v5 -> v6: moderação (migration servidor 0010).
+        //  - user_blocks: cache local do bloqueio, pra filtrar conteúdo offline.
+        //  - saved_quotes/book_ratings/book_suggestions: colunas removido/removidoPor/
+        //    motivoRemocao (comments já tinha). Espelham a moderação do servidor.
+        private val MIGRATION_5_6 = object : Migration(5, 6) {
+            override fun migrate(db: SupportSQLiteDatabase) {
+                db.execSQL(
+                    "CREATE TABLE IF NOT EXISTS `user_blocks` (" +
+                        "`blockerId` TEXT NOT NULL, `blockedId` TEXT NOT NULL, " +
+                        "`criadoEm` INTEGER NOT NULL, PRIMARY KEY(`blockerId`, `blockedId`))"
+                )
+                for (t in listOf("saved_quotes", "book_ratings", "book_suggestions")) {
+                    db.execSQL("ALTER TABLE `$t` ADD COLUMN `removido` INTEGER NOT NULL DEFAULT 0")
+                    db.execSQL("ALTER TABLE `$t` ADD COLUMN `removidoPor` TEXT")
+                    db.execSQL("ALTER TABLE `$t` ADD COLUMN `motivoRemocao` TEXT")
+                }
+            }
+        }
+
         /**
          * Banco e GLOBAL pro app, nao por usuario — porque RLS no servidor ja garante
          * que cada user so consegue baixar SEU dado, entao o cache local naturalmente
@@ -113,7 +133,7 @@ abstract class AppDatabase : RoomDatabase() {
                 AppDatabase::class.java,
                 "rodape-cache.db"
             )
-                .addMigrations(MIGRATION_1_2, MIGRATION_2_3, MIGRATION_3_4, MIGRATION_4_5)
+                .addMigrations(MIGRATION_1_2, MIGRATION_2_3, MIGRATION_3_4, MIGRATION_4_5, MIGRATION_5_6)
                 .apply {
                     // Migrations explicitas acima preservam o cache e a fila offline
                     // no upgrade. Em DEBUG mantemos o fallback destrutivo como rede de

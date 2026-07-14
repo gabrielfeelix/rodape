@@ -437,6 +437,46 @@ interface RodapeDao {
     @Query("SELECT * FROM member_removals WHERE clubId = :clubId ORDER BY removedAt DESC")
     fun memberRemovalsForClubFlow(clubId: String): Flow<List<MemberRemoval>>
 
+    // ====================== MODERAÇÃO — BLOQUEIO ======================
+    @Upsert
+    suspend fun upsertUserBlock(b: UserBlock)
+
+    @Upsert
+    suspend fun upsertUserBlocks(bs: List<UserBlock>)
+
+    @Query("DELETE FROM user_blocks WHERE blockerId = :blockerId AND blockedId = :blockedId")
+    suspend fun deleteUserBlock(blockerId: String, blockedId: String)
+
+    @Query("DELETE FROM user_blocks WHERE blockerId = :me AND blockedId NOT IN (:keepIds)")
+    suspend fun pruneUserBlocksExcept(me: String, keepIds: List<String>)
+
+    // Ids que EU bloqueei — usado pra esconder conteúdo desses usuários nas listas.
+    @Query("SELECT blockedId FROM user_blocks WHERE blockerId = :me")
+    fun blockedIdsFlow(me: String): Flow<List<String>>
+
+    @Query("SELECT blockedId FROM user_blocks WHERE blockerId = :me")
+    suspend fun blockedIds(me: String): List<String>
+
+    @Query("SELECT EXISTS(SELECT 1 FROM user_blocks WHERE blockerId = :me AND blockedId = :other)")
+    fun isBlockedFlow(me: String, other: String): Flow<Boolean>
+
+    @Transaction
+    suspend fun replaceUserBlocks(me: String, blocks: List<UserBlock>) {
+        upsertUserBlocks(blocks)
+        pruneUserBlocksExcept(me, blocks.map { it.blockedId })
+    }
+
+    // ====================== MODERAÇÃO — REMOÇÃO (optimistic) ======================
+    // Servidor reconcilia via função moderate_remove_content; aqui só reflete local.
+    @Query("UPDATE saved_quotes SET removido = 1, removidoPor = :by, motivoRemocao = :motivo WHERE id = :id")
+    suspend fun markQuoteRemoved(id: String, by: String?, motivo: String?)
+
+    @Query("UPDATE book_suggestions SET removido = 1, removidoPor = :by, motivoRemocao = :motivo WHERE id = :id")
+    suspend fun markSuggestionRemoved(id: String, by: String?, motivo: String?)
+
+    @Query("UPDATE book_ratings SET removido = 1, removidoPor = :by, motivoRemocao = :motivo WHERE bookId = :bookId AND clubId = :clubId AND userId = :userId")
+    suspend fun markRatingRemoved(bookId: String, clubId: String, userId: String, by: String?, motivo: String?)
+
     // ====================== ATOMIC REPLACES ======================
     // Quando o sync re-baixa uma lista inteira, e mais seguro fazer prune+upsert
     // em uma so transacao do que individualmente.
@@ -573,8 +613,12 @@ interface RodapeDao {
     @Query("DELETE FROM meeting_notes")
     suspend fun clearMeetingNotes()
 
+    @Query("DELETE FROM user_blocks")
+    suspend fun clearUserBlocks()
+
     @Transaction
     suspend fun clearAll() {
+        clearUserBlocks()
         clearReactions()
         clearComments()
         clearVotes()

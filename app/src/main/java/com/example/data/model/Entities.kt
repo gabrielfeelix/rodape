@@ -162,6 +162,10 @@ data class SavedQuote(
     val texto: String,
     val capituloRef: String,
     val criadoEm: Long,
+    // Moderação (0010): admin pode remover conteúdo abusivo. Filtrado no cliente.
+    @ColumnInfo(defaultValue = "0") val removido: Boolean = false,
+    val removidoPor: String? = null,
+    val motivoRemocao: String? = null,
 )
 
 @Entity(tableName = "book_summaries", primaryKeys = ["bookId", "clubId"])
@@ -181,6 +185,10 @@ data class BookRating(
     val stars: Int,
     val comment: String,
     val updatedAt: Long,
+    // Moderação (0010): remoção só zera o texto da resenha (a nota em estrelas fica).
+    @ColumnInfo(defaultValue = "0") val removido: Boolean = false,
+    val removidoPor: String? = null,
+    val motivoRemocao: String? = null,
 )
 
 // Favorito PESSOAL de livro. Chave (userId, bookId) — vale entre TODOS os clubes
@@ -201,6 +209,10 @@ data class BookSuggestion(
     val suggestedByUserId: String,
     val justificativa: String,
     val criadoEm: Long,
+    // Moderação (0010): admin pode remover sugestão abusiva. Filtrado no cliente.
+    @ColumnInfo(defaultValue = "0") val removido: Boolean = false,
+    val removidoPor: String? = null,
+    val motivoRemocao: String? = null,
 )
 
 @Entity(tableName = "voting_rounds")
@@ -256,4 +268,55 @@ data class MeetingNote(
     val userId: String,
     val texto: String,
     val updatedAt: Long,
+)
+
+// ============================================================================
+// Moderação (migration 0010) — denúncia + bloqueio.
+// ============================================================================
+
+// Bloqueio de usuário. Cache local (também no servidor via user_blocks) pra
+// filtrar conteúdo de/para bloqueados OFFLINE nas listas. Bidirecional na leitura.
+@Entity(tableName = "user_blocks", primaryKeys = ["blockerId", "blockedId"])
+data class UserBlock(
+    val blockerId: String,
+    val blockedId: String,
+    val criadoEm: Long,
+)
+
+// Tipo de alvo de denúncia — bate com o enum public.report_target_type.
+enum class ReportTargetType(val wire: String) {
+    COMMENT("comment"),
+    SAVED_QUOTE("saved_quote"),
+    BOOK_RATING("book_rating"),
+    BOOK_SUGGESTION("book_suggestion"),
+    PROFILE("profile"),
+    REACTION("reaction"),
+}
+
+// Motivo — bate com o enum public.report_reason.
+enum class ReportReason(val wire: String, val label: String) {
+    SPAM("spam", "Spam ou propaganda"),
+    ASSEDIO("assedio", "Assédio ou bullying"),
+    ABUSO("abuso", "Abuso ou ameaça"),
+    CONTEUDO_IMPROPRIO("conteudo_improprio", "Conteúdo impróprio"),
+    DISCURSO_ODIO("discurso_odio", "Discurso de ódio"),
+    OUTRO("outro", "Outro"),
+}
+
+// Denúncia lida do servidor pra fila de moderação do admin (não é @Entity Room —
+// a fila é online). targetUserNome/preview são resolvidos por join no RemoteRepository.
+data class ContentReport(
+    val id: String,
+    val clubId: String,
+    val targetType: ReportTargetType,
+    val targetId: String,
+    val targetUserId: String,
+    val reporterId: String,
+    val motivo: ReportReason,
+    val detalhe: String?,
+    val status: String, // "pendente" | "resolvido" | "descartado"
+    val criadoEm: Long,
+    val targetUserNome: String? = null,
+    val reporterNome: String? = null,
+    val conteudoPreview: String? = null,
 )
