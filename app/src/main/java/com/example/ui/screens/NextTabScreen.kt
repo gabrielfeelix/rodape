@@ -425,9 +425,13 @@ fun EncontroTab(
                             // Day-stamp tipografado (a11y lê a data inteira, não fragmentos)
                             Column(
                                 horizontalAlignment = Alignment.CenterHorizontally,
-                                modifier = Modifier.semantics(mergeDescendants = true) {
-                                    contentDescription = "${meeting!!.data}, ${meeting!!.hora}"
-                                },
+                                // Shared-element: o day-stamp "voa" pro header do
+                                // MeetingDetail (mesma key). No-op se fora do NavHost.
+                                modifier = Modifier
+                                    .rodapeSharedElement("meeting-stamp-${meeting!!.id}")
+                                    .semantics(mergeDescendants = true) {
+                                        contentDescription = "${meeting!!.data}, ${meeting!!.hora}"
+                                    },
                             ) {
                                 Text(
                                     text = tWeekday,

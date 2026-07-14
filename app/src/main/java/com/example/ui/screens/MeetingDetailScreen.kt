@@ -156,9 +156,12 @@ fun MeetingDetailScreen(
                     // Day-stamp tipografado — mesmo motivo do ticket.
                     Column(
                         horizontalAlignment = Alignment.CenterHorizontally,
-                        modifier = Modifier.semantics(mergeDescendants = true) {
-                            contentDescription = "${m.data}, ${m.hora}"
-                        },
+                        // Destino do shared-element vindo do ticket da NextTab (mesma key).
+                        modifier = Modifier
+                            .rodapeSharedElement("meeting-stamp-$meetingId")
+                            .semantics(mergeDescendants = true) {
+                                contentDescription = "${m.data}, ${m.hora}"
+                            },
                     ) {
                         Text(
                             text = hWeekday,

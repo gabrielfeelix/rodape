@@ -40,8 +40,11 @@ import androidx.compose.animation.ExitTransition
 import androidx.compose.animation.core.tween
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
+import androidx.compose.animation.SharedTransitionLayout
 import androidx.compose.animation.slideInHorizontally
 import androidx.compose.animation.slideOutHorizontally
+import com.example.ui.theme.LocalSharedTransitionScope
+import com.example.ui.theme.LocalNavAnimatedScope
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
@@ -55,6 +58,7 @@ import kotlinx.coroutines.launch
 class MainActivity : ComponentActivity() {
     private val viewModel: MainViewModel by viewModels()
 
+    @OptIn(androidx.compose.animation.ExperimentalSharedTransitionApi::class)
     override fun onCreate(savedInstanceState: Bundle?) {
         // 4.1: splash de marca (fundo paper + ícone) no cold start — precisa vir
         // ANTES do super.onCreate pra trocar o tema Starting → real sem flash.
@@ -186,6 +190,8 @@ class MainActivity : ComponentActivity() {
                     // transição NÃO são @Composable, então reduced-motion é lido
                     // aqui fora e capturado (vira None = instantâneo).
                     val reducedMotionNav = LocalReducedMotion.current
+                    SharedTransitionLayout {
+                    CompositionLocalProvider(LocalSharedTransitionScope provides this) {
                     NavHost(
                         navController = navController,
                         startDestination = "welcome",
@@ -372,6 +378,7 @@ class MainActivity : ComponentActivity() {
                     }
 
                     composable("main_tabs") {
+                        CompositionLocalProvider(LocalNavAnimatedScope provides this) {
                         // Gate de onboarding: primeiro login deste usuario neste
                         // device mostra OnboardingScreen (avatar + apelido + fonte).
                         // Estado vem de DataStore (onboardedUsersFlow) cruzado com
@@ -422,15 +429,18 @@ class MainActivity : ComponentActivity() {
                                 onNavigateToAbout = { navController.navigate("about") }
                             )
                         }
+                        } // LocalNavAnimatedScope
                     }
 
                     composable("meeting_detail/{meetingId}") { backStackEntry ->
                         val mid = backStackEntry.arguments?.getString("meetingId") ?: ""
+                        CompositionLocalProvider(LocalNavAnimatedScope provides this) {
                         MeetingDetailScreen(
                             viewModel = viewModel,
                             meetingId = mid,
                             onNavigateBack = { navController.popBackStack() }
                         )
+                        }
                     }
 
                     composable("manage_club") {
@@ -522,6 +532,8 @@ class MainActivity : ComponentActivity() {
                         )
                     }
                 }
+                    } // CompositionLocalProvider(sharedScope)
+                    } // SharedTransitionLayout
                 }
             }
             } // CompositionLocalProvider
