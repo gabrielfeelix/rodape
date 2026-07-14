@@ -344,10 +344,15 @@ private fun NotificationItem(
     // 3.11: unread = TRILHO terracota 3dp na borda + título mais pesado — o
     // fill cream inteiro era fraco sobre o app já cream. Dot vira só reforço.
     val railColor = RodapeTheme.colors.terracota
+    // Fundo OPACO obrigatório: o item fica sobre o backgroundContent do
+    // SwipeToDismissBox (o "✓ Lida" olivaSoft). Sem preencher, em repouso esse
+    // fundo verde vaza através do item. O trilho é desenhado DEPOIS (por cima).
+    val itemBg = MaterialTheme.colorScheme.background
     Row(
         modifier = modifier
             .fillMaxWidth()
             .clip(MaterialTheme.shapes.medium)
+            .background(itemBg)
             .drawBehind {
                 if (!lida) {
                     drawRect(
