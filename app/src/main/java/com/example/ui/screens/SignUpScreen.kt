@@ -61,7 +61,8 @@ fun SignUpScreen(
     var email by rememberSaveable { mutableStateOf("") }
     var password by rememberSaveable { mutableStateOf("") }
     var passwordVisible by remember { mutableStateOf(false) }
-    // Gate de aceite (EULA) — requisito de loja p/ apps com UGC.
+    // Gate de aceite (EULA) + idade 13+ — requisito de loja p/ apps com UGC
+    // (LGPD/COPPA: menor de 13 não pode se cadastrar sem responsável).
     var acceptedTerms by rememberSaveable { mutableStateOf(false) }
     val context = androidx.compose.ui.platform.LocalContext.current
     var isLoading by remember { mutableStateOf(false) }
@@ -356,7 +357,7 @@ fun SignUpScreen(
                                 onCheckedChange = { acceptedTerms = it },
                             )
                             Text(
-                                "Li e aceito os Termos de Uso e a Política de Privacidade.",
+                                "Tenho 13 anos ou mais e li e aceito os Termos de Uso e a Política de Privacidade.",
                                 style = MaterialTheme.typography.bodySmall.copy(color = RodapeTheme.colors.inkSoft),
                                 modifier = Modifier
                                     .weight(1f)
