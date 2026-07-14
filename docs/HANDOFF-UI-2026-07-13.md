@@ -13,7 +13,42 @@ O `PLANO-UI-2026-07-13.md` é o **plano-mestre** (5 ondas). Este doc diz **onde 
 > só com compile): os `.copy(fontSize=14/16/20)` que espremem headline em
 > Shelf/NextTab (1.4). **Follow-up maior:** ~24 `AlertDialog` Material ainda
 > espalhados por 9 telas → migrar pra RodapeDialog app-wide, incremental.
-> Próximo grande passo real: **Onda 2 (movimento)** — 100% visual em runtime.
+>
+> **Atualização 2026-07-13 (sessão 2, parte 2): ONDA 2 (movimento) implementada**
+> em 9 commits (`d946df3`…`2e2061f`), tudo compilando limpo. **PENDENTE DE
+> CHECKPOINT VISUAL — animação não se valida com compile; rodar o app antes da
+> Onda 3.** O que entrou:
+> - **2.1 infra**: `RodapeMotion` (Dur fast/standard/emphasized=120/240/400 +
+>   easings M3) em `ui/theme/RodapeMotion.kt`; `LocalReducedMotion` lido de
+>   `ANIMATOR_DURATION_SCALE==0` e provido no `MyApplicationTheme`; helpers
+>   `rodapeTween`/`rodapeSpring` degradam pra `snap()` sob reduced-motion.
+> - **2.2 navbar**: BottomBarItem UNIFORME (sempre Column; labels sempre
+>   visíveis — desvio consciente do plano, decisão de UX pra letramento
+>   variado); seleção = cor animada + spring no ícone (draw-only). Badge de
+>   votação entra/sai com mola. Zero reflow.
+> - **2.3 trocas**: fade-through (`AnimatedContent`) nas 5 abas do MainTabs
+>   (`SaveableStateProvider` DENTRO do lambda, keyado no param — estado por aba
+>   preservado durante a transição), sub-tabs NextTab, 5 abas BookDetail,
+>   cabeçalho do Onboarding. **Deferido**: corpo do step do Onboarding (exige
+>   reestruturar LazyColumn + footer fixo).
+> - **2.4 entradas**: primitivo único `Modifier.staggeredEntrance(index)`
+>   (`ui/components/Entrance.kt`, fade+rise 8dp, delay capado em 6 degraus,
+>   draw-only). Aplicado: Home (greeting→headline), Welcome (pílula→headline→
+>   subhead→4 lombadas pousando), estante (capas em stagger), notificações.
+>   **Falta**: listas de votação/agenda (fácil, mesmo primitivo).
+> - **2.5 recompensa**: carimbo de RSVP (punch de mola + check + HÁPTICO — 1º
+>   háptico do app), checklist (anel de progresso em Canvas, círculos morfando,
+>   ✓ texto→RodapeIcons.Check, conector enchendo), barras de progresso enchem +
+>   count-up do %, badge do header pulsa ao incrementar, estrela scale-pop.
+>   **Falta**: "marcar capítulo lido" com confete nos marcos (casa com Onda 3).
+> - **2.6 shimmer**: varredura de gradiente diagonal ~20° lida SÓ na draw phase
+>   (zero recomposição/frame), UMA transition por grupo, raios corrigidos
+>   (capa 6/4→xs=3). Reduced-motion → fill estático.
+> - **2.7 nav**: transições direcionais no NavHost (avançar desliza da direita,
+>   voltar devolve; emphasized decel/accel; None sob reduced-motion).
+> Padrões pra manter: specs de `transitionSpec` são hoisteados (não é contexto
+> composable); punchs de mola usam guard de 1ª composição; animação de escala é
+> sempre `graphicsLayer` (draw-only). Próximo: **checkpoint visual → Onda 3**.
 
 ---
 
