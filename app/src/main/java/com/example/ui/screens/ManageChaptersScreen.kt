@@ -289,7 +289,11 @@ fun ManageChaptersScreen(
                 verticalArrangement = Arrangement.spacedBy(8.dp)
             ) {
                 itemsIndexed(draftList, key = { _, d -> d.id }) { idx, draft ->
-                    RodapeCard(modifier = Modifier.fillMaxWidth()) {
+                    // 3.7: linha COLAPSADA em "Cap.N · título · ⋮" — subir/descer/
+                    // remover moram no menu (eram 3 botões espremidos ao lado do
+                    // campo). Reordenar ANIMA (animateItem). Terracota reservado
+                    // pro destrutivo (Remover), dentro do menu.
+                    RodapeCard(modifier = Modifier.fillMaxWidth().animateItem()) {
                         Row(verticalAlignment = Alignment.CenterVertically) {
                             Text(
                                 // Numero = posição na lista (recalculado ao salvar). O
@@ -312,33 +316,61 @@ fun ManageChaptersScreen(
                                 singleLine = true,
                                 modifier = Modifier.weight(1f)
                             )
-                            IconButton(
-                                onClick = {
-                                    if (idx > 0) {
-                                        draftList = draftList.toMutableList().apply {
-                                            val tmp = this[idx - 1]
-                                            this[idx - 1] = draft
-                                            this[idx] = tmp
-                                        }
-                                    }
-                                },
-                                enabled = idx > 0
-                            ) { Icon(RodapeIcons.ChevU, contentDescription = "Subir") }
-                            IconButton(
-                                onClick = {
-                                    if (idx < draftList.size - 1) {
-                                        draftList = draftList.toMutableList().apply {
-                                            val tmp = this[idx + 1]
-                                            this[idx + 1] = draft
-                                            this[idx] = tmp
-                                        }
-                                    }
-                                },
-                                enabled = idx < draftList.size - 1
-                            ) { Icon(RodapeIcons.ChevD, contentDescription = "Descer") }
-                            IconButton(onClick = {
-                                draftList = draftList.toMutableList().apply { removeAt(idx) }
-                            }) { Icon(RodapeIcons.Trash, contentDescription = "Remover", tint = RodapeTheme.colors.terracota) }
+                            var showRowMenu by remember(draft.id) { mutableStateOf(false) }
+                            Box {
+                                IconButton(onClick = { showRowMenu = true }) {
+                                    Icon(
+                                        RodapeIcons.MoreV,
+                                        contentDescription = "Ações do capítulo ${idx + 1}",
+                                        tint = RodapeTheme.colors.muted,
+                                    )
+                                }
+                                DropdownMenu(
+                                    expanded = showRowMenu,
+                                    onDismissRequest = { showRowMenu = false },
+                                ) {
+                                    DropdownMenuItem(
+                                        text = { Text("Subir") },
+                                        enabled = idx > 0,
+                                        leadingIcon = { Icon(RodapeIcons.ChevU, contentDescription = null) },
+                                        onClick = {
+                                            showRowMenu = false
+                                            if (idx > 0) {
+                                                draftList = draftList.toMutableList().apply {
+                                                    val tmp = this[idx - 1]
+                                                    this[idx - 1] = draft
+                                                    this[idx] = tmp
+                                                }
+                                            }
+                                        },
+                                    )
+                                    DropdownMenuItem(
+                                        text = { Text("Descer") },
+                                        enabled = idx < draftList.size - 1,
+                                        leadingIcon = { Icon(RodapeIcons.ChevD, contentDescription = null) },
+                                        onClick = {
+                                            showRowMenu = false
+                                            if (idx < draftList.size - 1) {
+                                                draftList = draftList.toMutableList().apply {
+                                                    val tmp = this[idx + 1]
+                                                    this[idx + 1] = draft
+                                                    this[idx] = tmp
+                                                }
+                                            }
+                                        },
+                                    )
+                                    DropdownMenuItem(
+                                        text = { Text("Remover", color = RodapeTheme.colors.terracota) },
+                                        leadingIcon = {
+                                            Icon(RodapeIcons.Trash, contentDescription = null, tint = RodapeTheme.colors.terracota)
+                                        },
+                                        onClick = {
+                                            showRowMenu = false
+                                            draftList = draftList.toMutableList().apply { removeAt(idx) }
+                                        },
+                                    )
+                                }
+                            }
                         }
                     }
                 }
