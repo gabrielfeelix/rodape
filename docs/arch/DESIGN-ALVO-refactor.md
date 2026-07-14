@@ -154,7 +154,11 @@ incremental e de baixo risco em cima da engine estável.
 - [x] **F3c repos COMPLETO (10/10)**: Progress `d7607d5`, Notif+Quote `59deb89`,
   User+Moder `54e0622`, Voting `93bb4e5`, Discussion+Meeting `ed5de8c`, Book `2871b29`,
   Club `b011cec`. God-repo RemoteRepository: **2654→574 linhas (fachada pura)**.
-- [ ] F4b/F5 VMs+UiState · [ ] F6 previews · [ ] F7 testes · [ ] @HiltWorker + @HiltViewModel (deferidos)
+- [x] **F4b SessionManager** (`e4ad90a`) — grafo de sessão extraído p/ `data/session/`
+  (Android-free). VM re-expõe via forwarders; comportamento idêntico. MainViewModel 1781→1637L.
+  Ainda classe simples c/ viewModelScope emprestado + fachada — vira @Singleton + repos fatiados
+  no F5. Avatar-observer ficou na VM (dep ui). **Device-test pendente (vc21+).**
+- [ ] F5 VMs+UiState · [ ] F6 previews · [ ] F7 testes · [ ] @HiltWorker + @HiltViewModel (deferidos)
 
 **F3c molde (aplicado nos 10):** interface em `data/remote/repo/`, `OfflineFirst*Repository
 @Inject(SyncEngine, SupabaseClient, RodapeDao)` (bodies verbatim, infra via `engine.*`),

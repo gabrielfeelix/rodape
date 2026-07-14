@@ -13,7 +13,7 @@ calma na sessão anterior. Este doc te dá o estado exato e as regras. Leia na o
 4. [MAP-MainViewModel.md](MAP-MainViewModel.md) — grafo de sessão + ordem de split. P/ F4/F5.
 5. [PLANO-ARQUITETURA-2026-07-14.md](PLANO-ARQUITETURA-2026-07-14.md) — visão das 7 fases.
 
-## Estado atual (2026-07-14 — atualizado após F3c)
+## Estado atual (2026-07-14 — atualizado após F4b)
 
 **Feito e no git (branch master, remoto github.com/gabrielfeelix/rodape):**
 - F1 lifecycle `acc9812` · F2 nav type-safe `42026a0` · F3a DTOs→RemoteDtos `9f0a35f`.
@@ -26,22 +26,35 @@ calma na sessão anterior. Este doc te dá o estado exato e as regras. Leia na o
   `54e0622`, Voting `93bb4e5`, Discussion+Meeting `ed5de8c`, Book `2871b29`, Club `b011cec`.
   **RemoteRepository virou fachada pura (2654→574 linhas): SyncEngine + 10 delegadores
   reusando o mesmo engine.**
+- **F4b COMPLETO** — `data/session/SessionManager.kt` (Android-free) extraído do MainViewModel.
+  Commit `e4ad90a`. Segura o grafo de sessão (currentUserId/activeClubId + derivados
+  clube/livro/papel + activeVotingRound) + 3 dos 4 observers do init (avatar ficou na VM,
+  depende de AvatarPicker ui) + helpers cross-domain. VM re-expõe via forwarders → comportamento
+  IDÊNTICO, lifecycle idêntico (recebe viewModelScope). **MainViewModel 1781→1637L.** Movimento
+  estrutural puro. Removido supabaseUserId órfão.
 
 **⚠️ DEVICE-TEST PENDENTE:** F3b+F4a estão no AAB vc20 (aguardando o usuário testar no cel
-~2026-07-16, quando o reset da chave de upload do Play ativa). F3c ainda NÃO foi testado em
-device — entra num vc21+ depois. Ver [[rodape-keystore-upload-2026-07-14]] na memória.
+~2026-07-16, quando o reset da chave de upload do Play ativa). F3c+F4b ainda NÃO foram testados
+em device — entram num vc21+ depois. Ver [[rodape-keystore-upload-2026-07-14]] na memória.
 
 **Compliance/beta:** outro agente já fechou 8 ondas — tudo commitado. NÃO mexer.
 
 **Ambiente:** JDK 17 + Android SDK (WSL). SEM device/emulador aqui — o usuário testa no
 aparelho. gradle.jvmargs = **-Xmx3g** (subido de 2g: Hilt+KSP dava OOM em 2g).
 
-## PRIMEIRO PASSO (agora: F4b SessionManager)
+## PRIMEIRO PASSO (agora: F5 — VMs por tela, folha→hub)
 
-F3c está fechado e compilando. Próximo é **F4b — extrair SessionManager** (o grafo de sessão
-que trava o split de VM). Leia [MAP-MainViewModel.md](MAP-MainViewModel.md) §3 (grafo de
-sessão), §4 (4 observers do init) e §5 (ordem folha→hub) ANTES. Confirme `git status` limpo +
-compile 1x pra baseline antes de tocar código.
+F4b está fechado e compilando (SessionManager pronto — o nó destravou). Próximo é **F5**: por
+TELA, folha→hub, extrair `@HiltViewModel` + `sealed UiState` + split Route/Screen, esvaziando o
+MainViewModel (1637L). Ordem exata em [MAP-MainViewModel.md](MAP-MainViewModel.md) §5:
+tab → sync → notif → busca → prefs → quotes → moderação → progresso → ratings → votação →
+meetings → discussão → book → club → **sessão (por último)**. Cada VM injeta o SessionManager +
+as interfaces de repo do F3c (já prontas). Aqui entra o @HiltViewModel deferido.
+
+**Ao começar o F5, converta o SessionManager pra `@Singleton` de verdade** (scope próprio em
+vez do viewModelScope emprestado + injeta as interfaces fatiadas em vez da fachada
+RemoteRepository) — está anotado no KDoc da classe. Confirme `git status` limpo + compile 1x
+pra baseline antes de tocar código.
 
 ## Comandos (RAM é crítica — 11Gi, o usuário reclama de estouro)
 
@@ -85,17 +98,15 @@ usuário pedir OU quando um passo fecha limpo e ele confirma.
 
 ## Sequência (resumo — detalhe no DESIGN-ALVO)
 
-F3a ✅ → F3b SyncEngine ✅ → F4a Hilt ✅ → F3c fatiar 10 repos ✅ →
-**F4b SessionManager** (próximo) → **F5** VMs/UiState/Route-Screen por tela (folha→hub;
-ordem em MAP-MainViewModel §5) → **F6** previews (@ThemePreviews por tela fatiada) →
-**F7** testes (fakes das 10 interfaces + VM/fluxo) → deferidos: **@HiltWorker** no
-DrainQueueWorker + **@HiltViewModel** (entram no F5).
+F3a ✅ → F3b SyncEngine ✅ → F4a Hilt ✅ → F3c fatiar 10 repos ✅ → F4b SessionManager ✅ →
+**F5** VMs/UiState/Route-Screen por tela (próximo; folha→hub; ordem em MAP-MainViewModel §5) →
+**F6** previews (@ThemePreviews por tela fatiada) → **F7** testes (fakes das 10 interfaces +
+VM/fluxo) → deferidos: **@HiltWorker** no DrainQueueWorker + **@HiltViewModel** (entram no F5).
 
 **Detalhe do que falta:**
-- **F4b** — SessionManager `@Singleton` segura currentUserId/activeClubId (Tier 1) + os 4
-  observers do init + helpers cross-domain (bumpEngagement/existingClubBookId/
-  promoteNextQueuedBook/selectActiveClub). É O NÓ que trava o split de VM. Detalhe:
-  MAP-MainViewModel §3-4 + DESIGN-ALVO "SessionManager".
+- **F4b** ✅ — SessionManager extraído (`e4ad90a`). Ainda é classe simples recebendo
+  viewModelScope (não @Singleton) e usa a fachada RemoteRepository — vira @Singleton + repos
+  fatiados no F5 (anotado no KDoc). Observer de avatar ficou na VM (dep ui).
 - **F5** — por TELA, folha→hub: `@HiltViewModel` + `sealed UiState` + split Route/Screen,
   esvaziando o MainViewModel (1781L). Ordem (MAP-MainViewModel §5): tab → sync → notif →
   busca → prefs → quotes → moderação → progresso → ratings → votação → meetings → discussão
