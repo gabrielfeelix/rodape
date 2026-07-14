@@ -845,15 +845,17 @@ private fun HistoryTab(viewModel: MainViewModel, bookId: String, dataEncontro: L
 
     val suggester = suggestion?.let { s -> members.find { it.id == s.suggestedByUserId }?.nome }
 
+    // 3.6: timeline SÓ com marcos que têm dado real — "Leitura começou" era
+    // hardcoded (sempre presente, sem data) e fingia ser data-driven; "Encontro"
+    // sem data idem. Sem dado → o marco não entra.
     val milestones = buildList<Pair<String, String>> {
         add(
             "Sugerido${suggester?.let { " por $it" } ?: ""}" to
             (suggestion?.let { "em ${formatShortDate(it.criadoEm)}" } ?: "O livro chegou na lista do clube.")
         )
-        add("Leitura começou" to "O clube começou a ler junto.")
-        add(
-            "Encontro do clube" to (dataEncontro?.let { "em ${formatShortDate(it)}" } ?: "O clube se reuniu pra discutir.")
-        )
+        dataEncontro?.let {
+            add("Encontro do clube" to "em ${formatShortDate(it)}")
+        }
     }
 
     Column(verticalArrangement = Arrangement.spacedBy(0.dp)) {

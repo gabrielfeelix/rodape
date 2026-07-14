@@ -41,6 +41,7 @@ import androidx.compose.runtime.saveable.rememberSaveableStateHolder
 import androidx.compose.ui.layout.boundsInParent
 import androidx.compose.ui.layout.onGloballyPositioned
 import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.draw.blur
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -1986,11 +1987,30 @@ fun BookDetailScreenTab(
             // ── OLIVE HERO ──────────────────────────────────────────────────
             item {
                 val heroCircleColor = RodapeTheme.colors.cream
+                // 3.6 backdrop AMBIENTE ("album art glow"): a própria capa, borrada
+                // e translúcida, tinge o hero por trás do conteúdo. RenderEffect de
+                // blur só existe em API 31+ — abaixo disso o hero fica como era
+                // (oliva chapado), sem imagem nítida vazando.
                 Box(
                     modifier = Modifier
                         .fillMaxWidth()
                         .clip(RoundedCornerShape(bottomStart = 36.dp, bottomEnd = 36.dp))
                         .background(RodapeTheme.colors.olivaDeep)
+                ) {
+                if (android.os.Build.VERSION.SDK_INT >= 31 && !currentBook?.coverUrl.isNullOrBlank()) {
+                    coil.compose.AsyncImage(
+                        model = currentBook?.coverUrl,
+                        contentDescription = null,
+                        contentScale = androidx.compose.ui.layout.ContentScale.Crop,
+                        alpha = 0.30f,
+                        modifier = Modifier
+                            .matchParentSize()
+                            .blur(40.dp),
+                    )
+                }
+                Box(
+                    modifier = Modifier
+                        .fillMaxWidth()
                         // Círculos decorativos do design (screens-main.jsx:362-367)
                         .drawBehind {
                             val stroke = androidx.compose.ui.graphics.drawscope.Stroke(width = 1.dp.toPx())
@@ -2028,7 +2048,12 @@ fun BookDetailScreenTab(
                         horizontalArrangement = Arrangement.spacedBy(18.dp),
                         verticalAlignment = Alignment.Top
                     ) {
-                        Box(modifier = Modifier.heroCoverShadow(cornerRadius = 4.dp)) {
+                        // Capa entra encenada (fade+rise) na primeira composição (3.6).
+                        Box(
+                            modifier = Modifier
+                                .staggeredEntrance(index = 0)
+                                .heroCoverShadow(cornerRadius = 4.dp)
+                        ) {
                             Cover(
                                 title = currentBook!!.title,
                                 author = currentBook!!.author,
@@ -2083,6 +2108,7 @@ fun BookDetailScreenTab(
                         }
                     }
                 }
+                } // fecha o wrapper do backdrop ambiente (3.6)
             }
 
             // ── PROGRESS CARD (overlaps hero curve) ─────────────────────────
@@ -2129,9 +2155,18 @@ fun BookDetailScreenTab(
                                 )
                             }
 
-                            // Circular ring progress indicator
+                            // Circular ring progress indicator — o arco ENCHE
+                            // (emphasizedDecelerate) em vez de pular (3.6).
                             val ringTrackColor = RodapeTheme.colors.dividerSoft
                             val ringProgressColor = RodapeTheme.colors.terracota
+                            val animatedRingPct by animateFloatAsState(
+                                targetValue = pct,
+                                animationSpec = rodapeTween(
+                                    durationMillis = RodapeMotion.Dur.emphasized,
+                                    easing = RodapeMotion.Ease.emphasizedDecelerate,
+                                ),
+                                label = "bookRing",
+                            )
                             Box(
                                 modifier = Modifier
                                     .size(56.dp)
@@ -2154,7 +2189,7 @@ fun BookDetailScreenTab(
                                         drawArc(
                                             color = ringProgressColor,
                                             startAngle = -90f,
-                                            sweepAngle = 360f * pct,
+                                            sweepAngle = 360f * animatedRingPct,
                                             useCenter = false,
                                             style = androidx.compose.ui.graphics.drawscope.Stroke(
                                                 width = stroke

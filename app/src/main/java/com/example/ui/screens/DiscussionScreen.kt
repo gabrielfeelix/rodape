@@ -38,7 +38,9 @@ import androidx.compose.ui.unit.sp
 import com.example.data.model.Comment
 import com.example.ui.components.Avatar
 import com.example.ui.components.TbButton
+import com.example.ui.components.TbButtonSize
 import com.example.ui.components.TbButtonVariant
+import com.example.ui.components.staggeredEntrance
 import com.example.ui.components.RodapeCard
 import com.example.ui.components.SkeletonRowList
 import com.example.ui.components.rememberShowLoading
@@ -166,6 +168,21 @@ fun DiscussionScreen(
                         verticalArrangement = Arrangement.spacedBy(16.dp),
                         modifier = Modifier.padding(8.dp)
                     ) {
+                        // 3.6: CADEADO dá o ícone universal de "trancado" à barreira
+                        // (o texto sozinho lia como aviso genérico).
+                        Box(
+                            modifier = Modifier
+                                .size(56.dp)
+                                .background(RodapeTheme.colors.terracotaSoft, CircleShape),
+                            contentAlignment = Alignment.Center,
+                        ) {
+                            Icon(
+                                imageVector = RodapeIcons.Lock,
+                                contentDescription = null,
+                                tint = RodapeTheme.colors.terracota,
+                                modifier = Modifier.size(24.dp),
+                            )
+                        }
                         Text(
                             // I1: dá a dica do que "spoiler" quer dizer, pra quem não conhece.
                             text = "Atenção: pode contar o que vem (spoiler)",
@@ -202,11 +219,14 @@ fun DiscussionScreen(
                 }
             }
         } else {
-            // Discussion Box
+            // Discussion Box — DISSOLVE ao entrar (3.6): ao revelar o spoiler
+            // (ou abrir capítulo liberado) o debate esmaece pra dentro em vez de
+            // flip seco. staggeredEntrance = fade+rise, snap sob reduced-motion.
             Column(
                 modifier = Modifier
                     .fillMaxSize()
                     .padding(padding)
+                    .staggeredEntrance()
             ) {
                 // Spoiler clearance / warning banner
                 val isLido = chapterNum <= currentProgNum
@@ -286,21 +306,18 @@ fun DiscussionScreen(
                             // Marcar leitura DIRETO daqui: pula o progresso pro cap N (sem
                             // tocar "Marcar progresso" +1 N vezes na aba Livro). Ao marcar,
                             // este banner vira "Você já passou daqui" na hora.
-                            Text(
+                            // 3.6: promovido a TbButton REAL (era Text clickable —
+                            // ação importante com cara de rodapé de texto).
+                            TbButton(
                                 text = "Marcar que li este capítulo",
-                                style = MaterialTheme.typography.bodyMedium.copy(
-                                    fontFamily = InterFontFamily,
-                                    fontWeight = FontWeight.SemiBold,
-                                    color = RodapeTheme.colors.terracotaDark
-                                ),
-                                modifier = Modifier
-                                    .fillMaxWidth()
-                                    .clickable {
-                                        chapterObj?.let { ch ->
-                                            viewModel.updateBookProgress(ch.bookId, chapterNum)
-                                        }
+                                onClick = {
+                                    chapterObj?.let { ch ->
+                                        viewModel.updateBookProgress(ch.bookId, chapterNum)
                                     }
-                                    .padding(top = 2.dp)
+                                },
+                                variant = TbButtonVariant.Terra,
+                                size = TbButtonSize.Sm,
+                                modifier = Modifier.fillMaxWidth(),
                             )
                         }
                     }
