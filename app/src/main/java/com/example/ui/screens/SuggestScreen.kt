@@ -33,6 +33,8 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import com.example.data.api.OpenLibraryDoc
 import com.example.ui.components.Cover
+import com.example.ui.components.RodapeDialog
+import com.example.ui.components.ThemedRadio
 import com.example.ui.components.SkeletonRowList
 import com.example.ui.components.TbButton
 import com.example.ui.components.TbButtonVariant
@@ -390,15 +392,9 @@ fun SuggestScreen(
         val olAuthor = doc.authorName?.firstOrNull().orEmpty()
         // Se nunca escolheu, default = OL (autor original do search)
         if (pickedAuthor == null) pickedAuthor = olAuthor
-        AlertDialog(
+        RodapeDialog(
             onDismissRequest = { showJustifySheetForDoc = null },
-            containerColor = MaterialTheme.colorScheme.surface,
-            title = {
-                Text(
-                    text = "Por que esse livro?",
-                    style = MaterialTheme.typography.headlineSmall
-                )
-            },
+            title = "Por que esse livro?",
             text = {
                 Column(
                     verticalArrangement = Arrangement.spacedBy(12.dp)
@@ -437,14 +433,14 @@ fun SuggestScreen(
                                     verticalAlignment = Alignment.CenterVertically,
                                     modifier = Modifier.fillMaxWidth().clickable { pickedAuthor = olAuthor }
                                 ) {
-                                    RadioButton(selected = pickedAuthor == olAuthor, onClick = { pickedAuthor = olAuthor })
+                                    ThemedRadio(selected = pickedAuthor == olAuthor, onClick = { pickedAuthor = olAuthor })
                                     Text("$olAuthor (Open Library)", style = MaterialTheme.typography.bodySmall)
                                 }
                                 Row(
                                     verticalAlignment = Alignment.CenterVertically,
                                     modifier = Modifier.fillMaxWidth().clickable { pickedAuthor = gbConflictAuthor }
                                 ) {
-                                    RadioButton(selected = pickedAuthor == gbConflictAuthor, onClick = { pickedAuthor = gbConflictAuthor })
+                                    ThemedRadio(selected = pickedAuthor == gbConflictAuthor, onClick = { pickedAuthor = gbConflictAuthor })
                                     Text("${gbConflictAuthor} (Google Books)", style = MaterialTheme.typography.bodySmall)
                                 }
                             }

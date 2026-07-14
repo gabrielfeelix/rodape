@@ -54,6 +54,7 @@ import com.example.ui.components.TbButton
 import com.example.ui.components.TbButtonSize
 import com.example.ui.components.TbButtonVariant
 import com.example.ui.components.RodapeCard
+import com.example.ui.components.RodapeDialog
 import com.example.ui.theme.RodapeRadii
 import com.example.ui.theme.RodapeIcons
 import com.example.ui.theme.shelfCoverShadow
@@ -289,19 +290,9 @@ fun WelcomeScreen(
     }
 
     if (showInviteDialog) {
-        AlertDialog(
+        RodapeDialog(
             onDismissRequest = { showInviteDialog = false },
-            containerColor = RodapeTheme.colors.cream,
-            title = {
-                Text(
-                    "Entrar com convite",
-                    style = MaterialTheme.typography.titleLarge.copy(
-                        fontFamily = LiterataFontFamily,
-                        fontWeight = FontWeight.SemiBold,
-                        color = RodapeTheme.colors.ink
-                    )
-                )
-            },
+            title = "Entrar com convite",
             text = {
                 Column {
                     Text(
