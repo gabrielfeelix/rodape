@@ -9,6 +9,7 @@ plugins {
   alias(libs.plugins.secrets)
   alias(libs.plugins.google.services)
   alias(libs.plugins.firebase.crashlytics)
+  alias(libs.plugins.hilt.android)
 }
 
 // Le segredos de assinatura do .env raiz (gitignored) com fallback pra
@@ -183,6 +184,12 @@ dependencies {
   debugImplementation(libs.androidx.compose.ui.tooling)
   "ksp"(libs.moshi.kotlin.codegen)
   "ksp"(libs.androidx.room.compiler)
+
+  // --- Hilt (DI) — F4a: scaffolding; repos entram via @Binds no F3c ---
+  implementation(libs.hilt.android)
+  "ksp"(libs.hilt.compiler)
+  implementation(libs.androidx.hilt.work)
+  "ksp"(libs.androidx.hilt.compiler)
 
   // --- Supabase ---
   implementation(platform(libs.supabase.bom))

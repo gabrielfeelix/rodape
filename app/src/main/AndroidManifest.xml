@@ -48,6 +48,20 @@
             </intent-filter>
         </service>
 
+        <!-- F4a: desliga a inicialização automática do WorkManager (androidx.startup).
+             Com @HiltWorker, quem inicializa é o RodapeApp (Configuration.Provider
+             com HiltWorkerFactory) na primeira chamada a WorkManager.getInstance. -->
+        <provider
+            android:name="androidx.startup.InitializationProvider"
+            android:authorities="${applicationId}.androidx-startup"
+            android:exported="false"
+            tools:node="merge">
+            <meta-data
+                android:name="androidx.work.WorkManagerInitializer"
+                android:value="androidx.startup"
+                tools:node="remove" />
+        </provider>
+
         <!-- Share-as-image das frases (3.8): expõe SÓ cache/shared_quotes via
              content URI com permissão temporária pro app escolhido no chooser. -->
         <provider

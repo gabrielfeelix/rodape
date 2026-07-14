@@ -77,8 +77,12 @@ import com.example.ui.theme.LocalReducedMotion
 import com.example.ui.theme.MyApplicationTheme
 import com.example.ui.theme.RodapeMotion
 import com.example.ui.viewmodel.MainViewModel
+import dagger.hilt.android.AndroidEntryPoint
 import kotlinx.coroutines.launch
 
+// F4a: entry point do Hilt — habilita hiltViewModel()/@Inject nas telas quando
+// as VMs forem fatiadas (F4b/F5). O MainViewModel segue via viewModels() por ora.
+@AndroidEntryPoint
 class MainActivity : ComponentActivity() {
     private val viewModel: MainViewModel by viewModels()
 
