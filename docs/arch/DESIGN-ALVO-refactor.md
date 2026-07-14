@@ -149,6 +149,9 @@ incremental e de baixo risco em cima da engine estável.
 
 ## Progresso
 
-- [x] F1 lifecycle · [x] F2 nav type-safe · [x] F3a DTOs (compile pendente)
-- [ ] F3b SyncEngine · [ ] F4a Hilt · [ ] F3c repos · [ ] F4b/F5 VMs+UiState
-- [ ] F6 previews · [ ] F7 testes
+- [x] F1 lifecycle · [x] F2 nav type-safe · [x] F3a DTOs (`9f0a35f`)
+- [x] F3b SyncEngine (`e29ae6d`, compila; **device-test PENDENTE**) · [x] F4a Hilt (`eac9ff7`)
+- [ ] F3c repos · [ ] F4b/F5 VMs+UiState · [ ] F6 previews · [ ] F7 testes
+
+**F4a nota:** grafo Hilt aditivo/inerte. Deferidos: @HiltWorker (DrainQueueWorker,
+toca drain) e @HiltViewModel (F5). RemoteRepository não é provido (estrangulado).
