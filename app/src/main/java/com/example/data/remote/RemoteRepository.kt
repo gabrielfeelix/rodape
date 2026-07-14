@@ -62,22 +62,18 @@ import kotlinx.serialization.json.put
 // onde nao tem, a tela fica vazia momentaneamente — sem crash.
 // ============================================================================
 
-class RemoteRepository(
-    private val appContext: android.content.Context,
-    private val supabase: SupabaseClient = Supabase.client,
+class RemoteRepository internal constructor(
+    private val engine: SyncEngine,
 ) {
 
     // ============================================================
-    // INFRA OFFLINE → SyncEngine (F3b)
+    // INFRA OFFLINE → SyncEngine (F3b) · engine via DI (F4b)
     // ============================================================
     //
     // O kernel (SWR/TTL + fila offline com os 25 handlers + realtime/reloaders)
-    // foi extraído SEM mudança de lógica pra SyncEngine.kt. Os métodos de
-    // domínio abaixo continuam chamando os mesmos nomes — aqui só delegamos.
-    // escapeJson/stateOf ficam neste arquivo porque só o código de domínio os
-    // usa (movem junto com os repos no F3c).
-
-    private val engine = SyncEngine(appContext, supabase)
+    // foi extraído SEM mudança de lógica pra SyncEngine.kt. Desde o F4b a
+    // engine chega INJETADA (@Singleton) — a mesma do SessionManager e do
+    // DrainQueueWorker: um único registro de reloaders/realtime por processo.
 
     // F3c: repos de domínio fatiados (compartilham ESTA engine — a fachada só
     // delega; a API pública pro MainViewModel não muda até o F4b/F5).
@@ -92,23 +88,8 @@ class RemoteRepository(
     private val bookRepo = com.example.data.remote.repo.OfflineFirstBookRepository(engine)
     private val clubRepo = com.example.data.remote.repo.OfflineFirstClubRepository(engine)
 
-    private val json = engine.json
-    private val dao = engine.dao
-    private val scope = engine.scope
-
     suspend fun clearLocalCache() = engine.clearLocalCache()
     suspend fun clearLocalCacheNoDrain() = engine.clearLocalCacheNoDrain()
-
-    private fun markSynced(key: String) = engine.markSynced(key)
-    private suspend fun syncOnce(key: String, ttlMs: Long, block: suspend () -> Unit) =
-        engine.syncOnce(key, ttlMs, block)
-
-    private suspend fun tryRemoteOrEnqueue(
-        kind: String,
-        payload: String,
-        notifyTable: String? = null,
-        block: suspend () -> Unit,
-    ) = engine.tryRemoteOrEnqueue(kind, payload, notifyTable, block)
 
     suspend fun tryDrainPendingQueue(): Int = engine.tryDrainPendingQueue()
 
@@ -117,22 +98,9 @@ class RemoteRepository(
 
     suspend fun forceRefresh() = engine.forceRefresh()
 
-    private fun notifyLocalMutation(table: String) = engine.notifyLocalMutation(table)
-
-    private fun ensureRealtime(
-        table: String,
-        filterColumn: String? = null,
-        filterValue: String? = null,
-        reload: suspend () -> Unit,
-    ) = engine.ensureRealtime(table, filterColumn, filterValue, reload)
-
+    /** F4b: NÃO chamar em onCleared — a engine é @Singleton do processo agora
+     *  (compartilhada com SessionManager e DrainQueueWorker). */
     fun close() = engine.close()
-
-    // ----------------------- Caches reativas -----------------------
-    // Polling-based: cada Flow tem uma cache MutableStateFlow que e refreshada
-    // sob demanda. Acoes de mutacao chamam refresh() depois pra UI atualizar.
-
-    private fun <T> stateOf(initial: T): MutableStateFlow<T> = MutableStateFlow(initial)
 
     // ============================================================
     // USERS / PROFILES

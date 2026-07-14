@@ -4,6 +4,8 @@ import android.content.Context
 import com.example.data.DataStoreManager
 import com.example.data.db.AppDatabase
 import com.example.data.db.RodapeDao
+import com.example.data.remote.AuthRepository
+import com.example.data.remote.RemoteRepository
 import com.example.data.remote.Supabase
 import com.example.data.remote.SyncEngine
 import dagger.Module
@@ -43,4 +45,16 @@ internal object DataModule {
         @ApplicationContext context: Context,
         supabase: SupabaseClient,
     ): SyncEngine = SyncEngine(context, supabase)
+
+    // Wrapper fino e stateless do Supabase Auth (client é singleton) — as telas
+    // de auth que criam AuthRepository() na mão seguem equivalentes.
+    @Provides
+    @Singleton
+    fun provideAuthRepository(supabase: SupabaseClient): AuthRepository = AuthRepository(supabase)
+
+    // F4b: fachada com a MESMA engine do processo (antes o MainViewModel
+    // construía a sua — duas engines = dois registries de reload/realtime).
+    @Provides
+    @Singleton
+    fun provideRemoteRepository(engine: SyncEngine): RemoteRepository = RemoteRepository(engine)
 }
