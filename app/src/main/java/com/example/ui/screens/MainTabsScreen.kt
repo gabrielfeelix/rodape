@@ -38,6 +38,9 @@ import androidx.compose.material3.pulltorefresh.PullToRefreshBox
 import androidx.compose.runtime.*
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.saveable.rememberSaveableStateHolder
+import androidx.compose.ui.layout.boundsInParent
+import androidx.compose.ui.layout.onGloballyPositioned
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -3771,6 +3774,11 @@ private fun MeetingTicket(
     val monthName = rest.dropWhile { it.isDigit() }.trim().lowercase().removePrefix("de ").trim()
     val daysUntil = remember(meeting.data) { com.example.util.daysUntilMeetingLabel(meeting.data) }
     val ticketLineColor = RodapeTheme.colors.cream
+    // Bug 8: notches ancorados na altura REAL da linha picotada do cabeçalho
+    // (antes y=70dp fixo — quebrava com dynamic type).
+    var headerBottomY by remember { mutableFloatStateOf(0f) }
+    val notchSize = 16.dp
+    val notchY = with(LocalDensity.current) { headerBottomY.toDp() } - (notchSize / 2)
 
     Box(modifier = Modifier.fillMaxWidth().ticketShadow(cornerRadius = RodapeRadii.md)) {
         Column(
@@ -3783,6 +3791,8 @@ private fun MeetingTicket(
             Row(
                 modifier = Modifier
                     .fillMaxWidth()
+                    // Âncora dos notches laterais (bug 8): bottom real do cabeçalho.
+                    .onGloballyPositioned { headerBottomY = it.boundsInParent().bottom }
                     .drawBehind {
                         drawLine(
                             color = ticketLineColor.copy(alpha = 0.25f),
@@ -4020,20 +4030,23 @@ private fun MeetingTicket(
             }
         }
 
-        // Notches recortados nas laterais (na altura da perfuração)
-        Box(
-            modifier = Modifier
-                .align(Alignment.TopStart)
-                .offset(x = (-8).dp, y = 70.dp)
-                .size(16.dp)
-                .background(RodapeTheme.colors.paper, CircleShape)
-        )
-        Box(
-            modifier = Modifier
-                .align(Alignment.TopEnd)
-                .offset(x = 8.dp, y = 70.dp)
-                .size(16.dp)
-                .background(RodapeTheme.colors.paper, CircleShape)
-        )
+        // Notches recortados nas laterais — ancorados na linha picotada real
+        // (só desenham depois da 1ª medição; cor da superfície-mãe, theme-aware).
+        if (headerBottomY > 0f) {
+            Box(
+                modifier = Modifier
+                    .align(Alignment.TopStart)
+                    .offset(x = (-notchSize / 2), y = notchY)
+                    .size(notchSize)
+                    .background(RodapeTheme.colors.paper, CircleShape)
+            )
+            Box(
+                modifier = Modifier
+                    .align(Alignment.TopEnd)
+                    .offset(x = (notchSize / 2), y = notchY)
+                    .size(notchSize)
+                    .background(RodapeTheme.colors.paper, CircleShape)
+            )
+        }
     }
 }

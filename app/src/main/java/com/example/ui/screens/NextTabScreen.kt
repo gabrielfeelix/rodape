@@ -49,6 +49,12 @@ import androidx.compose.animation.togetherWith
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.hapticfeedback.HapticFeedbackType
 import androidx.compose.ui.platform.LocalHapticFeedback
+import androidx.compose.ui.draw.drawBehind
+import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.graphics.PathEffect
+import androidx.compose.ui.layout.boundsInParent
+import androidx.compose.ui.layout.onGloballyPositioned
+import androidx.compose.ui.platform.LocalDensity
 import com.example.ui.viewmodel.MainViewModel
 
 @Composable
@@ -358,115 +364,184 @@ fun EncontroTab(
             }
 
             item {
-                // Meeting header card with olive gradient
-                // Card-herói clicável: abre o detalhe do encontro (ata, anotações,
-                // concluir) sem depender de existir cronograma com mais de 1 encontro.
-                RodapeCard(
-                    modifier = Modifier
-                        .clickable { onNavigateToMeetingDetail(meeting!!.id) }
-                        .semantics {
-                            role = Role.Button
-                            contentDescription = "Abrir detalhes do próximo encontro"
-                        },
-                    contentPadding = PaddingValues(0.dp)
-                ) {
-                    Box(
+                // Ticket FÍSICO do próximo encontro (3.1): canhoto oliva com o
+                // day-stamp tipografado (weekday + dia serif grande + mês) separado
+                // do corpo cream (agenda/local/caps) por linha PICOTADA, com
+                // notches laterais ancorados na altura real do picote via
+                // onGloballyPositioned (sobrevive a dynamic type) e ticketShadow.
+                // O glifo de calendário gigante sangrando sob o número morreu.
+                val dateParts = meeting!!.data.split(",")
+                val tWeekday = dateParts.firstOrNull()?.trim()?.uppercase()?.take(3) ?: ""
+                val tRest = dateParts.getOrNull(1)?.trim() ?: meeting!!.data.trim()
+                val tDay = tRest.takeWhile { it.isDigit() }.ifEmpty { "–" }
+                val tMonth = tRest.dropWhile { it.isDigit() }.trim().lowercase()
+                    .removePrefix("de ").trim().take(3)
+                val perforationColor = RodapeTheme.colors.cream
+                var perforationY by remember { mutableFloatStateOf(0f) }
+                val notchSize = 16.dp
+                val notchY = with(LocalDensity.current) { perforationY.toDp() } - (notchSize / 2)
+
+                Box(modifier = Modifier.fillMaxWidth().ticketShadow(cornerRadius = RodapeRadii.md)) {
+                    Column(
                         modifier = Modifier
                             .fillMaxWidth()
-                            .background(
-                                Brush.linearGradient(
-                                    colors = listOf(RodapeTheme.colors.oliva, RodapeTheme.colors.olivaDark)
-                                )
-                            )
-                            .padding(20.dp)
+                            .clip(RoundedCornerShape(RodapeRadii.md))
+                            .background(RodapeTheme.colors.cardSurface)
+                            .clickable { onNavigateToMeetingDetail(meeting!!.id) }
+                            .semantics(mergeDescendants = true) {
+                                role = Role.Button
+                                contentDescription = "Abrir detalhes do próximo encontro"
+                            }
                     ) {
+                        // ── Canhoto oliva: day-stamp + hora ──
                         Row(
-                            verticalAlignment = Alignment.CenterVertically,
-                            horizontalArrangement = Arrangement.spacedBy(12.dp)
-                        ) {
-                            Box(
-                                modifier = Modifier
-                                    .size(64.dp)
-                                    .background(RodapeTheme.colors.cream.copy(alpha = 0.15f), RoundedCornerShape(RodapeRadii.sm)),
-                                contentAlignment = Alignment.Center
-                            ) {
-                                Box(contentAlignment = Alignment.Center) {
-                                    Icon(
-                                        imageVector = RodapeIcons.Calendar,
-                                        contentDescription = null,
-                                        tint = RodapeTheme.colors.cream.copy(alpha = 0.35f),
-                                        modifier = Modifier.size(56.dp)
-                                    )
-                                    val dayNumber = meeting!!.data
-                                        .substringAfter(",", "")
-                                        .trim()
-                                        .takeWhile { it.isDigit() }
-                                        .ifEmpty {
-                                            meeting!!.data.trim().takeWhile { it.isDigit() }.ifEmpty { "—" }
-                                        }
-                                    Text(
-                                        text = dayNumber,
-                                        style = MaterialTheme.typography.displayLarge.copy(
-                                            fontSize = 20.sp,
-                                            color = RodapeTheme.colors.cream,
-                                            fontWeight = FontWeight.Bold
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .background(RodapeTheme.colors.olivaDeep)
+                                // Âncora dos notches: bottom REAL do canhoto.
+                                .onGloballyPositioned { perforationY = it.boundsInParent().bottom }
+                                .drawBehind {
+                                    drawLine(
+                                        color = perforationColor.copy(alpha = 0.35f),
+                                        start = Offset(0f, size.height - 0.5.dp.toPx()),
+                                        end = Offset(size.width, size.height - 0.5.dp.toPx()),
+                                        strokeWidth = 1.dp.toPx(),
+                                        pathEffect = PathEffect.dashPathEffect(
+                                            floatArrayOf(4.dp.toPx(), 4.dp.toPx())
                                         ),
-                                        modifier = Modifier.padding(top = 8.dp)
+                                    )
+                                }
+                                .padding(horizontal = 20.dp, vertical = 16.dp),
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.spacedBy(16.dp),
+                        ) {
+                            // Day-stamp tipografado (a11y lê a data inteira, não fragmentos)
+                            Column(
+                                horizontalAlignment = Alignment.CenterHorizontally,
+                                modifier = Modifier.semantics(mergeDescendants = true) {
+                                    contentDescription = "${meeting!!.data}, ${meeting!!.hora}"
+                                },
+                            ) {
+                                Text(
+                                    text = tWeekday,
+                                    fontFamily = InterFontFamily,
+                                    fontSize = 10.sp,
+                                    fontWeight = FontWeight.Bold,
+                                    letterSpacing = 2.sp,
+                                    color = RodapeTheme.colors.cream.copy(alpha = 0.65f),
+                                    maxLines = 1,
+                                )
+                                Text(
+                                    text = tDay,
+                                    fontFamily = LiterataFontFamily,
+                                    fontStyle = FontStyle.Italic,
+                                    fontWeight = FontWeight.Medium,
+                                    fontSize = 40.sp,
+                                    lineHeight = 40.sp,
+                                    letterSpacing = (-1).sp,
+                                    color = RodapeTheme.colors.cream,
+                                )
+                                Text(
+                                    text = tMonth,
+                                    fontFamily = LiterataFontFamily,
+                                    fontStyle = FontStyle.Italic,
+                                    fontSize = 13.sp,
+                                    color = RodapeTheme.colors.cream.copy(alpha = 0.85f),
+                                    maxLines = 1,
+                                )
+                            }
+                            Column(modifier = Modifier.weight(1f)) {
+                                Text(
+                                    text = "PRÓXIMO ENCONTRO",
+                                    fontFamily = InterFontFamily,
+                                    fontSize = 10.5.sp,
+                                    fontWeight = FontWeight.Bold,
+                                    letterSpacing = 1.6.sp,
+                                    color = RodapeTheme.colors.cream.copy(alpha = 0.7f),
+                                )
+                                Spacer(modifier = Modifier.height(4.dp))
+                                Row(
+                                    verticalAlignment = Alignment.CenterVertically,
+                                    horizontalArrangement = Arrangement.spacedBy(6.dp),
+                                ) {
+                                    Icon(
+                                        imageVector = RodapeIcons.Clock,
+                                        contentDescription = null,
+                                        tint = RodapeTheme.colors.cream.copy(alpha = 0.85f),
+                                        modifier = Modifier.size(14.dp),
+                                    )
+                                    Text(
+                                        text = meeting!!.hora,
+                                        fontFamily = InterFontFamily,
+                                        fontSize = 14.sp,
+                                        fontWeight = FontWeight.SemiBold,
+                                        color = RodapeTheme.colors.cream,
+                                    )
+                                }
+                                if (meeting!!.chapterStart != null && meeting!!.chapterEnd != null) {
+                                    Spacer(modifier = Modifier.height(2.dp))
+                                    Text(
+                                        text = "Caps ${meeting!!.chapterStart}–${meeting!!.chapterEnd}",
+                                        fontFamily = InterFontFamily,
+                                        fontSize = 12.sp,
+                                        fontWeight = FontWeight.SemiBold,
+                                        color = RodapeTheme.colors.olivaSoft,
                                     )
                                 }
                             }
+                        }
 
-                            Column {
+                        // ── Corpo cream: agenda + local ──
+                        Column(modifier = Modifier.padding(20.dp)) {
+                            if (meeting!!.agenda.isNotBlank()) {
                                 Text(
-                                    text = "Próximo encontro",
-                                    style = MaterialTheme.typography.bodyLarge.copy(
-                                        color = RodapeTheme.colors.olivaSoft,
-                                        fontWeight = FontWeight.Medium
-                                    )
+                                    text = meeting!!.agenda,
+                                    style = MaterialTheme.typography.titleMedium.copy(
+                                        color = RodapeTheme.colors.ink
+                                    ),
+                                    maxLines = 2,
+                                    overflow = TextOverflow.Ellipsis,
+                                    modifier = Modifier.padding(bottom = 8.dp),
+                                )
+                            }
+                            Row(
+                                modifier = Modifier.fillMaxWidth(),
+                                verticalAlignment = Alignment.CenterVertically,
+                                horizontalArrangement = Arrangement.spacedBy(8.dp)
+                            ) {
+                                Icon(
+                                    imageVector = RodapeIcons.Pin,
+                                    contentDescription = "Local",
+                                    tint = RodapeTheme.colors.olivaMid,
+                                    modifier = Modifier.size(18.dp)
                                 )
                                 Text(
-                                    text = meeting!!.data,
-                                    style = MaterialTheme.typography.headlineLarge.copy(
-                                        fontSize = 18.sp,
-                                        fontWeight = FontWeight.Bold,
-                                        color = RodapeTheme.colors.cream
-                                    )
+                                    text = meeting!!.local.ifBlank { "Local a definir" },
+                                    style = MaterialTheme.typography.bodyLarge,
+                                    color = RodapeTheme.colors.tertiary
                                 )
-                                Text(
-                                    text = meeting!!.hora,
-                                    style = MaterialTheme.typography.bodyLarge.copy(color = RodapeTheme.colors.olivaSoft.copy(alpha = 0.9f))
-                                )
-                                if (meeting!!.chapterStart != null && meeting!!.chapterEnd != null) {
-                                    Text(
-                                        text = "Caps ${meeting!!.chapterStart}–${meeting!!.chapterEnd}",
-                                        style = MaterialTheme.typography.labelSmall.copy(
-                                            color = RodapeTheme.colors.olivaSoft,
-                                            fontWeight = FontWeight.SemiBold
-                                        )
-                                    )
-                                }
                             }
                         }
                     }
 
-                    Column(modifier = Modifier.padding(20.dp)) {
-                        Row(
-                            modifier = Modifier.fillMaxWidth(),
-                            verticalAlignment = Alignment.CenterVertically,
-                            horizontalArrangement = Arrangement.spacedBy(8.dp)
-                        ) {
-                            Icon(
-                                imageVector = RodapeIcons.Pin,
-                                contentDescription = "Local",
-                                tint = RodapeTheme.colors.olivaMid,
-                                modifier = Modifier.size(20.dp)
-                            )
-                            Text(
-                                text = meeting!!.local,
-                                style = MaterialTheme.typography.bodyLarge,
-                                color = RodapeTheme.colors.tertiary
-                            )
-                        }
+                    // Notches "recortados" na altura REAL do picote (cor da
+                    // superfície-mãe = fundo da tela, theme-aware). Só desenham
+                    // depois da 1ª medição.
+                    if (perforationY > 0f) {
+                        Box(
+                            modifier = Modifier
+                                .align(Alignment.TopStart)
+                                .offset(x = (-notchSize / 2), y = notchY)
+                                .size(notchSize)
+                                .background(RodapeTheme.colors.paper, CircleShape)
+                        )
+                        Box(
+                            modifier = Modifier
+                                .align(Alignment.TopEnd)
+                                .offset(x = (notchSize / 2), y = notchY)
+                                .size(notchSize)
+                                .background(RodapeTheme.colors.paper, CircleShape)
+                        )
                     }
                 }
             }
