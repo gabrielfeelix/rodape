@@ -6,4 +6,13 @@
          tinting correto de botoes/textos. A UI Compose do app usa
          MyApplicationTheme custom e nao depende deste tema. -->
     <style name="Theme.MyApplication" parent="Theme.Material3.DayNight.NoActionBar" />
+
+    <!-- Splash de marca (4.1, SplashScreen API — 12+ nativo, compat pra baixo):
+         fundo paper + ícone adaptável no cold start, em vez da janela branca.
+         Troca pro tema real assim que o Compose assume. -->
+    <style name="Theme.App.Starting" parent="Theme.SplashScreen">
+        <item name="windowSplashScreenBackground">#F7F5EE</item>
+        <item name="windowSplashScreenAnimatedIcon">@mipmap/ic_launcher</item>
+        <item name="postSplashScreenTheme">@style/Theme.MyApplication</item>
+    </style>
 </resources>

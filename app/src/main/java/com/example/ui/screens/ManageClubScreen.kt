@@ -91,7 +91,7 @@ fun ManageClubScreen(
                 }
             )
         },
-        snackbarHost = { SnackbarHost(snackbar) }
+        snackbarHost = { com.example.ui.components.RodapeSnackbarHost(snackbar) }
     ) { padding ->
         LazyColumn(
             modifier = Modifier.fillMaxSize().padding(padding).padding(horizontal = 16.dp),

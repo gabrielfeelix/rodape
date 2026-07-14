@@ -11,6 +11,7 @@ import androidx.activity.compose.setContent
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.activity.enableEdgeToEdge
 import androidx.activity.viewModels
+import androidx.core.splashscreen.SplashScreen.Companion.installSplashScreen
 import com.example.data.ThemeMode
 import com.example.data.remote.AuthRepository
 import com.example.data.remote.Supabase
@@ -55,6 +56,9 @@ class MainActivity : ComponentActivity() {
     private val viewModel: MainViewModel by viewModels()
 
     override fun onCreate(savedInstanceState: Bundle?) {
+        // 4.1: splash de marca (fundo paper + ícone) no cold start — precisa vir
+        // ANTES do super.onCreate pra trocar o tema Starting → real sem flash.
+        installSplashScreen()
         super.onCreate(savedInstanceState)
         Supabase.client.handleDeeplinks(intent)
         // Triggering fresh compilation and preview deployment for the user
@@ -75,6 +79,22 @@ class MainActivity : ComponentActivity() {
                 ThemeMode.LIGHT -> false
                 ThemeMode.DARK -> true
                 ThemeMode.SYSTEM -> isSystemInDarkTheme()
+            }
+            // 4.1: ícones da status/nav bar acompanham o TEMA DO APP (não só o
+            // do sistema) — tema escuro pede ícones claros e vice-versa. O
+            // enableEdgeToEdge default usa o uiMode do sistema, que diverge
+            // quando o usuário força claro/escuro dentro do app.
+            LaunchedEffect(darkTheme) {
+                enableEdgeToEdge(
+                    statusBarStyle = if (darkTheme) {
+                        androidx.activity.SystemBarStyle.dark(android.graphics.Color.TRANSPARENT)
+                    } else {
+                        androidx.activity.SystemBarStyle.light(
+                            android.graphics.Color.TRANSPARENT,
+                            android.graphics.Color.TRANSPARENT,
+                        )
+                    },
+                )
             }
             CompositionLocalProvider(LocalDensity provides scaledDensity) {
             MyApplicationTheme(darkTheme = darkTheme) {

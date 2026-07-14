@@ -263,7 +263,7 @@ fun MainTabsScreen(
                 hasOpenVoting = activeVotingRoundForBadge != null,
             )
         },
-        snackbarHost = { SnackbarHost(snackbarHostState) },
+        snackbarHost = { com.example.ui.components.RodapeSnackbarHost(snackbarHostState) },
         containerColor = MaterialTheme.colorScheme.background
     ) { paddingValues ->
         Box(
@@ -1250,13 +1250,26 @@ fun HomeScreenTab(
     val fullGreeting = "$salutation, $nameToGreet."
 
     var isRefreshing by remember { mutableStateOf(false) }
+    // 4.3: indicador de pull-to-refresh TINGIDO de marca (terracota sobre
+    // cream) — era o default M3 (roxo sobre cinza).
+    val pullState = androidx.compose.material3.pulltorefresh.rememberPullToRefreshState()
     PullToRefreshBox(
         isRefreshing = isRefreshing,
         onRefresh = {
             isRefreshing = true
             viewModel.forceRefresh { isRefreshing = false }
         },
+        state = pullState,
         modifier = Modifier.fillMaxSize(),
+        indicator = {
+            androidx.compose.material3.pulltorefresh.PullToRefreshDefaults.Indicator(
+                state = pullState,
+                isRefreshing = isRefreshing,
+                containerColor = RodapeTheme.colors.cream,
+                color = RodapeTheme.colors.terracota,
+                modifier = Modifier.align(Alignment.TopCenter),
+            )
+        },
     ) {
     LazyColumn(
         modifier = Modifier

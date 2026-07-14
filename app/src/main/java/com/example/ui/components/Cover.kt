@@ -90,8 +90,13 @@ fun Cover(
         // carrega e se a imagem falhar; a foto real cobre por cima quando chega.
         Box(modifier = box) {
             GeneratedCover(title, author, width)
+            // 4.3: crossfade ao resolver — a capa real esmaece por cima da
+            // gerada em vez de "pipocar" (pop) quando a rede responde.
             AsyncImage(
-                model = coverUrl,
+                model = coil.request.ImageRequest.Builder(androidx.compose.ui.platform.LocalContext.current)
+                    .data(coverUrl)
+                    .crossfade(true)
+                    .build(),
                 contentDescription = "Capa de $title",
                 modifier = Modifier.matchParentSize(),
                 contentScale = ContentScale.Crop,
