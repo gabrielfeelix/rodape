@@ -54,6 +54,12 @@ internal data class ProfileDto(
     )
 }
 
+// Projeção mínima de SELECTs de id — compartilhado por 4 domínios (chapters,
+// reactions, votes×2). Era nested privado no RemoteRepository; internal desde
+// o F3c porque os repos fatiados usam o mesmo tipo.
+@Serializable
+internal data class IdOnlyDto(val id: String)
+
 // Update parcial do profile do usuário logado (insertUser + handler upsert_profile).
 // Era nested privado no RemoteRepository; virou internal no F3b porque o handler
 // mora na SyncEngine e o caminho online continua no repository.

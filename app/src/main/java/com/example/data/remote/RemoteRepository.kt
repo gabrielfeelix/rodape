@@ -85,6 +85,7 @@ class RemoteRepository(
     private val notificationRepo = com.example.data.remote.repo.OfflineFirstNotificationRepository(engine)
     private val quoteRepo = com.example.data.remote.repo.OfflineFirstQuoteRepository(engine)
     private val moderationRepo = com.example.data.remote.repo.OfflineFirstModerationRepository(engine)
+    private val discussionRepo = com.example.data.remote.repo.OfflineFirstDiscussionRepository(engine)
 
     private val json = engine.json
     private val dao = engine.dao
@@ -865,114 +866,24 @@ class RemoteRepository(
     // COMMENTS / REACTIONS
     // ============================================================
 
-    suspend fun insertComment(comment: Comment) {
-        // 1. Optimistic local PRIMEIRO — UI ja mostra
-        dao.upsertComment(comment)
-        // 2. Tenta HTTP — se falhar, queue
-        val payload = """{"id":"${comment.id}","chapterId":"${comment.chapterId}","clubId":"${comment.clubId}","userId":"${comment.userId}","texto":"${comment.texto.escapeJson()}"}"""
-        tryRemoteOrEnqueue("insert_comment", payload, notifyTable = "comments") {
-            supabase.from("comments").upsert(
-                CommentInsertDto(
-                    id = comment.id,
-                    chapterId = comment.chapterId,
-                    clubId = comment.clubId,
-                    userId = comment.userId,
-                    texto = comment.texto,
-                )
-            )
-        }
-    }
+    // F3c: movido pra repo/DiscussionRepository.kt — fachada delega.
+    suspend fun insertComment(comment: Comment) = discussionRepo.insertComment(comment)
 
-    // escapeJson agora é top-level internal em SyncEngine.kt (F3c) — os repos
-    // de domínio e a fachada usam o mesmo.
+    fun getCommentsForChapterFlow(chapterId: String, clubId: String): Flow<List<Comment>> =
+        discussionRepo.getCommentsForChapterFlow(chapterId, clubId)
 
-    fun getCommentsForChapterFlow(chapterId: String, clubId: String): Flow<List<Comment>> {
-        val key = "comments:ch:$chapterId"
-        val reload: suspend () -> Unit = { syncCommentsForChapter(chapterId, clubId); markSynced(key) }
-        scope.launch { syncOnce(key, Ttl.FAST) { syncCommentsForChapter(chapterId, clubId) } }
-        ensureRealtime("comments", filterColumn = "club_id", filterValue = clubId, reload = reload)
-        return dao.commentsForChapterFlow(chapterId, clubId)
-    }
+    fun getCommentsForBookFlow(bookId: String, clubId: String): Flow<List<Comment>> =
+        discussionRepo.getCommentsForBookFlow(bookId, clubId)
 
-    private suspend fun syncCommentsForChapter(chapterId: String, clubId: String) {
-        runCatching {
-            val list = supabase.from("comments").select {
-                filter {
-                    eq("chapter_id", chapterId)
-                    eq("club_id", clubId)
-                }
-                order("created_at", Order.ASCENDING)
-            }.decodeList<CommentDto>().map { it.toDomain() }
-            dao.replaceCommentsInChapter(chapterId, clubId, list)
-        }
-    }
+    suspend fun softRemoveComment(commentId: String, removidoPor: String, motivo: String) =
+        discussionRepo.softRemoveComment(commentId, removidoPor, motivo)
 
-    fun getCommentsForBookFlow(bookId: String, clubId: String): Flow<List<Comment>> {
-        scope.launch {
-            runCatching {
-                // Join via embed pra trazer chapter.numero pra ordenacao
-                val list = supabase.from("comments").select(Columns.raw("*, chapters!inner(numero,book_id)")) {
-                    filter {
-                        eq("club_id", clubId)
-                        eq("chapters.book_id", bookId)
-                    }
-                }.decodeList<CommentDto>().map { it.toDomain() }
-                dao.upsertComments(list)
-            }
-        }
-        // Reactive flow do Room ja faz JOIN com chapters via DAO query
-        return dao.commentsForBookFlow(bookId, clubId)
-    }
+    suspend fun restoreComment(commentId: String) = discussionRepo.restoreComment(commentId)
 
-    suspend fun softRemoveComment(commentId: String, removidoPor: String, motivo: String) {
-        // Optimistic local + fila: moderar offline agora persiste (antes era
-        // remoto-primeiro e nao fazia nada offline).
-        dao.markCommentRemoved(commentId, removidoPor, motivo)
-        val payload = buildJsonObject {
-            put("id", commentId); put("by", removidoPor); put("motivo", motivo)
-        }.toString()
-        tryRemoteOrEnqueue("remove_comment", payload, notifyTable = "comments") {
-            supabase.from("comments").update({
-                set("removido", true)
-                set("removido_por", removidoPor)
-                set("motivo_remocao", motivo)
-            }) { filter { eq("id", commentId) } }
-        }
-    }
+    suspend fun editOwnComment(commentId: String, novoTexto: String) =
+        discussionRepo.editOwnComment(commentId, novoTexto)
 
-    suspend fun restoreComment(commentId: String) {
-        dao.markCommentRestored(commentId)
-        val payload = buildJsonObject { put("id", commentId) }.toString()
-        tryRemoteOrEnqueue("restore_comment", payload, notifyTable = "comments") {
-            supabase.from("comments").update({
-                set("removido", false)
-                set("removido_por", JsonNull)
-                set("motivo_remocao", JsonNull)
-            }) { filter { eq("id", commentId) } }
-        }
-    }
-
-    /** Edita o texto do PRÓPRIO comentário (RLS permite autor enquanto não removido).
-     *  Local-first + fila offline. */
-    suspend fun editOwnComment(commentId: String, novoTexto: String) {
-        dao.updateCommentText(commentId, novoTexto)
-        val payload = buildJsonObject { put("id", commentId); put("texto", novoTexto) }.toString()
-        tryRemoteOrEnqueue("edit_comment", payload, notifyTable = "comments") {
-            supabase.from("comments").update({ set("texto", novoTexto) }) {
-                filter { eq("id", commentId) }
-            }
-        }
-    }
-
-    /** Apaga o PRÓPRIO comentário (hard delete; RLS "comments delete self" na migration 0003).
-     *  Local-first + fila offline. */
-    suspend fun deleteOwnComment(commentId: String) {
-        dao.deleteComment(commentId)
-        val payload = buildJsonObject { put("id", commentId) }.toString()
-        tryRemoteOrEnqueue("delete_comment", payload, notifyTable = "comments") {
-            supabase.from("comments").delete { filter { eq("id", commentId) } }
-        }
-    }
+    suspend fun deleteOwnComment(commentId: String) = discussionRepo.deleteOwnComment(commentId)
 
     // ============================================================
     // MODERAÇÃO — denúncia, bloqueio, remoção (migration 0010)
@@ -1016,63 +927,17 @@ class RemoteRepository(
 
     // ---- reactions ----
 
-    suspend fun insertReaction(reaction: Reaction) {
-        dao.upsertReaction(reaction)
-        val payload = """{"commentId":"${reaction.commentId}","userId":"${reaction.userId}","emoji":"${reaction.emoji}"}"""
-        tryRemoteOrEnqueue("insert_reaction", payload, notifyTable = "reactions") {
-            supabase.from("reactions").upsert(reaction.toDto())
-        }
-    }
+    suspend fun insertReaction(reaction: Reaction) = discussionRepo.insertReaction(reaction)
 
-    suspend fun deleteReaction(reaction: Reaction) {
-        dao.deleteReaction(reaction.commentId, reaction.userId, reaction.emoji)
-        val payload = """{"commentId":"${reaction.commentId}","userId":"${reaction.userId}","emoji":"${reaction.emoji}"}"""
-        tryRemoteOrEnqueue("delete_reaction", payload, notifyTable = "reactions") {
-            supabase.from("reactions").delete {
-                filter {
-                    eq("comment_id", reaction.commentId)
-                    eq("user_id", reaction.userId)
-                    eq("emoji", reaction.emoji)
-                }
-            }
-        }
-    }
+    suspend fun deleteReaction(reaction: Reaction) = discussionRepo.deleteReaction(reaction)
 
-    fun getReactionsForCommentFlow(commentId: String): Flow<List<Reaction>> {
-        val reload: suspend () -> Unit = {
-            runCatching {
-                val list = supabase.from("reactions").select {
-                    filter { eq("comment_id", commentId) }
-                }.decodeList<ReactionDto>().map { it.toDomain() }
-                dao.replaceReactionsForComment(commentId, list)
-            }
-        }
-        scope.launch { runCatching { reload() } }
-        ensureRealtime("reactions", filterColumn = "comment_id", filterValue = commentId, reload = reload)
-        return dao.reactionsForCommentFlow(commentId)
-    }
+    fun getReactionsForCommentFlow(commentId: String): Flow<List<Reaction>> =
+        discussionRepo.getReactionsForCommentFlow(commentId)
 
-    fun getReactionsForChapterFlow(chapterId: String): Flow<List<Reaction>> {
-        val reload: suspend () -> Unit = {
-            runCatching {
-                val commentIds = supabase.from("comments").select(Columns.raw("id")) {
-                    filter { eq("chapter_id", chapterId) }
-                }.decodeList<IdOnlyDto>().map { it.id }
-                if (commentIds.isNotEmpty()) {
-                    val list = supabase.from("reactions").select {
-                        filter { isIn("comment_id", commentIds) }
-                    }.decodeList<ReactionDto>().map { it.toDomain() }
-                    dao.upsertReactions(list)
-                }
-            }
-        }
-        scope.launch { runCatching { reload() } }
-        ensureRealtime("reactions", reload = reload)
-        return dao.reactionsForChapterFlow(chapterId)
-    }
+    fun getReactionsForChapterFlow(chapterId: String): Flow<List<Reaction>> =
+        discussionRepo.getReactionsForChapterFlow(chapterId)
 
-    @Serializable
-    private data class IdOnlyDto(val id: String)
+    // IdOnlyDto agora é internal em RemoteDtos.kt (F3c — compartilhado por 4 domínios).
 
     // ============================================================
     // VOTES & VOTING ROUNDS
