@@ -5,7 +5,9 @@ import com.example.data.remote.Supabase
 import com.example.data.sync.DrainQueueWorker
 import com.example.util.CrashLogger
 import com.google.firebase.crashlytics.FirebaseCrashlytics
+import dagger.hilt.android.HiltAndroidApp
 
+@HiltAndroidApp
 class RodapeApp : Application() {
     override fun onCreate() {
         super.onCreate()

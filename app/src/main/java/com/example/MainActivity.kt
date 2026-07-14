@@ -77,8 +77,10 @@ import com.example.ui.theme.LocalReducedMotion
 import com.example.ui.theme.MyApplicationTheme
 import com.example.ui.theme.RodapeMotion
 import com.example.ui.viewmodel.MainViewModel
+import dagger.hilt.android.AndroidEntryPoint
 import kotlinx.coroutines.launch
 
+@AndroidEntryPoint
 class MainActivity : ComponentActivity() {
     private val viewModel: MainViewModel by viewModels()
 
