@@ -35,6 +35,15 @@ calma na sessão anterior. Este doc te dá o estado exato e as regras. Leia na o
   di/RepositoryModule. RemoteRepository = fachada pura (~560 linhas) delegando tudo;
   API pública intocada — MainViewModel nem recompilou diferente. ⚠️ Smoke de device
   acumulado: F3b+F4a+F3c testam juntos (roteiro do F3b cobre).
+- F5 — EM PROGRESSO (VM por feature; telas usam hiltViewModel; membros saem do
+  MainViewModel; dep androidx.hilt:hilt-navigation-compose adicionada):
+  ✅ F5-1 SyncViewModel (`699898c`) · ✅ F5-2 NotificationsViewModel (`459303e`) ·
+  ✅ F5-3 SearchViewModel (`b11d2f4`) · ⏸️ F5-4 PrefsViewModel: VM criada e
+  compilando, FALTA ligar MainActivity (by viewModels) + MainTabsScreen/
+  ProfileScreenTab (hiltViewModel) e remover os membros do MainViewModel.
+  Depois: quotes → moderação → progresso → ratings → votação → meetings →
+  discussão. requestedTab fica no MainViewModel slim (canal Activity↔MainTabs);
+  book/club/auth ficam no hub até o fim (mapa §5).
 - F4b — SessionManager @Singleton (data/session/) com o grafo de sessão + 4 observers
   + helpers, corpos verbatim. Engine unificada via DI (RemoteRepository(engine) via
   @Provides; MainViewModel @HiltViewModel com aliases; SEM close() no onCleared — a
