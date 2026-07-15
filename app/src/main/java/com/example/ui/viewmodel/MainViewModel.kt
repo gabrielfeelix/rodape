@@ -362,18 +362,7 @@ class MainViewModel @Inject constructor(
         }
     }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(60_000), emptyMap())
 
-    // Books search results from Open Library
-    // Backcompat: SuggestScreen ainda usa pro cross-check / criar suggestion via createBookSuggestion(doc).
-    // Mantém List<OpenLibraryDoc> pra preservar a chamada existente.
-    // O novo searchResultsUnified (abaixo) é a versão completa com Google Books incluído.
-    private val _searchResults = MutableStateFlow<List<OpenLibraryDoc>>(emptyList())
-    val searchResults: StateFlow<List<OpenLibraryDoc>> = _searchResults.asStateFlow()
-
-    private val _searchResultsUnified = MutableStateFlow<List<com.example.data.search.UnifiedBookResult>>(emptyList())
-    val searchResultsUnified: StateFlow<List<com.example.data.search.UnifiedBookResult>> = _searchResultsUnified.asStateFlow()
-
-    private val _searchLoading = MutableStateFlow(false)
-    val searchLoading: StateFlow<Boolean> = _searchLoading.asStateFlow()
+    // F5: estado/ações de busca moraram pra ui/search/SearchViewModel.
 
     // Pedido de tab solicitada por outro local (ex: notificações). MainTabs observa e troca.
     private val _requestedTab = MutableStateFlow<String?>(null)
@@ -770,51 +759,6 @@ class MainViewModel @Inject constructor(
     fun getRsvpOfUser(meetingId: String): Flow<MeetingRsvp?> {
         val userId = currentUserId.value ?: return flowOf(null)
         return repository.getRsvpForMeetingOfUserFlow(meetingId, userId)
-    }
-
-    // --- Book suggestions search ---
-    /**
-     * Busca unificada (OL + GB fallback). Alimenta _searchResultsUnified pra Suggest.
-     * Também alimenta _searchResults (OpenLibraryDoc) por backcompat com cross-check
-     * de autor — só os resultados que vieram de OL têm representação como Doc.
-     */
-    fun searchOpenLibrary(query: String) {
-        val q = query.trim()
-        if (q.isEmpty()) {
-            _searchResults.value = emptyList()
-            _searchResultsUnified.value = emptyList()
-            return
-        }
-
-        _searchLoading.value = true
-        viewModelScope.launch {
-            try {
-                // Busca unificada
-                val unified = com.example.data.search.BookSearchService.searchBooks(q)
-                _searchResultsUnified.value = unified
-
-                // Converte TODAS as fontes (Open Library + Google Books) pra
-                // OpenLibraryDoc — antes filtrava só OL, e livros que existiam
-                // apenas no Google Books nunca apareciam na tela de sugerir.
-                // (GB não tem coverI de OL; a capa cai pra capa gerada.)
-                val docs = unified.map { u ->
-                    OpenLibraryDoc(
-                        title = u.title,
-                        authorName = listOf(u.author),
-                        firstPublishYear = u.firstPublishYear,
-                        coverI = u.openlibraryRawCoverI,
-                        isbn = u.isbn?.let { listOf(it) }
-                    )
-                }
-                _searchResults.value = docs
-            } catch (e: Exception) {
-                android.util.Log.e("Rodape/VM", "Operacao falhou silenciosamente", e)
-                _searchResults.value = emptyList()
-                _searchResultsUnified.value = emptyList()
-            } finally {
-                _searchLoading.value = false
-            }
-        }
     }
 
     /** Dedup por ISBN/openlibraryId/título — mora no SessionManager (F4b). */
@@ -1262,8 +1206,8 @@ class MainViewModel @Inject constructor(
                 repository.updateClubBookMeetingDate(clubId, b.id, System.currentTimeMillis())
             }
             repository.updateClubBookStatus(clubId, bookId, "current")
-            _searchResults.value = emptyList()
-            _searchResultsUnified.value = emptyList()
+            // F5: limpeza dos resultados de busca é responsabilidade da
+            // SearchViewModel da tela (ManageClub chama searchOpenLibrary("")).
         }
     }
 
@@ -1333,48 +1277,6 @@ class MainViewModel @Inject constructor(
             if (member.papel != "super_admin") return@launch
             repository.updateClubArquivado(clubId, false)
             session.updateActiveClubId(clubId)
-        }
-    }
-
-    /**
-     * Faz cross-check do autor com Google Books pra detectar conflitos da Open Library
-     * (que às vezes retorna author errado quando cover_id é compartilhado).
-     *
-     * Retorna o autor encontrado no GB se diferente do fornecido, ou null se bate/falha.
-     */
-    fun verifyAuthorWithGoogleBooks(
-        title: String,
-        olAuthor: String,
-        isbn: String,
-        onResult: (gbAuthor: String?) -> Unit
-    ) {
-        viewModelScope.launch {
-            try {
-                val query = if (isbn.isNotBlank()) "isbn:$isbn"
-                    else "intitle:${title.take(80)}"
-                val gb = com.example.data.api.GoogleBooksApi.service.search(query)
-                val gbAuthor = gb.items
-                    ?.firstOrNull()
-                    ?.volumeInfo
-                    ?.authors
-                    ?.firstOrNull()
-                    .orEmpty()
-                if (gbAuthor.isBlank()) {
-                    onResult(null)
-                    return@launch
-                }
-                // Normalize pra comparar (ignora case, trim)
-                val olNorm = olAuthor.trim().lowercase()
-                val gbNorm = gbAuthor.trim().lowercase()
-                if (olNorm == gbNorm || olNorm.contains(gbNorm) || gbNorm.contains(olNorm)) {
-                    onResult(null) // bateu
-                } else {
-                    onResult(gbAuthor.trim())
-                }
-            } catch (e: Exception) {
-                android.util.Log.e("Rodape/VM", "Operacao falhou silenciosamente", e)
-                onResult(null)
-            }
         }
     }
 

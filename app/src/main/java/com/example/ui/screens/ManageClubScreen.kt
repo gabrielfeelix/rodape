@@ -60,8 +60,9 @@ fun ManageClubScreen(
     val currentUserPapel by viewModel.currentUserPapel.collectAsStateWithLifecycle()
     val suggestedBooks by viewModel.suggestedBooks.collectAsStateWithLifecycle()
     val nextBooks by viewModel.nextBooks.collectAsStateWithLifecycle()
-    val bookSearchResults by viewModel.searchResultsUnified.collectAsStateWithLifecycle()
-    val bookSearchLoading by viewModel.searchLoading.collectAsStateWithLifecycle()
+    val searchViewModel: com.example.ui.search.SearchViewModel = androidx.hilt.navigation.compose.hiltViewModel()
+    val bookSearchResults by searchViewModel.searchResultsUnified.collectAsStateWithLifecycle()
+    val bookSearchLoading by searchViewModel.searchLoading.collectAsStateWithLifecycle()
 
     var showEditInfo by remember { mutableStateOf(false) }
     var showRegenCode by remember { mutableStateOf(false) }
@@ -853,19 +854,22 @@ fun ManageClubScreen(
             next = nextBooks,
             searchResults = bookSearchResults,
             searchLoading = bookSearchLoading,
-            onSearch = { viewModel.searchOpenLibrary(it) },
+            onSearch = { searchViewModel.searchOpenLibrary(it) },
             onDismiss = {
                 showChangeBook = false
-                viewModel.searchOpenLibrary("")
+                searchViewModel.searchOpenLibrary("")
             },
             onPick = { bookId ->
                 viewModel.changeCurrentBookManually(bookId)
                 showChangeBook = false
-                viewModel.searchOpenLibrary("")
+                searchViewModel.searchOpenLibrary("")
             },
             onPickSearchResult = { r ->
                 viewModel.setSearchedBookAsCurrent(r)
                 showChangeBook = false
+                // F5: a limpeza dos resultados saiu do setSearchedBookAsCurrent
+                // (o estado de busca agora é da SearchViewModel desta tela).
+                searchViewModel.searchOpenLibrary("")
             }
         )
     }

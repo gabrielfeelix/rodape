@@ -59,8 +59,9 @@ fun SuggestScreen(
     onNavigateToAddManual: () -> Unit = {}
 ) {
     var query by rememberSaveable { mutableStateOf("") }
-    val searchResults by viewModel.searchResults.collectAsStateWithLifecycle()
-    val loading by viewModel.searchLoading.collectAsStateWithLifecycle()
+    val searchViewModel: com.example.ui.search.SearchViewModel = androidx.hilt.navigation.compose.hiltViewModel()
+    val searchResults by searchViewModel.searchResults.collectAsStateWithLifecycle()
+    val loading by searchViewModel.searchLoading.collectAsStateWithLifecycle()
     val keyboardController = LocalSoftwareKeyboardController.current
 
     var selectedDoc by remember { mutableStateOf<OpenLibraryDoc?>(null) }
@@ -84,12 +85,12 @@ fun SuggestScreen(
         if (query.trim().length >= 3) {
             searchInFlight = true
             delay(400)
-            viewModel.searchOpenLibrary(query)
+            searchViewModel.searchOpenLibrary(query)
         } else {
             searchInFlight = false
             // Apagar a busca pra 0-2 chars deve limpar os hits antigos —
             // searchOpenLibrary("") é tratado como "limpar" no ViewModel.
-            viewModel.searchOpenLibrary("")
+            searchViewModel.searchOpenLibrary("")
         }
     }
 
@@ -129,7 +130,7 @@ fun SuggestScreen(
         gbConflictAuthor = null
         pickedAuthor = null
         verifying = true
-        viewModel.verifyAuthorWithGoogleBooks(
+        searchViewModel.verifyAuthorWithGoogleBooks(
             title = doc.title,
             olAuthor = doc.authorName?.firstOrNull().orEmpty(),
             isbn = doc.isbn?.firstOrNull().orEmpty()
@@ -223,7 +224,7 @@ fun SuggestScreen(
                     onSearch = {
                         keyboardController?.hide()
                         if (query.trim().length >= 3) {
-                            viewModel.searchOpenLibrary(query)
+                            searchViewModel.searchOpenLibrary(query)
                         }
                     }
                 ),
@@ -322,7 +323,7 @@ fun SuggestScreen(
                             description = "Verifique a conexão e tente de novo, ou cadastre manualmente.",
                             onRetry = {
                                 keyboardController?.hide()
-                                viewModel.searchOpenLibrary(query)
+                                searchViewModel.searchOpenLibrary(query)
                             },
                             action = {
                                 TbButton(
