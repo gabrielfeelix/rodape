@@ -47,7 +47,8 @@ fun NotificationsScreen(
     onNavigateToDiscussion: (chapterId: String, title: String) -> Unit = { _, _ -> },
     onNavigateToTab: (String) -> Unit = {}
 ) {
-    val list by viewModel.notifications.collectAsStateWithLifecycle()
+    val notifViewModel: com.example.ui.notifications.NotificationsViewModel = androidx.hilt.navigation.compose.hiltViewModel()
+    val list by notifViewModel.notifications.collectAsStateWithLifecycle()
     val chapters by viewModel.currentChapters.collectAsStateWithLifecycle()
     val showLoading = rememberShowLoading(hasData = list.isNotEmpty())
 
@@ -71,7 +72,7 @@ fun NotificationsScreen(
                 },
                 actions = {
                     if (list.any { !it.lida }) {
-                        TextButton(onClick = { viewModel.markAllNotificationsAsRead() }) {
+                        TextButton(onClick = { notifViewModel.markAllNotificationsAsRead() }) {
                             Text(
                                 "Ler todas",
                                 color = RodapeTheme.colors.terracota,
@@ -186,7 +187,7 @@ fun NotificationsScreen(
                         val swipeState = rememberSwipeToDismissBoxState(
                             confirmValueChange = { v ->
                                 if (v != SwipeToDismissBoxValue.Settled && !notif.lida) {
-                                    viewModel.markNotificationAsRead(notif.id)
+                                    notifViewModel.markNotificationAsRead(notif.id)
                                 }
                                 false
                             }
@@ -225,7 +226,7 @@ fun NotificationsScreen(
                             payloadJson = notif.payloadJson,
                             lida = notif.lida,
                             onClick = {
-                                viewModel.markNotificationAsRead(notif.id)
+                                notifViewModel.markNotificationAsRead(notif.id)
                                 handleNotificationNavigation(
                                     tipo = notif.tipo,
                                     payloadJson = notif.payloadJson,

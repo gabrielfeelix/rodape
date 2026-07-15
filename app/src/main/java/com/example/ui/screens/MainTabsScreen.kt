@@ -181,8 +181,9 @@ fun MainTabsScreen(
     val allClubs by viewModel.allClubs.collectAsStateWithLifecycle()
     val currentUser by viewModel.currentUser.collectAsStateWithLifecycle()
     val supaName by viewModel.supabaseDisplayName.collectAsStateWithLifecycle()
-    val unreadFlow = remember(viewModel.notifications) {
-        viewModel.notifications.map { notifs -> notifs.count { !it.lida } }
+    val notifViewModel: com.example.ui.notifications.NotificationsViewModel = hiltViewModel()
+    val unreadFlow = remember(notifViewModel.notifications) {
+        notifViewModel.notifications.map { notifs -> notifs.count { !it.lida } }
     }
     val unreadNotificationsCount by unreadFlow.collectAsStateWithLifecycle(initialValue = 0)
     val isAdmin by viewModel.isCurrentUserAdmin.collectAsStateWithLifecycle()

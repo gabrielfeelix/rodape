@@ -212,10 +212,7 @@ class MainViewModel @Inject constructor(
         if (meeting != null) repository.getRsvpsForMeetingFlow(meeting.id) else flowOf(emptyList())
     }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(60_000), emptyList())
 
-    // Notifications
-    val notifications: StateFlow<List<DbNotification>> = currentUserId.flatMapLatest { userId ->
-        if (userId != null) repository.getNotificationsFlow(userId) else flowOf(emptyList())
-    }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(60_000), emptyList())
+    // F5: notifications moraram pra ui/notifications/NotificationsViewModel.
 
     // Saved Quotes — esconde as removidas por moderação (0010).
     val savedQuotes: StateFlow<List<SavedQuote>> = currentUserId.flatMapLatest { userId ->
@@ -964,20 +961,6 @@ class MainViewModel @Inject constructor(
           } catch (e: Exception) {
             toastErro("Não consegui adicionar o livro. Tenta de novo.", e)
           }
-        }
-    }
-
-    // --- Notifications actions ---
-    fun markAllNotificationsAsRead() {
-        viewModelScope.launch {
-            val userId = currentUserId.value ?: return@launch
-            repository.markAllNotificationsAsRead(userId)
-        }
-    }
-
-    fun markNotificationAsRead(notifId: String) {
-        viewModelScope.launch {
-            repository.markNotificationAsRead(notifId)
         }
     }
 
