@@ -189,6 +189,7 @@ dependencies {
   implementation(libs.hilt.android)
   "ksp"(libs.hilt.compiler)
   implementation(libs.androidx.hilt.work)
+  implementation(libs.androidx.hilt.navigation.compose)
   "ksp"(libs.androidx.hilt.compiler)
 
   // --- Supabase ---

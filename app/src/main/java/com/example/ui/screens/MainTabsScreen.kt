@@ -130,6 +130,8 @@ import androidx.compose.ui.text.buildAnnotatedString
 import androidx.compose.ui.text.withStyle
 import androidx.compose.ui.text.SpanStyle
 import androidx.compose.ui.text.font.FontStyle
+import androidx.hilt.navigation.compose.hiltViewModel
+import com.example.ui.sync.SyncViewModel
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -220,7 +222,9 @@ fun MainTabsScreen(
             }
         }
     }
-    val pendingCount by viewModel.pendingMutationsCount.collectAsStateWithLifecycle()
+    // F5: sync/offline saiu do MainViewModel — VM de feature própria.
+    val syncViewModel: SyncViewModel = hiltViewModel()
+    val pendingCount by syncViewModel.pendingMutationsCount.collectAsStateWithLifecycle()
     // G1: depois de drenar a fila, mostra um "Tudo salvo ✓" transitório em vez de
     // a pill só sumir — pro leigo, a rodinha que some sozinha parecia "travado".
     var showSavedPill by remember { mutableStateOf(false) }
@@ -1220,6 +1224,7 @@ fun HomeScreenTab(
     onNavigateToTab: (String, String?) -> Unit,
     onShowMessage: (String) -> Unit = {},
 ) {
+    val syncViewModel: SyncViewModel = hiltViewModel()
     val activeClub by viewModel.activeClub.collectAsStateWithLifecycle()
     val currentBook by viewModel.currentBook.collectAsStateWithLifecycle()
     val chapters by viewModel.currentChapters.collectAsStateWithLifecycle()
@@ -1262,7 +1267,7 @@ fun HomeScreenTab(
         isRefreshing = isRefreshing,
         onRefresh = {
             isRefreshing = true
-            viewModel.forceRefresh { isRefreshing = false }
+            syncViewModel.forceRefresh { isRefreshing = false }
         },
         state = pullState,
         modifier = Modifier.fillMaxSize(),

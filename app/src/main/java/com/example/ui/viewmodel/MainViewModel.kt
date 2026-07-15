@@ -1015,18 +1015,7 @@ class MainViewModel @Inject constructor(
     }
 
     // --- Sync / offline ---
-
-    /** Tamanho da fila offline — UI mostra "alterações aguardando conexão". */
-    val pendingMutationsCount = repository.pendingMutationsCount
-        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(60_000), 0)
-
-    /** Pull-to-refresh: força re-sync de todas as caches ativas, ignorando TTL. */
-    fun forceRefresh(onDone: () -> Unit = {}) {
-        viewModelScope.launch {
-            runCatching { repository.forceRefresh() }
-            onDone()
-        }
-    }
+    // F5: pendingMutationsCount/forceRefresh moraram pra ui/sync/SyncViewModel.
 
     // ============================================================
     // ADMIN ACTIONS — Fase 5
