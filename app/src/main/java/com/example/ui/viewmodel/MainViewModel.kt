@@ -985,18 +985,9 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
     }
 
     // --- Notifications actions ---
-    fun markAllNotificationsAsRead() {
-        viewModelScope.launch {
-            val userId = currentUserId.value ?: return@launch
-            repository.markAllNotificationsAsRead(userId)
-        }
-    }
-
-    fun markNotificationAsRead(notifId: String) {
-        viewModelScope.launch {
-            repository.markNotificationAsRead(notifId)
-        }
-    }
+    // F5.2: markAllNotificationsAsRead/markNotificationAsRead migraram p/ NotificationsViewModel.
+    // A flow `notifications` continua aqui pois o MainTabsScreen (hub) ainda a lê — sai quando o
+    // hub for fatiado (por último).
 
     // --- Saved Quotes actions ---
     fun saveQuote(bookId: String, texto: String, capituloRef: String) {

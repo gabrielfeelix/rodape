@@ -31,7 +31,7 @@ import com.example.ui.components.rememberShowLoading
 import com.example.ui.components.staggeredEntrance
 import com.example.ui.theme.RodapeIcons
 import com.example.ui.theme.RodapeTheme
-import com.example.ui.viewmodel.MainViewModel
+import com.example.ui.viewmodel.NotificationsViewModel
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.JsonArray
 import kotlinx.serialization.json.JsonObject
@@ -41,8 +41,8 @@ import kotlinx.serialization.json.jsonObject
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun NotificationsScreen(
-    viewModel: MainViewModel,
+internal fun NotificationsScreen(
+    viewModel: NotificationsViewModel,
     onNavigateBack: () -> Unit,
     onNavigateToDiscussion: (chapterId: String, title: String) -> Unit = { _, _ -> },
     onNavigateToTab: (String) -> Unit = {}

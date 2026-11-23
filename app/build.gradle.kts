@@ -188,6 +188,7 @@ dependencies {
   // --- Hilt (DI — F4a) ---
   implementation(libs.hilt.android)
   "ksp"(libs.hilt.compiler)
+  implementation(libs.androidx.hilt.navigation.compose)
 
   // --- Supabase ---
   implementation(platform(libs.supabase.bom))

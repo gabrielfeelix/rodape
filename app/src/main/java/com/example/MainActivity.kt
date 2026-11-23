@@ -46,6 +46,7 @@ import androidx.compose.animation.slideInHorizontally
 import androidx.compose.animation.slideOutHorizontally
 import com.example.ui.theme.LocalSharedTransitionScope
 import com.example.ui.theme.LocalNavAnimatedScope
+import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
@@ -523,8 +524,12 @@ class MainActivity : ComponentActivity() {
                     }
 
                     composable<Notifications> {
+                        // F5.2: primeira tela com VM próprio via Hilt (hiltViewModel()) — não usa
+                        // mais o god-VM p/ seus dados. requestTab ainda vem do MainViewModel (nav
+                        // compartilhada, migra com o hub).
+                        val notificationsViewModel: com.example.ui.viewmodel.NotificationsViewModel = hiltViewModel()
                         NotificationsScreen(
-                            viewModel = viewModel,
+                            viewModel = notificationsViewModel,
                             onNavigateBack = { navController.popBackStack() },
                             onNavigateToDiscussion = { chapterId, title ->
                                 navController.navigate(Discussion(chapterId, title))
